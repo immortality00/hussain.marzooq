@@ -74,6 +74,9 @@ h2 {
     text-align: left;
     float: left;
 }
+.profilepicture {
+    height: auto;
+}
 /* Style the tab */
 .tab {
     overflow: hidden;
