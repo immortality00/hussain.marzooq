@@ -1,0 +1,150 @@
+#more {display: none;}
+
+.header {
+  overflow: hidden;
+  background-color: #f1f1f1;
+  padding: 10px 10px;
+}
+
+h2 {
+  font-size: 30px;
+  font-weight: bold;
+  font-family: 'Times New Roman', Times, serif;
+  padding-top: 20px;
+  float: left;
+}
+.header-right {
+  float: right;
+  text-align: center;
+}
+
+/* Add media queries for responsiveness - when the screen is 500px wide or less, stack the links on top of each other */
+@media screen and (max-width: 500px) {
+  .header a {
+    float: none;
+    /*display: block;*/
+    text-align: center;
+  }
+  .header-right {
+    float: none;
+  }
+}
+
+.fa {
+    width: 5rem;
+    color: black;
+    font-size: 60px;
+    padding-top: 5px;
+}
+
+.fa:hover {
+    opacity: 0.7;
+    color: red;
+}
+.material-icons {
+    width: 5rem;
+    color: black;
+    font-size: 60px;
+    padding-top: 10px;
+    float: left;
+
+}
+.material-icons:hover {
+    opacity: 0.7;
+    color: red;
+}
+
+.profilepicture {
+    height: 90%;
+    width: 90%;
+    border-radius: 4rem;
+}
+
+.row {
+    padding-top: 25px;
+    font-family: 'Times New Roman', Times, serif;
+    text-align: center;
+}
+.container {
+    margin-left: 0px;
+    display: block;
+
+}
+.col-sm {
+    text-align: left;
+    float: left;
+}
+/* Style the tab */
+.tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+    font-family: 'Times New Roman', Times, serif;
+}
+
+/* Style the buttons inside the tab */
+.tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    font-size: 17px;
+}
+
+/* Change background color of buttons on hover */
+.tab button:hover {
+    background-color: #ddd;
+}
+
+/* Create an active/current tablink class */
+.tab button.active {
+    background-color: #ccc;
+}
+
+/* Style the tab content */
+.tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+}
+
+/* Style the close button */
+.topright {
+    float: right;
+    cursor: pointer;
+    font-size: 28px;
+}
+
+.topright:hover {color: red;}
+.tabcontent {
+    animation: fadeEffect 1s; /* Fading effect takes 1 second */
+}
+
+/* Go from zero to full opacity */
+@keyframes fadeEffect {
+    from {opacity: 0;}
+    to {opacity: 1;}
+}
+
+li, p {
+    font-family: 'Times New Roman', Times, serif;
+    text-align: left;
+}
+
+/*Gallery!!!!!!!!*/
+
+img {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 5px;
+    width: 150px;
+
+}
+
+img:hover {
+    box-shadow: 0 0 2px 1px rgba(0, 140, 186, 0.5);
+}
