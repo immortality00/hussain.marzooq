@@ -165,24 +165,27 @@ footer {
     margin: 0;
   }
 .CV {
-    /* border: none; */
     border-radius: 20%;
-    background-color: rgba(241, 236, 236, 0.158);
+    box-shadow: 0 2px #999;
     color: rgba(0, 0, 0, 0.808);
     padding-left: 100px;
     padding-right: 100px;
-    padding-top: 5px;
-    padding-bottom: 5px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    background-color: rgba(241, 236, 236, 0.158);
+    float: right;
     cursor: pointer;
-    font-weight: bold;
-    box-shadow: 0 9px #999;
-
+    transition: 0.3s;
+    font-size: 17px;
 
 
 }
-.CV:hover {background-color: #08080849}
+.CV:hover {
+  background-color: #08080849
+}
 
 .CV:active {
   background-color: #08080886;
   box-shadow: 0 5px #666;
   transform: translateY(4px);
+}
