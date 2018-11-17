@@ -22,11 +22,17 @@ h2 {
 @media screen and (max-width: 500px) {
   .header a {
     float: none;
-    /*display: block;*/
+    /* display: block; */
     text-align: center;
   }
   .header-right {
     float: none;
+  }
+  .CV {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
   }
 }
 
@@ -142,11 +148,37 @@ li, p {
 /*Gallery!!!!!!!!*/
 
 img {
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 5px;
-    width: 150px;
+    width: auto;
+    max-height: 500px;
+    
+}
+#carouselExampleControls {
+    text-align: center;
+    margin-right: 10px;
+}
+.carousel-control-prev-icon,
+.carousel-control-next-icon {
+  height: 100px;
+  width: 100px;
+  outline: black;
+  background-size: 100%, 100%;
+  border-radius: 50%;
+  border: 1px solid black;
+  background-image: none;
 
+}
+
+.carousel-control-next-icon:after
+{
+  content: '>';
+  font-size: 55px;
+  color: red;
+}
+
+.carousel-control-prev-icon:after {
+  content: '<';
+  font-size: 55px;
+  color: red;
 }
 
 img:hover {
