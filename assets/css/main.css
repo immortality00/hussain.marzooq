@@ -1832,6 +1832,9 @@ body.is-preload-0 #footer {
   opacity: 0;
 }
 
+#nav {
+  display: block;
+}
 #first {
   float: left;
 }
@@ -1839,6 +1842,25 @@ body.is-preload-0 #footer {
   float: right;
 }
 
-#nav {
-  display: block;
+@media only screen and (min-device-width: 375px) and (max-device-width: 812px) and (-webkit-device-pixel-ratio: 3) {
+  #first {
+    float: left;
+  }
+  #second {
+    float: right;
+  }
+  #nav {
+    display: grid;
+  }
+}
+@media only screen and (min-device-width: 375px) and (max-device-width: 667px) {
+  #first {
+    float: left;
+  }
+  #second {
+    float: right;
+  }
+  #nav {
+    display: grid;
+  }
 }
