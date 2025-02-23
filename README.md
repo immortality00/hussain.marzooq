@@ -25,6 +25,11 @@ This portfolio showcases my professional work, skills, and experiences using mod
 src/
 ├── app/                    # App router directory
 │   ├── page.tsx           # Home page
+│   ├── admin/             # Admin section
+│   │   ├── login/        # Admin login
+│   │   │   └── page.tsx
+│   │   └── dashboard/    # Admin dashboard
+│   │       └── page.tsx
 │   ├── about/             # About page
 │   │   └── page.tsx
 │   ├── photography/       # Photography page
@@ -46,6 +51,8 @@ src/
 │   │       └── Navigation.tsx  # Main navigation component
 │   └── sections/        # Page sections
 ├── lib/                 # Library code
+│   ├── context/         # React contexts
+│   │   └── AuthContext.tsx  # Authentication context
 │   ├── firebase/        # Firebase configuration
 │   │   ├── config.ts    # Client-side Firebase config
 │   │   ├── admin.ts     # Server-side Firebase Admin
@@ -84,6 +91,11 @@ The site includes a responsive navigation system that:
 - Set up base layout and styling structure
 - Configured Next.js 13+ App Router
 - Added TypeScript support throughout the project
+- Added secure admin authentication system
+- Implemented protected admin routes
+- Created admin dashboard with logout functionality
+- Added authentication middleware
+- Set up Firebase Auth integration
 
 ## Development Workflow
 
@@ -200,3 +212,41 @@ The project includes utility functions for common Firebase operations:
 - `getDocument`: Fetch a single document from Firestore
 - `getCollection`: Query collections with filtering and ordering
 - `uploadFile`: Upload files to Firebase Storage
+
+## Authentication System
+
+The project includes a secure authentication system for admin access:
+
+### Admin Routes
+- `/admin/login` - Secure login page
+- `/admin/dashboard` - Protected admin dashboard
+
+### Security Features
+- Firebase Authentication integration
+- Protected routes with middleware
+- Secure session management
+- Automatic redirects for unauthorized access
+- Client-side route protection
+- Server-side authentication validation
+
+### Authentication Flow
+1. Admin accesses `/admin/login`
+2. Credentials verified through Firebase Auth
+3. Successful login redirects to dashboard
+4. Failed attempts show error messages
+5. Protected routes check auth status
+6. Logout redirects to login page
+
+### Implementation Details
+- Uses Firebase Authentication
+- Context-based auth state management
+- TypeScript for type safety
+- Middleware for route protection
+- Responsive UI with Tailwind CSS
+
+### Latest Updates (2024-02-23)
+- Added secure admin authentication system
+- Implemented protected admin routes
+- Created admin dashboard with logout functionality
+- Added authentication middleware
+- Set up Firebase Auth integration
