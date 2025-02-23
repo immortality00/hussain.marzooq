@@ -1,8 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '@/lib/context/AuthContext';
 import { useAuthProtection } from '@/lib/hooks/useAuthProtection';
 import Link from 'next/link';
+import PortfolioManager from '@/components/admin/PortfolioManager';
+import { PortfolioCategory } from '@/types/portfolio';
 
 interface AdminSection {
   title: string;
@@ -44,9 +47,12 @@ const adminSections: AdminSection[] = [
   },
 ];
 
-export default function AdminDashboardPage() {
+export default function AdminDashboard() {
   const { user, logout } = useAuth();
   const { loading } = useAuthProtection();
+  const [selectedCategory, setSelectedCategory] = useState<PortfolioCategory>('photography');
+
+  const categories: PortfolioCategory[] = ['photography', 'film', 'webdev', 'nfts', 'dance'];
 
   if (loading) {
     return (
@@ -127,6 +133,27 @@ export default function AdminDashboardPage() {
             </div>
           </div>
         </div>
+
+        <div className="mt-8 px-4 sm:px-0">
+          <h2 className="text-xl font-semibold mb-3">Portfolio Management</h2>
+          <div className="flex space-x-2 mb-4">
+            {categories.map((category) => (
+              <button
+                key={category}
+                onClick={() => setSelectedCategory(category)}
+                className={`px-4 py-2 rounded capitalize ${
+                  selectedCategory === category
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-gray-200 hover:bg-gray-300'
+                }`}
+              >
+                {category}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <PortfolioManager category={selectedCategory} />
       </main>
     </div>
   );
