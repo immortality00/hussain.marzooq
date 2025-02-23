@@ -1,0 +1,49 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Common functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidImage() {
+      return request.resource.contentType.matches('image/.*')
+        && request.resource.size < 5 * 1024 * 1024; // 5MB max
+    }
+
+    function isValidVideo() {
+      return request.resource.contentType.matches('video/.*')
+        && request.resource.size < 100 * 1024 * 1024; // 100MB max
+    }
+
+    // Public images folder - read only
+    match /images/{imageId} {
+      allow read: if true;
+      allow write: if isAuthenticated() 
+        && isValidImage();
+    }
+
+    // Videos folder
+    match /videos/{videoId} {
+      allow read: if true;
+      allow write: if isAuthenticated() 
+        && isValidVideo();
+    }
+
+    // User-specific folders
+    match /users/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if isOwner(userId);
+    }
+
+    // Default deny
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+} 

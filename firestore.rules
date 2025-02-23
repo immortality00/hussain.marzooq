@@ -1,0 +1,45 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Common functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Public read access for portfolio items
+    match /projects/{projectId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    match /photography/{photoId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    match /films/{filmId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    match /nfts/{nftId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    match /dance/{danceId} {
+      allow read: if true;
+      allow write: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+} 
