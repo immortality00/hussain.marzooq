@@ -282,3 +282,52 @@ The admin dashboard provides a comprehensive interface for content management:
 - Added quick stats overview
 - Implemented section-specific navigation
 - Created reusable auth protection hook
+
+## Security Features
+
+The project implements multiple layers of security:
+
+### Authentication Security
+- Firebase Authentication integration
+- Session-based authentication management
+- Automatic session expiry after 1 hour
+- Activity-based session refresh
+- Remember me functionality
+- Account lockout after 5 failed attempts (15-minute duration)
+
+### Middleware Protection
+- Comprehensive security headers:
+  - X-Frame-Options: DENY
+  - X-Content-Type-Options: nosniff
+  - X-XSS-Protection
+  - Strict-Transport-Security
+  - Content-Security-Policy
+  - Referrer-Policy
+- Rate limiting for login attempts
+- IP-based request tracking
+- Cross-Site Request Forgery (CSRF) protection
+- Secure routing and redirection
+
+### Session Management
+- Client-side session tracking
+- Activity monitoring
+- Automatic logout on inactivity
+- Session validation every minute
+- Secure session storage
+- Session cleanup on logout
+
+### Route Protection
+- Protected admin routes
+- Authentication state verification
+- Secure middleware checks
+- Automatic redirects for unauthorized access
+- Additional security checks for admin routes
+
+### Latest Security Updates (2024-02-23)
+- Implemented session management system
+- Added rate limiting for login attempts
+- Enhanced security headers
+- Added IP-based tracking
+- Implemented account lockout system
+- Added activity monitoring
+- Enhanced route protection
