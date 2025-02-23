@@ -14,6 +14,51 @@ This portfolio showcases my professional work, skills, and experiences using mod
 - **Deployment**: Netlify
 - **Version Control**: Git/GitHub
 
+## Project Structure
+
+```
+src/
+├── app/                    # App router directory
+│   ├── (auth)/            # Auth group routes
+│   ├── api/               # API routes
+│   └── layout.tsx         # Root layout
+├── components/            # React components
+│   ├── ui/               # Reusable UI components
+│   │   ├── button/
+│   │   ├── card/
+│   │   └── input/
+│   ├── layout/           # Layout components
+│   │   ├── header/
+│   │   ├── footer/
+│   │   └── sidebar/
+│   └── sections/         # Page sections
+│       ├── home/
+│       ├── about/
+│       └── projects/
+├── lib/                  # Library code
+│   ├── utils/           # Utility functions
+│   ├── hooks/           # Custom React hooks
+│   └── actions/         # Server actions
+├── styles/              # Global styles
+│   └── globals.css
+└── types/               # TypeScript type definitions
+    └── index.ts
+```
+
+### Directory Structure Explanation
+
+- **app/**: Next.js 13+ App Router directory for all routes and layouts
+- **components/**: 
+  - `ui/`: Reusable UI components (buttons, inputs, cards)
+  - `layout/`: Layout-specific components (header, footer, sidebar)
+  - `sections/`: Page-specific sections organized by feature
+- **lib/**: 
+  - `utils/`: Helper functions and utilities
+  - `hooks/`: Custom React hooks
+  - `actions/`: Server-side actions (Next.js Server Actions)
+- **styles/**: Global styles and CSS modules
+- **types/**: TypeScript type definitions and interfaces
+
 ## Development Workflow
 
 The project follows a structured development workflow to ensure code quality and stable deployments:
