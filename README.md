@@ -19,45 +19,62 @@ This portfolio showcases my professional work, skills, and experiences using mod
 ```
 src/
 ├── app/                    # App router directory
-│   ├── (auth)/            # Auth group routes
-│   ├── api/               # API routes
-│   └── layout.tsx         # Root layout
-├── components/            # React components
-│   ├── ui/               # Reusable UI components
-│   │   ├── button/
-│   │   ├── card/
-│   │   └── input/
-│   ├── layout/           # Layout components
-│   │   ├── header/
-│   │   ├── footer/
-│   │   └── sidebar/
-│   └── sections/         # Page sections
-│       ├── home/
-│       ├── about/
-│       └── projects/
-├── lib/                  # Library code
-│   ├── utils/           # Utility functions
-│   ├── hooks/           # Custom React hooks
-│   └── actions/         # Server actions
-├── styles/              # Global styles
-│   └── globals.css
-└── types/               # TypeScript type definitions
-    └── index.ts
+│   ├── page.tsx           # Home page
+│   ├── about/             # About page
+│   │   └── page.tsx
+│   ├── photography/       # Photography page
+│   │   └── page.tsx
+│   ├── film/             # Film page
+│   │   └── page.tsx
+│   ├── webdev/           # Web Development page
+│   │   └── page.tsx
+│   ├── nfts/             # NFTs page
+│   │   └── page.tsx
+│   ├── dance/            # Dance page
+│   │   └── page.tsx
+│   ├── layout.tsx        # Root layout with navigation
+│   └── globals.css       # Global styles
+├── components/           # React components
+│   ├── ui/              # Reusable UI components
+│   ├── layout/          # Layout components
+│   │   └── header/      
+│   │       └── Navigation.tsx  # Main navigation component
+│   └── sections/        # Page sections
+├── lib/                 # Library code
+│   ├── utils/          # Utility functions
+│   ├── hooks/          # Custom React hooks
+│   └── actions/        # Server actions
+├── styles/             # Global styles
+└── types/              # TypeScript type definitions
 ```
 
-### Directory Structure Explanation
+### Pages Structure
 
-- **app/**: Next.js 13+ App Router directory for all routes and layouts
-- **components/**: 
-  - `ui/`: Reusable UI components (buttons, inputs, cards)
-  - `layout/`: Layout-specific components (header, footer, sidebar)
-  - `sections/`: Page-specific sections organized by feature
-- **lib/**: 
-  - `utils/`: Helper functions and utilities
-  - `hooks/`: Custom React hooks
-  - `actions/`: Server-side actions (Next.js Server Actions)
-- **styles/**: Global styles and CSS modules
-- **types/**: TypeScript type definitions and interfaces
+The portfolio consists of the following pages:
+
+- **Home** (`/`): Landing page with portfolio overview
+- **About** (`/about`): Personal information and background
+- **Photography** (`/photography`): Photography portfolio
+- **Film** (`/film`): Film and video projects
+- **Web Development** (`/webdev`): Web development projects
+- **NFTs** (`/nfts`): NFT collections and projects
+- **Dance** (`/dance`): Dance performances and projects
+
+### Navigation
+
+The site includes a responsive navigation system that:
+- Provides easy access to all main sections
+- Highlights the current active page
+- Adapts to different screen sizes
+- Features smooth hover transitions
+- Uses Next.js 13+ App Router for optimal performance
+
+### Latest Updates (2024-02-23)
+- Added all main portfolio pages with placeholder content
+- Implemented responsive navigation system
+- Set up base layout and styling structure
+- Configured Next.js 13+ App Router
+- Added TypeScript support throughout the project
 
 ## Development Workflow
 
