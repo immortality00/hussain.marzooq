@@ -11,6 +11,11 @@ This portfolio showcases my professional work, skills, and experiences using mod
 - **Framework**: [Next.js](https://nextjs.org) (Latest version)
 - **Styling**: TailwindCSS
 - **Language**: TypeScript
+- **Backend**: Firebase
+  - Authentication
+  - Firestore Database
+  - Storage
+  - Analytics
 - **Deployment**: Netlify
 - **Version Control**: Git/GitHub
 
@@ -41,6 +46,10 @@ src/
 │   │       └── Navigation.tsx  # Main navigation component
 │   └── sections/        # Page sections
 ├── lib/                 # Library code
+│   ├── firebase/        # Firebase configuration
+│   │   ├── config.ts    # Client-side Firebase config
+│   │   ├── admin.ts     # Server-side Firebase Admin
+│   │   └── utils.ts     # Firebase utility functions
 │   ├── utils/          # Utility functions
 │   ├── hooks/          # Custom React hooks
 │   └── actions/        # Server actions
@@ -151,3 +160,43 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Firebase Configuration
+
+The project uses Firebase for backend services. To set up Firebase:
+
+1. Create a `.env.local` file in the root directory with the following variables:
+```bash
+# Firebase Config
+NEXT_PUBLIC_FIREBASE_API_KEY=""
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=""
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=""
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=""
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=""
+NEXT_PUBLIC_FIREBASE_APP_ID=""
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=""
+
+# Firebase Admin (Server-side)
+FIREBASE_PRIVATE_KEY=""
+FIREBASE_CLIENT_EMAIL=""
+```
+
+2. Get these values from your Firebase Console:
+   - Create a new project in Firebase Console
+   - Enable required services (Auth, Firestore, Storage)
+   - Get Web App configuration
+   - Generate service account key for Admin SDK
+
+3. Firebase features available:
+   - Authentication
+   - Firestore Database
+   - Cloud Storage
+   - Analytics (browser-only)
+   - Admin SDK (server-side)
+
+### Firebase Utility Functions
+
+The project includes utility functions for common Firebase operations:
+- `getDocument`: Fetch a single document from Firestore
+- `getCollection`: Query collections with filtering and ordering
+- `uploadFile`: Upload files to Firebase Storage
