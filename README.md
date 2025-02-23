@@ -1,6 +1,40 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Hussain Marzooq Portfolio
 
-## Getting Started
+A modern, responsive portfolio website built with Next.js and deployed on Netlify.
+
+## Project Overview
+
+This portfolio showcases my professional work, skills, and experiences using modern web technologies. The website is built with performance, accessibility, and user experience in mind.
+
+## Tech Stack
+
+- **Framework**: [Next.js](https://nextjs.org) (Latest version)
+- **Styling**: TailwindCSS
+- **Language**: TypeScript
+- **Deployment**: Netlify
+- **Version Control**: Git/GitHub
+
+## Development Workflow
+
+The project follows a structured development workflow to ensure code quality and stable deployments:
+
+### Branch Strategy
+- `main` - Production branch, connected to Netlify deployment
+- `development` - Main development branch where all features are tested before production
+- Feature branches - Created from `development` for specific features/fixes
+
+### Development Process
+1. All development work happens in feature branches
+2. Changes are merged to `development` for testing
+3. Once approved, changes are merged to `main` for production deployment
+
+## Project Status
+
+- 🟢 Production: Live on Netlify
+- 🔄 Active Development: In progress
+- 📦 Dependencies: Up to date
+
+## Local Development
 
 First, run the development server:
 
@@ -19,6 +53,27 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Deployment
+
+The project is deployed on Netlify with automatic deployments from the `main` branch.
+
+### Production URL
+[Live Website URL]
+
+### Deployment Status
+[![Netlify Status](https://api.netlify.com/api/v1/badges/YOUR-NETLIFY-BADGE/deploy-status)](https://app.netlify.com/sites/YOUR-SITE/deploys)
+
+## Updates Log
+
+### Latest Updates (YYYY-MM-DD)
+- Initial repository setup
+- Development and production branches established
+- README documentation created
+
+## Contributing
+
+This is a personal portfolio project. While it's public for viewing, contributions are currently not accepted.
 
 ## Learn More
 
