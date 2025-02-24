@@ -13,6 +13,22 @@ export default function PortfolioGrid({ category }: PortfolioGridProps) {
   const [metadata, setMetadata] = useState<CategoryMetadata | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
+
+  useEffect(() => {
+    // Monitor online/offline status
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    setIsOffline(!navigator.onLine);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     const loadData = async () => {
@@ -20,16 +36,33 @@ export default function PortfolioGrid({ category }: PortfolioGridProps) {
         setLoading(true);
         setError(null);
         
-        const [loadedItems, categoryMetadata] = await Promise.all([
+        // Load data in parallel with error handling for each request
+        const [itemsResult, metadataResult] = await Promise.allSettled([
           getPortfolioItems(category),
           getCategoryMetadata(category)
         ]);
-        
-        setItems(loadedItems);
-        setMetadata(categoryMetadata);
+
+        // Handle portfolio items result
+        if (itemsResult.status === 'fulfilled') {
+          setItems(itemsResult.value);
+        } else {
+          console.error('Error loading items:', itemsResult.reason);
+        }
+
+        // Handle metadata result
+        if (metadataResult.status === 'fulfilled') {
+          setMetadata(metadataResult.value);
+        } else {
+          console.error('Error loading metadata:', metadataResult.reason);
+        }
+
+        // Set error if both requests failed
+        if (itemsResult.status === 'rejected' && metadataResult.status === 'rejected') {
+          throw new Error('Failed to load portfolio data');
+        }
       } catch (err) {
         console.error('Error loading portfolio data:', err);
-        setError('Failed to load portfolio items. Please try again later.');
+        setError('Failed to load portfolio items. Please check your connection and try again.');
       } finally {
         setLoading(false);
       }
@@ -71,13 +104,34 @@ export default function PortfolioGrid({ category }: PortfolioGridProps) {
   if (error) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
-        <div className="text-lg text-red-600">{error}</div>
+        <div className="text-center p-8">
+          <div className="text-red-600 mb-4">{error}</div>
+          {isOffline && (
+            <div className="text-amber-600">
+              You are currently offline. Some content may not be available.
+            </div>
+          )}
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Try Again
+          </button>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
+      {isOffline && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+          <p className="text-amber-700">
+            You are currently offline. Some content may not be up to date.
+          </p>
+        </div>
+      )}
+
       <div className="bg-gray-50 rounded-lg p-6 mb-8">
         <div className="prose max-w-none">
           {metadata?.aboutText ? (

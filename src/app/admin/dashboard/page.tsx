@@ -7,6 +7,7 @@ import Link from 'next/link';
 import PortfolioManager from '@/components/admin/PortfolioManager';
 import CategoryMetadataEditor from '@/components/admin/CategoryMetadataEditor';
 import { PortfolioCategory } from '@/types/portfolio';
+import FirebaseConnectionTest from '@/components/debug/FirebaseConnectionTest';
 
 interface AdminSection {
   title: string;
@@ -70,107 +71,111 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Navigation Bar */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold">Admin Dashboard</h1>
-            </div>
-            <div className="flex items-center">
-              <span className="mr-4 text-gray-600">
-                {user?.email}
-              </span>
-              <button
-                onClick={logout}
-                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        {/* Welcome Section */}
-        <div className="px-4 py-6 sm:px-0 mb-8">
-          <h2 className="text-2xl font-bold mb-4">Welcome back!</h2>
-          <p className="text-gray-600">
-            Manage your portfolio content from this dashboard.
-          </p>
-        </div>
-
-        {/* Content Management Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-0">
-          {adminSections.map((section) => (
-            <Link
-              key={section.path}
-              href={section.path}
-              className="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
-            >
-              <div className="p-6">
-                <div className="text-3xl mb-4">{section.icon}</div>
-                <h3 className="text-lg font-semibold mb-2">{section.title}</h3>
-                <p className="text-gray-600 text-sm">{section.description}</p>
+    <div className="min-h-screen p-8">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+        <FirebaseConnectionTest />
+        {/* Navigation Bar */}
+        <nav className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between h-16">
+              <div className="flex items-center">
+                <h1 className="text-xl font-semibold">Admin Dashboard</h1>
               </div>
-            </Link>
-          ))}
-        </div>
-
-        {/* Quick Stats Section */}
-        <div className="mt-8 px-4 sm:px-0">
-          <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-indigo-600">0</div>
-                <div className="text-gray-600 text-sm">Total Projects</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-indigo-600">0</div>
-                <div className="text-gray-600 text-sm">Total Photos</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-indigo-600">0</div>
-                <div className="text-gray-600 text-sm">Total Films</div>
+              <div className="flex items-center">
+                <span className="mr-4 text-gray-600">
+                  {user?.email}
+                </span>
+                <button
+                  onClick={logout}
+                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                >
+                  Logout
+                </button>
               </div>
             </div>
           </div>
-        </div>
+        </nav>
 
-        {/* Category Selection */}
-        <div className="px-4 sm:px-0 mb-8">
-          <h2 className="text-2xl font-bold mb-4">Portfolio Management</h2>
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-4 py-2 rounded capitalize ${
-                  selectedCategory === category
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-gray-200 hover:bg-gray-300'
-                }`}
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+          {/* Welcome Section */}
+          <div className="px-4 py-6 sm:px-0 mb-8">
+            <h2 className="text-2xl font-bold mb-4">Welcome back!</h2>
+            <p className="text-gray-600">
+              Manage your portfolio content from this dashboard.
+            </p>
+          </div>
+
+          {/* Content Management Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 px-4 sm:px-0">
+            {adminSections.map((section) => (
+              <Link
+                key={section.path}
+                href={section.path}
+                className="block bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200"
               >
-                {category}
-              </button>
+                <div className="p-6">
+                  <div className="text-3xl mb-4">{section.icon}</div>
+                  <h3 className="text-lg font-semibold mb-2">{section.title}</h3>
+                  <p className="text-gray-600 text-sm">{section.description}</p>
+                </div>
+              </Link>
             ))}
           </div>
-        </div>
 
-        {/* Category Metadata Editor */}
-        <div className="px-4 sm:px-0">
-          <CategoryMetadataEditor category={selectedCategory} />
-        </div>
+          {/* Quick Stats Section */}
+          <div className="mt-8 px-4 sm:px-0">
+            <h3 className="text-lg font-semibold mb-4">Quick Stats</h3>
+            <div className="bg-white rounded-lg shadow-sm p-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-indigo-600">0</div>
+                  <div className="text-gray-600 text-sm">Total Projects</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-indigo-600">0</div>
+                  <div className="text-gray-600 text-sm">Total Photos</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-indigo-600">0</div>
+                  <div className="text-gray-600 text-sm">Total Films</div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-        {/* Portfolio Items Manager */}
-        <div className="px-4 sm:px-0">
-          <PortfolioManager category={selectedCategory} />
-        </div>
-      </main>
+          {/* Category Selection */}
+          <div className="px-4 sm:px-0 mb-8">
+            <h2 className="text-2xl font-bold mb-4">Portfolio Management</h2>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-4 py-2 rounded capitalize ${
+                    selectedCategory === category
+                      ? 'bg-blue-500 text-white'
+                      : 'bg-gray-200 hover:bg-gray-300'
+                  }`}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Category Metadata Editor */}
+          <div className="px-4 sm:px-0">
+            <CategoryMetadataEditor category={selectedCategory} />
+          </div>
+
+          {/* Portfolio Items Manager */}
+          <div className="px-4 sm:px-0">
+            <PortfolioManager category={selectedCategory} />
+          </div>
+        </main>
+      </div>
     </div>
   );
 } 

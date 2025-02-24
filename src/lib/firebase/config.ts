@@ -1,8 +1,15 @@
-import { initializeApp, getApps } from 'firebase/app';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAnalytics, isSupported } from 'firebase/analytics';
+
+// Ensure all required environment variables are present
+if (!process.env.NEXT_PUBLIC_FIREBASE_API_KEY ||
+    !process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN ||
+    !process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID) {
+  throw new Error('Missing required Firebase configuration values');
+}
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,20 +21,41 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
-const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
-const auth = getAuth(app);
+// Initialize Firebase only once
+let app: FirebaseApp;
+if (!getApps().length) {
+  try {
+    app = initializeApp(firebaseConfig);
+    console.log('Firebase initialized successfully');
+  } catch (error) {
+    console.error('Error initializing Firebase:', error);
+    throw error;
+  }
+} else {
+  app = getApps()[0];
+}
+
+// Initialize Firestore
 const db = getFirestore(app);
+
+// Initialize other services
+const auth = getAuth(app);
 const storage = getStorage(app);
 
-// Initialize Analytics conditionally (only in browser)
+// Initialize Analytics conditionally (only in browser and production)
 let analytics = null;
-if (typeof window !== 'undefined') {
-  isSupported().then(supported => {
-    if (supported) {
-      analytics = getAnalytics(app);
-    }
-  });
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
+  try {
+    isSupported().then(supported => {
+      if (supported) {
+        analytics = getAnalytics(app);
+      }
+    }).catch(error => {
+      console.warn('Analytics initialization failed:', error);
+    });
+  } catch (error) {
+    console.warn('Analytics setup failed:', error);
+  }
 }
 
 export { app, auth, db, storage, analytics }; 
