@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-import Navigation from "@/components/layout/header/Navigation";
 import { AuthProvider } from "@/lib/context/AuthContext";
-
-const inter = Inter({ subsets: ["latin"] });
+import Layout from "@/components/layout/Layout";
 
 export const metadata: Metadata = {
   title: "Hussain Marzooq - Portfolio",
@@ -18,10 +15,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="antialiased">
         <AuthProvider>
-          <Navigation />
-          {children}
+          <Layout>
+            {children}
+          </Layout>
         </AuthProvider>
       </body>
     </html>
