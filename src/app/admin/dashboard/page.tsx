@@ -46,6 +46,12 @@ const adminSections: AdminSection[] = [
     path: '/admin/dance',
     icon: '💃',
   },
+  {
+    title: 'Inquiries',
+    description: 'Manage contact form submissions',
+    path: '/admin/inquiries',
+    icon: '📬',
+  },
 ];
 
 export default function AdminDashboard() {

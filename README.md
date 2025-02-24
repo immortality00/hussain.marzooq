@@ -110,6 +110,10 @@ The site includes a responsive navigation system that:
 - Implemented contact form with Netlify serverless function
 - Added form validation and error handling
 - Integrated contact submissions with Firestore
+- Added inquiries management system in admin dashboard
+- Implemented inquiry status tracking (new/archived)
+- Added inquiry deletion functionality
+- Enhanced security with protected routes for inquiries
 
 ## Portfolio Management System
 
@@ -470,3 +474,33 @@ The project includes a serverless contact form system:
 - Error handling and logging
 - Success/failure responses
 - TypeScript type definitions
+
+### Inquiries Management System
+
+The project includes a comprehensive inquiries management system:
+
+#### Features
+- View all contact form submissions
+- Sort inquiries by date
+- Filter by status (new/archived)
+- Archive/restore functionality
+- Secure deletion with confirmation
+- Protected admin-only access
+- Real-time updates
+
+#### Implementation Details
+- Firestore integration for data storage
+- TypeScript interfaces for type safety
+- Protected routes with authentication
+- Status management system
+- Parallel data loading
+- Error handling
+- Loading states
+
+#### Security Features
+- Admin-only access
+- Protected API endpoints
+- Secure deletion
+- Data validation
+- Access control rules
+- Activity logging

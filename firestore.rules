@@ -37,6 +37,12 @@ service cloud.firestore {
       allow write: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
+    // Inquiries collection - public write (for contact form), admin-only read
+    match /inquiries/{inquiryId} {
+      allow create: if true;
+      allow read, update, delete: if isAuthenticated();
+    }
+
     // Default deny
     match /{document=**} {
       allow read, write: if false;

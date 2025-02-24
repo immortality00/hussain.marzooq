@@ -11,4 +11,10 @@ export interface ContactFormResponse {
   success: boolean;
   message: string;
   inquiryId?: string;
+}
+
+export interface Inquiry extends ContactFormData {
+  id: string;
+  status: 'new' | 'archived' | 'deleted';
+  updatedAt: number;
 } 
