@@ -6,4 +6,10 @@ export interface PortfolioItem {
   updatedAt: number;
 }
 
+export interface CategoryMetadata {
+  id: string;
+  aboutText: string;
+  lastUpdated: number;
+}
+
 export type PortfolioCategory = 'photography' | 'film' | 'webdev' | 'nfts' | 'dance'; 

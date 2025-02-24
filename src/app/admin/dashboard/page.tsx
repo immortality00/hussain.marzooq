@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/context/AuthContext';
 import { useAuthProtection } from '@/lib/hooks/useAuthProtection';
 import Link from 'next/link';
 import PortfolioManager from '@/components/admin/PortfolioManager';
+import CategoryMetadataEditor from '@/components/admin/CategoryMetadataEditor';
 import { PortfolioCategory } from '@/types/portfolio';
 
 interface AdminSection {
@@ -134,9 +135,10 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="mt-8 px-4 sm:px-0">
-          <h2 className="text-xl font-semibold mb-3">Portfolio Management</h2>
-          <div className="flex space-x-2 mb-4">
+        {/* Category Selection */}
+        <div className="px-4 sm:px-0 mb-8">
+          <h2 className="text-2xl font-bold mb-4">Portfolio Management</h2>
+          <div className="flex flex-wrap gap-2">
             {categories.map((category) => (
               <button
                 key={category}
@@ -153,7 +155,15 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <PortfolioManager category={selectedCategory} />
+        {/* Category Metadata Editor */}
+        <div className="px-4 sm:px-0">
+          <CategoryMetadataEditor category={selectedCategory} />
+        </div>
+
+        {/* Portfolio Items Manager */}
+        <div className="px-4 sm:px-0">
+          <PortfolioManager category={selectedCategory} />
+        </div>
       </main>
     </div>
   );

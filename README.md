@@ -107,6 +107,9 @@ The site includes a responsive navigation system that:
 - Added category metadata management system
 - Implemented about text for each portfolio category
 - Added parallel data loading for improved performance
+- Implemented contact form with Netlify serverless function
+- Added form validation and error handling
+- Integrated contact submissions with Firestore
 
 ## Portfolio Management System
 
@@ -423,3 +426,47 @@ The project implements multiple layers of security:
 - Implemented account lockout system
 - Added activity monitoring
 - Enhanced route protection
+
+## Contact Form System
+
+The project includes a serverless contact form system:
+
+### Features
+- Serverless function handling with Netlify Functions
+- Firebase Firestore integration for storing submissions
+- Form validation and error handling
+- Loading states and success messages
+- Optional fields for phone and dance style
+- Real-time form feedback
+
+### Implementation Details
+- Uses Netlify Functions for serverless backend
+- TypeScript for type safety
+- Firebase Admin SDK for secure database access
+- Client-side form validation
+- Server-side data validation
+- Error boundary implementation
+- Loading state management
+
+### Security Features
+- Server-side validation
+- Protected write operations
+- Rate limiting (via Netlify)
+- Data sanitization
+- Error handling
+- Secure environment variables
+
+### Contact Form Fields
+- Name (required)
+- Email (required)
+- Phone (optional)
+- Dance Style (optional)
+- Message (required)
+
+### Serverless Architecture
+- Netlify Functions for backend processing
+- Firebase Admin SDK for database operations
+- Environment variable management
+- Error handling and logging
+- Success/failure responses
+- TypeScript type definitions

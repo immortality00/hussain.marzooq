@@ -11,6 +11,7 @@ const navLinks = [
   { href: '/webdev', label: 'Web Dev' },
   { href: '/nfts', label: 'NFTs' },
   { href: '/dance', label: 'Dance' },
+  { href: '/contact', label: 'Contact' },
 ];
 
 export default function Navigation() {
