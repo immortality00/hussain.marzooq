@@ -1,20 +1,37 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import Navigation from './header/Navigation';
 import CustomCursor from '../ui/CustomCursor';
 import SoundSystem from '../ui/SoundSystem';
 import { motion } from 'framer-motion';
+import { usePathname } from 'next/navigation';
 
 interface LayoutProps {
   children: ReactNode;
 }
 
 export default function Layout({ children }: LayoutProps) {
+  const [mounted, setMounted] = useState(false);
+  const pathname = usePathname();
+  
+  // Check if current route is an admin route
+  const isAdminRoute = pathname?.startsWith('/admin');
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // For admin routes, just render the children without portfolio styling
+  if (isAdminRoute) {
+    return <>{children}</>;
+  }
+
+  // For non-admin routes, render the full portfolio layout
   return (
     <>
-      <CustomCursor />
-      <SoundSystem />
+      {mounted && <CustomCursor />}
+      {mounted && <SoundSystem />}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}

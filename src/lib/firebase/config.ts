@@ -1,6 +1,6 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { getFirestore, enableIndexedDbPersistence, initializeFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getAnalytics, isSupported } from 'firebase/analytics';
 
@@ -35,8 +35,24 @@ if (!getApps().length) {
   app = getApps()[0];
 }
 
-// Initialize Firestore
-const db = getFirestore(app);
+// Initialize Firestore with settings for better offline behavior
+const db = typeof window !== 'undefined' 
+  ? initializeFirestore(app, {
+      cacheSizeBytes: 50 * 1024 * 1024, // 50 MB
+      experimentalForceLongPolling: true, // Better for problematic connections
+    })
+  : getFirestore(app);
+
+// Enable offline persistence if in browser
+if (typeof window !== 'undefined') {
+  enableIndexedDbPersistence(db)
+    .then(() => {
+      console.log("Firestore persistence enabled");
+    })
+    .catch((err) => {
+      console.warn("Firestore persistence could not be enabled:", err.code);
+    });
+}
 
 // Initialize other services
 const auth = getAuth(app);
@@ -57,5 +73,33 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
     console.warn('Analytics setup failed:', error);
   }
 }
+
+// Helper function to check if Firebase is online
+export const checkFirebaseConnection = async (): Promise<boolean> => {
+  if (typeof window === 'undefined') return true;
+  
+  if (!navigator.onLine) return false;
+  
+  // Try a simple network request to check connectivity
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    
+    await fetch('https://www.googleapis.com/identitytoolkit/v3/relyingparty/downloadAccount', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ returnSecureToken: true }),
+      signal: controller.signal
+    });
+    
+    clearTimeout(timeoutId);
+    return true;
+  } catch (error) {
+    console.warn('Firebase connection check failed:', error);
+    return false;
+  }
+};
 
 export { app, auth, db, storage, analytics }; 

@@ -11,30 +11,36 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    // Public read access for portfolio items
-    match /projects/{projectId} {
-      allow read: if true;
-      allow write: if isAuthenticated() && isOwner(resource.data.userId);
-    }
-
+    // Portfolio collections - public read access
     match /photography/{photoId} {
       allow read: if true;
-      allow write: if isAuthenticated() && isOwner(resource.data.userId);
+      allow write: if isAuthenticated();
     }
 
-    match /films/{filmId} {
+    match /film/{filmId} {
       allow read: if true;
-      allow write: if isAuthenticated() && isOwner(resource.data.userId);
+      allow write: if isAuthenticated();
+    }
+
+    match /webdev/{projectId} {
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
     match /nfts/{nftId} {
       allow read: if true;
-      allow write: if isAuthenticated() && isOwner(resource.data.userId);
+      allow write: if isAuthenticated();
     }
 
     match /dance/{danceId} {
       allow read: if true;
-      allow write: if isAuthenticated() && isOwner(resource.data.userId);
+      allow write: if isAuthenticated();
+    }
+
+    // Category metadata - public read access
+    match /{category}/metadata {
+      allow read: if true;
+      allow write: if isAuthenticated();
     }
 
     // Inquiries collection - public write (for contact form), admin-only read

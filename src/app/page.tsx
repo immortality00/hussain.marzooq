@@ -1,3 +1,5 @@
+'use client';
+
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -521,7 +523,7 @@ export default function HomePage() {
           <div className="absolute inset-0 bg-gradient-to-b from-gray-900/50 to-black/50 backdrop-blur-[100px]" />
           <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-black to-transparent" />
           <div className="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-black to-transparent" />
-        </div>
+    </div>
       </ParallaxBackground>
     </>
   );
