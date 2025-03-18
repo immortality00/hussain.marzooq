@@ -4,9 +4,12 @@ import { ReactNode } from 'react';
 interface GlassPanelProps extends MotionProps {
   children: ReactNode;
   className?: string;
-  intensity?: 'low' | 'medium' | 'high';
+  intensity?: 'low' | 'medium' | 'high' | 'transparent';
   hover?: boolean;
   tilt?: boolean;
+  gradientBorder?: boolean;
+  hasShadow?: boolean;
+  animateEntry?: boolean;
 }
 
 export default function GlassPanel({
@@ -15,41 +18,69 @@ export default function GlassPanel({
   intensity = 'medium',
   hover = false,
   tilt = false,
+  gradientBorder = false,
+  hasShadow = true,
+  animateEntry = false,
   ...motionProps
 }: GlassPanelProps) {
   const blurIntensity = {
+    transparent: 'backdrop-blur-none',
     low: 'backdrop-blur-sm',
     medium: 'backdrop-blur-lg',
     high: 'backdrop-blur-2xl'
   };
 
   const bgOpacity = {
+    transparent: 'bg-transparent',
     low: 'bg-white/5',
     medium: 'bg-white/10',
     high: 'bg-white/15'
   };
 
+  // Basic border styles without gradient
+  const borderStyles = intensity === 'transparent' 
+    ? 'border-transparent' 
+    : 'border-white/10';
+
   const baseClasses = `
-    relative overflow-hidden rounded-2xl border border-white/10
+    relative overflow-hidden rounded-2xl border ${borderStyles}
     ${blurIntensity[intensity]} ${bgOpacity[intensity]}
-    shadow-2xl shadow-black/5
+    ${hasShadow ? 'shadow-2xl shadow-black/10' : ''}
+    transition-all duration-300
   `;
 
   const hoverClasses = hover ? `
-    before:absolute before:inset-0
-    before:bg-gradient-to-br before:from-blue-500/20 before:via-purple-500/20 before:to-transparent
-    before:opacity-0 hover:before:opacity-100 before:transition-opacity before:duration-500
-    hover:border-white/20 hover:shadow-xl hover:shadow-blue-500/10
+    hover:border-white/20 hover:shadow-xl hover:shadow-gold-500/10
   ` : '';
 
+  // Entry animation props
+  const entryAnimation = animateEntry ? {
+    initial: { opacity: 0, y: 20 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+  } : {};
+
+  // Hover animation props
+  const hoverAnimation = tilt ? {
+    whileHover: { scale: 1.02, rotateX: 2, rotateY: 2 },
+    transition: { type: 'spring', stiffness: 300, damping: 20 }
+  } : {};
+
   return (
-    <motion.div
-      className={`${baseClasses} ${hoverClasses} ${className}`}
-      whileHover={tilt ? { scale: 1.02, rotateX: 2, rotateY: 2 } : undefined}
-      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-      {...motionProps}
-    >
-      {children}
-    </motion.div>
+    <div className="relative">
+      {/* Gradient border element if enabled */}
+      {gradientBorder && (
+        <div className="absolute inset-0 p-[1px] rounded-2xl bg-gradient-to-r from-gold-500/30 via-orange-500/20 to-gold-400/30" />
+      )}
+      
+      <motion.div
+        className={`${baseClasses} ${hoverClasses} ${className} ${gradientBorder ? 'border-transparent relative z-10 bg-black/40' : ''}`}
+        {...entryAnimation}
+        {...hoverAnimation}
+        {...motionProps}
+      >
+        {children}
+      </motion.div>
+    </div>
   );
 } 

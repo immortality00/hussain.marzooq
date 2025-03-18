@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="240" height="160" viewBox="0 0 240 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d4af37" stop-opacity="0.2" />
+      <stop offset="100%" stop-color="#e67e22" stop-opacity="0.2" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Simplified camera silhouette -->
+  <path d="M45 40H195C206.046 40 215 48.954 215 60V120C215 131.046 206.046 140 195 140H45C33.9543 140 25 131.046 25 120V60C25 48.954 33.9543 40 45 40Z" fill="url(#goldGradient)" opacity="0.1" />
+  
+  <!-- Camera lens - circular center element -->
+  <circle cx="120" cy="90" r="35" fill="url(#goldGradient)" opacity="0.15" />
+  
+  <!-- Viewfinder - small rectangular element on top -->
+  <path d="M95 20H145C147.761 20 150 22.2386 150 25V35C150 37.7614 147.761 40 145 40H95C92.2386 40 90 37.7614 90 35V25C90 22.2386 92.2386 20 95 20Z" fill="url(#goldGradient)" opacity="0.1" />
+</svg> 

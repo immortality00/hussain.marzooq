@@ -1,18 +1,16 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { colors, typography } from '@/components/admin/designSystem';
 import { checkFirebaseConnection } from '@/lib/firebase/config';
 
 interface ConnectionStatusProps {
-  position?: 'top' | 'bottom';
   showOfflineOnly?: boolean;
+  className?: string;
 }
 
 export default function ConnectionStatus({ 
-  position = 'top',
-  showOfflineOnly = false 
+  showOfflineOnly = false,
+  className = ''
 }: ConnectionStatusProps) {
   const [isOnline, setIsOnline] = useState(true);
   const [isFirebaseConnected, setIsFirebaseConnected] = useState(true);
@@ -23,6 +21,7 @@ export default function ConnectionStatus({
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
+      // Only check Firebase connection when we're actually online
       checkFirebaseConnectionStatus();
     };
     
@@ -31,22 +30,25 @@ export default function ConnectionStatus({
       setIsFirebaseConnected(false);
     };
     
-    // Set initial states
+    // Set initial state for browser connectivity
     setIsOnline(navigator.onLine);
     
-    // Add event listeners
+    // Add event listeners for browser connectivity
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
     
-    // Initial check for Firebase connection
-    checkFirebaseConnectionStatus();
+    // Initial check for Firebase connection (only if online)
+    if (navigator.onLine) {
+      checkFirebaseConnectionStatus();
+    }
     
-    // Set up periodic checks when online
+    // Set up periodic checks with a reasonable interval (2 minutes)
+    // to avoid unnecessary network traffic
     const intervalId = setInterval(() => {
       if (navigator.onLine) {
         checkFirebaseConnectionStatus();
       }
-    }, 30000); // Every 30 seconds
+    }, 120000); // Every 2 minutes
     
     // Clean up
     return () => {
@@ -71,6 +73,15 @@ export default function ConnectionStatus({
     
     setCheckingConnection(true);
     try {
+      // Set Firebase connection to true regardless of the actual connection
+      // This prevents CORS errors and 404 errors in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Skipping real Firebase connection check in development mode');
+        setIsFirebaseConnected(true);
+        return;
+      }
+      
+      // Only perform real check in production
       const connected = await checkFirebaseConnection();
       setIsFirebaseConnected(connected);
     } catch (error) {
@@ -83,74 +94,36 @@ export default function ConnectionStatus({
 
   if (!showStatus) return null;
 
-  const positionClass = position === 'top' 
-    ? 'top-4 left-0 right-0' 
-    : 'bottom-4 left-0 right-0';
-
   let statusType: 'success' | 'warning' | 'error' = 'success';
-  let statusText = 'Connected';
-  let statusDescription = 'Your device is online and connected to all services';
+  let statusTooltip = 'Connected to all services';
 
   if (!isOnline) {
     statusType = 'error';
-    statusText = 'Offline';
-    statusDescription = 'Your device is currently offline. Some features may be unavailable';
+    statusTooltip = 'Your device is offline';
   } else if (!isFirebaseConnected) {
     statusType = 'warning';
-    statusText = 'Limited Connection';
-    statusDescription = 'Connected to internet but backend services are unreachable';
+    statusTooltip = 'Limited backend connection';
   }
 
+  const statusColor = 
+    statusType === 'success' ? 'bg-green-500' : 
+    statusType === 'warning' ? 'bg-yellow-500' : 'bg-red-500';
+
   return (
-    <AnimatePresence>
-      <motion.div 
-        className={`fixed ${positionClass} mx-auto w-full max-w-md z-50 px-4`}
-        initial={{ opacity: 0, y: position === 'top' ? -20 : 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: position === 'top' ? -20 : 20 }}
-      >
-        <div className={`
-          ${colors.status[statusType].bg} 
-          ${colors.status[statusType].border} 
-          ${colors.status[statusType].text} 
-          p-3 rounded-lg border text-center shadow-lg flex items-center justify-center
-        `}>
-          <div className="flex-1 text-left flex items-center">
-            <div className={`w-3 h-3 rounded-full ${
-              statusType === 'success' ? 'bg-green-500' : 
-              statusType === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
-            } mr-2 animate-pulse`}></div>
-            <div>
-              <p className="font-medium">{statusText}</p>
-              <p className={`${typography.body.small} mt-0.5`}>{statusDescription}</p>
-            </div>
-          </div>
-          
-          {statusType !== 'success' && (
-            <button 
-              onClick={checkFirebaseConnectionStatus}
-              disabled={checkingConnection}
-              className="ml-2 p-1.5 rounded-full hover:bg-white/10 transition-colors"
-              aria-label="Retry connection"
-            >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                className={`h-5 w-5 ${checkingConnection ? 'animate-spin' : ''}`}
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" 
-                />
-              </svg>
-            </button>
-          )}
-        </div>
-      </motion.div>
-    </AnimatePresence>
+    <div 
+      className={`relative group ${className}`}
+      role="status"
+      aria-label={`Connection status: ${statusTooltip}`}
+    >
+      <div 
+        className={`w-3 h-3 rounded-full ${statusColor} ${statusType !== 'success' ? 'animate-pulse' : ''}`}
+        onClick={checkFirebaseConnectionStatus}
+      ></div>
+      
+      {/* Tooltip */}
+      <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs rounded px-2 py-1 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none">
+        {statusTooltip}
+      </div>
+    </div>
   );
 } 

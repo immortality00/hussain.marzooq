@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="300" height="300" viewBox="0 0 300 300" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d4af37" stop-opacity="0.15" />
+      <stop offset="100%" stop-color="#e67e22" stop-opacity="0.15" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main swirl patterns inspired by the logo's decorative element -->
+  <path d="M50 150C50 120 20 90 80 90C140 90 110 120 110 150C110 180 140 210 80 210C20 210 50 180 50 150Z" 
+        stroke="url(#goldGradient)" stroke-width="2" fill="none" />
+        
+  <path d="M150 150C150 110 100 70 190 70C280 70 230 110 230 150C230 190 280 230 190 230C100 230 150 190 150 150Z" 
+        stroke="url(#goldGradient)" stroke-width="2" fill="none" />
+        
+  <path d="M75 75C75 55 45 35 95 35C145 35 115 55 115 75C115 95 145 115 95 115C45 115 75 95 75 75Z" 
+        stroke="url(#goldGradient)" stroke-width="1.5" fill="none" />
+        
+  <path d="M185 225C185 205 155 185 205 185C255 185 225 205 225 225C225 245 255 265 205 265C155 265 185 245 185 225Z" 
+        stroke="url(#goldGradient)" stroke-width="1.5" fill="none" />
+        
+  <path d="M215 75C215 55 185 35 235 35C285 35 255 55 255 75C255 95 285 115 235 115C185 115 215 95 215 75Z" 
+        stroke="url(#goldGradient)" stroke-width="1.5" fill="none" />
+</svg> 

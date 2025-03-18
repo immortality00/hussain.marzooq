@@ -2,6 +2,7 @@
 
 import { ReactNode, useEffect, useState } from 'react';
 import Navigation from './header/Navigation';
+import EnhancedNavigation from './header/EnhancedNavigation';
 import CustomCursor from '../ui/CustomCursor';
 import SoundSystem from '../ui/SoundSystem';
 import { motion } from 'framer-motion';
@@ -13,10 +14,16 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   const [mounted, setMounted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   
   // Check if current route is an admin route
   const isAdminRoute = pathname?.startsWith('/admin');
+
+  // Close menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     setMounted(true);
@@ -41,8 +48,10 @@ export default function Layout({ children }: LayoutProps) {
         {/* Background Noise */}
         <div className="fixed inset-0 bg-noise opacity-[0.015] pointer-events-none" />
         
-        {/* Navigation */}
-        <Navigation menuOpen={false} setMenuOpen={() => {}} />
+        {/* Enhanced Navigation with glassmorphic scroll effect */}
+        <EnhancedNavigation scrollThreshold={100} isMobileMenuOpen={menuOpen}>
+          <Navigation menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+        </EnhancedNavigation>
         
         {/* Main Content */}
         <main className="relative">

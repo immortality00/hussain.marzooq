@@ -1,0 +1,123 @@
+/* Gold-Themed Background Effects
+ * Use these classes for subtle background patterns and accents
+ */
+
+.gold-gradient-bg {
+  background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+  position: relative;
+}
+
+.gold-gradient-bg::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(212, 175, 55, 0.2),
+    transparent
+  );
+}
+
+.gold-noise {
+  position: relative;
+}
+
+.gold-noise::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.015;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.gold-dots {
+  background-image: radial-gradient(
+    rgba(212, 175, 55, 0.15) 1px,
+    transparent 1px
+  );
+  background-size: 35px 35px;
+  background-position: center;
+}
+
+.gold-rays {
+  position: relative;
+  overflow: hidden;
+}
+
+.gold-rays::before {
+  content: '';
+  position: absolute;
+  top: -100%;
+  left: -100%;
+  right: -100%;
+  bottom: -100%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(212, 175, 55, 0.03) 0%,
+    transparent 70%
+  );
+  z-index: 0;
+}
+
+.gold-accent-line {
+  position: relative;
+}
+
+.gold-accent-line::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: -20px;
+  width: 50px;
+  height: 2px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(212, 175, 55, 0.8),
+    transparent
+  );
+}
+
+/* Used to add camera icon watermarks in sections */
+.gold-camera-bg {
+  position: relative;
+}
+
+.gold-camera-bg::before {
+  content: '';
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 150px;
+  height: 150px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d4af37'%3E%3Cpath d='M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z'/%3E%3Cpath fill-rule='evenodd' d='M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 01-3 3h-15a3 3 0 01-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 001.11-.71l.822-1.315a2.942 2.942 0 012.332-1.39zM6.75 12.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0zm12-1.5a.75.75 0 100-1.5.75.75 0 000 1.5z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  opacity: 0.05;
+  transform: rotate(15deg);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.gold-section {
+  position: relative;
+  z-index: 1;
+}
+
+.gold-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to bottom, rgba(212, 175, 55, 0.03), transparent 30%);
+  z-index: -1;
+  pointer-events: none;
+} 

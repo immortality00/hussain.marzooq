@@ -12,10 +12,7 @@ export function useAuthProtection() {
   useEffect(() => {
     // Only redirect if loading is complete and still no user
     if (!loading) {
-      console.log('Auth protection - State:', { user, loading, isAuthenticated, redirected });
-      
       if (!user && !redirected) {
-        console.log('Auth protection - Redirecting to login page');
         setRedirected(true);
         router.push('/admin/login');
       }

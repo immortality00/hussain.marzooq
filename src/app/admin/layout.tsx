@@ -7,8 +7,10 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminCursor from '@/components/admin/AdminCursor';
 import AdminSoundSystem from '@/components/admin/AdminSoundSystem';
-import ConnectionStatus from '@/components/admin/ConnectionStatus';
-import { variants, transitions } from '@/components/admin/designSystem';
+// ConnectionStatus will be used in specific components, not in the layout directly
+import { variants } from '@/components/admin/designSystem';
+import { NotificationProvider } from '@/lib/context/NotificationContext';
+import './adminStyles.css';
 
 export default function AdminLayout({
   children,
@@ -39,62 +41,32 @@ export default function AdminLayout({
   // For login page, don't show admin layout, but still add cursor and sound
   if (isLoginPage) {
     return (
-      <>
+      <NotificationProvider>
         <AdminCursor />
         <AdminSoundSystem />
-        <ConnectionStatus showOfflineOnly={true} />
         {children}
-      </>
+      </NotificationProvider>
     );
   }
 
+  // Main admin layout with navigation sidebar
   return (
-    <>
-      {/* Admin UI Enhancements */}
+    <NotificationProvider>
       <AdminCursor />
       <AdminSoundSystem />
-      <ConnectionStatus position="top" showOfflineOnly={true} />
       
-      {/* Authentication Check */}
       <AnimatePresence mode="wait">
         {loading ? (
-          <motion.div 
-            key="loading"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={transitions.default}
-            className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-b from-gray-900 to-black text-white"
-          >
+          // Loading state
+          <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 to-black">
             <div className="fixed inset-0 bg-noise opacity-[0.015] pointer-events-none" />
             <motion.div
-              animate={{ 
-                scale: [1, 1.1, 1],
-                opacity: [0.8, 1, 0.8],
-              }}
-              transition={{ 
-                repeat: Infinity, 
-                duration: 2,
-              }}
-              className="text-3xl font-display text-blue-300"
-            >
-              Loading
-            </motion.div>
-            <div className="mt-3 flex space-x-1">
-              {[0, 1, 2].map(i => (
-                <motion.div 
-                  key={i}
-                  animate={{ scale: [1, 1.5, 1], opacity: [0.5, 1, 0.5] }}
-                  transition={{ 
-                    repeat: Infinity, 
-                    duration: 1.5, 
-                    delay: i * 0.2,
-                  }}
-                  className="w-2 h-2 rounded-full bg-blue-400"
-                />
-              ))}
-            </div>
-          </motion.div>
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="rounded-full border-t-2 border-blue-500 w-10 h-10 animate-spin"
+            />
+          </div>
         ) : !user ? (
           <motion.div 
             key="unauthorized"
@@ -126,7 +98,7 @@ export default function AdminLayout({
             >
               <Link 
                 href="/admin/login"
-                className="relative overflow-hidden px-8 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg shadow-[0_0_15px_rgba(59,130,246,0.5)] font-medium tracking-wide"
+                className="admin-button-gold relative overflow-hidden px-8 py-3 rounded-lg font-medium tracking-wide"
               >
                 <motion.span 
                   className="absolute inset-0 bg-white/20"
@@ -144,13 +116,18 @@ export default function AdminLayout({
             variants={variants.fadeIn}
             initial="hidden"
             animate="visible"
-            className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white relative"
+            className="min-h-screen admin-dashboard text-white relative"
           >
+            {/* Camera background elements */}
+            <div className="camera-backdrop camera-top-right" />
+            <div className="camera-backdrop camera-bottom-left" />
+            <div className="camera-backdrop camera-center" />
+            
             <div className="fixed inset-0 bg-noise opacity-[0.015] pointer-events-none" />
             {children}
           </motion.div>
         )}
       </AnimatePresence>
-    </>
+    </NotificationProvider>
   );
 } 

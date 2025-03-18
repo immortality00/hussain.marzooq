@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Golden gradient background for the text -->
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d4af37" />
+      <stop offset="100%" stop-color="#e67e22" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Decorative swirl element -->
+  <path d="M40 30C40 20 20 10 50 10C80 10 60 20 60 30C60 40 80 50 50 50C20 50 40 40 40 30Z" 
+        stroke="url(#goldGradient)" stroke-width="2" fill="none" />
+  
+  <!-- Elegant script-style text -->
+  <text x="70" y="38" font-family="cursive, serif" font-size="24" font-style="italic" fill="url(#goldGradient)" font-weight="bold">
+    Portfolio
+  </text>
+</svg> 

@@ -1,0 +1,258 @@
+/* Gold-Themed Animation Effects
+ * Use these classes and keyframes for elegant motion
+ */
+
+/* Gold shimmer text effect */
+.gold-shimmer {
+  background: linear-gradient(
+    to right,
+    #d4af37 20%,
+    #f2d675 40%,
+    #f2d675 60%,
+    #d4af37 80%
+  );
+  background-size: 200% auto;
+  color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+  animation: goldShimmer 8s ease-in-out infinite;
+  display: inline-block;
+}
+
+@keyframes goldShimmer {
+  0% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
+}
+
+/* Subtle pulse effect */
+.gold-pulse {
+  animation: goldPulse 3s infinite;
+}
+
+@keyframes goldPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.2);
+  }
+  70% {
+    box-shadow: 0 0 0 15px rgba(212, 175, 55, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0);
+  }
+}
+
+/* Gentle float animation */
+.gold-float {
+  animation: goldFloat 6s ease-in-out infinite;
+}
+
+@keyframes goldFloat {
+  0% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* Border glow effect */
+.gold-border-glow {
+  position: relative;
+}
+
+.gold-border-glow::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.3);
+  animation: goldGlow 4s infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes goldGlow {
+  0% {
+    opacity: 0.4;
+    box-shadow: 0 0 5px rgba(212, 175, 55, 0.3);
+  }
+  100% {
+    opacity: 0.8;
+    box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .gold-shimmer {
+    animation: none;
+    background-position: 0 0;
+  }
+  
+  .gold-pulse,
+  .gold-float,
+  .gold-border-glow::after {
+    animation: none;
+  }
+}
+
+/* Gold animations for interactive elements */
+
+/* Gold border pulse animation */
+.gold-border-pulse {
+  position: relative;
+}
+
+.gold-border-pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(212, 175, 55, 0.5);
+  border-radius: inherit;
+  opacity: 0;
+  z-index: 0;
+  animation: goldBorderPulse 2s infinite;
+}
+
+@keyframes goldBorderPulse {
+  0% {
+    transform: scale(1);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(1.05);
+    opacity: 0;
+  }
+}
+
+/* Gold shimmer effect for text */
+.gold-shimmer {
+  position: relative;
+  overflow: hidden;
+}
+
+.gold-shimmer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    to right,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(212, 175, 55, 0.3) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-25deg);
+  animation: goldShimmer 3s infinite;
+}
+
+@keyframes goldShimmer {
+  0% {
+    left: -75%;
+  }
+  100% {
+    left: 125%;
+  }
+}
+
+/* Gold hover glow */
+.gold-hover-glow {
+  transition: all 0.3s ease;
+}
+
+.gold-hover-glow:hover {
+  box-shadow: 0 0 15px rgba(212, 175, 55, 0.5);
+}
+
+/* Gold active button/input effect */
+.gold-active {
+  position: relative;
+}
+
+.gold-active::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(to right, rgba(212, 175, 55, 0.7), rgba(230, 126, 34, 0.7));
+  transform-origin: center;
+  transform: scaleX(0);
+  transition: transform 0.3s ease;
+}
+
+.gold-active:focus::after,
+.gold-active.active::after {
+  transform: scaleX(1);
+}
+
+/* Gold button 3D effect */
+.gold-button-3d {
+  transition: all 0.3s ease;
+  transform: translateY(0);
+  box-shadow: 
+    0 4px 6px -1px rgba(0, 0, 0, 0.1), 
+    0 2px 4px -1px rgba(0, 0, 0, 0.06),
+    0 0 0 0 rgba(212, 175, 55, 0.5);
+}
+
+.gold-button-3d:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 10px 15px -3px rgba(0, 0, 0, 0.1), 
+    0 4px 6px -2px rgba(0, 0, 0, 0.05),
+    0 0 0 2px rgba(212, 175, 55, 0.25);
+}
+
+.gold-button-3d:active {
+  transform: translateY(0);
+  box-shadow: 
+    0 2px 4px -1px rgba(0, 0, 0, 0.1), 
+    0 1px 2px -1px rgba(0, 0, 0, 0.06),
+    0 0 0 2px rgba(212, 175, 55, 0.4);
+}
+
+/* Gold particle effect on hover */
+.gold-particles {
+  position: relative;
+  overflow: hidden;
+}
+
+.gold-particles::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.8) 0%, rgba(212, 175, 55, 0) 70%);
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: width 0.6s ease, height 0.6s ease, opacity 0.6s ease;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.gold-particles:hover::before {
+  width: 200%;
+  height: 200%;
+  opacity: 0.3;
+} 

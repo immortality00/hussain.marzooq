@@ -1,11 +1,14 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
 import GlassPanel from '@/components/ui/GlassPanel';
 import IconSystem from '@/components/ui/IconSystem';
 import SparkleWrapper from '@/components/ui/Sparkle';
+import Logo from '@/components/ui/Logo';
+import styles from './NavigationStyles.module.css';
 
 interface NavigationProps {
   menuOpen: boolean;
@@ -23,35 +26,83 @@ const navLinks = [
   { href: '/contact', label: 'Contact', type: 'contact' },
 ] as const;
 
+// Memoized navigation link component for better performance
+const NavigationLink = React.memo(({ 
+  link, 
+  isActive,
+  onClick
+}: { 
+  link: typeof navLinks[number];
+  isActive: boolean;
+  onClick?: () => void;
+}) => {
+  return (
+    <SparkleWrapper active={isActive}>
+      <Link
+        href={link.href}
+        className={`flex items-center space-x-3 p-3 rounded-lg ${
+          isActive
+            ? 'bg-white/10 text-white font-medium'
+            : 'text-gray-300 hover:bg-white/5 hover:text-white'
+        }`}
+        onClick={onClick}
+      >
+        <IconSystem type={link.type} size={20} className="text-current" />
+        <span className="font-medium">{link.label}</span>
+      </Link>
+    </SparkleWrapper>
+  );
+});
+
+NavigationLink.displayName = 'NavigationLink';
+
 export default function Navigation({ menuOpen, setMenuOpen }: NavigationProps) {
   const pathname = usePathname();
 
+  // Handle link click with special case for homepage
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    setMenuOpen(false);
+    
+    // Force full page reload when navigating to home to avoid empty page issue
+    if (href === '/') {
+      e.preventDefault();
+      window.location.href = '/';
+    }
+  };
+
   return (
     <GlassPanel
-      intensity="low"
-      className="sticky top-0 z-50"
+      intensity="transparent"
+      className="relative z-95 transition-all duration-300"
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ type: 'spring', stiffness: 300, damping: 30 }}
     >
-      <nav className="relative flex items-center justify-between h-16 px-4 sm:px-6 lg:px-8">
+      <nav className="relative flex items-center justify-between h-20 px-1 sm:px-3 lg:px-5">
         {/* Logo */}
         <SparkleWrapper>
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5 }}
-            className="flex-shrink-0"
+            className="flex-shrink-0 -ml-1 sm:-ml-2"
           >
-            <Link href="/" className="font-display text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400 text-shadow-sm">
-              Hussain Marzooq
+            <Link 
+              href="/" 
+              onClick={(e) => handleNavClick(e, '/')}
+              className="flex items-center gold-shine pt-2"
+            >
+              <Logo size="md" className="h-16 w-auto mr-4" withLink={false} withGlow={true} />
+              <span className="font-display text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gold-400 to-orange-400 text-shadow-sm whitespace-nowrap">
+                Hussain Marzooq
+              </span>
             </Link>
           </motion.div>
         </SparkleWrapper>
 
         {/* Desktop Navigation */}
-        <div className="hidden md:block">
-          <ul className="flex space-x-1">
+        <div className="hidden md:block md:ml-auto">
+          <ul className="flex items-center justify-end space-x-2">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
               return (
@@ -59,31 +110,30 @@ export default function Navigation({ menuOpen, setMenuOpen }: NavigationProps) {
                   key={link.href}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
+                  className="flex items-center"
                 >
                   <SparkleWrapper active={isActive}>
                     <Link
                       href={link.href}
-                      className={`relative font-sans px-4 py-2 transition-colors duration-200 ${
-                        pathname === link.href
-                          ? 'text-white font-medium'
+                      style={isActive ? { 
+                        borderBottom: '3px solid #d4af37', 
+                        position: 'relative'
+                      } : undefined}
+                      className={`relative font-sans px-3 py-2 transition-colors duration-200 gold-nav-link ${styles.desktopNavItem} ${
+                        isActive
+                          ? `text-white font-medium gold-nav-active gold-horizontal-highlight`
                           : 'text-gray-400 hover:text-white'
                       }`}
+                      onClick={(e) => handleNavClick(e, link.href)}
                     >
                       <motion.span
-                        className="relative z-10 inline-flex items-center gap-2"
+                        className="relative z-10 inline-flex items-center gap-2 whitespace-nowrap"
                         whileHover={{ y: -2 }}
                         whileTap={{ y: 0 }}
                       >
                         <IconSystem type={link.type} size={16} />
                         {link.label}
                       </motion.span>
-                      {pathname === link.href && (
-                        <motion.div
-                          layoutId="navbar-indicator"
-                          className="absolute inset-0 rounded-lg bg-white/10 backdrop-blur-sm"
-                          transition={{ type: "spring", bounce: 0.25, duration: 0.5 }}
-                        />
-                      )}
                     </Link>
                   </SparkleWrapper>
                 </motion.li>
@@ -92,72 +142,69 @@ export default function Navigation({ menuOpen, setMenuOpen }: NavigationProps) {
           </ul>
         </div>
 
-        {/* Mobile Menu Button */}
-        <motion.button
-          whileTap={{ scale: 0.95 }}
+        {/* Mobile Menu Button - Improved tap target and feedback */}
+        <button
+          type="button"
+          className={`md:hidden inline-flex items-center justify-center p-3 rounded-lg text-gray-300 hover:text-white hover:bg-white/10 bg-white/5 focus:outline-none gold-menu-toggle ${styles.menuToggle} ${menuOpen ? styles.menuToggleActive : ''}`}
           onClick={() => setMenuOpen(!menuOpen)}
-          className="md:hidden relative p-2 rounded-lg text-gray-300 hover:text-white"
+          aria-label="Toggle navigation menu"
         >
           <span className="sr-only">Open main menu</span>
-          <div className="relative">
-            <motion.span
-              animate={menuOpen ? { rotate: 45, y: 6 } : { rotate: 0, y: 0 }}
-              className="absolute block w-5 h-0.5 bg-current transition-transform"
-            />
-            <motion.span
-              animate={menuOpen ? { opacity: 0 } : { opacity: 1 }}
-              className="absolute block w-5 h-0.5 bg-current transition-opacity"
-              style={{ top: '8px' }}
-            />
-            <motion.span
-              animate={menuOpen ? { rotate: -45, y: -6 } : { rotate: 0, y: 0 }}
-              className="absolute block w-5 h-0.5 bg-current transition-transform"
-              style={{ top: '16px' }}
-            />
+          <div className="w-6 h-6 flex flex-col justify-center items-center">
+            <span className={`block w-5 h-0.5 bg-current transition-all duration-300 ${menuOpen ? 'rotate-45 translate-y-1.5' : ''}`} />
+            <span className={`block w-5 h-0.5 bg-current mt-1 transition-all duration-300 ${menuOpen ? 'opacity-0' : ''}`} />
+            <span className={`block w-5 h-0.5 bg-current mt-1 transition-all duration-300 ${menuOpen ? '-rotate-45 -translate-y-1.5' : ''}`} />
           </div>
-        </motion.button>
-
-        {/* Mobile Menu */}
-        <motion.div
-          className="absolute top-full left-0 right-0 md:hidden"
-          initial={false}
-          animate={menuOpen ? { opacity: 1, y: 0 } : { opacity: 0, y: -20 }}
-          transition={{ duration: 0.2 }}
-        >
-          {menuOpen && (
-            <GlassPanel intensity="medium" className="mt-2 mx-4 p-4">
-              <ul className="space-y-2">
-                {navLinks.map((link) => {
-                  const isActive = pathname === link.href;
-                  return (
-                    <motion.li
-                      key={link.href}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 20 }}
-                    >
-                      <SparkleWrapper active={isActive}>
-                        <Link
-                          href={link.href}
-                          className={`flex items-center space-x-2 p-3 rounded-lg ${
-                            isActive
-                              ? 'bg-white/10 text-white'
-                              : 'text-gray-300 hover:bg-white/5 hover:text-white'
-                          }`}
-                          onClick={() => setMenuOpen(false)}
-                        >
-                          <IconSystem type={link.type} size={20} className="text-current" />
-                          <span>{link.label}</span>
-                        </Link>
-                      </SparkleWrapper>
-                    </motion.li>
-                  );
-                })}
-              </ul>
-            </GlassPanel>
-          )}
-        </motion.div>
+        </button>
       </nav>
+
+      {/* Mobile Menu Backdrop Overlay */}
+      {menuOpen && (
+        <div 
+          className={`${styles.mobileMenuOverlay} ${menuOpen ? styles.mobileMenuOverlayVisible : ''}`}
+          onClick={() => setMenuOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Mobile Menu - Fixed position instead of absolute, always on top */}
+      {menuOpen && (
+        <div className={`fixed inset-x-0 top-16 z-100 md:hidden ${styles.mobileMenuContainer}`}>
+          <GlassPanel 
+            intensity="high" 
+            className={`m-2 p-4 mt-2 gold-mobile-menu ${styles.mobileMenu}`}
+            gradientBorder={true}
+          >
+            <ul className="space-y-3">
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <li key={link.href}>
+                    <SparkleWrapper active={isActive}>
+                      <Link
+                        href={link.href}
+                        style={isActive ? { 
+                          borderBottom: '3px solid #d4af37', 
+                          position: 'relative'
+                        } : undefined}
+                        className={`flex items-center relative space-x-3 p-3 rounded-lg ${styles.mobileMenuLink} ${
+                          isActive
+                            ? `text-white gold-text-pulse`
+                            : 'text-gray-300 hover:text-white'
+                        }`}
+                        onClick={(e) => handleNavClick(e, link.href)}
+                      >
+                        <IconSystem type={link.type} size={20} className="text-current" />
+                        <span className="font-medium">{link.label}</span>
+                      </Link>
+                    </SparkleWrapper>
+                  </li>
+                );
+              })}
+            </ul>
+          </GlassPanel>
+        </div>
+      )}
     </GlassPanel>
   );
 } 

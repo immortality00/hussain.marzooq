@@ -2,54 +2,30 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Common functions
-    function isAuthenticated() {
-      return request.auth != null;
+    match /pageContent/{docId} {
+      allow read, write: if true;
     }
     
-    function isOwner(userId) {
-      return isAuthenticated() && request.auth.uid == userId;
+    match /photography/{docId} {
+      allow read, write: if true;
     }
-
-    // Portfolio collections - public read access
-    match /photography/{photoId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
+    
+    match /film/{docId} {
+      allow read, write: if true;
     }
-
-    match /film/{filmId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
+    
+    match /webdev/{docId} {
+      allow read, write: if true;
     }
-
-    match /webdev/{projectId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
+    
+    match /nfts/{docId} {
+      allow read, write: if true;
     }
-
-    match /nfts/{nftId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
+    
+    match /dance/{docId} {
+      allow read, write: if true;
     }
-
-    match /dance/{danceId} {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    // Category metadata - public read access
-    match /{category}/metadata {
-      allow read: if true;
-      allow write: if isAuthenticated();
-    }
-
-    // Inquiries collection - public write (for contact form), admin-only read
-    match /inquiries/{inquiryId} {
-      allow create: if true;
-      allow read, update, delete: if isAuthenticated();
-    }
-
-    // Default deny
+    
     match /{document=**} {
       allow read, write: if false;
     }

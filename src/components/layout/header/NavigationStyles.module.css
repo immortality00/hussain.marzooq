@@ -1,0 +1,282 @@
+/* Base navigation styles */
+.navContainer {
+  position: relative;
+  z-index: 90; /* Higher z-index to ensure it's above other content */
+  transition: background-color 0.3s ease, backdrop-filter 0.3s ease; /* Only transition specific properties */
+}
+
+/* Navigation states based on scroll position */
+.navTransparent {
+  background: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border-color: transparent;
+}
+
+.navSemiTransparent {
+  background: rgba(10, 10, 20, 0.2);
+  backdrop-filter: blur(8px); /* Standardize blur amount */
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+}
+
+.navGlassmorphic {
+  background: rgba(10, 10, 20, 0.6);
+  backdrop-filter: blur(8px); /* Standardize blur amount */
+  -webkit-backdrop-filter: blur(8px);
+  border-color: rgba(212, 175, 55, 0.2);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.3);
+}
+
+/* Transition effects - simplified for performance */
+.navTransition {
+  transition: background-color 0.3s ease, backdrop-filter 0.3s ease;
+}
+
+/* Subtle gradient overlay for the glassmorphic effect */
+.navGradient {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(212, 175, 55, 0.1),
+    rgba(230, 126, 34, 0.05)
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none; /* Ensure overlay doesn't block interactions */
+}
+
+.navGradientVisible {
+  opacity: 1;
+}
+
+/* Mobile menu container styles */
+.mobileMenuContainer {
+  position: relative;
+  z-index: 95; /* Higher than navContainer but lower than mobileMenu */
+}
+
+/* Brand identity bar at the top of navbar */
+.brandBar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px; 
+  background: linear-gradient(to right, 
+    rgba(212, 175, 55, 0.7), 
+    rgba(230, 126, 34, 0.7), 
+    rgba(212, 175, 55, 0.7), 
+    rgba(230, 126, 34, 0.7), 
+    rgba(212, 175, 55, 0.7));
+  background-size: 200% auto;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.brandBarVisible {
+  opacity: 1;
+  animation: goldBarShimmer 6s linear infinite;
+}
+
+@keyframes goldBarShimmer {
+  0% {
+    background-position: 0% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+/* Desktop menu item hover effect */
+.desktopNavItem {
+  position: relative;
+  overflow: visible; /* Changed to visible to ensure line is not clipped */
+  width: auto; /* Changed from 100% to auto to prevent stretching */
+  display: inline-flex; /* Changed from block to inline-flex for better alignment */
+  align-items: center; /* Center items vertically */
+  white-space: nowrap; /* Prevent text wrapping */
+}
+
+.desktopNavItem::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to right, rgba(212, 175, 55, 0.8), rgba(230, 126, 34, 0.8), rgba(212, 175, 55, 0.8));
+  background-size: 200% auto;
+  transform: translateX(-101%); /* Using -101% to avoid pixel gap */
+  transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+  opacity: 0; /* Hide by default for browsers that might not fully support transforms */
+}
+
+.desktopNavItem:hover::after {
+  transform: translateX(0);
+  opacity: 1;
+  animation: goldShiftGradient 2s ease infinite;
+}
+
+@keyframes goldShiftGradient {
+  0% {
+    background-position: 0% center;
+  }
+  50% {
+    background-position: 100% center;
+  }
+  100% {
+    background-position: 0% center;
+  }
+}
+
+/* Active desktop navigation indicator - simplified to avoid duplication with framer motion */
+.activeNavItem {
+  position: relative;
+}
+
+/* Remove the background highlight that can look like a vertical border */
+.activeNavItem::before {
+  content: none; /* Disable this pseudo-element completely */
+}
+
+/* Combined active class for clarity - without vertical border */
+.activeItem {
+  background: none; /* Remove the background gradient that could look like a vertical line */
+  box-shadow: 0 4px 12px -2px rgba(212, 175, 55, 0.15);
+  padding-bottom: 0.5rem;
+  border-left: none;
+  border-bottom: none; /* Removed to avoid conflict with gold-horizontal-highlight */
+}
+
+/* Add gold shimmer effect to active items */
+.activeItem::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(212, 175, 55, 0.2),
+    transparent
+  );
+  z-index: 2; /* Increase z-index to ensure visibility */
+  transform: translateX(-100%);
+  animation: shimmerEffect 2s infinite;
+  pointer-events: none;
+}
+
+@keyframes shimmerEffect {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Mobile menu toggle visual cue */
+.menuToggle {
+  position: relative;
+}
+
+.menuToggle::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 25%;
+  width: 50%;
+  height: 2px;
+  background: linear-gradient(to right, transparent, rgba(212, 175, 55, 0.8), transparent);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.menuToggleActive::after {
+  opacity: 1;
+}
+
+/* Mobile menu styling */
+.mobileMenu {
+  margin-top: 0.5rem;
+  border-radius: 1rem;
+  max-height: 80vh;
+  overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal scroll */
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+  animation: mobileMenuAppear 0.3s ease forwards;
+}
+
+@keyframes mobileMenuAppear {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Gold mobile menu link styles */
+.mobileMenuLink {
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.mobileMenuLink:hover {
+  background: linear-gradient(to right, rgba(212, 175, 55, 0.1), rgba(230, 126, 34, 0.05));
+}
+
+/* Specific mobile menu overrides */
+@media (max-width: 767px) {
+  .navContainer {
+    /* Ensure the nav is always visible on mobile */
+    background: rgba(10, 10, 20, 0.3);
+    backdrop-filter: blur(8px); /* Standardize blur amount */
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+  }
+  
+  .navGlassmorphic {
+    /* Stronger effect when scrolled on mobile */
+    background: rgba(10, 10, 20, 0.8);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+  }
+  
+  /* Ensure the mobile menu has consistent background on mobile */
+  .mobileMenuOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px); /* Standardize blur amount */
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 85; /* Below navigation but above content */
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .mobileMenuOverlayVisible {
+    opacity: 1;
+  }
+}
+
+/* Ensure desktop navigation items are properly aligned */
+@media (min-width: 768px) {
+  .desktopNavItem {
+    height: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+} 

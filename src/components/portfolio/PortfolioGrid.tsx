@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { PortfolioItem, PortfolioCategory } from '@/types/portfolio';
 import { getPortfolioItems } from '@/lib/firebase/portfolio';
 import GlassPanel from '../ui/GlassPanel';
+import PortfolioCard from './PortfolioCard';
 
 interface PortfolioGridProps {
   category: PortfolioCategory;
@@ -104,22 +105,7 @@ export default function PortfolioGrid({ category }: PortfolioGridProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: index * 0.1 }}
         >
-          <GlassPanel
-            className="aspect-[4/3] group relative overflow-hidden"
-            intensity="low"
-            hover={true}
-          >
-            {/* Content */}
-            <div className="absolute inset-0 p-6 flex flex-col justify-end bg-gradient-to-t from-black/80 via-black/50 to-transparent">
-              <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
-              <p className="text-gray-300 text-sm">{item.description}</p>
-            </div>
-
-            {/* Category Tag */}
-            <div className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-medium backdrop-blur-md bg-white/10">
-              {category.charAt(0).toUpperCase() + category.slice(1)}
-            </div>
-          </GlassPanel>
+          <PortfolioCard item={item} category={category} />
         </motion.div>
       ))}
     </div>

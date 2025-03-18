@@ -163,8 +163,8 @@ export default function ContactPage() {
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(24,24,27,0.8),rgba(0,0,0,0.8))]" />
-        <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-conic from-blue-500/20 via-transparent to-transparent rotate-45 animate-spin-slow" />
-        <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-conic from-purple-500/20 via-transparent to-transparent -rotate-45 animate-spin-slow" />
+        <div className="absolute -top-1/2 -left-1/2 w-full h-full bg-gradient-conic from-gold-500/20 via-transparent to-transparent rotate-45 animate-spin-slow" />
+        <div className="absolute -bottom-1/2 -right-1/2 w-full h-full bg-gradient-conic from-orange-500/20 via-transparent to-transparent -rotate-45 animate-spin-slow" />
       </div>
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
@@ -174,7 +174,7 @@ export default function ContactPage() {
           transition={{ duration: 0.8 }}
           className="text-center mb-16"
         >
-          <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400 mb-4">
+          <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-gold-400 to-orange-400 mb-4">
             Let's Create Together
           </h1>
           <p className="text-gray-300 text-lg max-w-2xl mx-auto">
@@ -194,7 +194,7 @@ export default function ContactPage() {
             {/* Glassmorphic Container */}
             <div className="relative backdrop-blur-xl bg-white/5 rounded-2xl p-8 border border-white/10 shadow-2xl overflow-hidden group">
               {/* Glow Effect */}
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-br from-gold-500/20 via-orange-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               
               <form onSubmit={handleSubmit} className="relative z-10 space-y-6">
                 <FloatingLabelInput
@@ -287,7 +287,7 @@ export default function ContactPage() {
                   <span className="relative z-10">
                     {loading ? 'Sending...' : 'Send Message'}
                   </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-blue-500/50 to-purple-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-gold-500/50 to-orange-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 </motion.button>
               </form>
             </div>

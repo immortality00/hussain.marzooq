@@ -1,0 +1,153 @@
+/* Admin Dashboard Golden Theme Styles */
+
+/* Override admin dashboard colors with gold/orange theme */
+.admin-dashboard {
+  /* Background with subtle texture */
+  background: linear-gradient(to bottom, #1a1a1a, #0f0f0f);
+  position: relative;
+}
+
+/* Admin heading styles with script font */
+.admin-heading {
+  font-family: var(--font-script);
+  font-size: 3.5rem !important;
+  font-weight: 700;
+  background: linear-gradient(to right, var(--color-gold-light), var(--color-orange-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.02em;
+}
+
+.admin-subheading {
+  font-family: var(--font-script);
+  font-size: 2.5rem !important;
+  background: linear-gradient(to right, var(--color-gold-primary), var(--color-gold-light));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0px 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Section titles with gold accent */
+.admin-section-title {
+  color: var(--color-gold-primary);
+  text-shadow: 0px 1px 2px rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--color-gold-dark);
+  padding-bottom: 0.5rem;
+}
+
+/* Active tabs with gold/orange styling */
+.admin-tab {
+  transition: all 0.3s var(--ease-out);
+}
+
+.admin-tab.active {
+  color: var(--color-gold-primary);
+  border-bottom: 2px solid var(--color-gold-primary);
+  text-shadow: 0px 1px 2px rgba(212, 175, 55, 0.2);
+}
+
+/* Button with golden styling */
+.admin-button-gold {
+  background: linear-gradient(to right, var(--color-gold-primary), var(--color-orange-accent));
+  color: white;
+  text-shadow: 0px 1px 1px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s var(--ease-standard);
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.3);
+}
+
+.admin-button-gold:hover {
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Glass panels with golden borders */
+.admin-panel {
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  background: rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(212, 175, 55, 0.1);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.admin-panel-gold {
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  background: linear-gradient(145deg, rgba(212, 175, 55, 0.05), rgba(230, 126, 34, 0.05));
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), inset 0 0 0 1px rgba(212, 175, 55, 0.15);
+}
+
+/* Camera backdrop elements */
+.camera-backdrop {
+  position: absolute;
+  opacity: 0.03;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.camera-top-right {
+  top: 40px;
+  right: 40px;
+  width: 200px;
+  height: 200px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d4af37'%3E%3Cpath d='M12 15a3 3 0 100-6 3 3 0 000 6z'/%3E%3Cpath fill-rule='evenodd' d='M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 010-1.113zM17.25 12a5.25 5.25 0 11-10.5 0 5.25 5.25 0 0110.5 0z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  transform: rotate(15deg);
+}
+
+.camera-bottom-left {
+  bottom: 80px;
+  left: 60px;
+  width: 300px;
+  height: 300px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d4af37'%3E%3Cpath d='M12 9a3.75 3.75 0 100 7.5A3.75 3.75 0 0012 9z'/%3E%3Cpath fill-rule='evenodd' d='M9.344 3.071a49.52 49.52 0 015.312 0c.967.052 1.83.585 2.332 1.39l.821 1.317c.24.383.645.643 1.11.71.386.054.77.113 1.152.177 1.432.239 2.429 1.493 2.429 2.909V18a3 3 0 01-3 3h-15a3 3 0 01-3-3V9.574c0-1.416.997-2.67 2.429-2.909.382-.064.766-.123 1.151-.178a1.56 1.56 0 001.11-.71l.822-1.315a2.942 2.942 0 012.332-1.39zM6.75 12.75a5.25 5.25 0 1110.5 0 5.25 5.25 0 01-10.5 0zm12-1.5a.75.75 0 100-1.5.75.75 0 000 1.5z' clip-rule='evenodd'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  transform: rotate(-20deg);
+}
+
+.camera-center {
+  top: 50%;
+  left: 50%;
+  width: 500px;
+  height: 500px;
+  transform: translate(-50%, -50%);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23d4af37'%3E%3Cpath d='M6 3a3 3 0 00-3 3v1.5a.75.75 0 001.5 0V6A1.5 1.5 0 016 4.5h3.75a.75.75 0 000-1.5H6zM18 3a3 3 0 013 3v1.5a.75.75 0 01-1.5 0V6A1.5 1.5 0 0018 4.5h-3.75a.75.75 0 010-1.5H18zM3 18a3 3 0 003 3h3.75a.75.75 0 000-1.5H6A1.5 1.5 0 014.5 18v-1.5a.75.75 0 00-1.5 0V18zM21 18a3 3 0 01-3 3h-3.75a.75.75 0 010-1.5H18a1.5 1.5 0 001.5-1.5v-1.5a.75.75 0 011.5 0V18zM9 6a.75.75 0 000 1.5h6a.75.75 0 000-1.5H9zM9 16.5a.75.75 0 000 1.5h6a.75.75 0 000-1.5H9z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  opacity: 0.02;
+}
+
+/* Stats and metrics with gold accents */
+.admin-stat-value {
+  font-size: 2.5rem;
+  font-weight: 700;
+  background: linear-gradient(to right, var(--color-gold-primary), var(--color-orange-accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Status indicators */
+.admin-status-success {
+  color: var(--color-gold-light);
+  background-color: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+/* Card hover effects */
+.admin-card {
+  transition: all 0.3s var(--ease-standard);
+  border: 1px solid rgba(212, 175, 55, 0.1);
+}
+
+.admin-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1), 0 0 10px rgba(212, 175, 55, 0.2);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+/* User profile chip with gold border */
+.admin-user-chip {
+  border: 1px solid var(--color-gold-primary);
+  background: rgba(0, 0, 0, 0.2);
+} 

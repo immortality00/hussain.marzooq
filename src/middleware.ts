@@ -1,76 +1,44 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-// Security headers
-const securityHeaders = {
-  'X-DNS-Prefetch-Control': 'off',
-  'X-Frame-Options': 'DENY',
-  'X-Content-Type-Options': 'nosniff',
-  'X-XSS-Protection': '1; mode=block',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
-  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
-  'Content-Security-Policy': "default-src 'self'; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com https://firestore.googleapis.com https://*.cloudfunctions.net; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseapp.com https://*.googleapis.com https://apis.google.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; frame-src https://*.firebaseapp.com;"
-};
-
-function getClientIp(request: NextRequest): string {
-  const forwardedFor = request.headers.get('x-forwarded-for');
-  if (forwardedFor) {
-    return forwardedFor.split(',')[0].trim();
-  }
-  return request.headers.get('x-real-ip') || 'unknown';
-}
-
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
-  const { pathname } = request.nextUrl;
 
-  // Apply security headers to all responses
-  Object.entries(securityHeaders).forEach(([key, value]) => {
-    response.headers.set(key, value);
-  });
+  // Add security headers
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  response.headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
 
-  // Rate limiting for login attempts
-  if (pathname === '/admin/login') {
-    const ipAddress = getClientIp(request);
-    const loginAttempts = request.cookies.get(`login_attempts_${ipAddress}`);
-    const lastAttempt = request.cookies.get(`last_attempt_${ipAddress}`);
-
-    if (loginAttempts && lastAttempt) {
-      const attempts = parseInt(loginAttempts.value);
-      const lastAttemptTime = parseInt(lastAttempt.value);
-      const now = Date.now();
-
-      // If too many attempts within 15 minutes
-      if (attempts >= 5 && now - lastAttemptTime < 15 * 60 * 1000) {
-        return new NextResponse('Too many login attempts. Please try again later.', {
-          status: 429,
-          headers: {
-            'Retry-After': '900', // 15 minutes in seconds
-          },
-        });
-      }
-    }
+  // Allow API endpoints to be accessed without authentication
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    return response;
   }
 
   // Protect admin routes
-  if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
-    const authCookie = request.cookies.get('firebase-auth-token');
+  if (request.nextUrl.pathname.startsWith('/admin') && request.nextUrl.pathname !== '/admin/login') {
+    // Check for auth cookies
+    const nextAuthCookie = request.cookies.get('next-auth.session-token') || 
+                          request.cookies.get('__Secure-next-auth.session-token'); // Secure cookie in production
+    const firebaseAuthCookie = request.cookies.get('firebase-auth-token');
     
-    if (!authCookie) {
-      return NextResponse.redirect(new URL('/admin/login', request.url));
-    }
-
-    // Additional security check for admin routes
-    if (!request.headers.get('sec-fetch-site')) {
+    if (!nextAuthCookie && !firebaseAuthCookie) {
+      console.log('No auth cookies found, redirecting to login');
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
   }
 
   // Prevent access to login page if already authenticated
-  if (pathname === '/admin/login') {
-    const authCookie = request.cookies.get('firebase-auth-token');
-    if (authCookie) {
+  if (request.nextUrl.pathname === '/admin/login') {
+    // Check for auth cookies
+    const nextAuthCookie = request.cookies.get('next-auth.session-token') || 
+                          request.cookies.get('__Secure-next-auth.session-token'); // Secure cookie in production
+    const firebaseAuthCookie = request.cookies.get('firebase-auth-token');
+    
+    if (nextAuthCookie || firebaseAuthCookie) {
+      console.log('Auth cookies found, redirecting to dashboard');
       return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
   }
@@ -80,7 +48,12 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/admin/:path*',
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!_next/static|_next/image|favicon.ico).*)',
   ],
 }; 

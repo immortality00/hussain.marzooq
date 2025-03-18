@@ -7,6 +7,18 @@ interface SparkleProps {
   style?: React.CSSProperties;
 }
 
+interface Sparkle {
+  id: string;
+  createdAt: number;
+  color: string;
+  size: number;
+  style: {
+    top: string;
+    left: string;
+    zIndex: number;
+  };
+}
+
 function generateSparkle(color: string) {
   return {
     id: String(Math.random()),
@@ -21,7 +33,7 @@ function generateSparkle(color: string) {
   };
 }
 
-function Sparkle({ color = '#FFF', size = 20, style = {} }: SparkleProps) {
+function Sparkle({ color = '#d4af37', size = 20, style = {} }: SparkleProps) {
   return (
     <motion.svg
       width={size}
@@ -50,12 +62,13 @@ function Sparkle({ color = '#FFF', size = 20, style = {} }: SparkleProps) {
 }
 
 function SparkleGroup() {
-  const [sparkles, setSparkles] = useState<any[]>([]);
+  const [sparkles, setSparkles] = useState<Sparkle[]>([]);
 
   useEffect(() => {
     const generateSparkles = () => {
-      const now = Date.now();
-      const newSparkle = generateSparkle('#FFF');
+      const colors = ['#d4af37', '#f2d675', '#e67e22'];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      const newSparkle = generateSparkle(randomColor);
       setSparkles(sparkles => [...sparkles, newSparkle]);
     };
 

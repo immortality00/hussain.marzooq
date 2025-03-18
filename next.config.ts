@@ -1,30 +1,27 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  reactStrictMode: true,
+  poweredByHeader: false,
   /* config options here */
   async headers() {
     return [
       {
         source: '/:path*',
         headers: [
-          // Content Security Policy
+          // Content Security Policy for Firebase
           {
             key: 'Content-Security-Policy',
             value: `
               default-src 'self';
-              script-src 'self';
+              script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.firebaseapp.com https://*.googleapis.com https://apis.google.com;
+              connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.google.com https://firestore.googleapis.com https://*.cloudfunctions.net wss://*.firebaseio.com;
+              img-src 'self' data: blob: https://*.googleapis.com https://*.gstatic.com;
+              frame-src 'self' https://*.firebaseapp.com;
               style-src 'self' 'unsafe-inline';
-              img-src 'self' data: https://*.googleapis.com https://*.gstatic.com;
-              font-src 'self';
+              font-src 'self' data:;
               object-src 'none';
-              media-src 'self';
-              frame-src 'self';
-              connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.google.com wss://*.firebaseio.com;
-              frame-ancestors 'none';
-              form-action 'self';
-              base-uri 'self';
-              upgrade-insecure-requests;
-            `.replace(/\s{2,}/g, ' ').trim()
+            `.replace(/\s+/g, ' ').trim()
           },
           // X-Content-Type-Options
           {
@@ -46,19 +43,19 @@ const nextConfig: NextConfig = {
             key: 'Referrer-Policy',
             value: 'strict-origin-when-cross-origin'
           },
-          // Strict-Transport-Security
-          {
-            key: 'Strict-Transport-Security',
-            value: 'max-age=63072000; includeSubDomains; preload'
-          },
           // Permissions-Policy
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
+            value: 'camera=(), microphone=(), geolocation=()'
           }
         ]
       }
     ];
+  },
+  // Optimize images
+  images: {
+    domains: ['localhost', 'firebasestorage.googleapis.com'],
+    formats: ['image/avif', 'image/webp'],
   }
 };
 

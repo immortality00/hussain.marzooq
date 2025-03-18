@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="400" height="100" viewBox="0 0 400 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#d4af37" />
+      <stop offset="100%" stop-color="#e67e22" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Film strip outline -->
+  <rect x="10" y="10" width="380" height="80" rx="5" ry="5" 
+        stroke="url(#goldGradient)" stroke-width="2" fill="none" opacity="0.2" />
+  
+  <!-- Film perforations (holes along the side) -->
+  <rect x="20" y="20" width="15" height="10" rx="2" ry="2" stroke="url(#goldGradient)" stroke-width="1.5" fill="none" opacity="0.2" />
+  <rect x="20" y="40" width="15" height="10" rx="2" ry="2" stroke="url(#goldGradient)" stroke-width="1.5" fill="none" opacity="0.2" />
+  <rect x="20" y="60" width="15" height="10" rx="2" ry="2" stroke="url(#goldGradient)" stroke-width="1.5" fill="none" opacity="0.2" />
+  
+  <rect x="365" y="20" width="15" height="10" rx="2" ry="2" stroke="url(#goldGradient)" stroke-width="1.5" fill="none" opacity="0.2" />
+  <rect x="365" y="40" width="15" height="10" rx="2" ry="2" stroke="url(#goldGradient)" stroke-width="1.5" fill="none" opacity="0.2" />
+  <rect x="365" y="60" width="15" height="10" rx="2" ry="2" stroke="url(#goldGradient)" stroke-width="1.5" fill="none" opacity="0.2" />
+  
+  <!-- Frame dividers -->
+  <line x1="60" y1="10" x2="60" y2="90" stroke="url(#goldGradient)" stroke-width="1.5" opacity="0.2" />
+  <line x1="130" y1="10" x2="130" y2="90" stroke="url(#goldGradient)" stroke-width="1.5" opacity="0.2" />
+  <line x1="200" y1="10" x2="200" y2="90" stroke="url(#goldGradient)" stroke-width="1.5" opacity="0.2" />
+  <line x1="270" y1="10" x2="270" y2="90" stroke="url(#goldGradient)" stroke-width="1.5" opacity="0.2" />
+  <line x1="340" y1="10" x2="340" y2="90" stroke="url(#goldGradient)" stroke-width="1.5" opacity="0.2" />
+</svg> 

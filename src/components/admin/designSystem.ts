@@ -1,5 +1,4 @@
 // Design system for admin dashboard
-import { AnimationProps, Variants } from 'framer-motion';
 
 // Color System
 export const colors = {
@@ -13,23 +12,39 @@ export const colors = {
     medium: '#a855f7', // purple-500
     dark: '#9333ea', // purple-600
   },
+  gold: {
+    light: '#f2d675', // gold-light
+    medium: '#d4af37', // gold-primary
+    dark: '#aa8c2c', // gold-dark
+  },
+  orange: {
+    light: '#fdba74', // orange-300
+    medium: '#e67e22', // orange-accent
+    dark: '#c2410c', // orange-700
+  },
   accent: {
     blue: 'from-blue-400 to-cyan-400',
     purple: 'from-purple-400 to-pink-400',
     amber: 'from-amber-400 to-orange-400',
     teal: 'from-teal-400 to-cyan-400',
+    gold: 'from-[#d4af37] to-[#e67e22]',
+    goldLight: 'from-[#f2d675] to-[#d4af37]',
   },
   text: {
     primary: 'text-white',
     secondary: 'text-gray-300',
     muted: 'text-gray-400',
     brand: 'text-blue-300',
+    gold: 'text-[#d4af37]',
+    goldLight: 'text-[#f2d675]',
   },
   glass: {
     border: 'border-white/10',
     light: 'bg-white/5',
     medium: 'bg-white/10',
     dark: 'bg-white/15',
+    goldBorder: 'border-[#d4af37]/20',
+    goldBackground: 'bg-[#d4af37]/5',
   },
   status: {
     success: {
@@ -67,6 +82,9 @@ export const typography = {
     h1: "text-3xl font-display font-bold tracking-tight",
     h2: "text-2xl font-display font-bold tracking-tight",
     h3: "text-xl font-display font-bold tracking-tight",
+    script1: "text-5xl md:text-7xl font-script font-bold tracking-tight leading-none",
+    script2: "text-4xl md:text-5xl font-script font-bold tracking-tight leading-none",
+    script3: "text-3xl font-script font-bold tracking-tight",
   },
   body: {
     large: "text-lg font-sans leading-relaxed tracking-wide",
@@ -78,6 +96,7 @@ export const typography = {
     gradient: "bg-clip-text text-transparent",
     shadow: "drop-shadow-[0_1px_3px_rgba(59,130,246,0.5)]",
     upperCase: "uppercase tracking-wider",
+    goldShadow: "drop-shadow-[0_1px_3px_rgba(212,175,55,0.5)]",
   },
 };
 
@@ -91,11 +110,16 @@ export const shadows = {
     sm: "drop-shadow-[0_1px_2px_rgba(0,0,255,0.3)]",
     md: "drop-shadow-[0_2px_4px_rgba(0,0,255,0.3)]",
     lg: "drop-shadow-[0_2px_5px_rgba(0,0,255,0.3)]",
+    goldSm: "drop-shadow-[0_1px_2px_rgba(212,175,55,0.3)]",
+    goldMd: "drop-shadow-[0_2px_4px_rgba(212,175,55,0.3)]",
+    goldLg: "drop-shadow-[0_2px_5px_rgba(212,175,55,0.3)]",
   },
   glow: {
     blue: "shadow-[0_0_15px_rgba(59,130,246,0.5)]",
     purple: "shadow-[0_0_15px_rgba(168,85,247,0.5)]",
     white: "shadow-[0_0_20px_rgba(255,255,255,0.2)]",
+    gold: "shadow-[0_0_15px_rgba(212,175,55,0.5)]",
+    orange: "shadow-[0_0_15px_rgba(230,126,34,0.5)]",
   },
 };
 
@@ -200,6 +224,19 @@ export const buttons = {
     bg-gradient-to-r from-amber-500 to-orange-600 
     text-white font-medium tracking-wide rounded-lg 
     shadow-lg transition-all duration-300
+  `,
+  gold: `
+    relative overflow-hidden px-6 py-3 
+    bg-gradient-to-r from-[#d4af37] to-[#e67e22] 
+    text-white font-medium tracking-wide rounded-lg 
+    shadow-lg transition-all duration-300
+  `,
+  goldOutline: `
+    relative overflow-hidden px-6 py-3 
+    bg-transparent border border-[#d4af37] 
+    text-[#d4af37] hover:text-white hover:bg-[#d4af37]/20
+    font-medium tracking-wide rounded-lg 
+    transition-all duration-300
   `,
   buttonShineFX: {
     className: "absolute inset-0 bg-white/20",

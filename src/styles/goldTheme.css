@@ -1,0 +1,82 @@
+/* Gold Theme - Main Import File
+ * This imports all the gold-themed CSS files for consistent styling
+ */
+
+@import './goldGlass.css';
+@import './goldInteractive.css';
+@import './goldBackgrounds.css';
+@import './goldAnimations.css';
+
+/* Additional Gold Theme Variables */
+:root {
+  /* Gold Color Palette */
+  --gold-primary: #d4af37;
+  --gold-light: #f2d675;
+  --gold-dark: #aa8c2c;
+  --gold-orange: #e67e22;
+  
+  /* Gold Gradients */
+  --gold-gradient: linear-gradient(to right, var(--gold-primary), var(--gold-orange));
+  --gold-gradient-light: linear-gradient(to right, var(--gold-light), var(--gold-primary));
+  --gold-gradient-dark: linear-gradient(to right, var(--gold-dark), var(--gold-primary));
+  
+  /* Gold Opacities */
+  --gold-opacity-faint: 0.05;
+  --gold-opacity-light: 0.15;
+  --gold-opacity-medium: 0.3;
+  --gold-opacity-strong: 0.5;
+  
+  /* Gold Shadows */
+  --gold-shadow-sm: 0 2px 5px rgba(212, 175, 55, 0.1);
+  --gold-shadow-md: 0 4px 15px rgba(212, 175, 55, 0.15);
+  --gold-shadow-lg: 0 8px 25px rgba(212, 175, 55, 0.2);
+  
+  /* Gold Blur Values */
+  --gold-blur-sm: 8px;
+  --gold-blur-md: 16px;
+  --gold-blur-lg: 24px;
+}
+
+/* Utility classes for using the variables */
+.text-gold-primary {
+  color: var(--gold-primary);
+}
+
+.text-gold-light {
+  color: var(--gold-light);
+}
+
+.text-gold-dark {
+  color: var(--gold-dark);
+}
+
+.border-gold-primary {
+  border-color: var(--gold-primary);
+}
+
+.bg-gold-primary {
+  background-color: var(--gold-primary);
+}
+
+.gold-gradient-text {
+  background: var(--gold-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.gold-gradient-bg {
+  background: var(--gold-gradient);
+}
+
+.gold-shadow-sm {
+  box-shadow: var(--gold-shadow-sm);
+}
+
+.gold-shadow-md {
+  box-shadow: var(--gold-shadow-md);
+}
+
+.gold-shadow-lg {
+  box-shadow: var(--gold-shadow-lg);
+} 

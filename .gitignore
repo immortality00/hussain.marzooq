@@ -26,6 +26,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
+.env
+.env.*
 .env*.local
 !.env.example
 
@@ -41,3 +43,30 @@ next-env.d.ts
 **/firebase-debug.*.log*
 **/.firebase
 **/serviceAccount.json
+**/firebase-adminsdk*.json
+
+# Secrets and credentials
+**/*.key
+**/*.pem
+**/*.cert
+**/credential*.json
+**/secret*.json
+**/*-credentials.json
+
+# Logs
+logs/
+*.log
+
+# User-specific files and IDE/editor folders
+.idea/
+.vscode/
+.DS_Store
+
+# Temporary files
+temp-*
+temp/
+tmp/
+*.tmp
+
+# Script outputs
+scripts/output/
