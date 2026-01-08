@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Navbar } from "@/components/site/Navbar";
+import { AppShell } from "@/components/site/AppShell";
 
 export const metadata: Metadata = {
   title: "HM Visuals",
@@ -16,8 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Navbar />
-        {children}
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
