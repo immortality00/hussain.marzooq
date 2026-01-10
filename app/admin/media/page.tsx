@@ -44,7 +44,9 @@ function formatBytes(bytes?: number) {
 }
 
 export default function AdminMediaPage() {
+  const [mode, setMode] = useState<"upload" | "embed">("upload");
   const [uploaded, setUploaded] = useState<Uploaded | null>(null);
+  const [embedUrl, setEmbedUrl] = useState("");
 
   const [title, setTitle] = useState("");
   const [location, setLocation] = useState("");
@@ -65,6 +67,7 @@ export default function AdminMediaPage() {
 
   function clearAll() {
     setUploaded(null);
+    setEmbedUrl("");
     setTitle("");
     setLocation("");
     setEvent("");
@@ -75,25 +78,26 @@ export default function AdminMediaPage() {
     setSavedId("");
   }
 
+  function validateEmbed(url: string) {
+    const u = url.trim();
+    if (!u) return false;
+    // MVP check (we can tighten later)
+    return u.startsWith("https://") && (u.includes("youtube.com") || u.includes("youtu.be") || u.includes("vimeo.com"));
+  }
+
   async function saveToDb() {
-    if (!uploaded) {
-      setSaveMsg("Upload a file first.");
-      return;
-    }
+    setSaveMsg("");
+    setSavedId("");
+
     if (!title.trim()) {
       setSaveMsg("Title is required.");
       return;
     }
 
-    setSaving(true);
-    setSaveMsg("");
-    setSavedId("");
-
     const parsedYear = year.trim() ? Number(year.trim()) : null;
     const yearValue = parsedYear && Number.isFinite(parsedYear) ? parsedYear : null;
 
-    const payload = {
-      type: uploaded.resourceType === "video" ? "video" : "image",
+    const basePayload = {
       title: title.trim(),
       description: null,
       location: location.trim() || null,
@@ -104,18 +108,42 @@ export default function AdminMediaPage() {
       categories: [],
       people: [],
       projectId: null,
-
-      secureUrl: uploaded.secureUrl,
-      publicId: uploaded.publicId,
-      resourceType: uploaded.resourceType,
-      bytes: uploaded.bytes ?? null,
-      format: uploaded.format ?? null,
-      width: uploaded.width ?? null,
-      height: uploaded.height ?? null,
-      duration: uploaded.duration ?? null,
-
       order: 0,
     };
+
+    let payload: Record<string, unknown>;
+
+    if (mode === "embed") {
+      if (!validateEmbed(embedUrl)) {
+        setSaveMsg("Please paste a valid YouTube/Vimeo URL (https://...).");
+        return;
+      }
+      payload = {
+        ...basePayload,
+        type: "embed",
+        embedUrl: embedUrl.trim(),
+      };
+    } else {
+      if (!uploaded) {
+        setSaveMsg("Upload a file first (or switch to Embed mode).");
+        return;
+      }
+
+      payload = {
+        ...basePayload,
+        type: uploaded.resourceType === "video" ? "video" : "image",
+        secureUrl: uploaded.secureUrl,
+        publicId: uploaded.publicId,
+        resourceType: uploaded.resourceType,
+        bytes: uploaded.bytes ?? null,
+        format: uploaded.format ?? null,
+        width: uploaded.width ?? null,
+        height: uploaded.height ?? null,
+        duration: uploaded.duration ?? null,
+      };
+    }
+
+    setSaving(true);
 
     try {
       const res = await fetch("/api/media/create", {
@@ -145,12 +173,12 @@ export default function AdminMediaPage() {
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">Media</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Upload to Cloudinary, then save metadata to MongoDB. (Big files over 100MB are limited by plan.)
+        Add media as Cloudinary upload (images/videos) OR as YouTube/Vimeo embed.
       </p>
 
       <div className="mt-8 rounded-2xl border p-6 space-y-5">
-        <div className="flex items-center justify-between gap-3">
-          <div className="text-sm font-medium">1) Upload</div>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-sm font-medium">1) Source</div>
           <button
             type="button"
             className="rounded-full border px-3 py-1.5 text-sm hover:bg-accent transition-colors"
@@ -160,68 +188,106 @@ export default function AdminMediaPage() {
           </button>
         </div>
 
-        <CldUploadWidget
-          signatureEndpoint="/api/sign-cloudinary-params"
-          options={{ folder: "hm_visuals", multiple: false, resourceType: "auto" }}
-          onSuccess={(result: unknown) => {
-            const r = result as WidgetResult;
-            const info = r?.info;
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setMode("upload")}
+            className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+              mode === "upload" ? "bg-accent" : "hover:bg-accent/40"
+            }`}
+          >
+            Upload (Cloudinary)
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("embed")}
+            className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+              mode === "embed" ? "bg-accent" : "hover:bg-accent/40"
+            }`}
+          >
+            Embed (YouTube/Vimeo)
+          </button>
+        </div>
 
-            if (!isRecord(info)) return;
-
-            const secureUrl = getString(info.secure_url) ?? "";
-            const publicId = getString(info.public_id) ?? "";
-            const resourceType = getString(info.resource_type) ?? "auto";
-
-            if (!secureUrl || !publicId) return;
-
-            setUploaded({
-              secureUrl,
-              publicId,
-              resourceType,
-              bytes: getNumber(info.bytes),
-              format: getString(info.format),
-              width: getNumber(info.width),
-              height: getNumber(info.height),
-              duration: getNumber(info.duration),
-            });
-
-            if (!title.trim()) {
-              const original = getString(info.original_filename);
-              if (original) setTitle(original);
-            }
-          }}
-        >
-          {({ open }) => (
-            <button
-              type="button"
-              onClick={() => open()}
-              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
-            >
-              Upload (Cloudinary)
-            </button>
-          )}
-        </CldUploadWidget>
-
-        {uploaded ? (
-          <div className="rounded-2xl border p-5 space-y-2">
-            <div className="text-sm">
-              <span className="font-medium">URL:</span>{" "}
-              <a className="underline" href={uploaded.secureUrl} target="_blank" rel="noreferrer">
-                Open uploaded file
-              </a>
-            </div>
-            <div className="text-sm text-muted-foreground">
-              <span className="font-medium text-foreground">public_id:</span> {uploaded.publicId}
-            </div>
-            {uploaded.bytes ? (
-              <div className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Size:</span> {formatBytes(uploaded.bytes)}
-              </div>
-            ) : null}
+        {mode === "embed" ? (
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Embed URL</label>
+            <input
+              value={embedUrl}
+              onChange={(e) => setEmbedUrl(e.target.value)}
+              className="w-full rounded-2xl border bg-background px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/..."
+            />
+            <p className="text-xs text-muted-foreground">
+              MVP: we store the URL now. Next step we’ll render it as an embedded player on the public Videos page.
+            </p>
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">No upload yet.</p>
+          <>
+            <CldUploadWidget
+              signatureEndpoint="/api/sign-cloudinary-params"
+              options={{ folder: "hm_visuals", multiple: false, resourceType: "auto" }}
+              onSuccess={(result: unknown) => {
+                const r = result as WidgetResult;
+                const info = r?.info;
+
+                if (!isRecord(info)) return;
+
+                const secureUrl = getString(info.secure_url) ?? "";
+                const publicId = getString(info.public_id) ?? "";
+                const resourceType = getString(info.resource_type) ?? "auto";
+
+                if (!secureUrl || !publicId) return;
+
+                setUploaded({
+                  secureUrl,
+                  publicId,
+                  resourceType,
+                  bytes: getNumber(info.bytes),
+                  format: getString(info.format),
+                  width: getNumber(info.width),
+                  height: getNumber(info.height),
+                  duration: getNumber(info.duration),
+                });
+
+                if (!title.trim()) {
+                  const original = getString(info.original_filename);
+                  if (original) setTitle(original);
+                }
+              }}
+            >
+              {({ open }) => (
+                <button
+                  type="button"
+                  onClick={() => open()}
+                  className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+                >
+                  Upload (Cloudinary)
+                </button>
+              )}
+            </CldUploadWidget>
+
+            {uploaded ? (
+              <div className="rounded-2xl border p-5 space-y-2">
+                <div className="text-sm">
+                  <span className="font-medium">URL:</span>{" "}
+                  <a className="underline" href={uploaded.secureUrl} target="_blank" rel="noreferrer">
+                    Open uploaded file
+                  </a>
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <span className="font-medium text-foreground">public_id:</span> {uploaded.publicId}
+                </div>
+                {uploaded.bytes ? (
+                  <div className="text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">Size:</span> {formatBytes(uploaded.bytes)}
+                  </div>
+                ) : null}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No upload yet.</p>
+            )}
+          </>
         )}
 
         <div className="pt-2 border-t" />
@@ -235,7 +301,7 @@ export default function AdminMediaPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="e.g. Desert Portrait — Dubai"
+              placeholder="e.g. Dubai Fashion Reel"
             />
           </div>
 
@@ -266,7 +332,7 @@ export default function AdminMediaPage() {
               value={event}
               onChange={(e) => setEvent(e.target.value)}
               className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Wedding / Festival / Fashion Show…"
+              placeholder="Festival / Wedding / Fashion Show…"
             />
           </div>
         </div>
@@ -277,11 +343,8 @@ export default function AdminMediaPage() {
             value={tagsText}
             onChange={(e) => setTagsText(e.target.value)}
             className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            placeholder="portrait, fashion, dubai, cinematic"
+            placeholder="dance, fashion, wedding, cinematic"
           />
-          <p className="text-xs text-muted-foreground">
-            We’ll upgrade tags + categories + people later with proper UI and face tagging.
-          </p>
         </div>
 
         <div className="pt-2 border-t" />
