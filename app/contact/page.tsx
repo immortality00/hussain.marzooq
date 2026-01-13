@@ -1,148 +1,79 @@
-import { redirect } from "next/navigation";
-import { StickyCta } from "@/components/site/StickyCta";
-import { ContactFormClient } from "./ContactFormClient";
 import clientPromise from "@/lib/mongodb";
+import { ContactForm } from "@/components/contact/ContactForm";
 
-async function submitInquiry(formData: FormData) {
-  "use server";
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-  const name = String(formData.get("name") ?? "").trim();
-  const email = String(formData.get("email") ?? "").trim();
-  const service = String(formData.get("service") ?? "").trim();
-  const location = String(formData.get("location") ?? "").trim();
-  const message = String(formData.get("message") ?? "").trim();
+type SP = {
+  success?: string;
+  service?: string;
+  category?: string;
+};
 
-  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+type ServiceItem = {
+  id: string;
+  name: string;
+  category: string;
+  startingPrice: number | null;
+  currency: string;
+};
 
-  if (!name || !emailOk || !service || message.length < 10) {
-    redirect("/contact?error=1");
-  }
+function asString(v: unknown): string | null {
+  return typeof v === "string" ? v : null;
+}
 
+async function getActiveServices(): Promise<ServiceItem[]> {
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
-  await db.collection("inquiries").insertOne({
-    name,
-    email,
-    service,
-    location: location || null,
-    message,
-    status: "new",
-    createdAt: new Date(),
-  });
+  const docs = await db
+    .collection("services")
+    .find({ isActive: true })
+    .sort({ order: 1, createdAt: -1 })
+    .toArray();
 
-  redirect("/contact?success=1");
+  return docs.map((d) => ({
+    id: String(d._id),
+    name: asString(d.name) ?? "",
+    category: asString(d.category) ?? "general",
+    startingPrice: typeof d.startingPrice === "number" ? d.startingPrice : null,
+    currency: asString(d.currency) ?? "AED",
+  }));
 }
 
-export default function ContactPage() {
+export default async function ContactPage({
+  searchParams,
+}: {
+  searchParams: Promise<SP>;
+}) {
+  const sp = await searchParams;
+
+  const success = sp?.success === "1";
+  const initialService = typeof sp?.service === "string" ? sp.service : "";
+  const initialCategory = typeof sp?.category === "string" ? sp.category : "";
+
+  const services = await getActiveServices();
+
   return (
-    <>
-      <main className="mx-auto max-w-3xl px-4 py-16">
-        <h1 className="text-4xl font-semibold tracking-tight">Book</h1>
-        <p className="mt-3 text-muted-foreground">
-          Tell me what you need. I’ll reply with availability and next steps.
-        </p>
+    <main className="mx-auto max-w-3xl px-4 py-16">
+      <h1 className="text-4xl font-semibold tracking-tight">Contact / Booking</h1>
+      <p className="mt-3 text-muted-foreground">
+        Tell me what you want to create — I’ll reply with the best next step.
+      </p>
 
-        <ContactFormClient />
+      {success ? (
+        <div className="mt-8 rounded-2xl border bg-muted p-4 text-sm">
+          ✅ Sent successfully. I’ll get back to you soon.
+        </div>
+      ) : null}
 
-        <form action={submitInquiry} className="mt-10 space-y-6">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="name">
-                Name
-              </label>
-              <input
-                id="name"
-                name="name"
-                required
-                className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                placeholder="Your name"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="email">
-                Email
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                placeholder="you@email.com"
-              />
-            </div>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="service">
-                Service
-              </label>
-              <select
-                id="service"
-                name="service"
-                required
-                className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                defaultValue=""
-              >
-                <option value="" disabled>
-                  Select…
-                </option>
-                <option value="Portrait Photography">Portrait Photography</option>
-                <option value="Fashion Photography">Fashion Photography</option>
-                <option value="Wedding Photography">Wedding Photography</option>
-                <option value="Event Photography">Event Photography</option>
-                <option value="Dance Film">Dance Film</option>
-                <option value="Wedding Film">Wedding Film</option>
-                <option value="Fashion Film">Fashion Film</option>
-                <option value="Event Video">Event Video</option>
-                <option value="Dance Teaching">Dance Teaching</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="location">
-                Location (optional)
-              </label>
-              <input
-                id="location"
-                name="location"
-                className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                placeholder="Dubai / Abu Dhabi / NYC…"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium" htmlFor="message">
-              Message
-            </label>
-            <textarea
-              id="message"
-              name="message"
-              required
-              rows={6}
-              className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Describe what you need (date range, concept, references, budget range if you want)."
-            />
-            <p className="text-xs text-muted-foreground">
-              Tip: Include a date range + reference links for faster booking.
-            </p>
-          </div>
-
-          <button
-            type="submit"
-            className="rounded-full bg-foreground px-5 py-2 text-sm text-background hover:opacity-90 transition-opacity"
-          >
-            Send inquiry
-          </button>
-        </form>
-      </main>
-
-      <StickyCta />
-    </>
+      <div className="mt-10">
+        <ContactForm
+          services={services}
+          initialService={initialService}
+          initialCategory={initialCategory}
+        />
+      </div>
+    </main>
   );
 }

@@ -1,45 +1,239 @@
+import Image from "next/image";
 import Link from "next/link";
-import { StickyCta } from "@/components/site/StickyCta";
+import { headers } from "next/headers";
 
-const services = [
-  { title: "Portrait Photography", href: "/services/portraits" },
-  { title: "Fashion Photography", href: "/services/fashion" },
-  { title: "Wedding Photography", href: "/services/weddings-photo" },
-  { title: "Event Photography", href: "/services/events-photo" },
-  { title: "Dance Films", href: "/services/dance-films" },
-  { title: "Wedding Films", href: "/services/weddings-film" },
-  { title: "Fashion Films", href: "/services/fashion-films" },
-  { title: "Event Coverage", href: "/services/events-film" },
-  { title: "Dance Teaching", href: "/services/dance-teaching" },
-];
+type ServiceItem = {
+  id: string;
+  name: string;
+  slug: string;
+  category: string;
+  description: string;
+  startingPrice: number | null;
+  currency: string;
+  isActive: boolean;
+  imageUrl: string;
+  order: number;
+};
 
-export default function ServicesPage() {
+type CategoryItem = {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+  order: number;
+};
+
+function safeString(v: unknown, fallback = ""): string {
+  return typeof v === "string" ? v : fallback;
+}
+function safeNumberOrNull(v: unknown): number | null {
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+function safeBool(v: unknown, fallback = false): boolean {
+  return typeof v === "boolean" ? v : fallback;
+}
+
+function extractItems<T>(json: unknown): T[] {
+  if (!json || typeof json !== "object") return [];
+  const obj = json as Record<string, unknown>;
+  if (Array.isArray(obj.items)) return obj.items as T[];
+  if (obj.ok === true && Array.isArray(obj.items)) return obj.items as T[];
+  return [];
+}
+
+async function getBaseUrlFromHeaders(): Promise<string> {
+  const h = await headers();
+  const proto = h.get("x-forwarded-proto") ?? "http";
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  return `${proto}://${host}`;
+}
+
+function workLinkForCategory(categorySlug: string): { href: string; label: string } {
+  const c = categorySlug.trim().toLowerCase();
+
+  // photography
+  if (c.includes("photo")) return { href: "/photography", label: "See photos" };
+
+  // videography
+  if (c.includes("video") || c.includes("film") || c.includes("reel")) {
+    return { href: "/videography/videos", label: "See videos" };
+  }
+
+  // dance
+  if (c.includes("dance")) return { href: "/dance", label: "See dance" };
+
+  // nft
+  if (c.includes("nft")) return { href: "/nft", label: "See NFTs" };
+
+  // web dev
+  if (c.includes("web") || c.includes("dev") || c.includes("code")) {
+    return { href: "/web-development", label: "See web work" };
+  }
+
+  // fallback
+  return { href: "/photography", label: "See my work" };
+}
+
+export default async function ServicesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
+  const sp = await searchParams;
+  const selectedCategory = typeof sp.category === "string" ? sp.category : "all";
+
+  const baseUrl = await getBaseUrlFromHeaders();
+
+  const [servicesRes, categoriesRes] = await Promise.all([
+    fetch(`${baseUrl}/api/services`, { cache: "no-store" }),
+    fetch(`${baseUrl}/api/service-categories`, { cache: "no-store" }),
+  ]);
+
+  const servicesJson = (await servicesRes.json().catch(() => null)) as unknown;
+  const categoriesJson = (await categoriesRes.json().catch(() => null)) as unknown;
+
+  const rawServices = extractItems<ServiceItem>(servicesJson);
+  const rawCategories = extractItems<CategoryItem>(categoriesJson);
+
+  const categories = rawCategories
+    .filter((c) => safeBool(c.isActive, false))
+    .sort((a, b) => (safeNumberOrNull(a.order) ?? 0) - (safeNumberOrNull(b.order) ?? 0));
+
+  const servicesAll = rawServices
+    .filter((s) => safeBool(s.isActive, true))
+    .sort((a, b) => (safeNumberOrNull(a.order) ?? 0) - (safeNumberOrNull(b.order) ?? 0));
+
+  const services =
+    selectedCategory === "all"
+      ? servicesAll
+      : servicesAll.filter((s) => safeString(s.category).toLowerCase() === selectedCategory.toLowerCase());
+
+  const tabs = [{ slug: "all", name: "All" }, ...categories.map((c) => ({ slug: c.slug, name: c.name }))];
+
   return (
-    <>
-      <main className="mx-auto max-w-6xl px-4 py-16">
-        <h1 className="text-4xl font-semibold tracking-tight">Services</h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">
-          Select a service to see highlights, deliverables, and how to book.
-          (Pricing “starting from” will be optional and hidden when empty.)
+    <main className="mx-auto w-full max-w-6xl px-4 py-10">
+      <header className="flex flex-col gap-3">
+        <h1 className="text-3xl font-semibold tracking-tight">Services</h1>
+        <p className="max-w-2xl text-sm text-muted-foreground">
+          Cinematic. Creative. Premium. Pick a service and book instantly — your request will be pre-filled.
         </p>
+      </header>
 
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {services.map((s) => (
+      {/* Category tabs */}
+      <div className="mt-6 flex flex-wrap gap-2">
+        {tabs.map((t) => {
+          const active = t.slug === selectedCategory;
+          return (
             <Link
-              key={s.href}
-              href={s.href}
-              className="rounded-2xl border p-5 hover:bg-accent/40 transition-colors"
+              key={t.slug}
+              href={t.slug === "all" ? "/services" : `/services?category=${encodeURIComponent(t.slug)}`}
+              className={[
+                "rounded-full border px-4 py-2 text-xs transition-colors",
+                active ? "bg-foreground text-background" : "hover:bg-accent",
+              ].join(" ")}
             >
-              <div className="text-base font-semibold">{s.title}</div>
-              <div className="mt-2 text-sm text-muted-foreground">
-                View details →
-              </div>
+              {t.name}
             </Link>
-          ))}
-        </div>
-      </main>
+          );
+        })}
+      </div>
 
-      <StickyCta />
-    </>
+      {/* Grid */}
+      <section className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+        {services.length === 0 ? (
+          <div className="rounded-2xl border p-6 text-sm text-muted-foreground">
+            No services found for this category yet.
+          </div>
+        ) : (
+          services.map((s) => {
+            const img = safeString(s.imageUrl, "").trim();
+            const hasPrice = typeof s.startingPrice === "number" && Number.isFinite(s.startingPrice);
+            const workLink = workLinkForCategory(safeString(s.category, ""));
+
+            return (
+              <article key={s.id} className="group overflow-hidden rounded-2xl border bg-background">
+                <div className="relative h-[200px] w-full overflow-hidden">
+                  {img ? (
+                    <Image
+                      src={img}
+                      alt={safeString(s.name, "Service")}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                      priority={false}
+                    />
+                  ) : (
+                    <div className="h-full w-full bg-gradient-to-br from-muted to-background" />
+                  )}
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/70 via-background/0 to-background/0" />
+                </div>
+
+                <div className="p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h2 className="text-lg font-semibold leading-tight">{safeString(s.name, "Service")}</h2>
+                      <div className="mt-1 text-xs text-muted-foreground">{safeString(s.category, "").toUpperCase()}</div>
+                    </div>
+
+                    {hasPrice ? (
+                      <div className="shrink-0 rounded-full border px-3 py-1 text-xs">
+                        From {s.currency} {s.startingPrice}
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {s.description ? (
+                    <p className="mt-3 line-clamp-3 text-sm text-muted-foreground">{s.description}</p>
+                  ) : (
+                    <p className="mt-3 text-sm text-muted-foreground">Premium coverage tailored to your vision.</p>
+                  )}
+
+                  <div className="mt-5 flex items-center gap-2">
+                    <Link
+                      href={`/contact?service=${encodeURIComponent(s.slug)}&category=${encodeURIComponent(
+                        safeString(s.category, "")
+                      )}`}
+                      className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+                    >
+                      Book
+                    </Link>
+
+                    <Link
+                      href={workLink.href}
+                      className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+                    >
+                      {workLink.label}
+                    </Link>
+                  </div>
+                </div>
+              </article>
+            );
+          })
+        )}
+      </section>
+
+      {/* Sticky CTA */}
+      <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2">
+        <div className="flex items-center justify-between gap-3 rounded-2xl border bg-background/80 px-4 py-3 shadow-sm backdrop-blur">
+          <div className="text-xs text-muted-foreground">
+            Ready? <span className="text-foreground">Book</span> or explore more work.
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/contact"
+              className="rounded-xl bg-foreground px-4 py-2 text-xs text-background hover:opacity-90 transition-opacity"
+            >
+              Book
+            </Link>
+            <Link
+              href="/photography"
+              className="rounded-xl border px-4 py-2 text-xs hover:bg-accent transition-colors"
+            >
+              Show more
+            </Link>
+          </div>
+        </div>
+      </div>
+    </main>
   );
 }

@@ -12,7 +12,6 @@ async function login(formData: FormData) {
   const expectedRaw = process.env.ADMIN_PASSWORD;
   const expected = String(expectedRaw ?? "").trim();
 
-  // If env is missing, don't pretend it's a wrong password
   if (!expected) {
     redirect("/admin?error=config");
   }
@@ -21,8 +20,10 @@ async function login(formData: FormData) {
     redirect("/admin?error=wrong");
   }
 
+  // cookies() is async in your setup
   const cookieStore = await cookies();
 
+  // ✅ RESTORE the original value your admin pages were built around
   cookieStore.set("hm_admin", "ok", {
     httpOnly: true,
     sameSite: "lax",

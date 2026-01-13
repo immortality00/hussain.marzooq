@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type ServiceItem = {
-  id: string;
+  id: string; // Mongo _id as string
   name: string;
   category: string;
   startingPrice: number | null;
@@ -13,7 +13,7 @@ type ServiceItem = {
 
 type Props = {
   services: ServiceItem[];
-  initialService?: string;   // can be service name OR service id
+  initialService?: string;
   initialCategory?: string;
 };
 
@@ -30,15 +30,7 @@ function normalize(s: string) {
   return s.trim().toLowerCase();
 }
 
-function looksLikeObjectId(s: string) {
-  return /^[a-fA-F0-9]{24}$/.test(s.trim());
-}
-
-export function ContactForm({
-  services,
-  initialService = "",
-  initialCategory = "",
-}: Props) {
+export function ContactForm({ services, initialService = "", initialCategory = "" }: Props) {
   const router = useRouter();
 
   const categories = useMemo(() => {
@@ -50,18 +42,10 @@ export function ContactForm({
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [services]);
 
-  // Determine initial selection:
-  // - if initialService is a service id -> match by id
-  // - else match by service name
+  // Try to preselect service by NAME if user arrived from /services?service=...
   const initialServiceMatch = useMemo(() => {
-    const raw = initialService.trim();
-    if (!raw) return null;
-
-    if (looksLikeObjectId(raw)) {
-      return services.find((s) => s.id === raw) ?? null;
-    }
-
-    const target = normalize(raw);
+    const target = normalize(initialService);
+    if (!target) return null;
     return services.find((s) => normalize(s.name) === target) ?? null;
   }, [initialService, services]);
 
@@ -72,19 +56,12 @@ export function ContactForm({
   const [serviceMode, setServiceMode] = useState<"select" | "other">(
     initialServiceMatch ? "select" : initialService.trim() ? "other" : "select"
   );
+  const [selectedServiceId, setSelectedServiceId] = useState<string>(initialServiceMatch?.id ?? "");
+  const [otherService, setOtherService] = useState<string>(!initialServiceMatch ? initialService : "");
 
-  const [selectedServiceId, setSelectedServiceId] = useState<string>(
-    initialServiceMatch?.id ?? ""
-  );
-
-  const [otherService, setOtherService] = useState<string>(
-    !initialServiceMatch ? initialService : ""
-  );
-
-  // Category selection (auto set from service when possible)
+  // Category selection
   const initialCategoryFromService = initialServiceMatch?.category ?? "";
   const initialCategoryNormalized = normalize(initialCategory || initialCategoryFromService);
-
   const initialCategoryIsKnown = categories.some((c) => normalize(c) === initialCategoryNormalized);
 
   const [categoryMode, setCategoryMode] = useState<"select" | "other">(
@@ -123,34 +100,30 @@ export function ContactForm({
     }
   }
 
-  // ✅ FINAL VALUES (strict + consistent)
-  const finalServiceId = useMemo((): string | null => {
-    if (serviceMode !== "select") return null;
-    const s = selectedService;
-    return s?.id ? s.id : null;
-  }, [serviceMode, selectedService]);
-
-  const finalServiceName = useMemo((): string | null => {
-    if (serviceMode === "select") {
-      const s = selectedService;
-      return s?.name ? s.name.trim() : null;
-    }
-    const v = safeTrim(otherService);
-    return v ? v : null;
+  const finalService = useMemo(() => {
+    if (serviceMode === "other") return safeTrim(otherService) || null;
+    return selectedService?.name ? selectedService.name : null;
   }, [otherService, selectedService, serviceMode]);
 
-  const finalCategory = useMemo((): string | null => {
+  const finalCategory = useMemo(() => {
     if (categoryMode === "other") return safeTrim(otherCategory) || null;
     const v = safeTrim(selectedCategory);
     return v ? v : null;
   }, [categoryMode, otherCategory, selectedCategory]);
 
+  // ✅ THIS is the important piece:
+  // Only send serviceId if user chose from list AND a real service is selected.
+  const finalServiceId = useMemo(() => {
+    if (serviceMode !== "select") return null;
+    return selectedService?.id ? selectedService.id : null;
+  }, [serviceMode, selectedService]);
+
   const bookingBadge = useMemo(() => {
-    const s = finalServiceName?.trim();
+    const s = finalService?.trim();
     if (!s) return null;
     const c = finalCategory?.trim();
     return c ? `${s} • ${c}` : s;
-  }, [finalServiceName, finalCategory]);
+  }, [finalService, finalCategory]);
 
   async function submit() {
     setMsg("");
@@ -172,26 +145,18 @@ export function ContactForm({
           name: n,
           email: e,
           message: m,
-          category: finalCategory,
-          // ✅ strict connection (only when selecting from list)
-          serviceId: finalServiceId,
-          serviceName: finalServiceName,
+
+          // ✅ consistent structure
+          serviceId: finalServiceId, // string | null
+          serviceName: finalService, // string | null
+          category: finalCategory, // string | null
         }),
       });
 
-      const data = (await res.json().catch(() => null)) as unknown;
-      const ok =
-        data && typeof data === "object" && typeof (data as Record<string, unknown>).ok === "boolean"
-          ? ((data as Record<string, unknown>).ok as boolean)
-          : false;
-
-      const err =
-        data && typeof data === "object" && typeof (data as Record<string, unknown>).error === "string"
-          ? ((data as Record<string, unknown>).error as string)
-          : null;
-
-      if (!res.ok || !ok) {
-        setMsg(err ? `Send failed: ${err}` : "Send failed.");
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
+      if (!res.ok || !data?.ok) {
+        setMsg(data?.error ? `Send failed: ${data.error}` : "Send failed.");
+        setLoading(false);
         return;
       }
 
@@ -250,10 +215,7 @@ export function ContactForm({
             </button>
             <button
               type="button"
-              onClick={() => {
-                setServiceMode("other");
-                setSelectedServiceId("");
-              }}
+              onClick={() => setServiceMode("other")}
               className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
                 serviceMode === "other" ? "bg-accent" : "hover:bg-accent/40"
               }`}
