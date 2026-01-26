@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+import { requireAdminOr401 } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -11,15 +12,17 @@ function asString(v: unknown): string | null {
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json().catch(() => null)) as unknown;
+  const deny = await requireAdminOr401();
+  if (deny) return deny as unknown as Response;
 
+  const body = (await req.json().catch(() => null)) as unknown;
   if (!isRecord(body)) {
     return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
   }
 
-  const embedUrl = asString(body.embedUrl);
-  if (!embedUrl || !embedUrl.startsWith("https://")) {
-    return NextResponse.json({ ok: false, error: "Embed URL must start with https://" }, { status: 400 });
+  const embedUrl = asString(body.embedUrl)?.trim() ?? "";
+  if (!embedUrl) {
+    return NextResponse.json({ ok: false, error: "embedUrl is required" }, { status: 400 });
   }
 
   const client = await clientPromise;

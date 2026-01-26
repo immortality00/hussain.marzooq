@@ -1,7 +1,12 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import crypto from "crypto";
 
 type SearchParams = { [key: string]: string | string[] | undefined };
+
+function hmacHex(value: string, secret: string) {
+  return crypto.createHmac("sha256", secret).update(value).digest("hex");
+}
 
 async function login(formData: FormData) {
   "use server";
@@ -11,8 +16,9 @@ async function login(formData: FormData) {
 
   const expectedRaw = process.env.ADMIN_PASSWORD;
   const expected = String(expectedRaw ?? "").trim();
+  const secret = String(process.env.ADMIN_COOKIE_SECRET ?? "").trim();
 
-  if (!expected) {
+  if (!expected || !secret) {
     redirect("/admin?error=config");
   }
 
@@ -20,16 +26,24 @@ async function login(formData: FormData) {
     redirect("/admin?error=wrong");
   }
 
-  // cookies() is async in your setup
   const cookieStore = await cookies();
 
-  // ✅ RESTORE the original value your admin pages were built around
+  const sig = hmacHex("ok", secret);
+
   cookieStore.set("hm_admin", "ok", {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
+    maxAge: 60 * 60 * 24 * 7,
+  });
+
+  cookieStore.set("hm_admin_sig", sig, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 60 * 60 * 24 * 7,
   });
 
   const safeNext = nextPath.startsWith("/") ? nextPath : "/admin/inquiries";
@@ -42,13 +56,11 @@ export default async function AdminLoginPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
-
-  const nextPath = typeof sp.next === "string" ? sp.next : "/admin/inquiries";
-  const error = typeof sp.error === "string" ? sp.error : "";
+  const error = String(sp?.error ?? "");
 
   return (
-    <main className="mx-auto max-w-md px-4 py-20">
-      <h1 className="text-3xl font-semibold tracking-tight">Admin</h1>
+    <main className="mx-auto max-w-md px-6 py-16">
+      <h1 className="text-2xl font-semibold">Admin</h1>
       <p className="mt-2 text-sm text-muted-foreground">
         Enter your admin password to continue.
       </p>
@@ -62,31 +74,21 @@ export default async function AdminLoginPage({
       {error === "config" && (
         <div className="mt-6 rounded-2xl border bg-destructive/10 p-4 text-sm">
           Admin is not configured. Check <code>.env.local</code> for{" "}
-          <code>ADMIN_PASSWORD</code>, then restart the dev server.
+          <code>ADMIN_PASSWORD</code> and <code>ADMIN_COOKIE_SECRET</code>, then
+          restart the dev server.
         </div>
       )}
 
       <form action={login} className="mt-8 space-y-4">
-        <input type="hidden" name="next" value={nextPath} />
-
-        <div className="space-y-2">
-          <label className="text-sm font-medium" htmlFor="password">
-            Password
-          </label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            required
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            placeholder="••••••••"
-          />
-        </div>
-
-        <button
-          type="submit"
-          className="w-full rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
-        >
+        <input
+          type="password"
+          name="password"
+          placeholder="Password"
+          className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          autoComplete="current-password"
+        />
+        <input type="hidden" name="next" value={String(sp?.next ?? "")} />
+        <button className="w-full rounded-xl bg-foreground px-3 py-2 text-sm text-background hover:opacity-90">
           Login
         </button>
       </form>

@@ -1,41 +1,16 @@
+// app/api/service-categories/route.ts
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { cookies } from "next/headers";
+import { requireAdminOr401 } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
-function asString(v: unknown): string | null {
-  return typeof v === "string" ? v : null;
-}
-function looksTruthy(v: string): boolean {
-  const s = v.trim().toLowerCase();
-  return s === "1" || s === "true" || s === "yes" || s === "ok" || s.length > 10;
-}
-async function isAdminRequest(): Promise<boolean> {
-  const store = await cookies();
-  const knownNames = ["admin", "admin_auth", "admin_session", "admin_token", "hm_admin"];
 
-  for (const name of knownNames) {
-    const v = store.get(name)?.value;
-    if (typeof v === "string" && looksTruthy(v)) return true;
-  }
-  for (const c of store.getAll()) {
-    const n = c.name.toLowerCase();
-    if (n.includes("admin") && looksTruthy(c.value)) return true;
-  }
-  return false;
-}
-
-function slugify(input: string): string {
-  return input
-    .trim()
-    .toLowerCase()
-    .replace(/['"]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)+/g, "");
+function asString(v: unknown): string {
+  return typeof v === "string" ? v : "";
 }
 
 export async function GET() {
@@ -62,37 +37,43 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const okAdmin = await isAdminRequest();
-  if (!okAdmin) return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  const deny = await requireAdminOr401();
+  if (deny) return deny as unknown as Response;
 
-  const body = (await req.json().catch(() => null)) as unknown;
-  if (!isRecord(body)) return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
+  const bodyUnknown = (await req.json().catch(() => null)) as unknown;
+  const body = isRecord(bodyUnknown) ? bodyUnknown : {};
 
-  const nameRaw = asString(body.name);
-  const name = (nameRaw ?? "").trim();
-  if (!name) return NextResponse.json({ ok: false, error: "Name is required" }, { status: 400 });
+  const name = asString(body.name).trim();
+  const slug = asString(body.slug).trim();
 
-  const slug = slugify(name);
-  if (!slug) return NextResponse.json({ ok: false, error: "Invalid name" }, { status: 400 });
+  if (!name || name.length > 120) {
+    return NextResponse.json({ ok: false, error: "Invalid name" }, { status: 400 });
+  }
+  if (!slug || slug.includes(" ") || slug.length > 160) {
+    return NextResponse.json({ ok: false, error: "Invalid slug" }, { status: 400 });
+  }
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
   const exists = await db.collection("service_categories").findOne({ slug });
   if (exists) {
-    return NextResponse.json({ ok: false, error: "Category already exists" }, { status: 400 });
+    return NextResponse.json({ ok: false, error: "Slug already exists" }, { status: 409 });
   }
 
-  const result = await db.collection("service_categories").insertOne({
+  const now = new Date();
+  const doc = {
     name,
     slug,
     isActive: true,
     order: 0,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  });
+    createdAt: now,
+    updatedAt: now,
+  };
 
-  const res = NextResponse.json({ ok: true, id: String(result.insertedId) });
+  const r = await db.collection("service_categories").insertOne(doc);
+
+  const res = NextResponse.json({ ok: true, id: String(r.insertedId) }, { status: 201 });
   res.headers.set("Cache-Control", "no-store");
   return res;
 }

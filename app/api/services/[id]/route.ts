@@ -1,121 +1,112 @@
+// app/api/services/[id]/route.ts
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { requireAdminOr401 } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
 
-function isAdminCookie(v: string | undefined): boolean {
-  // ✅ accept the value your login sets
-  return v === "ok" || v === "1" || v === "true";
-}
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
-function asString(v: unknown): string | null {
-  return typeof v === "string" ? v : null;
+
+function asString(v: unknown): string {
+  return typeof v === "string" ? v : "";
 }
+
 function asNumberOrNull(v: unknown): number | null {
-  if (v === null) return null;
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
-}
-function asBoolean(v: unknown): boolean | null {
-  return typeof v === "boolean" ? v : null;
-}
-function asNonNegativeInt(v: unknown): number | null {
-  if (typeof v !== "number" || !Number.isFinite(v)) return null;
-  const n = Math.floor(v);
-  if (n < 0) return null;
-  return n;
-}
-
-export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const c = await cookies();
-  const isAdmin = isAdminCookie(c.get("hm_admin")?.value);
-  if (!isAdmin) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (v === null || v === undefined) return null;
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim() !== "") {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
   }
+  return null;
+}
 
-  const { id } = await ctx.params;
+function asFiniteNumber(v: unknown): number | null {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim() !== "") {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+export async function PATCH(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const deny = await requireAdminOr401();
+  if (deny) return deny as unknown as Response;
+
+  const { id } = await params;
   if (!ObjectId.isValid(id)) {
     return NextResponse.json({ ok: false, error: "Invalid id" }, { status: 400 });
   }
 
-  const body = (await req.json().catch(() => null)) as unknown;
-  if (!isRecord(body)) {
-    return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
+  const bodyUnknown = (await req.json().catch(() => null)) as unknown;
+  const body = isRecord(bodyUnknown) ? bodyUnknown : {};
+
+  const patch: Record<string, unknown> = { updatedAt: new Date() };
+
+  if (typeof body.name === "string") patch.name = body.name.trim();
+  if (typeof body.slug === "string") patch.slug = body.slug.trim();
+  if (typeof body.category === "string") patch.category = body.category.trim();
+  if (typeof body.description === "string") patch.description = body.description.trim();
+  if (typeof body.currency === "string") patch.currency = body.currency.trim();
+  if (typeof body.imageUrl === "string") patch.imageUrl = body.imageUrl.trim();
+  if (typeof body.isActive === "boolean") patch.isActive = body.isActive;
+
+  // startingPrice can be null or number
+  if (body.startingPrice === null) patch.startingPrice = null;
+  else {
+    const sp = asNumberOrNull(body.startingPrice);
+    if (sp !== null) patch.startingPrice = sp;
   }
 
-  const patch: Record<string, unknown> = {};
+  // order is number
+  const order = asFiniteNumber(body.order);
+  if (order !== null) patch.order = order;
 
-  const name = asString(body.name);
-  if (name !== null) patch.name = name.trim();
-
-  const slug = asString(body.slug);
-  if (slug !== null) patch.slug = slug.trim();
-
-  const category = asString(body.category);
-  if (category !== null) patch.category = category.trim();
-
-  const description = asString(body.description);
-  if (description !== null) patch.description = description.trim();
-
-  const currency = asString(body.currency);
-  if (currency !== null) patch.currency = currency.trim().toUpperCase();
-
-  const imageUrl = asString(body.imageUrl);
-  if (imageUrl !== null) patch.imageUrl = imageUrl.trim();
-
-  const isActive = asBoolean(body.isActive);
-  if (isActive !== null) patch.isActive = isActive;
-
-  if ("startingPrice" in body) {
-    const sp = asNumberOrNull((body as Record<string, unknown>).startingPrice);
-    patch.startingPrice = sp;
-  }
-
-  // ✅ reorder feature uses this
-  if ("order" in body) {
-    const ord = asNonNegativeInt((body as Record<string, unknown>).order);
-    if (ord === null) {
-      return NextResponse.json({ ok: false, error: "Invalid order" }, { status: 400 });
+  // Validate slug if provided
+  if ("slug" in patch) {
+    const slug = asString(patch.slug).trim();
+    if (!slug || slug.includes(" ") || slug.length > 160) {
+      return NextResponse.json({ ok: false, error: "Invalid slug" }, { status: 400 });
     }
-    patch.order = ord;
   }
-
-  if (Object.keys(patch).length === 0) {
-    const res = NextResponse.json({ ok: true });
-    res.headers.set("Cache-Control", "no-store");
-    return res;
-  }
-
-  patch.updatedAt = new Date();
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
-  const result = await db.collection("services").updateOne(
-    { _id: new ObjectId(id) },
-    { $set: patch }
-  );
-
-  if (result.matchedCount === 0) {
-    return NextResponse.json({ ok: false, error: "Not found" }, { status: 404 });
+  // Enforce slug uniqueness if slug changes
+  if ("slug" in patch) {
+    const slug = asString(patch.slug).trim();
+    const existing = await db.collection("services").findOne({
+      slug,
+      _id: { $ne: new ObjectId(id) },
+    });
+    if (existing) {
+      return NextResponse.json({ ok: false, error: "Slug already exists" }, { status: 409 });
+    }
   }
+
+  await db.collection("services").updateOne({ _id: new ObjectId(id) }, { $set: patch });
 
   const res = NextResponse.json({ ok: true });
   res.headers.set("Cache-Control", "no-store");
   return res;
 }
 
-export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const c = await cookies();
-  const isAdmin = isAdminCookie(c.get("hm_admin")?.value);
-  if (!isAdmin) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  }
+export async function DELETE(
+  req: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const deny = await requireAdminOr401();
+  if (deny) return deny as unknown as Response;
 
-  const { id } = await ctx.params;
+  const { id } = await params;
   if (!ObjectId.isValid(id)) {
     return NextResponse.json({ ok: false, error: "Invalid id" }, { status: 400 });
   }
