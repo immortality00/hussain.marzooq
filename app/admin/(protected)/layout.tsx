@@ -1,6 +1,6 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { isAdminAuthedServer } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -11,6 +11,7 @@ const nav = [
   { href: "/admin/showreel", label: "Showreel" },
   { href: "/admin/people", label: "People" },
   { href: "/admin/services", label: "Services" },
+  { href: "/admin/service-categories", label: "Service Categories" },
   { href: "/admin/nfts", label: "NFTs" },
   { href: "/admin/testimonials", label: "Testimonials" },
   { href: "/admin/private-galleries", label: "Private Galleries" },
@@ -18,37 +19,41 @@ const nav = [
 ];
 
 export default async function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
-  const ok = await isAdminAuthedServer();
-  if (!ok) redirect("/admin");
+  const store = await cookies();
+  const isAdmin = store.get("hm_admin")?.value === "ok";
+  if (!isAdmin) redirect("/admin");
 
   return (
     <div className="min-h-screen">
-      <div className="mx-auto max-w-7xl px-6 py-10">
-        <div className="mb-8 flex items-center justify-between gap-4">
-          <div className="text-xl font-semibold">Admin</div>
-          <Link
+      <header className="border-b">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
+          <Link href="/admin/inquiries" className="font-semibold">
+            HM Admin
+          </Link>
+
+          <a
             href="/admin/logout"
-            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent/40 transition-colors"
+            className="rounded-full border px-3 py-1.5 text-sm hover:bg-accent transition-colors"
           >
             Logout
-          </Link>
+          </a>
         </div>
+      </header>
 
-        <div className="grid gap-8 lg:grid-cols-[260px_1fr]">
-          <aside className="space-y-2">
-            {nav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="block rounded-xl border px-3 py-2 text-sm hover:bg-accent/40 transition-colors"
-              >
-                {item.label}
-              </Link>
-            ))}
-          </aside>
+      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 md:grid-cols-[220px_1fr]">
+        <aside className="space-y-2">
+          {nav.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="block rounded-xl border px-3 py-2 text-sm hover:bg-accent/40 transition-colors"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </aside>
 
-          <section>{children}</section>
-        </div>
+        <section>{children}</section>
       </div>
     </div>
   );

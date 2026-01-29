@@ -6,7 +6,6 @@ export const dynamic = "force-dynamic";
 function asString(v: unknown): string | null {
   return typeof v === "string" ? v : null;
 }
-
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
@@ -21,7 +20,7 @@ export async function GET(req: Request) {
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
-  const query: Record<string, unknown> = {};
+  const query: Record<string, unknown> = { isPublic: true };
   if (type && type !== "all") query.type = type;
 
   const docs = await db
@@ -35,7 +34,7 @@ export async function GET(req: Request) {
     const asset = isRecord(d.asset) ? d.asset : {};
     return {
       id: String(d._id),
-      type: d.type,
+      type: asString(d.type),
       title: asString(d.title) ?? "",
       location: asString(d.location),
       event: asString(d.event),

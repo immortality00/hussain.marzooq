@@ -1,38 +1,38 @@
-// app/api/services/route.ts
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import clientPromise from "@/lib/mongodb";
-import { requireAdminOr401, isAdminAuthedServer } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
-
-function asString(v: unknown): string {
-  return typeof v === "string" ? v : "";
+function asString(v: unknown): string | null {
+  return typeof v === "string" ? v : null;
 }
-
 function asNumberOrNull(v: unknown): number | null {
-  if (v === null || v === undefined) return null;
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string" && v.trim() !== "") {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
+  if (v === null) return null;
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+async function isAdmin(): Promise<boolean> {
+  const store = await cookies();
+  return store.get("hm_admin")?.value === "ok";
 }
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const wantsAll = url.searchParams.get("all") === "1";
-  const isAdmin = await isAdminAuthedServer();
+
+  const admin = await isAdmin();
+
+  // Public callers can never get inactive items
+  const all = wantsAll && admin;
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
   const filter: Record<string, unknown> = {};
-  if (!(wantsAll && isAdmin)) filter.isActive = true;
+  if (!all) filter.isActive = true;
 
   const docs = await db
     .collection("services")
@@ -41,17 +41,20 @@ export async function GET(req: Request) {
     .toArray();
 
   const items = docs.map((d) => ({
-    id: String(d._id),
+    id: typeof d._id?.toString === "function" ? d._id.toString() : String(d._id),
     name: typeof d.name === "string" ? d.name : "",
     slug: typeof d.slug === "string" ? d.slug : "",
     category: typeof d.category === "string" ? d.category : "general",
     description: typeof d.description === "string" ? d.description : "",
-    startingPrice: typeof d.startingPrice === "number" ? d.startingPrice : null,
+    startingPrice: asNumberOrNull(d.startingPrice),
     currency: typeof d.currency === "string" ? d.currency : "AED",
-    imageUrl: typeof d.imageUrl === "string" ? d.imageUrl : "",
     isActive: typeof d.isActive === "boolean" ? d.isActive : true,
-    order: typeof d.order === "number" ? d.order : 0,
-    inquiriesCount: typeof d.inquiriesCount === "number" ? d.inquiriesCount : 0,
+    imageUrl: typeof d.imageUrl === "string" ? d.imageUrl : "",
+    order: typeof d.order === "number" && Number.isFinite(d.order) ? d.order : 0,
+    inquiriesCount:
+      typeof d.inquiriesCount === "number" && Number.isFinite(d.inquiriesCount)
+        ? d.inquiriesCount
+        : 0,
   }));
 
   const res = NextResponse.json({ ok: true, items });
@@ -60,37 +63,50 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny as unknown as Response;
-
-  const bodyUnknown = (await req.json().catch(() => null)) as unknown;
-  const body = isRecord(bodyUnknown) ? bodyUnknown : {};
-
-  const name = asString(body.name).trim();
-  const slug = asString(body.slug).trim();
-  const category = asString(body.category).trim() || "general";
-  const description = asString(body.description).trim();
-  const currency = asString(body.currency).trim() || "AED";
-  const imageUrl = asString(body.imageUrl).trim();
-  const startingPrice = asNumberOrNull(body.startingPrice);
-
-  if (!name || name.length > 120) {
-    return NextResponse.json({ ok: false, error: "Invalid name" }, { status: 400 });
+  if (!(await isAdmin())) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
-  if (!slug || slug.length > 160 || slug.includes(" ")) {
-    return NextResponse.json({ ok: false, error: "Invalid slug" }, { status: 400 });
+
+  const body = (await req.json().catch(() => null)) as unknown;
+  if (!isRecord(body)) {
+    return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
   }
+
+  const name = (asString(body.name) ?? "").trim();
+  const slug = (asString(body.slug) ?? "").trim();
+  const category = (asString(body.category) ?? "").trim();
+  const description = (asString(body.description) ?? "").trim();
+  const currency = (asString(body.currency) ?? "AED").trim().toUpperCase();
+  const imageUrl = (asString(body.imageUrl) ?? "").trim();
+  const startingPrice =
+    "startingPrice" in body ? asNumberOrNull((body as Record<string, unknown>).startingPrice) : null;
+
+  if (!name) return NextResponse.json({ ok: false, error: "Name is required" }, { status: 400 });
+  if (!slug) return NextResponse.json({ ok: false, error: "Slug is required" }, { status: 400 });
+  if (!category) return NextResponse.json({ ok: false, error: "Category is required" }, { status: 400 });
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
-  const exists = await db.collection("services").findOne({ slug });
-  if (exists) {
-    return NextResponse.json({ ok: false, error: "Slug already exists" }, { status: 409 });
+  const existing = await db.collection("services").findOne({ slug });
+  if (existing) {
+    return NextResponse.json({ ok: false, error: "Slug already exists" }, { status: 400 });
   }
 
-  const now = new Date();
-  const doc = {
+  // Append to end by default
+  const last = await db
+    .collection("services")
+    .find({})
+    .sort({ order: -1 })
+    .limit(1)
+    .toArray();
+
+  const nextOrder =
+    last.length && typeof last[0]?.order === "number" && Number.isFinite(last[0].order)
+      ? last[0].order + 1
+      : 0;
+
+  const r = await db.collection("services").insertOne({
     name,
     slug,
     category,
@@ -99,15 +115,13 @@ export async function POST(req: Request) {
     currency,
     imageUrl,
     isActive: true,
-    order: 0,
+    order: nextOrder,
     inquiriesCount: 0,
-    createdAt: now,
-    updatedAt: now,
-  };
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  });
 
-  const r = await db.collection("services").insertOne(doc);
-
-  const res = NextResponse.json({ ok: true, id: String(r.insertedId) }, { status: 201 });
+  const res = NextResponse.json({ ok: true, id: r.insertedId.toString() });
   res.headers.set("Cache-Control", "no-store");
   return res;
 }
