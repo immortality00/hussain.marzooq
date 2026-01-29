@@ -1,83 +1,116 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import clientPromise from "@/lib/mongodb";
+import { requireAdminOr401 } from "@/lib/auth/admin";
+
+export const dynamic = "force-dynamic";
 
 type MediaType = "image" | "video" | "embed";
 
-function isString(v: unknown): v is string {
-  return typeof v === "string";
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
 }
 
-function isStringArray(v: unknown): v is string[] {
-  return Array.isArray(v) && v.every((x) => typeof x === "string");
+function asString(v: unknown): string {
+  return typeof v === "string" ? v : "";
+}
+
+function asStringArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.filter((x) => typeof x === "string").map((s) => s.trim()).filter(Boolean).slice(0, 50);
+}
+
+function isCloudinarySecureUrl(u: string): boolean {
+  try {
+    const url = new URL(u);
+    if (url.protocol !== "https:") return false;
+    const host = url.hostname.replace(/^www\./, "");
+    return host.endsWith("res.cloudinary.com");
+  } catch {
+    return false;
+  }
+}
+
+function isSafeEmbedUrl(u: string): boolean {
+  try {
+    const url = new URL(u);
+    if (url.protocol !== "https:") return false;
+    const host = url.hostname.replace(/^www\./, "");
+
+    // Allow YouTube + Vimeo (extend later if needed)
+    if (host === "youtube.com" || host === "m.youtube.com" || host === "youtu.be") return true;
+    if (host === "vimeo.com" || host === "player.vimeo.com") return true;
+
+    return false;
+  } catch {
+    return false;
+  }
 }
 
 export async function POST(request: Request) {
-  const cookieStore = await cookies();
-  const isAdmin = cookieStore.get("hm_admin")?.value === "ok";
+  const deny = await requireAdminOr401();
+  if (deny) return deny as unknown as Response;
 
-  if (!isAdmin) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const bodyUnknown = (await request.json().catch(() => null)) as unknown;
+  const body = isRecord(bodyUnknown) ? bodyUnknown : {};
 
-  const body = (await request.json()) as Record<string, unknown>;
-
-  const type = body.type;
+  const type = asString(body.type) as MediaType;
   if (type !== "image" && type !== "video" && type !== "embed") {
-    return NextResponse.json({ error: "Invalid type" }, { status: 400 });
+    const res = NextResponse.json({ ok: false, error: "Invalid type" }, { status: 400 });
+    res.headers.set("Cache-Control", "no-store");
+    return res;
   }
 
-  // Shared metadata (keep MVP minimal — we’ll expand later)
-  const title = isString(body.title) ? body.title.trim() : "";
-  const description = isString(body.description) ? body.description.trim() : "";
-  const location = isString(body.location) ? body.location.trim() : "";
-  const event = isString(body.event) ? body.event.trim() : "";
-  const year = typeof body.year === "number" ? body.year : null;
+  const title = asString(body.title).trim().slice(0, 160);
+  const description = asString(body.description).trim().slice(0, 2000);
+  const location = asString(body.location).trim().slice(0, 120);
+  const event = asString(body.event).trim().slice(0, 120);
 
-  const tags = isStringArray(body.tags) ? body.tags : [];
-  const categories = isStringArray(body.categories) ? body.categories : [];
-  const people = isStringArray(body.people) ? body.people : []; // names/slugs later
-  const projectId = isString(body.projectId) ? body.projectId : null;
+  const yearNum = typeof body.year === "number" ? body.year : Number(asString(body.year));
+  const year = Number.isFinite(yearNum) && yearNum > 1900 && yearNum < 2100 ? yearNum : null;
+
+  const tags = asStringArray(body.tags);
+  const categories = asStringArray(body.categories);
+  const people = asStringArray(body.people);
+
+  // Media payload fields
+  const secureUrl = asString(body.secureUrl).trim();
+  const publicId = asString(body.publicId).trim();
+  const resourceType = asString(body.resourceType).trim(); // image|video
+  const embedUrl = asString(body.embedUrl).trim();
 
   if (!title) {
-    return NextResponse.json({ error: "Title is required" }, { status: 400 });
+    const res = NextResponse.json({ ok: false, error: "Title required" }, { status: 400 });
+    res.headers.set("Cache-Control", "no-store");
+    return res;
   }
 
-  // Asset fields
-  let asset: Record<string, unknown> = {};
-
   if (type === "embed") {
-    const embedUrl = isString(body.embedUrl) ? body.embedUrl.trim() : "";
-    if (!embedUrl) {
-      return NextResponse.json({ error: "embedUrl is required for embed" }, { status: 400 });
+    if (!embedUrl || !isSafeEmbedUrl(embedUrl)) {
+      const res = NextResponse.json({ ok: false, error: "Invalid embedUrl" }, { status: 400 });
+      res.headers.set("Cache-Control", "no-store");
+      return res;
     }
-    asset = { embedUrl };
   } else {
-    // image/video from Cloudinary (or other CDN later)
-    const secureUrl = isString(body.secureUrl) ? body.secureUrl.trim() : "";
-    const publicId = isString(body.publicId) ? body.publicId.trim() : "";
-
-    if (!secureUrl || !publicId) {
-      return NextResponse.json(
-        { error: "secureUrl and publicId are required for image/video" },
-        { status: 400 }
-      );
+    // image/video
+    if (!secureUrl || !isCloudinarySecureUrl(secureUrl)) {
+      const res = NextResponse.json({ ok: false, error: "Invalid secureUrl" }, { status: 400 });
+      res.headers.set("Cache-Control", "no-store");
+      return res;
     }
-
-    asset = {
-      secureUrl,
-      publicId,
-      resourceType: isString(body.resourceType) ? body.resourceType : "auto",
-      bytes: typeof body.bytes === "number" ? body.bytes : null,
-      format: isString(body.format) ? body.format : null,
-      width: typeof body.width === "number" ? body.width : null,
-      height: typeof body.height === "number" ? body.height : null,
-      duration: typeof body.duration === "number" ? body.duration : null,
-    };
+    if (!publicId || !publicId.startsWith("hm_visuals/")) {
+      const res = NextResponse.json({ ok: false, error: "Invalid publicId" }, { status: 400 });
+      res.headers.set("Cache-Control", "no-store");
+      return res;
+    }
+    if (resourceType !== "image" && resourceType !== "video") {
+      const res = NextResponse.json({ ok: false, error: "Invalid resourceType" }, { status: 400 });
+      res.headers.set("Cache-Control", "no-store");
+      return res;
+    }
   }
 
   const doc = {
-    type: type as MediaType,
+    type,
     title,
     description: description || null,
     location: location || null,
@@ -87,12 +120,14 @@ export async function POST(request: Request) {
     tags,
     categories,
     people,
-    projectId,
 
-    asset,
+    secureUrl: type === "embed" ? null : secureUrl,
+    publicId: type === "embed" ? null : publicId,
+    resourceType: type === "embed" ? null : resourceType,
 
-    // ordering controls (we’ll use later for drag/drop)
-    order: typeof body.order === "number" ? body.order : 0,
+    embedUrl: type === "embed" ? embedUrl : null,
+
+    order: typeof body.order === "number" && Number.isFinite(body.order) ? body.order : 0,
 
     createdAt: new Date(),
     updatedAt: new Date(),

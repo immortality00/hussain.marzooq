@@ -8,7 +8,6 @@ if (!uri) {
 
 // Reuse the client across hot reloads in development to avoid connection storms
 declare global {
-  // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
