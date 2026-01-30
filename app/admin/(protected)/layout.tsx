@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { isAdminAuthedServer } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -18,42 +18,58 @@ const nav = [
   { href: "/admin/removal-requests", label: "Removal Requests" },
 ];
 
-export default async function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
-  const store = await cookies();
-  const isAdmin = store.get("hm_admin")?.value === "ok";
-  if (!isAdmin) redirect("/admin");
+export default async function AdminProtectedLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const ok = await isAdminAuthedServer();
+  if (!ok) redirect("/admin");
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <Link href="/admin/inquiries" className="font-semibold">
-            HM Admin
-          </Link>
-
-          <a
-            href="/admin/logout"
-            className="rounded-full border px-3 py-1.5 text-sm hover:bg-accent transition-colors"
-          >
-            Logout
-          </a>
-        </div>
-      </header>
-
-      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-8 md:grid-cols-[220px_1fr]">
-        <aside className="space-y-2">
-          {nav.map((item) => (
+    <div className="min-h-screen bg-background">
+      <div className="mx-auto max-w-6xl px-4 py-8">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <div>
+            <div className="text-xl font-semibold">Admin</div>
+            <div className="text-xs text-muted-foreground">HM Visuals</div>
+          </div>
+          <div className="flex items-center gap-3">
             <Link
-              key={item.href}
-              href={item.href}
-              className="block rounded-xl border px-3 py-2 text-sm hover:bg-accent/40 transition-colors"
+              href="/"
+              className="rounded-xl border px-3 py-2 text-sm hover:bg-accent/40 transition-colors"
             >
-              {item.label}
+              View site
             </Link>
-          ))}
-        </aside>
+            <Link
+              href="/admin/logout"
+              className="rounded-xl border px-3 py-2 text-sm hover:bg-accent/40 transition-colors"
+            >
+              Logout
+            </Link>
+          </div>
+        </div>
 
-        <section>{children}</section>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-[240px_1fr]">
+          <aside className="rounded-2xl border p-3">
+            <div className="px-2 pb-2 text-xs font-medium text-muted-foreground">
+              Navigation
+            </div>
+            <div className="space-y-2">
+              {nav.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className="block rounded-xl border px-3 py-2 text-sm hover:bg-accent/40 transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          </aside>
+
+          <section className="rounded-2xl border p-4">{children}</section>
+        </div>
       </div>
     </div>
   );

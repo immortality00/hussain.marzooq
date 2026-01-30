@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import { requireAdminOr401 } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -13,10 +13,6 @@ function asString(v: unknown): string | null {
 }
 function isValidObjectIdString(s: string): boolean {
   return /^[a-fA-F0-9]{24}$/.test(s);
-}
-async function isAdmin(): Promise<boolean> {
-  const store = await cookies();
-  return store.get("hm_admin")?.value === "ok";
 }
 
 function getLimit(url: URL): number {
@@ -32,10 +28,15 @@ function getSkip(url: URL): number {
   return Math.floor(n);
 }
 
+function noStoreJson(body: unknown, init?: ResponseInit) {
+  const res = NextResponse.json(body, init);
+  res.headers.set("Cache-Control", "no-store");
+  return res;
+}
+
 export async function GET(req: Request) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  }
+  const deny = await requireAdminOr401();
+  if (deny) return deny as unknown as Response;
 
   const url = new URL(req.url);
   const limit = getLimit(url);
@@ -48,7 +49,7 @@ export async function GET(req: Request) {
   const filter: Record<string, unknown> = {};
   if (status) filter.status = status;
   if (category) filter.category = category;
-  if (serviceId) filter.serviceId = serviceId; // we store as string
+  if (serviceId) filter.serviceId = serviceId; // stored as string
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
@@ -72,35 +73,33 @@ export async function GET(req: Request) {
     createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : null,
   }));
 
-  const res = NextResponse.json({ ok: true, items });
-  res.headers.set("Cache-Control", "no-store");
-  return res;
+  return noStoreJson({ ok: true, items });
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json().catch(() => null)) as unknown;
-  if (!isRecord(body)) {
-    return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
+  const bodyUnknown = (await req.json().catch(() => null)) as unknown;
+  if (!isRecord(bodyUnknown)) {
+    return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
   }
 
-  const name = (asString(body.name) ?? "").trim();
-  const email = (asString(body.email) ?? "").trim();
-  const message = (asString(body.message) ?? "").trim();
+  const name = (asString(bodyUnknown.name) ?? "").trim();
+  const email = (asString(bodyUnknown.email) ?? "").trim();
+  const message = (asString(bodyUnknown.message) ?? "").trim();
 
-  const category = asString(body.category);
-  const rawServiceId = asString(body.serviceId);
+  const category = asString(bodyUnknown.category);
+  const rawServiceId = asString(bodyUnknown.serviceId);
 
-  if (!name) return NextResponse.json({ ok: false, error: "Name is required" }, { status: 400 });
-  if (!email) return NextResponse.json({ ok: false, error: "Email is required" }, { status: 400 });
-  if (!message) return NextResponse.json({ ok: false, error: "Message is required" }, { status: 400 });
+  if (!name) return noStoreJson({ ok: false, error: "Name is required" }, { status: 400 });
+  if (!email) return noStoreJson({ ok: false, error: "Email is required" }, { status: 400 });
+  if (!message) return noStoreJson({ ok: false, error: "Message is required" }, { status: 400 });
 
-  // Strict rule: serviceId is either 24-hex string OR null
+  // Strict: serviceId is either a valid 24-hex string OR null
   let serviceId: string | null = null;
-  if (rawServiceId) {
+  if (rawServiceId !== null) {
     const trimmed = rawServiceId.trim();
-    if (trimmed.length > 0) {
+    if (trimmed !== "") {
       if (!isValidObjectIdString(trimmed)) {
-        return NextResponse.json({ ok: false, error: "Invalid serviceId" }, { status: 400 });
+        return noStoreJson({ ok: false, error: "Invalid serviceId" }, { status: 400 });
       }
       serviceId = trimmed;
     }
@@ -109,25 +108,35 @@ export async function POST(req: Request) {
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
-  await db.collection("inquiries").insertOne({
+  // If serviceId is provided, ensure the service exists (prevents bad links + bad counts)
+  if (serviceId) {
+    const exists = await db
+      .collection("services")
+      .findOne({ _id: new ObjectId(serviceId) }, { projection: { _id: 1 } });
+
+    if (!exists) {
+      return noStoreJson({ ok: false, error: "Unknown serviceId" }, { status: 400 });
+    }
+  }
+
+  const doc = {
     name,
     email,
     message,
-    category: category ? category.trim() : null,
-    serviceId, // string | null (strict)
+    category: category ? category : null,
+    serviceId, // string | null
     status: "new",
     createdAt: new Date(),
-  });
+  };
 
-  // Increment count only if serviceId is valid 24-hex
+  const r = await db.collection("inquiries").insertOne(doc);
+
+  // Increment only when strictly linked to a serviceId
   if (serviceId) {
-    await db.collection("services").updateOne(
-      { _id: new ObjectId(serviceId) },
-      { $inc: { inquiriesCount: 1 } }
-    );
+    await db
+      .collection("services")
+      .updateOne({ _id: new ObjectId(serviceId) }, { $inc: { inquiriesCount: 1 } });
   }
 
-  const res = NextResponse.json({ ok: true });
-  res.headers.set("Cache-Control", "no-store");
-  return res;
+  return noStoreJson({ ok: true, id: r.insertedId.toString() });
 }

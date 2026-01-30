@@ -9,41 +9,46 @@ type MediaType = "image" | "video" | "embed";
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
-
-function asString(v: unknown): string {
-  return typeof v === "string" ? v : "";
+function asString(v: unknown): string | null {
+  return typeof v === "string" ? v : null;
 }
-
 function asStringArray(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
-  return v.filter((x) => typeof x === "string").map((s) => s.trim()).filter(Boolean).slice(0, 50);
+  return v.filter((x): x is string => typeof x === "string").map((s) => s.trim()).filter(Boolean);
+}
+function asNumberOrNull(v: unknown): number | null {
+  if (v === null) return null;
+  return typeof v === "number" && Number.isFinite(v) ? v : null;
+}
+function asIntOrNull(v: unknown): number | null {
+  const n = asNumberOrNull(v);
+  if (n === null) return null;
+  return Math.trunc(n);
+}
+function asBoolean(v: unknown): boolean | null {
+  return typeof v === "boolean" ? v : null;
 }
 
-function isCloudinarySecureUrl(u: string): boolean {
+function isHttpsCloudinaryUrl(raw: string): boolean {
   try {
-    const url = new URL(u);
+    const url = new URL(raw);
     if (url.protocol !== "https:") return false;
-    const host = url.hostname.replace(/^www\./, "");
+    const host = url.hostname.toLowerCase();
     return host.endsWith("res.cloudinary.com");
   } catch {
     return false;
   }
 }
 
-function isSafeEmbedUrl(u: string): boolean {
-  try {
-    const url = new URL(u);
-    if (url.protocol !== "https:") return false;
-    const host = url.hostname.replace(/^www\./, "");
+function isCloudinarySecureUrl(raw: string): boolean {
+  // same as above, but kept for readability / future tightening
+  return isHttpsCloudinaryUrl(raw);
+}
 
-    // Allow YouTube + Vimeo (extend later if needed)
-    if (host === "youtube.com" || host === "m.youtube.com" || host === "youtu.be") return true;
-    if (host === "vimeo.com" || host === "player.vimeo.com") return true;
-
-    return false;
-  } catch {
-    return false;
-  }
+function noStoreJson(body: unknown, init?: ResponseInit) {
+  const res = NextResponse.json(body, init);
+  res.headers.set("Cache-Control", "no-store");
+  return res;
 }
 
 export async function POST(request: Request) {
@@ -51,61 +56,44 @@ export async function POST(request: Request) {
   if (deny) return deny as unknown as Response;
 
   const bodyUnknown = (await request.json().catch(() => null)) as unknown;
-  const body = isRecord(bodyUnknown) ? bodyUnknown : {};
-
-  const type = asString(body.type) as MediaType;
-  if (type !== "image" && type !== "video" && type !== "embed") {
-    const res = NextResponse.json({ ok: false, error: "Invalid type" }, { status: 400 });
-    res.headers.set("Cache-Control", "no-store");
-    return res;
+  if (!isRecord(bodyUnknown)) {
+    return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
   }
 
-  const title = asString(body.title).trim().slice(0, 160);
-  const description = asString(body.description).trim().slice(0, 2000);
-  const location = asString(body.location).trim().slice(0, 120);
-  const event = asString(body.event).trim().slice(0, 120);
+  const typeRaw = (asString(bodyUnknown.type) ?? "").trim();
+  const type: MediaType = typeRaw === "video" || typeRaw === "embed" ? typeRaw : "image";
 
-  const yearNum = typeof body.year === "number" ? body.year : Number(asString(body.year));
-  const year = Number.isFinite(yearNum) && yearNum > 1900 && yearNum < 2100 ? yearNum : null;
+  const title = (asString(bodyUnknown.title) ?? "").trim();
+  const description = (asString(bodyUnknown.description) ?? "").trim();
+  const location = (asString(bodyUnknown.location) ?? "").trim();
+  const event = (asString(bodyUnknown.event) ?? "").trim();
+  const year = asIntOrNull(bodyUnknown.year);
 
-  const tags = asStringArray(body.tags);
-  const categories = asStringArray(body.categories);
-  const people = asStringArray(body.people);
+  const tags = asStringArray(bodyUnknown.tags);
+  const categories = asStringArray(bodyUnknown.categories);
+  const people = asStringArray(bodyUnknown.people);
 
-  // Media payload fields
-  const secureUrl = asString(body.secureUrl).trim();
-  const publicId = asString(body.publicId).trim();
-  const resourceType = asString(body.resourceType).trim(); // image|video
-  const embedUrl = asString(body.embedUrl).trim();
+  const secureUrl = (asString(bodyUnknown.secureUrl) ?? "").trim();
+  const publicId = (asString(bodyUnknown.publicId) ?? "").trim();
+  const resourceType = (asString(bodyUnknown.resourceType) ?? "").trim(); // image|video
+  const embedUrl = (asString(bodyUnknown.embedUrl) ?? "").trim();
+
+  const isPublic = asBoolean(bodyUnknown.isPublic) ?? false;
 
   if (!title) {
-    const res = NextResponse.json({ ok: false, error: "Title required" }, { status: 400 });
-    res.headers.set("Cache-Control", "no-store");
-    return res;
+    return noStoreJson({ ok: false, error: "Title is required" }, { status: 400 });
   }
 
   if (type === "embed") {
-    if (!embedUrl || !isSafeEmbedUrl(embedUrl)) {
-      const res = NextResponse.json({ ok: false, error: "Invalid embedUrl" }, { status: 400 });
-      res.headers.set("Cache-Control", "no-store");
-      return res;
+    if (!embedUrl) {
+      return noStoreJson({ ok: false, error: "embedUrl is required for embed items" }, { status: 400 });
     }
   } else {
-    // image/video
     if (!secureUrl || !isCloudinarySecureUrl(secureUrl)) {
-      const res = NextResponse.json({ ok: false, error: "Invalid secureUrl" }, { status: 400 });
-      res.headers.set("Cache-Control", "no-store");
-      return res;
+      return noStoreJson({ ok: false, error: "Invalid secureUrl" }, { status: 400 });
     }
     if (!publicId || !publicId.startsWith("hm_visuals/")) {
-      const res = NextResponse.json({ ok: false, error: "Invalid publicId" }, { status: 400 });
-      res.headers.set("Cache-Control", "no-store");
-      return res;
-    }
-    if (resourceType !== "image" && resourceType !== "video") {
-      const res = NextResponse.json({ ok: false, error: "Invalid resourceType" }, { status: 400 });
-      res.headers.set("Cache-Control", "no-store");
-      return res;
+      return noStoreJson({ ok: false, error: "Invalid publicId" }, { status: 400 });
     }
   }
 
@@ -121,13 +109,19 @@ export async function POST(request: Request) {
     categories,
     people,
 
+    // Public visibility (used by list-public)
+    isPublic,
+
     secureUrl: type === "embed" ? null : secureUrl,
     publicId: type === "embed" ? null : publicId,
     resourceType: type === "embed" ? null : resourceType,
 
     embedUrl: type === "embed" ? embedUrl : null,
 
-    order: typeof body.order === "number" && Number.isFinite(body.order) ? body.order : 0,
+    order:
+      typeof bodyUnknown.order === "number" && Number.isFinite(bodyUnknown.order)
+        ? bodyUnknown.order
+        : 0,
 
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -138,7 +132,5 @@ export async function POST(request: Request) {
 
   const result = await db.collection("media").insertOne(doc);
 
-  const res = NextResponse.json({ ok: true, id: String(result.insertedId) });
-  res.headers.set("Cache-Control", "no-store");
-  return res;
+  return noStoreJson({ ok: true, id: String(result.insertedId) });
 }

@@ -1,27 +1,24 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import type { AnyBulkWriteOperation, Document } from "mongodb";
+import { requireAdminOr401 } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
-
-function isAdminCookie(v: string | undefined): boolean {
-  // ✅ accept the value your login sets
-  return v === "ok" || v === "1" || v === "true";
-}
 
 function looksLikeObjectId(s: string): boolean {
   return /^[a-fA-F0-9]{24}$/.test(s.trim());
 }
 
-export async function POST() {
-  const c = await cookies();
-  const admin = isAdminCookie(c.get("hm_admin")?.value);
+function noStoreJson(body: unknown, init?: ResponseInit) {
+  const res = NextResponse.json(body, init);
+  res.headers.set("Cache-Control", "no-store");
+  return res;
+}
 
-  if (!admin) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  }
+export async function POST() {
+  const deny = await requireAdminOr401();
+  if (deny) return deny as unknown as Response;
 
   try {
     const client = await clientPromise;
@@ -30,7 +27,8 @@ export async function POST() {
     const servicesCol = db.collection("services");
     const inquiriesCol = db.collection("inquiries");
 
-    await servicesCol.updateMany({}, { $set: { inquiriesCount: 0 } });
+    // Reset all to 0 first
+    await servicesCol.updateMany({}, { $set: { inquiriesCount: 0, updatedAt: new Date() } });
 
     const rows = await inquiriesCol
       .aggregate([
@@ -40,6 +38,7 @@ export async function POST() {
       .toArray();
 
     const ops: AnyBulkWriteOperation<Document>[] = [];
+    const now = new Date();
 
     for (const r of rows) {
       if (!r || typeof r !== "object") continue;
@@ -53,7 +52,7 @@ export async function POST() {
       ops.push({
         updateOne: {
           filter: { _id: new ObjectId(serviceId) },
-          update: { $set: { inquiriesCount: count } },
+          update: { $set: { inquiriesCount: count, updatedAt: now } },
         },
       });
     }
@@ -62,11 +61,9 @@ export async function POST() {
       await servicesCol.bulkWrite(ops, { ordered: false });
     }
 
-    const res = NextResponse.json({ ok: true, updated: ops.length });
-    res.headers.set("Cache-Control", "no-store");
-    return res;
+    return noStoreJson({ ok: true, updated: ops.length });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    return noStoreJson({ ok: false, error: message }, { status: 500 });
   }
 }

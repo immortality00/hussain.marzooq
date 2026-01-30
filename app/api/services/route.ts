@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import clientPromise from "@/lib/mongodb";
+import { isAdminAuthedServer, requireAdminOr401 } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
 
@@ -14,18 +14,18 @@ function asNumberOrNull(v: unknown): number | null {
   if (v === null) return null;
   return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
-async function isAdmin(): Promise<boolean> {
-  const store = await cookies();
-  return store.get("hm_admin")?.value === "ok";
+
+function noStoreJson(body: unknown, init?: ResponseInit) {
+  const res = NextResponse.json(body, init);
+  res.headers.set("Cache-Control", "no-store");
+  return res;
 }
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const wantsAll = url.searchParams.get("all") === "1";
 
-  const admin = await isAdmin();
-
-  // Public callers can never get inactive items
+  const admin = await isAdminAuthedServer();
   const all = wantsAll && admin;
 
   const client = await clientPromise;
@@ -57,43 +57,37 @@ export async function GET(req: Request) {
         : 0,
   }));
 
-  const res = NextResponse.json({ ok: true, items });
-  res.headers.set("Cache-Control", "no-store");
-  return res;
+  return noStoreJson({ ok: true, items });
 }
 
 export async function POST(req: Request) {
-  if (!(await isAdmin())) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  const deny = await requireAdminOr401();
+  if (deny) return deny as unknown as Response;
+
+  const bodyUnknown = (await req.json().catch(() => null)) as unknown;
+  if (!isRecord(bodyUnknown)) {
+    return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
   }
 
-  const body = (await req.json().catch(() => null)) as unknown;
-  if (!isRecord(body)) {
-    return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
-  }
+  const name = (asString(bodyUnknown.name) ?? "").trim();
+  const slug = (asString(bodyUnknown.slug) ?? "").trim();
+  const category = (asString(bodyUnknown.category) ?? "general").trim();
+  const description = (asString(bodyUnknown.description) ?? "").trim();
+  const currency = (asString(bodyUnknown.currency) ?? "AED").trim();
+  const imageUrl = (asString(bodyUnknown.imageUrl) ?? "").trim();
+  const startingPrice = asNumberOrNull(bodyUnknown.startingPrice);
 
-  const name = (asString(body.name) ?? "").trim();
-  const slug = (asString(body.slug) ?? "").trim();
-  const category = (asString(body.category) ?? "").trim();
-  const description = (asString(body.description) ?? "").trim();
-  const currency = (asString(body.currency) ?? "AED").trim().toUpperCase();
-  const imageUrl = (asString(body.imageUrl) ?? "").trim();
-  const startingPrice =
-    "startingPrice" in body ? asNumberOrNull((body as Record<string, unknown>).startingPrice) : null;
-
-  if (!name) return NextResponse.json({ ok: false, error: "Name is required" }, { status: 400 });
-  if (!slug) return NextResponse.json({ ok: false, error: "Slug is required" }, { status: 400 });
-  if (!category) return NextResponse.json({ ok: false, error: "Category is required" }, { status: 400 });
+  if (!name) return noStoreJson({ ok: false, error: "Name is required" }, { status: 400 });
+  if (!slug) return noStoreJson({ ok: false, error: "Slug is required" }, { status: 400 });
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
-  const existing = await db.collection("services").findOne({ slug });
+  const existing = await db.collection("services").findOne({ slug }, { projection: { _id: 1 } });
   if (existing) {
-    return NextResponse.json({ ok: false, error: "Slug already exists" }, { status: 400 });
+    return noStoreJson({ ok: false, error: "Slug already exists" }, { status: 409 });
   }
 
-  // Append to end by default
   const last = await db
     .collection("services")
     .find({})
@@ -103,7 +97,7 @@ export async function POST(req: Request) {
 
   const nextOrder =
     last.length && typeof last[0]?.order === "number" && Number.isFinite(last[0].order)
-      ? last[0].order + 1
+      ? (last[0].order as number) + 1
       : 0;
 
   const r = await db.collection("services").insertOne({
@@ -121,7 +115,5 @@ export async function POST(req: Request) {
     updatedAt: new Date(),
   });
 
-  const res = NextResponse.json({ ok: true, id: r.insertedId.toString() });
-  res.headers.set("Cache-Control", "no-store");
-  return res;
+  return noStoreJson({ ok: true, id: r.insertedId.toString() });
 }
