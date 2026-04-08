@@ -1,4 +1,3 @@
-// app/api/services/[id]/route.ts
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
@@ -9,11 +8,9 @@ export const dynamic = "force-dynamic";
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
-
 function asString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
-
 function asNumberOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null;
   if (typeof v === "number" && Number.isFinite(v)) return v;
@@ -23,7 +20,6 @@ function asNumberOrNull(v: unknown): number | null {
   }
   return null;
 }
-
 function asFiniteNumber(v: unknown): number | null {
   if (typeof v === "number" && Number.isFinite(v)) return v;
   if (typeof v === "string" && v.trim() !== "") {
@@ -33,83 +29,78 @@ function asFiniteNumber(v: unknown): number | null {
   return null;
 }
 
-export async function PATCH(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny as unknown as Response;
+function noStore(body: unknown, init?: ResponseInit) {
+  const res = NextResponse.json(body, init);
+  res.headers.set("Cache-Control", "no-store");
+  return res;
+}
 
-  const { id } = await params;
-  if (!ObjectId.isValid(id)) {
-    return NextResponse.json({ ok: false, error: "Invalid id" }, { status: 400 });
-  }
+export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const guard = await requireAdminOr401();
+  if (guard) return guard as unknown as Response;
+
+  const { id } = await ctx.params;
+  if (!ObjectId.isValid(id)) return noStore({ ok: false, error: "Invalid id" }, { status: 400 });
 
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
   const body = isRecord(bodyUnknown) ? bodyUnknown : {};
+
+  const client = await clientPromise;
+  const db = client.db("hm_visuals");
 
   const patch: Record<string, unknown> = { updatedAt: new Date() };
 
   if (typeof body.name === "string") patch.name = body.name.trim();
   if (typeof body.slug === "string") patch.slug = body.slug.trim();
-  if (typeof body.category === "string") patch.category = body.category.trim();
   if (typeof body.description === "string") patch.description = body.description.trim();
-  if (typeof body.currency === "string") patch.currency = body.currency.trim();
+  if (typeof body.currency === "string") patch.currency = body.currency.trim() || "AED";
   if (typeof body.imageUrl === "string") patch.imageUrl = body.imageUrl.trim();
   if (typeof body.isActive === "boolean") patch.isActive = body.isActive;
 
-  // startingPrice can be null or number
+  const sp = body.startingPrice === null ? null : asNumberOrNull(body.startingPrice);
   if (body.startingPrice === null) patch.startingPrice = null;
-  else {
-    const sp = asNumberOrNull(body.startingPrice);
-    if (sp !== null) patch.startingPrice = sp;
-  }
+  else if (sp !== null) patch.startingPrice = sp;
 
-  // order is number
   const order = asFiniteNumber(body.order);
   if (order !== null) patch.order = order;
 
-  // Validate slug if provided
-  if ("slug" in patch) {
-    const slug = asString(patch.slug).trim();
-    if (!slug || slug.includes(" ") || slug.length > 160) {
-      return NextResponse.json({ ok: false, error: "Invalid slug" }, { status: 400 });
+  // Validate category if present
+  if (typeof body.category === "string") {
+    const catSlug = body.category.trim() || "general";
+
+    if (catSlug !== "general") {
+      const catExists = await db.collection("service_categories").findOne({ slug: catSlug }, { projection: { _id: 1 } });
+      if (!catExists) {
+        return noStore({ ok: false, error: "CATEGORY_NOT_FOUND" }, { status: 400 });
+      }
     }
+
+    patch.category = catSlug;
   }
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
-
-  // Enforce slug uniqueness if slug changes
+  // Enforce unique slug if changed
   if ("slug" in patch) {
     const slug = asString(patch.slug).trim();
-    const existing = await db.collection("services").findOne({
+    if (!slug || slug.includes(" ")) return noStore({ ok: false, error: "Invalid slug" }, { status: 400 });
+
+    const conflict = await db.collection("services").findOne({
       slug,
       _id: { $ne: new ObjectId(id) },
     });
-    if (existing) {
-      return NextResponse.json({ ok: false, error: "Slug already exists" }, { status: 409 });
-    }
+    if (conflict) return noStore({ ok: false, error: "Slug already exists" }, { status: 409 });
   }
 
   await db.collection("services").updateOne({ _id: new ObjectId(id) }, { $set: patch });
 
-  const res = NextResponse.json({ ok: true });
-  res.headers.set("Cache-Control", "no-store");
-  return res;
+  return noStore({ ok: true });
 }
 
-export async function DELETE(
-  req: Request,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny as unknown as Response;
+export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const guard = await requireAdminOr401();
+  if (guard) return guard as unknown as Response;
 
-  const { id } = await params;
-  if (!ObjectId.isValid(id)) {
-    return NextResponse.json({ ok: false, error: "Invalid id" }, { status: 400 });
-  }
+  const { id } = await ctx.params;
+  if (!ObjectId.isValid(id)) return noStore({ ok: false, error: "Invalid id" }, { status: 400 });
 
   const url = new URL(req.url);
   const hard = url.searchParams.get("hard") === "1";
@@ -117,16 +108,24 @@ export async function DELETE(
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
-  if (hard) {
-    await db.collection("services").deleteOne({ _id: new ObjectId(id) });
-  } else {
+  if (!hard) {
     await db.collection("services").updateOne(
       { _id: new ObjectId(id) },
       { $set: { isActive: false, updatedAt: new Date() } }
     );
+    return noStore({ ok: true, mode: "deactivated" });
   }
 
-  const res = NextResponse.json({ ok: true });
-  res.headers.set("Cache-Control", "no-store");
-  return res;
+  // Guard: cannot hard delete if inquiries exist
+  const inquiriesCount = await db.collection("inquiries").countDocuments({ serviceId: id });
+  if (inquiriesCount > 0) {
+    return noStore(
+      { ok: false, error: "SERVICE_HAS_INQUIRIES", inquiriesCount },
+      { status: 409 }
+    );
+  }
+
+  await db.collection("services").deleteOne({ _id: new ObjectId(id) });
+
+  return noStore({ ok: true, mode: "deleted" });
 }

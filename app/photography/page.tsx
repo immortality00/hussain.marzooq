@@ -12,16 +12,26 @@ type MediaItem = {
   event: string | null;
   year: number | null;
   tags: string[];
+  categories?: string[];
   secureUrl: string | null;
   createdAt: string | null;
 };
 
-async function getPhotos(): Promise<MediaItem[]> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
-  const res = await fetch(`${base}/api/media/list-public?type=image&limit=60`, { cache: "no-store" });
+async function fetchMedia(url: string): Promise<MediaItem[]> {
+  const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) return [];
   const data = (await res.json()) as { items?: MediaItem[] };
   return Array.isArray(data.items) ? data.items : [];
+}
+
+async function getPhotos(): Promise<MediaItem[]> {
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
+  const primary = await fetchMedia(`${base}/api/media/list-public?type=image&category=photography&limit=60`);
+  if (primary.length) return primary;
+
+  // fallback: show all images if nothing categorized yet
+  return fetchMedia(`${base}/api/media/list-public?type=image&limit=60`);
 }
 
 export default async function PhotographyPage() {

@@ -5,47 +5,85 @@ import { requireAdminOr401 } from "@/lib/auth/admin";
 export const dynamic = "force-dynamic";
 
 type MediaType = "image" | "video" | "embed";
+type Appearance = {
+  kind: "featured" | "exhibited";
+  title: string;
+  venue: string;
+  city: string;
+  country: string;
+  dateFrom: string;
+  dateTo: string;
+  notes: string;
+  link: string;
+};
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
-function asString(v: unknown): string | null {
-  return typeof v === "string" ? v : null;
+function asString(v: unknown): string {
+  return typeof v === "string" ? v : "";
 }
 function asStringArray(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
-  return v.filter((x): x is string => typeof x === "string").map((s) => s.trim()).filter(Boolean);
-}
-function asNumberOrNull(v: unknown): number | null {
-  if (v === null) return null;
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
-}
-function asIntOrNull(v: unknown): number | null {
-  const n = asNumberOrNull(v);
-  if (n === null) return null;
-  return Math.trunc(n);
+  return v.filter((x) => typeof x === "string").map((s) => s.trim()).filter(Boolean).slice(0, 50);
 }
 function asBoolean(v: unknown): boolean | null {
   return typeof v === "boolean" ? v : null;
 }
 
-function isHttpsCloudinaryUrl(raw: string): boolean {
+function isCloudinarySecureUrl(u: string): boolean {
   try {
-    const url = new URL(raw);
+    const url = new URL(u);
     if (url.protocol !== "https:") return false;
-    const host = url.hostname.toLowerCase();
+    const host = url.hostname.replace(/^www\./, "");
     return host.endsWith("res.cloudinary.com");
   } catch {
     return false;
   }
 }
 
-function isCloudinarySecureUrl(raw: string): boolean {
-  // same as above, but kept for readability / future tightening
-  return isHttpsCloudinaryUrl(raw);
+function sanitizeAppearances(v: unknown): Appearance[] {
+  if (!Array.isArray(v)) return [];
+  const out: Appearance[] = [];
+
+  for (const item of v) {
+    if (!isRecord(item)) continue;
+
+    const kindRaw = asString(item.kind);
+    const kind = kindRaw === "featured" ? "featured" : kindRaw === "exhibited" ? "exhibited" : null;
+    if (!kind) continue;
+
+    const title = asString(item.title).trim().slice(0, 160);
+    const venue = asString(item.venue).trim().slice(0, 160);
+    const city = asString(item.city).trim().slice(0, 120);
+    const country = asString(item.country).trim().slice(0, 120);
+    const dateFrom = asString(item.dateFrom).trim().slice(0, 32);
+    const dateTo = asString(item.dateTo).trim().slice(0, 32);
+    const notes = asString(item.notes).trim().slice(0, 2000);
+    const link = asString(item.link).trim().slice(0, 500);
+
+    // Require at least a title or venue (so empty rows don’t pollute)
+    if (!title && !venue) continue;
+
+    out.push({
+      kind,
+      title,
+      venue,
+      city,
+      country,
+      dateFrom,
+      dateTo,
+      notes,
+      link,
+    });
+
+    if (out.length >= 20) break; // safety
+  }
+
+  return out;
 }
 
-function noStoreJson(body: unknown, init?: ResponseInit) {
+function noStore(body: unknown, init?: ResponseInit) {
   const res = NextResponse.json(body, init);
   res.headers.set("Cache-Control", "no-store");
   return res;
@@ -56,44 +94,42 @@ export async function POST(request: Request) {
   if (deny) return deny as unknown as Response;
 
   const bodyUnknown = (await request.json().catch(() => null)) as unknown;
-  if (!isRecord(bodyUnknown)) {
-    return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
-  }
+  if (!isRecord(bodyUnknown)) return noStore({ ok: false, error: "Invalid body" }, { status: 400 });
 
-  const typeRaw = (asString(bodyUnknown.type) ?? "").trim();
+  const typeRaw = asString(bodyUnknown.type).trim();
   const type: MediaType = typeRaw === "video" || typeRaw === "embed" ? typeRaw : "image";
 
-  const title = (asString(bodyUnknown.title) ?? "").trim();
-  const description = (asString(bodyUnknown.description) ?? "").trim();
-  const location = (asString(bodyUnknown.location) ?? "").trim();
-  const event = (asString(bodyUnknown.event) ?? "").trim();
-  const year = asIntOrNull(bodyUnknown.year);
+  const title = asString(bodyUnknown.title).trim().slice(0, 160);
+  if (!title) return noStore({ ok: false, error: "Title required" }, { status: 400 });
+
+  const description = asString(bodyUnknown.description).trim().slice(0, 2000);
+  const location = asString(bodyUnknown.location).trim().slice(0, 120);
+  const event = asString(bodyUnknown.event).trim().slice(0, 120);
+
+  const yearNum = typeof bodyUnknown.year === "number" ? bodyUnknown.year : Number(asString(bodyUnknown.year));
+  const year = Number.isFinite(yearNum) && yearNum > 1900 && yearNum < 2100 ? yearNum : null;
 
   const tags = asStringArray(bodyUnknown.tags);
   const categories = asStringArray(bodyUnknown.categories);
   const people = asStringArray(bodyUnknown.people);
 
-  const secureUrl = (asString(bodyUnknown.secureUrl) ?? "").trim();
-  const publicId = (asString(bodyUnknown.publicId) ?? "").trim();
-  const resourceType = (asString(bodyUnknown.resourceType) ?? "").trim(); // image|video
-  const embedUrl = (asString(bodyUnknown.embedUrl) ?? "").trim();
+  const isPublic = asBoolean(bodyUnknown.isPublic) ?? true;
+  const appearances = sanitizeAppearances(bodyUnknown.appearances);
 
-  const isPublic = asBoolean(bodyUnknown.isPublic) ?? false;
-
-  if (!title) {
-    return noStoreJson({ ok: false, error: "Title is required" }, { status: 400 });
-  }
+  const secureUrl = asString(bodyUnknown.secureUrl).trim();
+  const publicId = asString(bodyUnknown.publicId).trim();
+  const resourceType = asString(bodyUnknown.resourceType).trim();
+  const embedUrl = asString(bodyUnknown.embedUrl).trim();
 
   if (type === "embed") {
-    if (!embedUrl) {
-      return noStoreJson({ ok: false, error: "embedUrl is required for embed items" }, { status: 400 });
-    }
+    if (!embedUrl) return noStore({ ok: false, error: "embedUrl required" }, { status: 400 });
   } else {
     if (!secureUrl || !isCloudinarySecureUrl(secureUrl)) {
-      return noStoreJson({ ok: false, error: "Invalid secureUrl" }, { status: 400 });
+      return noStore({ ok: false, error: "Invalid secureUrl" }, { status: 400 });
     }
-    if (!publicId || !publicId.startsWith("hm_visuals/")) {
-      return noStoreJson({ ok: false, error: "Invalid publicId" }, { status: 400 });
+    if (!publicId) return noStore({ ok: false, error: "publicId required" }, { status: 400 });
+    if (resourceType !== "image" && resourceType !== "video" && resourceType !== "auto") {
+      return noStore({ ok: false, error: "Invalid resourceType" }, { status: 400 });
     }
   }
 
@@ -109,8 +145,8 @@ export async function POST(request: Request) {
     categories,
     people,
 
-    // Public visibility (used by list-public)
     isPublic,
+    appearances,
 
     secureUrl: type === "embed" ? null : secureUrl,
     publicId: type === "embed" ? null : publicId,
@@ -118,10 +154,7 @@ export async function POST(request: Request) {
 
     embedUrl: type === "embed" ? embedUrl : null,
 
-    order:
-      typeof bodyUnknown.order === "number" && Number.isFinite(bodyUnknown.order)
-        ? bodyUnknown.order
-        : 0,
+    order: typeof bodyUnknown.order === "number" && Number.isFinite(bodyUnknown.order) ? bodyUnknown.order : 0,
 
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -129,8 +162,7 @@ export async function POST(request: Request) {
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
-
   const result = await db.collection("media").insertOne(doc);
 
-  return noStoreJson({ ok: true, id: String(result.insertedId) });
+  return noStore({ ok: true, id: String(result.insertedId) });
 }

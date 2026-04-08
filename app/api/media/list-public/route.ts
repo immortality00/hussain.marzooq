@@ -14,35 +14,47 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
 
   const type = url.searchParams.get("type"); // image|video|embed|all
+  const category = url.searchParams.get("category")?.trim();
   const limitParam = url.searchParams.get("limit");
   const limit = Math.min(Math.max(Number(limitParam || 24), 1), 60);
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
-  const query: Record<string, unknown> = { isPublic: true };
-  if (type && type !== "all") query.type = type;
+  // Backward compatible:
+  // - new docs: isPublic: true/false
+  // - old docs: missing isPublic -> treated as public
+  const query: Record<string, unknown> = {
+    $or: [{ isPublic: true }, { isPublic: { $exists: false } }],
+  };
 
-  const docs = await db
-    .collection("media")
-    .find(query)
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .toArray();
+  if (type && type !== "all") query.type = type;
+  if (category) query.categories = category; // array contains match
+
+  const docs = await db.collection("media").find(query).sort({ createdAt: -1 }).limit(limit).toArray();
 
   const items = docs.map((d) => {
     const asset = isRecord(d.asset) ? d.asset : {};
+
+    // Support BOTH schemas:
+    const secureUrl =
+      asString(d.secureUrl) ?? asString(asset.secureUrl) ?? asString((asset as Record<string, unknown>).secure_url);
+
+    const publicId = asString(d.publicId) ?? asString(asset.publicId);
+    const embedUrl = asString(d.embedUrl) ?? asString(asset.embedUrl);
+
     return {
       id: String(d._id),
-      type: asString(d.type),
+      type: asString(d.type) ?? "image",
       title: asString(d.title) ?? "",
       location: asString(d.location),
       event: asString(d.event),
       year: typeof d.year === "number" ? d.year : null,
       tags: Array.isArray(d.tags) ? d.tags.map((t: unknown) => String(t)) : [],
-      secureUrl: asString(asset.secureUrl),
-      publicId: asString(asset.publicId),
-      embedUrl: asString(asset.embedUrl),
+      categories: Array.isArray(d.categories) ? d.categories.map((c: unknown) => String(c)) : [],
+      secureUrl,
+      publicId,
+      embedUrl,
       createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : null,
     };
   });

@@ -8,9 +8,13 @@ import type { Service } from "../lib/types";
 export default function SortableServiceItem({
   service,
   onEdit,
+  onToggleActive,
+  onDeleteForever,
 }: {
   service: Service;
   onEdit: (s: Service) => void;
+  onToggleActive: (s: Service) => void;
+  onDeleteForever: (s: Service) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: service.id,
@@ -26,7 +30,7 @@ export default function SortableServiceItem({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 rounded-2xl border p-3 hover:bg-white/5"
+      className="flex items-center gap-3 rounded-2xl border p-3 hover:bg-accent/20 transition-colors"
     >
       <button
         type="button"
@@ -39,7 +43,7 @@ export default function SortableServiceItem({
         ⠿
       </button>
 
-      <div className="h-14 w-20 overflow-hidden rounded-xl border bg-white/5">
+      <div className="h-14 w-20 overflow-hidden rounded-xl border bg-muted">
         {service.imageUrl ? (
           <Image
             src={service.imageUrl}
@@ -49,29 +53,65 @@ export default function SortableServiceItem({
             className="h-full w-full object-cover"
             sizes="80px"
           />
-        ) : null}
+        ) : (
+          <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
+            No image
+          </div>
+        )}
       </div>
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <div className="truncate font-medium">{service.name}</div>
+
           {!service.isActive ? (
-            <span className="rounded-full border px-2 py-0.5 text-[10px] opacity-70">inactive</span>
-          ) : null}
-          <span className="rounded-full border px-2 py-0.5 text-[10px] opacity-70">
+            <span className="rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground">
+              inactive
+            </span>
+          ) : (
+            <span className="rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground">
+              active
+            </span>
+          )}
+
+          <span className="rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground">
             inquiries: {service.inquiriesCount}
           </span>
         </div>
-        <div className="truncate text-xs opacity-70">/{service.slug}</div>
+
+        <div className="truncate text-xs text-muted-foreground">/{service.slug}</div>
+        <div className="truncate text-xs text-muted-foreground">
+          category: <span className="font-mono">{service.category}</span>
+        </div>
       </div>
 
-      <button
-        type="button"
-        onClick={() => onEdit(service)}
-        className="rounded-xl border px-3 py-2 text-sm hover:bg-white/5"
-      >
-        Edit
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => onEdit(service)}
+          className="rounded-xl border px-3 py-2 text-sm hover:bg-accent/40 transition-colors"
+        >
+          Edit
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onToggleActive(service)}
+          className="rounded-xl border px-3 py-2 text-sm hover:bg-accent/40 transition-colors"
+          title={service.isActive ? "Deactivate service" : "Activate service"}
+        >
+          {service.isActive ? "Deactivate" : "Activate"}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onDeleteForever(service)}
+          className="rounded-xl border px-3 py-2 text-sm hover:bg-red-500/10 transition-colors"
+          title="Delete forever"
+        >
+          Delete
+        </button>
+      </div>
     </div>
   );
 }
