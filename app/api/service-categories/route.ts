@@ -4,6 +4,11 @@ import { requireAdminOr401 } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
 
+function noStore(body: unknown, init?: ResponseInit) {
+  const res = NextResponse.json(body, init);
+  res.headers.set("Cache-Control", "no-store");
+  return res;
+}
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
@@ -11,17 +16,10 @@ function asString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
 
-function noStore(body: unknown, init?: ResponseInit) {
-  const res = NextResponse.json(body, init);
-  res.headers.set("Cache-Control", "no-store");
-  return res;
-}
-
 export async function GET() {
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
-  // Join categories with services count
   const rows = await db
     .collection("service_categories")
     .aggregate([
@@ -34,16 +32,8 @@ export async function GET() {
           as: "servicesForCategory",
         },
       },
-      {
-        $addFields: {
-          servicesCount: { $size: "$servicesForCategory" },
-        },
-      },
-      {
-        $project: {
-          servicesForCategory: 0,
-        },
-      },
+      { $addFields: { servicesCount: { $size: "$servicesForCategory" } } },
+      { $project: { servicesForCategory: 0 } },
     ])
     .toArray();
 
@@ -54,6 +44,7 @@ export async function GET() {
     isActive: typeof d.isActive === "boolean" ? d.isActive : true,
     order: typeof d.order === "number" ? d.order : 0,
     servicesCount: typeof d.servicesCount === "number" ? d.servicesCount : 0,
+    isSystem: typeof d.isSystem === "boolean" ? d.isSystem : d.slug === "others",
   }));
 
   return noStore({ ok: true, items });
@@ -71,6 +62,7 @@ export async function POST(req: Request) {
 
   if (!name) return noStore({ ok: false, error: "Name is required" }, { status: 400 });
   if (!slug || slug.includes(" ")) return noStore({ ok: false, error: "Invalid slug" }, { status: 400 });
+  if (slug === "others") return noStore({ ok: false, error: "Slug reserved" }, { status: 409 });
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
@@ -88,6 +80,7 @@ export async function POST(req: Request) {
     slug,
     isActive: true,
     order: nextOrder,
+    isSystem: false,
     createdAt: now,
     updatedAt: now,
   });

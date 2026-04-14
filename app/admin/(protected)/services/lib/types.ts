@@ -8,6 +8,7 @@ export type Service = {
   currency: string;
   imageUrl: string;
   isActive: boolean;
+  isArchived: boolean;
   order: number;
   inquiriesCount: number;
 };

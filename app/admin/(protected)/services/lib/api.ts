@@ -18,7 +18,6 @@ export async function createService(payload: Partial<Service>): Promise<JsonObje
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-
   const data = await readJson(res);
   if (!res.ok) throw new Error(getError(data));
   return data;
@@ -30,28 +29,25 @@ export async function patchService(id: string, patch: Partial<Service>): Promise
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(patch),
   });
-
   const data = await readJson(res);
   if (!res.ok) throw new Error(getError(data));
   return data;
 }
 
+// ✅ default delete = archive
+export async function archiveService(id: string): Promise<JsonObject> {
+  const res = await fetch(`/api/services/${encodeURIComponent(id)}`, { method: "DELETE" });
+  const data = await readJson(res);
+  if (!res.ok) throw new Error(getError(data));
+  return data;
+}
+
+// optional hard delete
 export async function deleteServiceForever(id: string): Promise<JsonObject> {
-  const res = await fetch(`/api/services/${encodeURIComponent(id)}?hard=1`, {
-    method: "DELETE",
-  });
-
+  const res = await fetch(`/api/services/${encodeURIComponent(id)}?hard=1`, { method: "DELETE" });
   const data = await readJson(res);
   if (!res.ok) throw new Error(getError(data));
   return data;
-}
-
-export async function deactivateService(id: string): Promise<JsonObject> {
-  return patchService(id, { isActive: false });
-}
-
-export async function activateService(id: string): Promise<JsonObject> {
-  return patchService(id, { isActive: true });
 }
 
 export async function saveOrder(servicesInOrder: Service[]): Promise<void> {

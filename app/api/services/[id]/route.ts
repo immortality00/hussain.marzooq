@@ -28,7 +28,6 @@ function asFiniteNumber(v: unknown): number | null {
   }
   return null;
 }
-
 function noStore(body: unknown, init?: ResponseInit) {
   const res = NextResponse.json(body, init);
   res.headers.set("Cache-Control", "no-store");
@@ -48,6 +47,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
+  const existing = await db.collection("services").findOne({ _id: new ObjectId(id) });
+  if (!existing) return noStore({ ok: false, error: "Not found" }, { status: 404 });
+
   const patch: Record<string, unknown> = { updatedAt: new Date() };
 
   if (typeof body.name === "string") patch.name = body.name.trim();
@@ -56,6 +58,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (typeof body.currency === "string") patch.currency = body.currency.trim() || "AED";
   if (typeof body.imageUrl === "string") patch.imageUrl = body.imageUrl.trim();
   if (typeof body.isActive === "boolean") patch.isActive = body.isActive;
+  if (typeof body.isArchived === "boolean") patch.isArchived = body.isArchived;
 
   const sp = body.startingPrice === null ? null : asNumberOrNull(body.startingPrice);
   if (body.startingPrice === null) patch.startingPrice = null;
@@ -64,34 +67,61 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const order = asFiniteNumber(body.order);
   if (order !== null) patch.order = order;
 
-  // Validate category if present
   if (typeof body.category === "string") {
-    const catSlug = body.category.trim() || "general";
+    const catSlug = body.category.trim() || "others";
 
-    if (catSlug !== "general") {
-      const catExists = await db.collection("service_categories").findOne({ slug: catSlug }, { projection: { _id: 1 } });
-      if (!catExists) {
-        return noStore({ ok: false, error: "CATEGORY_NOT_FOUND" }, { status: 400 });
-      }
+    if (catSlug !== "others") {
+      const cat = await db.collection("service_categories").findOne(
+        { slug: catSlug },
+        { projection: { _id: 1, isActive: 1 } }
+      );
+      if (!cat) return noStore({ ok: false, error: "CATEGORY_NOT_FOUND" }, { status: 400 });
+
+      if (cat.isActive === false) patch.isActive = false;
     }
 
     patch.category = catSlug;
   }
 
-  // Enforce unique slug if changed
+  // cannot activate archived service
+  const existingArchived = existing.isArchived === true;
+  const wantsActive = patch.isActive === true;
+  const willBeArchived =
+    typeof patch.isArchived === "boolean" ? patch.isArchived === true : existingArchived;
+
+  if (wantsActive && willBeArchived) {
+    return noStore({ ok: false, error: "SERVICE_ARCHIVED" }, { status: 409 });
+  }
+
+  // guard: cannot activate under inactive category
+  if (wantsActive) {
+    const catSlug =
+      typeof patch.category === "string"
+        ? String(patch.category)
+        : typeof existing.category === "string"
+        ? existing.category
+        : "others";
+
+    if (catSlug !== "others") {
+      const cat = await db.collection("service_categories").findOne(
+        { slug: catSlug },
+        { projection: { _id: 1, isActive: 1 } }
+      );
+      if (cat && cat.isActive === false) {
+        return noStore({ ok: false, error: "CATEGORY_INACTIVE" }, { status: 409 });
+      }
+    }
+  }
+
+  // unique slug if changed
   if ("slug" in patch) {
     const slug = asString(patch.slug).trim();
     if (!slug || slug.includes(" ")) return noStore({ ok: false, error: "Invalid slug" }, { status: 400 });
-
-    const conflict = await db.collection("services").findOne({
-      slug,
-      _id: { $ne: new ObjectId(id) },
-    });
+    const conflict = await db.collection("services").findOne({ slug, _id: { $ne: new ObjectId(id) } });
     if (conflict) return noStore({ ok: false, error: "Slug already exists" }, { status: 409 });
   }
 
   await db.collection("services").updateOne({ _id: new ObjectId(id) }, { $set: patch });
-
   return noStore({ ok: true });
 }
 
@@ -109,23 +139,19 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   const db = client.db("hm_visuals");
 
   if (!hard) {
+    // ✅ archive
     await db.collection("services").updateOne(
       { _id: new ObjectId(id) },
-      { $set: { isActive: false, updatedAt: new Date() } }
+      { $set: { isArchived: true, isActive: false, updatedAt: new Date() } }
     );
-    return noStore({ ok: true, mode: "deactivated" });
+    return noStore({ ok: true, mode: "archived" });
   }
 
-  // Guard: cannot hard delete if inquiries exist
   const inquiriesCount = await db.collection("inquiries").countDocuments({ serviceId: id });
   if (inquiriesCount > 0) {
-    return noStore(
-      { ok: false, error: "SERVICE_HAS_INQUIRIES", inquiriesCount },
-      { status: 409 }
-    );
+    return noStore({ ok: false, error: "SERVICE_HAS_INQUIRIES", inquiriesCount }, { status: 409 });
   }
 
   await db.collection("services").deleteOne({ _id: new ObjectId(id) });
-
   return noStore({ ok: true, mode: "deleted" });
 }

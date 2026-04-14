@@ -48,30 +48,30 @@ async function getBaseUrlFromHeaders(): Promise<string> {
   return `${proto}://${host}`;
 }
 
-function workLinkForCategory(categorySlug: string): { href: string; label: string } {
+function workLinkForCategory(categorySlug: string, serviceSlug: string): { href: string; label: string } {
   const c = categorySlug.trim().toLowerCase();
 
-  // photography
+  // For "general" or empty, don’t redirect to random portfolio sections
+  if (!c || c === "general") {
+    return { href: `/services/${encodeURIComponent(serviceSlug)}`, label: "View details" };
+  }
+
   if (c.includes("photo")) return { href: "/photography", label: "See photos" };
 
-  // videography
   if (c.includes("video") || c.includes("film") || c.includes("reel")) {
     return { href: "/videography/videos", label: "See videos" };
   }
 
-  // dance
   if (c.includes("dance")) return { href: "/dance", label: "See dance" };
 
-  // nft
   if (c.includes("nft")) return { href: "/nft", label: "See NFTs" };
 
-  // web dev
   if (c.includes("web") || c.includes("dev") || c.includes("code")) {
     return { href: "/web-development", label: "See web work" };
   }
 
-  // fallback
-  return { href: "/photography", label: "See my work" };
+  // Unknown category: stay in services context
+  return { href: `/services/${encodeURIComponent(serviceSlug)}`, label: "View details" };
 }
 
 export default async function ServicesPage({
@@ -119,7 +119,6 @@ export default async function ServicesPage({
         </p>
       </header>
 
-      {/* Category tabs */}
       <div className="mt-6 flex flex-wrap gap-2">
         {tabs.map((t) => {
           const active = t.slug === selectedCategory;
@@ -127,10 +126,9 @@ export default async function ServicesPage({
             <Link
               key={t.slug}
               href={t.slug === "all" ? "/services" : `/services?category=${encodeURIComponent(t.slug)}`}
-              className={[
-                "rounded-full border px-4 py-2 text-xs transition-colors",
-                active ? "bg-foreground text-background" : "hover:bg-accent",
-              ].join(" ")}
+              className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+                active ? "bg-accent" : "hover:bg-accent/40"
+              }`}
             >
               {t.name}
             </Link>
@@ -138,17 +136,14 @@ export default async function ServicesPage({
         })}
       </div>
 
-      {/* Grid */}
-      <section className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+      <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {services.length === 0 ? (
-          <div className="rounded-2xl border p-6 text-sm text-muted-foreground">
-            No services found for this category yet.
-          </div>
+          <div className="rounded-2xl border p-6 text-sm text-muted-foreground">No services yet.</div>
         ) : (
           services.map((s) => {
             const img = safeString(s.imageUrl, "").trim();
             const hasPrice = typeof s.startingPrice === "number" && Number.isFinite(s.startingPrice);
-            const workLink = workLinkForCategory(safeString(s.category, ""));
+            const workLink = workLinkForCategory(safeString(s.category, ""), safeString(s.slug, ""));
 
             return (
               <article key={s.id} className="group overflow-hidden rounded-2xl border bg-background">
@@ -211,29 +206,6 @@ export default async function ServicesPage({
           })
         )}
       </section>
-
-      {/* Sticky CTA */}
-      <div className="fixed bottom-4 left-1/2 z-50 w-[calc(100%-2rem)] max-w-xl -translate-x-1/2">
-        <div className="flex items-center justify-between gap-3 rounded-2xl border bg-background/80 px-4 py-3 shadow-sm backdrop-blur">
-          <div className="text-xs text-muted-foreground">
-            Ready? <span className="text-foreground">Book</span> or explore more work.
-          </div>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/contact"
-              className="rounded-xl bg-foreground px-4 py-2 text-xs text-background hover:opacity-90 transition-opacity"
-            >
-              Book
-            </Link>
-            <Link
-              href="/photography"
-              className="rounded-xl border px-4 py-2 text-xs hover:bg-accent transition-colors"
-            >
-              Show more
-            </Link>
-          </div>
-        </div>
-      </div>
     </main>
   );
 }

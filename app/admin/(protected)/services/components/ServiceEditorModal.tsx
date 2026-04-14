@@ -29,7 +29,7 @@ export default function ServiceEditorModal({
 }) {
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
-  const [category, setCategory] = useState("general");
+  const [category, setCategory] = useState("others");
   const [description, setDescription] = useState("");
   const [startingPrice, setStartingPrice] = useState("");
   const [currency, setCurrency] = useState("AED");
@@ -37,26 +37,32 @@ export default function ServiceEditorModal({
   const [isActive, setIsActive] = useState(true);
   const [busy, setBusy] = useState(false);
 
+  const categoriesClean = useMemo(() => {
+    // Remove any legacy "general" from dropdown
+    const filtered = categories.filter((c) => c.slug !== "general");
+    return filtered.sort((a, b) => a.order - b.order);
+  }, [categories]);
+
+  const hasOthers = useMemo(() => categoriesClean.some((c) => c.slug === "others"), [categoriesClean]);
+
   useEffect(() => {
     if (!open) return;
+
     setName(initial?.name ?? "");
     setSlug(initial?.slug ?? "");
-    setCategory(initial?.category ?? "general");
+
+    const cat = (initial?.category ?? "").trim();
+    if (cat && cat !== "general") setCategory(cat);
+    else setCategory(hasOthers ? "others" : (categoriesClean[0]?.slug ?? "others"));
+
     setDescription(initial?.description ?? "");
     setStartingPrice(
-      initial?.startingPrice === null || initial?.startingPrice === undefined
-        ? ""
-        : String(initial.startingPrice)
+      initial?.startingPrice === null || initial?.startingPrice === undefined ? "" : String(initial.startingPrice)
     );
     setCurrency(initial?.currency ?? "AED");
     setImageUrl(initial?.imageUrl ?? "");
     setIsActive(initial?.isActive ?? true);
-  }, [open, initial]);
-
-  const activeCategories = useMemo(
-    () => categories.filter((c) => c.isActive).sort((a, b) => a.order - b.order),
-    [categories]
-  );
+  }, [open, initial, categoriesClean, hasOthers]);
 
   if (!open) return null;
 
@@ -99,12 +105,12 @@ export default function ServiceEditorModal({
               onChange={(e) => setCategory(e.target.value)}
               className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="general">general</option>
-              {activeCategories.map((c) => (
-                <option key={c.id} value={c.slug}>
-                  {c.name} ({c.slug})
+              {categoriesClean.map((c) => (
+                <option key={c.id} value={c.slug} disabled={!c.isActive}>
+                  {c.name} ({c.slug}){c.isActive ? "" : " — inactive"}
                 </option>
               ))}
+              {!hasOthers ? <option value="others">Others (others)</option> : null}
             </select>
           </label>
 
@@ -209,7 +215,7 @@ export default function ServiceEditorModal({
                 await onSave({
                   name: name.trim(),
                   slug: slug.trim(),
-                  category: category.trim() || "general",
+                  category: category.trim() || "others",
                   description: description.trim(),
                   currency: currency.trim() || "AED",
                   startingPrice: sp !== null && Number.isFinite(sp) ? sp : null,

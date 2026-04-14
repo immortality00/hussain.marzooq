@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type ServiceItem = {
-  id: string; // Mongo _id as string
+  id: string;
   name: string;
   category: string;
   startingPrice: number | null;
@@ -20,12 +20,10 @@ type Props = {
 function safeTrim(v: string) {
   return v.trim().slice(0, 5000);
 }
-
 function isValidEmail(email: string) {
   const v = email.trim();
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 }
-
 function normalize(s: string) {
   return s.trim().toLowerCase();
 }
@@ -39,10 +37,11 @@ export function ContactForm({ services, initialService = "", initialCategory = "
       const c = s.category?.trim();
       if (c) set.add(c);
     }
+    // Ensure "others" always exists in list for select mode
+    set.add("others");
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [services]);
 
-  // Try to preselect service by NAME if user arrived from /services?service=...
   const initialServiceMatch = useMemo(() => {
     const target = normalize(initialService);
     if (!target) return null;
@@ -52,37 +51,21 @@ export function ContactForm({ services, initialService = "", initialCategory = "
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
-  // Service selection
   const [serviceMode, setServiceMode] = useState<"select" | "other">(
     initialServiceMatch ? "select" : initialService.trim() ? "other" : "select"
   );
   const [selectedServiceId, setSelectedServiceId] = useState<string>(initialServiceMatch?.id ?? "");
   const [otherService, setOtherService] = useState<string>(!initialServiceMatch ? initialService : "");
 
-  // Category selection
-  const initialCategoryFromService = initialServiceMatch?.category ?? "";
-  const initialCategoryNormalized = normalize(initialCategory || initialCategoryFromService);
-  const initialCategoryIsKnown = categories.some((c) => normalize(c) === initialCategoryNormalized);
-
-  const [categoryMode, setCategoryMode] = useState<"select" | "other">(
-    initialCategoryNormalized && !initialCategoryIsKnown ? "other" : "select"
-  );
-
-  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
-    if (initialServiceMatch?.category) return initialServiceMatch.category;
-    if (initialCategoryIsKnown) {
-      const found = categories.find((c) => normalize(c) === initialCategoryNormalized);
-      return found ?? "";
-    }
-    return "";
-  });
-
-  const [otherCategory, setOtherCategory] = useState<string>(() => {
-    if (initialCategoryNormalized && !initialCategoryIsKnown) return initialCategory;
-    return "";
-  });
-
   const [message, setMessage] = useState("");
+
+  // category state
+  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
+    // default to service category if preselected
+    if (initialServiceMatch?.category) return initialServiceMatch.category;
+    const ic = (initialCategory || "").trim();
+    return ic ? ic : "others";
+  });
 
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState("");
@@ -92,38 +75,55 @@ export function ContactForm({ services, initialService = "", initialCategory = "
     return services.find((s) => s.id === selectedServiceId) ?? null;
   }, [selectedServiceId, services]);
 
+  const isOtherService = serviceMode === "other";
+
   function handleSelectService(id: string) {
     setSelectedServiceId(id);
     const s = services.find((x) => x.id === id) ?? null;
-    if (s && categoryMode === "select") {
-      setSelectedCategory(s.category || "");
-    }
+    if (s) setSelectedCategory(s.category || "others");
   }
 
-  const finalService = useMemo(() => {
+  function setModeOther() {
+    setServiceMode("other");
+    setSelectedServiceId("");
+    // ✅ Force category to others
+    setSelectedCategory("others");
+  }
+
+  function setModeSelect() {
+    setServiceMode("select");
+    setOtherService("");
+    // category will follow selected service when chosen
+  }
+
+  const finalServiceName = useMemo(() => {
     if (serviceMode === "other") return safeTrim(otherService) || null;
     return selectedService?.name ? selectedService.name : null;
   }, [otherService, selectedService, serviceMode]);
 
-  const finalCategory = useMemo(() => {
-    if (categoryMode === "other") return safeTrim(otherCategory) || null;
-    const v = safeTrim(selectedCategory);
-    return v ? v : null;
-  }, [categoryMode, otherCategory, selectedCategory]);
-
-  // ✅ THIS is the important piece:
-  // Only send serviceId if user chose from list AND a real service is selected.
   const finalServiceId = useMemo(() => {
     if (serviceMode !== "select") return null;
     return selectedService?.id ? selectedService.id : null;
   }, [serviceMode, selectedService]);
 
-  const bookingBadge = useMemo(() => {
-    const s = finalService?.trim();
-    if (!s) return null;
-    const c = finalCategory?.trim();
-    return c ? `${s} • ${c}` : s;
-  }, [finalService, finalCategory]);
+  const finalCategory = useMemo(() => {
+    // ✅ if other service, always others
+    if (isOtherService) return "others";
+    const v = safeTrim(selectedCategory);
+    return v ? v : "others";
+  }, [isOtherService, selectedCategory]);
+
+  function resetForm() {
+    setName("");
+    setEmail("");
+    setMessage("");
+    setMsg("");
+
+    setServiceMode("select");
+    setSelectedServiceId("");
+    setOtherService("");
+    setSelectedCategory("others");
+  }
 
   async function submit() {
     setMsg("");
@@ -136,6 +136,10 @@ export function ContactForm({ services, initialService = "", initialCategory = "
     if (!e || !isValidEmail(e)) return setMsg("Please enter a valid email.");
     if (!m) return setMsg("Message is required.");
 
+    if (isOtherService && !safeTrim(otherService)) {
+      return setMsg("Please specify what you need in the service field.");
+    }
+
     setLoading(true);
     try {
       const res = await fetch("/api/inquiries", {
@@ -145,11 +149,9 @@ export function ContactForm({ services, initialService = "", initialCategory = "
           name: n,
           email: e,
           message: m,
-
-          // ✅ consistent structure
-          serviceId: finalServiceId, // string | null
-          serviceName: finalService, // string | null
-          category: finalCategory, // string | null
+          serviceId: finalServiceId,
+          serviceName: finalServiceName,
+          category: finalCategory,
         }),
       });
 
@@ -160,7 +162,8 @@ export function ContactForm({ services, initialService = "", initialCategory = "
         return;
       }
 
-      router.push("/contact?success=1");
+      resetForm();
+      router.replace("/contact?success=1");
       router.refresh();
     } catch {
       setMsg("Send failed.");
@@ -171,11 +174,7 @@ export function ContactForm({ services, initialService = "", initialCategory = "
 
   return (
     <div className="rounded-2xl border p-6">
-      {bookingBadge ? (
-        <div className="mb-4 inline-flex rounded-full border px-3 py-1 text-xs text-muted-foreground">
-          Booking: {bookingBadge}
-        </div>
-      ) : null}
+      {msg ? <div className="mb-4 text-sm text-muted-foreground">{msg}</div> : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
@@ -184,7 +183,6 @@ export function ContactForm({ services, initialService = "", initialCategory = "
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Your name"
           />
         </div>
 
@@ -194,33 +192,31 @@ export function ContactForm({ services, initialService = "", initialCategory = "
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            placeholder="you@email.com"
             inputMode="email"
           />
         </div>
 
-        {/* Service */}
         <div className="space-y-2 sm:col-span-2">
           <label className="text-sm font-medium">Service</label>
 
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              onClick={() => setServiceMode("select")}
-              className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+              onClick={setModeSelect}
+              className={`rounded-full border px-3 py-1.5 text-sm ${
                 serviceMode === "select" ? "bg-accent" : "hover:bg-accent/40"
               }`}
             >
-              Choose from list
+              Choose
             </button>
             <button
               type="button"
-              onClick={() => setServiceMode("other")}
-              className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
+              onClick={setModeOther}
+              className={`rounded-full border px-3 py-1.5 text-sm ${
                 serviceMode === "other" ? "bg-accent" : "hover:bg-accent/40"
               }`}
             >
-              Other (please specify)
+              Other (specify)
             </button>
           </div>
 
@@ -230,7 +226,7 @@ export function ContactForm({ services, initialService = "", initialCategory = "
               onChange={(e) => handleSelectService(e.target.value)}
               className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="">Select a service…</option>
+              <option value="">Select…</option>
               {services.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
@@ -242,67 +238,39 @@ export function ContactForm({ services, initialService = "", initialCategory = "
               value={otherService}
               onChange={(e) => setOtherService(e.target.value)}
               className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Describe what you need…"
+              placeholder="Describe what you need"
             />
           )}
         </div>
 
-        {/* Category */}
         <div className="space-y-2 sm:col-span-2">
-          <label className="text-sm font-medium">Category (optional)</label>
+          <label className="text-sm font-medium">Category</label>
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setCategoryMode("select")}
-              className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                categoryMode === "select" ? "bg-accent" : "hover:bg-accent/40"
-              }`}
-            >
-              Choose from list
-            </button>
-            <button
-              type="button"
-              onClick={() => setCategoryMode("other")}
-              className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                categoryMode === "other" ? "bg-accent" : "hover:bg-accent/40"
-              }`}
-            >
-              Other (please specify)
-            </button>
-          </div>
-
-          {categoryMode === "select" ? (
+          {isOtherService ? (
+            <div className="rounded-xl border bg-muted px-3 py-2 text-sm text-muted-foreground">
+              Others (auto)
+            </div>
+          ) : (
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             >
-              <option value="">Select a category…</option>
               {categories.map((c) => (
                 <option key={c} value={c}>
                   {c}
                 </option>
               ))}
             </select>
-          ) : (
-            <input
-              value={otherCategory}
-              onChange={(e) => setOtherCategory(e.target.value)}
-              className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="e.g. luxury fashion / festival / corporate…"
-            />
           )}
         </div>
 
-        {/* Message */}
         <div className="space-y-2 sm:col-span-2">
           <label className="text-sm font-medium">Message *</label>
           <textarea
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="min-h-[140px] w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Tell me date/location/idea + what you want…"
+            className="h-32 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
       </div>
@@ -312,12 +280,19 @@ export function ContactForm({ services, initialService = "", initialCategory = "
           type="button"
           onClick={() => void submit()}
           disabled={loading}
-          className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity disabled:opacity-60"
+          className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:opacity-60"
         >
-          {loading ? "Sending..." : "Send"}
+          {loading ? "Sending…" : "Send"}
         </button>
 
-        {msg ? <div className="text-sm text-muted-foreground">{msg}</div> : null}
+        <button
+          type="button"
+          onClick={resetForm}
+          disabled={loading}
+          className="rounded-xl border px-4 py-2 text-sm hover:bg-accent disabled:opacity-60"
+        >
+          Reset
+        </button>
       </div>
     </div>
   );

@@ -8,7 +8,6 @@ export const dynamic = "force-dynamic";
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
-
 function asFiniteNumber(v: unknown): number | null {
   if (typeof v === "number" && Number.isFinite(v)) return v;
   if (typeof v === "string" && v.trim() !== "") {
@@ -17,7 +16,6 @@ function asFiniteNumber(v: unknown): number | null {
   }
   return null;
 }
-
 function noStore(body: unknown, init?: ResponseInit) {
   const res = NextResponse.json(body, init);
   res.headers.set("Cache-Control", "no-store");
@@ -40,20 +38,24 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const existing = await db.collection("service_categories").findOne({ _id: new ObjectId(id) });
   if (!existing) return noStore({ ok: false, error: "Not found" }, { status: 404 });
 
+  const isSystem = existing.slug === "others" || existing.isSystem === true;
+
   const patch: Record<string, unknown> = { updatedAt: new Date() };
 
-  if (typeof body.name === "string") patch.name = body.name.trim();
+  if (typeof body.name === "string" && !isSystem) patch.name = body.name.trim();
   if (typeof body.isActive === "boolean") patch.isActive = body.isActive;
 
   const order = asFiniteNumber(body.order);
   if (order !== null) patch.order = order;
 
-  // If changing slug, enforce uniqueness
   if (typeof body.slug === "string") {
-    const newSlug = body.slug.trim();
-    if (!newSlug || newSlug.includes(" ")) {
-      return noStore({ ok: false, error: "Invalid slug" }, { status: 400 });
+    if (isSystem) {
+      return noStore({ ok: false, error: "SYSTEM_CATEGORY_LOCKED" }, { status: 409 });
     }
+    const newSlug = body.slug.trim();
+    if (!newSlug || newSlug.includes(" ")) return noStore({ ok: false, error: "Invalid slug" }, { status: 400 });
+    if (newSlug === "others") return noStore({ ok: false, error: "Slug reserved" }, { status: 409 });
+
     const conflict = await db.collection("service_categories").findOne({
       slug: newSlug,
       _id: { $ne: new ObjectId(id) },
@@ -63,7 +65,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     patch.slug = newSlug;
   }
 
-  // Cascade: if category toggled inactive, deactivate all services under it
   const willDeactivate =
     typeof patch.isActive === "boolean" && patch.isActive === false && existing.isActive !== false;
 
@@ -93,6 +94,10 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
 
   const cat = await db.collection("service_categories").findOne({ _id: new ObjectId(id) });
   if (!cat) return noStore({ ok: false, error: "Not found" }, { status: 404 });
+
+  if (cat.slug === "others" || cat.isSystem === true) {
+    return noStore({ ok: false, error: "SYSTEM_CATEGORY_CANNOT_DELETE" }, { status: 409 });
+  }
 
   const slug = typeof cat.slug === "string" ? cat.slug : "";
   const servicesCount = await db.collection("services").countDocuments({ category: slug });
