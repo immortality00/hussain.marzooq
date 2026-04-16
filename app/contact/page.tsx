@@ -6,13 +6,14 @@ export const revalidate = 0;
 
 type SP = {
   success?: string;
-  service?: string;
+  service?: string;   // can be serviceId (24hex) OR slug/name
   category?: string;
 };
 
 type ServiceItem = {
   id: string;
   name: string;
+  slug: string;
   category: string;
   startingPrice: number | null;
   currency: string;
@@ -22,20 +23,25 @@ function asString(v: unknown): string | null {
   return typeof v === "string" ? v : null;
 }
 
+function looksLikeObjectId(s: string): boolean {
+  return /^[a-fA-F0-9]{24}$/.test(s.trim());
+}
+
 async function getActiveServices(): Promise<ServiceItem[]> {
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
   const docs = await db
     .collection("services")
-    .find({ isActive: true })
+    .find({ isActive: true, isArchived: { $ne: true } })
     .sort({ order: 1, createdAt: -1 })
     .toArray();
 
   return docs.map((d) => ({
     id: String(d._id),
     name: asString(d.name) ?? "",
-    category: asString(d.category) ?? "general",
+    slug: asString(d.slug) ?? "",
+    category: asString(d.category) ?? "others",
     startingPrice: typeof d.startingPrice === "number" ? d.startingPrice : null,
     currency: asString(d.currency) ?? "AED",
   }));
@@ -49,8 +55,11 @@ export default async function ContactPage({
   const sp = await searchParams;
 
   const success = sp?.success === "1";
-  const initialService = typeof sp?.service === "string" ? sp.service : "";
+  const serviceParam = typeof sp?.service === "string" ? sp.service.trim() : "";
   const initialCategory = typeof sp?.category === "string" ? sp.category : "";
+
+  const initialServiceId = serviceParam && looksLikeObjectId(serviceParam) ? serviceParam : "";
+  const initialService = initialServiceId ? "" : serviceParam;
 
   const services = await getActiveServices();
 
@@ -70,6 +79,7 @@ export default async function ContactPage({
       <div className="mt-10">
         <ContactForm
           services={services}
+          initialServiceId={initialServiceId}
           initialService={initialService}
           initialCategory={initialCategory}
         />

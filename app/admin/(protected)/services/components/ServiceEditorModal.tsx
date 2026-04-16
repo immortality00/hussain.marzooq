@@ -38,7 +38,6 @@ export default function ServiceEditorModal({
   const [busy, setBusy] = useState(false);
 
   const categoriesClean = useMemo(() => {
-    // Remove any legacy "general" from dropdown
     const filtered = categories.filter((c) => c.slug !== "general");
     return filtered.sort((a, b) => a.order - b.order);
   }, [categories]);
@@ -52,13 +51,10 @@ export default function ServiceEditorModal({
     setSlug(initial?.slug ?? "");
 
     const cat = (initial?.category ?? "").trim();
-    if (cat && cat !== "general") setCategory(cat);
-    else setCategory(hasOthers ? "others" : (categoriesClean[0]?.slug ?? "others"));
+    setCategory(cat && cat !== "general" ? cat : hasOthers ? "others" : (categoriesClean[0]?.slug ?? "others"));
 
     setDescription(initial?.description ?? "");
-    setStartingPrice(
-      initial?.startingPrice === null || initial?.startingPrice === undefined ? "" : String(initial.startingPrice)
-    );
+    setStartingPrice(initial?.startingPrice === null || initial?.startingPrice === undefined ? "" : String(initial.startingPrice));
     setCurrency(initial?.currency ?? "AED");
     setImageUrl(initial?.imageUrl ?? "");
     setIsActive(initial?.isActive ?? true);
@@ -67,169 +63,130 @@ export default function ServiceEditorModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-6">
-      <div className="w-full max-w-2xl rounded-3xl border bg-background p-6 text-foreground shadow-xl">
-        <div className="flex items-center justify-between gap-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-2xl rounded-3xl border bg-background text-foreground shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-4 border-b p-5">
           <h2 className="text-xl font-semibold">{initial ? "Edit Service" : "Create Service"}</h2>
-          <button
-            onClick={onClose}
-            className="rounded-xl border px-3 py-2 text-sm hover:bg-accent transition-colors"
-          >
+          <button onClick={onClose} className="rounded-xl border px-3 py-2 text-sm hover:bg-accent transition-colors">
             Close
           </button>
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-4">
-          <label className="text-sm">
-            <div className="mb-1 text-muted-foreground">Name</div>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
-            />
-          </label>
+        {/* Scrollable body */}
+        <div className="max-h-[70vh] overflow-y-auto p-5">
+          <div className="grid grid-cols-2 gap-4">
+            <label className="text-sm">
+              <div className="mb-1 text-muted-foreground">Name</div>
+              <input value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring" />
+            </label>
 
-          <label className="text-sm">
-            <div className="mb-1 text-muted-foreground">Slug</div>
-            <input
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
-            />
-          </label>
+            <label className="text-sm">
+              <div className="mb-1 text-muted-foreground">Slug</div>
+              <input value={slug} onChange={(e) => setSlug(e.target.value)} className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring" />
+            </label>
 
-          <label className="text-sm">
-            <div className="mb-1 text-muted-foreground">Category</div>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
-            >
-              {categoriesClean.map((c) => (
-                <option key={c.id} value={c.slug} disabled={!c.isActive}>
-                  {c.name} ({c.slug}){c.isActive ? "" : " — inactive"}
-                </option>
-              ))}
-              {!hasOthers ? <option value="others">Others (others)</option> : null}
-            </select>
-          </label>
+            <label className="text-sm">
+              <div className="mb-1 text-muted-foreground">Category</div>
+              <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring">
+                {categoriesClean.map((c) => (
+                  <option key={c.id} value={c.slug} disabled={!c.isActive}>
+                    {c.name} ({c.slug}){c.isActive ? "" : " — inactive"}
+                  </option>
+                ))}
+                {!hasOthers ? <option value="others">Others (others)</option> : null}
+              </select>
+            </label>
 
-          <label className="text-sm">
-            <div className="mb-1 text-muted-foreground">Currency</div>
-            <input
-              value={currency}
-              onChange={(e) => setCurrency(e.target.value)}
-              className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
-            />
-          </label>
+            <label className="text-sm">
+              <div className="mb-1 text-muted-foreground">Currency</div>
+              <input value={currency} onChange={(e) => setCurrency(e.target.value)} className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring" />
+            </label>
 
-          <label className="text-sm">
-            <div className="mb-1 text-muted-foreground">Starting Price</div>
-            <input
-              value={startingPrice}
-              onChange={(e) => setStartingPrice(e.target.value)}
-              inputMode="numeric"
-              className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Leave empty for null"
-            />
-          </label>
+            <label className="text-sm">
+              <div className="mb-1 text-muted-foreground">Starting Price</div>
+              <input value={startingPrice} onChange={(e) => setStartingPrice(e.target.value)} inputMode="numeric" className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring" placeholder="Leave empty for null" />
+            </label>
 
-          <div className="text-sm space-y-2">
-            <div className="text-muted-foreground">Service Image</div>
+            <div className="text-sm space-y-2 col-span-2">
+              <div className="text-muted-foreground">Service Image</div>
+              <div className="flex items-center gap-2">
+                <CldUploadWidget
+                  signatureEndpoint="/api/sign-cloudinary-params"
+                  options={{ folder: "hm_visuals/services", multiple: false, resourceType: "image" }}
+                  onSuccess={(result: unknown) => {
+                    const r = result as WidgetResult;
+                    const info = r?.info;
+                    if (!isRecord(info)) return;
+                    const secureUrl = getString((info as Record<string, unknown>).secure_url);
+                    if (secureUrl) setImageUrl(secureUrl);
+                  }}
+                >
+                  {({ open }) => (
+                    <button type="button" onClick={() => open()} className="rounded-xl border px-3 py-2 text-sm hover:bg-accent transition-colors">
+                      Upload Image
+                    </button>
+                  )}
+                </CldUploadWidget>
 
-            <div className="flex items-center gap-2">
-              <CldUploadWidget
-                signatureEndpoint="/api/sign-cloudinary-params"
-                options={{ folder: "hm_visuals/services", multiple: false, resourceType: "image" }}
-                onSuccess={(result: unknown) => {
-                  const r = result as WidgetResult;
-                  const info = r?.info;
-                  if (!isRecord(info)) return;
-                  const secureUrl = getString((info as Record<string, unknown>).secure_url);
-                  if (secureUrl) setImageUrl(secureUrl);
-                }}
-              >
-                {({ open }) => (
-                  <button
-                    type="button"
-                    onClick={() => open()}
-                    className="rounded-xl border px-3 py-2 text-sm hover:bg-accent transition-colors"
-                  >
-                    Upload Image
-                  </button>
-                )}
-              </CldUploadWidget>
+                <button type="button" onClick={() => setImageUrl("")} className="rounded-xl border px-3 py-2 text-sm hover:bg-accent transition-colors">
+                  Clear
+                </button>
+              </div>
 
-              <button
-                type="button"
-                onClick={() => setImageUrl("")}
-                className="rounded-xl border px-3 py-2 text-sm hover:bg-accent transition-colors"
-              >
-                Clear
-              </button>
+              <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="w-full rounded-xl border bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring" placeholder="or paste image URL" />
+
+              {imageUrl ? (
+                <div className="mt-2 overflow-hidden rounded-2xl border bg-muted">
+                  <Image src={imageUrl} alt="Service image preview" width={1400} height={800} className="h-48 w-full object-cover" sizes="(max-width: 768px) 100vw, 768px" />
+                </div>
+              ) : null}
             </div>
 
-            <input
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              className="w-full rounded-xl border bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring"
-              placeholder="or paste image URL"
-            />
+            <label className="col-span-2 text-sm">
+              <div className="mb-1 text-muted-foreground">Description</div>
+              <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="h-28 w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring" />
+            </label>
+
+            <label className="col-span-2 flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+              Active
+            </label>
           </div>
-
-          <label className="col-span-2 text-sm">
-            <div className="mb-1 text-muted-foreground">Description</div>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="h-28 w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
-            />
-          </label>
-
-          <label className="col-span-2 flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-            Active
-          </label>
         </div>
 
-        {imageUrl ? (
-          <div className="mt-4 overflow-hidden rounded-2xl border bg-muted">
-            <Image
-              src={imageUrl}
-              alt="Service image preview"
-              width={1400}
-              height={800}
-              className="h-56 w-full object-cover"
-              sizes="(max-width: 768px) 100vw, 768px"
-            />
-          </div>
-        ) : null}
+        {/* Sticky footer */}
+        <div className="sticky bottom-0 border-t bg-background p-5">
+          <div className="flex items-center justify-end gap-3">
+            <button onClick={onClose} disabled={busy} className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:opacity-60">
+              Cancel
+            </button>
 
-        <div className="mt-6 flex items-center justify-end gap-3">
-          <button
-            disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                const sp = startingPrice.trim() === "" ? null : Number(startingPrice);
-                await onSave({
-                  name: name.trim(),
-                  slug: slug.trim(),
-                  category: category.trim() || "others",
-                  description: description.trim(),
-                  currency: currency.trim() || "AED",
-                  startingPrice: sp !== null && Number.isFinite(sp) ? sp : null,
-                  imageUrl: imageUrl.trim(),
-                  isActive,
-                });
-              } finally {
-                setBusy(false);
-              }
-            }}
-            className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity disabled:opacity-60"
-          >
-            Save
-          </button>
+            <button
+              disabled={busy}
+              onClick={async () => {
+                setBusy(true);
+                try {
+                  const sp = startingPrice.trim() === "" ? null : Number(startingPrice);
+                  await onSave({
+                    name: name.trim(),
+                    slug: slug.trim(),
+                    category: category.trim() || "others",
+                    description: description.trim(),
+                    currency: currency.trim() || "AED",
+                    startingPrice: sp !== null && Number.isFinite(sp) ? sp : null,
+                    imageUrl: imageUrl.trim(),
+                    isActive,
+                  });
+                } finally {
+                  setBusy(false);
+                }
+              }}
+              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity disabled:opacity-60"
+            >
+              Save
+            </button>
+          </div>
         </div>
       </div>
     </div>

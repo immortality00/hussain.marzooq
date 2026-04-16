@@ -21,8 +21,7 @@ const STATUSES = ["new", "pending", "replied", "approved", "rejected", "resolved
 function fmt(iso: string | null) {
   if (!iso) return "";
   const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleString();
+  return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
 }
 
 function statusPill(status: string) {
@@ -35,43 +34,71 @@ function statusPill(status: string) {
   return "bg-muted border-border";
 }
 
+type ApiInquiriesResponse =
+  | { ok: true; items: Inquiry[] }
+  | { ok: false; error?: string };
+
+function isApiResponse(v: unknown): v is ApiInquiriesResponse {
+  if (typeof v !== "object" || v === null) return false;
+  const r = v as Record<string, unknown>;
+  if (r.ok === true) return Array.isArray(r.items);
+  if (r.ok === false) return true;
+  return false;
+}
+
 export default function AdminInquiriesPage() {
   const [items, setItems] = useState<Inquiry[]>([]);
   const [expandedId, setExpandedId] = useState<string>("");
   const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
-
   const [statusFilter, setStatusFilter] = useState<string>("");
-  const [showArchived, setShowArchived] = useState(false);
+  const [showArchivedSection, setShowArchivedSection] = useState(false);
+
+  // ✅ Separate notes state to prevent focus loss
+  const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
 
   async function load() {
     setMsg(null);
+
     const params = new URLSearchParams();
+    params.set("all", "1");
     if (statusFilter) params.set("status", statusFilter);
-    if (showArchived) params.set("all", "1");
-    const q = params.toString() ? `?${params.toString()}` : "";
 
-    const res = await fetch(`/api/inquiries${q}`, { cache: "no-store" });
-    const data = (await res.json().catch(() => ({}))) as { ok?: boolean; items?: Inquiry[]; error?: string };
+    const res = await fetch(`/api/inquiries?${params.toString()}`, { cache: "no-store" });
+    const raw = (await res.json().catch(() => null)) as unknown;
 
-    if (!res.ok || !data.ok || !Array.isArray(data.items)) {
-      setMsg({ type: "err", text: data.error ?? "Failed to load inquiries." });
+    if (!isApiResponse(raw) || raw.ok !== true || !Array.isArray(raw.items)) {
+      const errText =
+        isApiResponse(raw) && raw.ok === false && typeof raw.error === "string" ? raw.error : "Failed to load inquiries.";
+      setMsg({ type: "err", text: errText });
       return;
     }
 
-    const list = showArchived ? data.items : data.items.filter((x) => !x.isArchived);
-    setItems(list);
+    const itemsArr = raw.items;
+    setItems(itemsArr);
+
+    // initialize draft notes if not present
+    setDraftNotes((prev) => {
+      const next: Record<string, string> = { ...prev };
+      for (const it of itemsArr) {
+        if (next[it.id] === undefined) next[it.id] = it.adminNotes ?? "";
+      }
+      return next;
+    });
   }
 
   useEffect(() => {
     void load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter, showArchived]);
+  }, [statusFilter]);
+
+  const active = useMemo(() => items.filter((x) => !x.isArchived), [items]);
+  const archived = useMemo(() => items.filter((x) => x.isArchived), [items]);
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
-    for (const it of items) m.set(it.status, (m.get(it.status) ?? 0) + 1);
+    for (const it of active) m.set(it.status, (m.get(it.status) ?? 0) + 1);
     return m;
-  }, [items]);
+  }, [active]);
 
   async function patch(id: string, body: Record<string, unknown>) {
     const res = await fetch(`/api/inquiries/${encodeURIComponent(id)}`, {
@@ -95,55 +122,23 @@ export default function AdminInquiriesPage() {
     if (!res.ok || !data.ok) throw new Error(data.error ?? "Delete failed");
   }
 
+  async function restore(id: string) {
+    await patch(id, { isArchived: false });
+  }
+
   function toggleExpand(id: string) {
     setExpandedId((prev) => (prev === id ? "" : id));
     setMsg(null);
   }
 
-  return (
-    <main className="mx-auto max-w-6xl px-6 py-10">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold">Inquiries</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Click an inquiry to expand details and actions.</p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-xl border bg-background px-3 py-2 text-sm"
-          >
-            <option value="">All statuses</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s} ({counts.get(s) ?? 0})
-              </option>
-            ))}
-          </select>
-
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" checked={showArchived} onChange={(e) => setShowArchived(e.target.checked)} />
-            Show archived
-          </label>
-
-          <button className="rounded-xl border px-4 py-2 text-sm hover:bg-accent" onClick={() => void load()}>
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      {msg ? (
-        <div
-          className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
-            msg.type === "ok" ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"
-          }`}
-        >
-          {msg.text}
-        </div>
-      ) : null}
-
+  function Section({ title, list, archivedMode }: { title: string; list: Inquiry[]; archivedMode: boolean }) {
+    return (
       <div className="mt-6 overflow-hidden rounded-2xl border">
+        <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
+          <div className="text-sm font-medium">{title}</div>
+          <div className="text-xs text-muted-foreground">{list.length} item(s)</div>
+        </div>
+
         <div className="grid grid-cols-12 gap-2 border-b px-4 py-3 text-xs font-medium text-muted-foreground">
           <div className="col-span-2">Date</div>
           <div className="col-span-2">Name</div>
@@ -152,8 +147,9 @@ export default function AdminInquiriesPage() {
           <div className="col-span-2">Status</div>
         </div>
 
-        {items.map((it) => {
+        {list.map((it) => {
           const expanded = expandedId === it.id;
+
           return (
             <div key={it.id} className="border-b">
               <button
@@ -168,7 +164,6 @@ export default function AdminInquiriesPage() {
                 <div className="col-span-2">
                   <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs ${statusPill(it.status)}`}>
                     {it.status}
-                    {it.isArchived ? " (archived)" : ""}
                   </span>
                 </div>
               </button>
@@ -192,93 +187,140 @@ export default function AdminInquiriesPage() {
                       <div className="whitespace-pre-wrap">{it.message}</div>
                     </div>
 
-                    <div className="text-sm">
-                      <div className="text-xs text-muted-foreground">Status</div>
-                      <div className="mt-2 flex flex-wrap gap-2">
-                        {STATUSES.map((s) => (
-                          <button
-                            key={s}
-                            className={`rounded-xl border px-3 py-2 text-sm hover:bg-accent ${
-                              it.status === s ? "bg-accent" : ""
-                            }`}
-                            onClick={async () => {
-                              try {
-                                await patch(it.id, { status: s });
-                                setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, status: s } : p)));
-                                setMsg({ type: "ok", text: "✅ Status updated." });
-                              } catch (e: unknown) {
-                                setMsg({ type: "err", text: e instanceof Error ? e.message : "Status update failed." });
-                              }
-                            }}
-                          >
-                            {s}
-                          </button>
-                        ))}
+                    {!archivedMode ? (
+                      <div className="text-sm">
+                        <div className="text-xs text-muted-foreground">Status</div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {STATUSES.map((s) => (
+                            <button
+                              key={s}
+                              className={`rounded-xl border px-3 py-2 text-sm hover:bg-accent ${
+                                it.status === s ? "bg-accent" : ""
+                              }`}
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                try {
+                                  await patch(it.id, { status: s });
+                                  setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, status: s } : p)));
+                                  setMsg({ type: "ok", text: "✅ Status updated." });
+                                } catch (err: unknown) {
+                                  setMsg({
+                                    type: "err",
+                                    text: err instanceof Error ? err.message : "Status update failed.",
+                                  });
+                                }
+                              }}
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    ) : null}
 
                     <div className="text-sm">
                       <div className="text-xs text-muted-foreground">Internal notes</div>
                       <textarea
-                        value={it.adminNotes ?? ""}
-                        onChange={(e) => {
-                          const v = e.target.value;
-                          setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, adminNotes: v } : p)));
-                        }}
+                        value={draftNotes[it.id] ?? ""}
+                        onChange={(e) => setDraftNotes((prev) => ({ ...prev, [it.id]: e.target.value }))}
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
                         className="mt-2 h-28 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                        placeholder="What did you do? Next step?"
                       />
-                      <div className="mt-2 flex gap-2">
+
+                      <div className="mt-2 flex flex-wrap gap-2">
                         <button
                           className="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
-                          onClick={async () => {
+                          onClick={async (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                             try {
-                              const current = items.find((x) => x.id === it.id);
-                              await patch(it.id, { adminNotes: current?.adminNotes ?? "" });
+                              await patch(it.id, { adminNotes: draftNotes[it.id] ?? "" });
+                              setItems((prev) =>
+                                prev.map((p) => (p.id === it.id ? { ...p, adminNotes: draftNotes[it.id] ?? "" } : p))
+                              );
                               setMsg({ type: "ok", text: "✅ Notes saved." });
-                            } catch (e: unknown) {
-                              setMsg({ type: "err", text: e instanceof Error ? e.message : "Save notes failed." });
+                            } catch (err: unknown) {
+                              setMsg({
+                                type: "err",
+                                text: err instanceof Error ? err.message : "Save notes failed.",
+                              });
                             }
                           }}
                         >
                           Save notes
                         </button>
 
-                        {!it.isArchived ? (
+                        {!archivedMode ? (
                           <button
                             className="rounded-xl border px-4 py-2 text-sm hover:bg-red-500/10"
-                            onClick={async () => {
-                              const ok = confirm("Archive this inquiry? (good for spam/test)");
+                            onClick={async (e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              const ok = confirm("Archive this inquiry?");
                               if (!ok) return;
                               try {
                                 await archive(it.id);
                                 setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, isArchived: true } : p)));
-                                setMsg({ type: "ok", text: "✅ Inquiry archived." });
-                              } catch (e: unknown) {
-                                setMsg({ type: "err", text: e instanceof Error ? e.message : "Archive failed." });
+                                setMsg({ type: "ok", text: "✅ Archived." });
+                              } catch (err: unknown) {
+                                setMsg({
+                                  type: "err",
+                                  text: err instanceof Error ? err.message : "Archive failed.",
+                                });
                               }
                             }}
                           >
                             Archive
                           </button>
                         ) : (
-                          <button
-                            className="rounded-xl border px-4 py-2 text-sm hover:bg-red-500/10"
-                            onClick={async () => {
-                              const ok = confirm("Delete forever? This cannot be undone.");
-                              if (!ok) return;
-                              try {
-                                await hardDelete(it.id);
-                                setItems((prev) => prev.filter((p) => p.id !== it.id));
-                                setExpandedId("");
-                                setMsg({ type: "ok", text: "✅ Deleted forever." });
-                              } catch (e: unknown) {
-                                setMsg({ type: "err", text: e instanceof Error ? e.message : "Delete failed." });
-                              }
-                            }}
-                          >
-                            Delete forever
-                          </button>
+                          <>
+                            <button
+                              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                try {
+                                  await restore(it.id);
+                                  setItems((prev) =>
+                                    prev.map((p) => (p.id === it.id ? { ...p, isArchived: false } : p))
+                                  );
+                                  setMsg({ type: "ok", text: "✅ Restored." });
+                                } catch (err: unknown) {
+                                  setMsg({
+                                    type: "err",
+                                    text: err instanceof Error ? err.message : "Restore failed.",
+                                  });
+                                }
+                              }}
+                            >
+                              Restore
+                            </button>
+
+                            <button
+                              className="rounded-xl border px-4 py-2 text-sm hover:bg-red-500/10"
+                              onClick={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                const ok = confirm("Delete forever? This cannot be undone.");
+                                if (!ok) return;
+                                try {
+                                  await hardDelete(it.id);
+                                  setItems((prev) => prev.filter((p) => p.id !== it.id));
+                                  setExpandedId("");
+                                  setMsg({ type: "ok", text: "✅ Deleted forever." });
+                                } catch (err: unknown) {
+                                  setMsg({
+                                    type: "err",
+                                    text: err instanceof Error ? err.message : "Delete failed.",
+                                  });
+                                }
+                              }}
+                            >
+                              Delete forever
+                            </button>
+                          </>
                         )}
                       </div>
                     </div>
@@ -289,8 +331,62 @@ export default function AdminInquiriesPage() {
           );
         })}
 
-        {items.length === 0 ? <div className="p-6 text-sm text-muted-foreground">No inquiries.</div> : null}
+        {list.length === 0 ? <div className="p-6 text-sm text-muted-foreground">No items.</div> : null}
       </div>
+    );
+  }
+
+  return (
+    <main className="mx-auto max-w-6xl px-6 py-10">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold">Inquiries</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Active on top, archived below.</p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="rounded-xl border bg-background px-3 py-2 text-sm"
+          >
+            <option value="">All active statuses</option>
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s} ({counts.get(s) ?? 0})
+              </option>
+            ))}
+          </select>
+
+          <button className="rounded-xl border px-4 py-2 text-sm hover:bg-accent" onClick={() => void load()}>
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {msg ? (
+        <div
+          className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
+            msg.type === "ok" ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"
+          }`}
+        >
+          {msg.text}
+        </div>
+      ) : null}
+
+      <Section title="Active" list={active} archivedMode={false} />
+
+      <div className="mt-6">
+        <button
+          type="button"
+          className="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
+          onClick={() => setShowArchivedSection((p) => !p)}
+        >
+          {showArchivedSection ? "Hide Archived" : `Show Archived (${archived.length})`}
+        </button>
+      </div>
+
+      {showArchivedSection ? <Section title="Archived" list={archived} archivedMode={true} /> : null}
     </main>
   );
 }

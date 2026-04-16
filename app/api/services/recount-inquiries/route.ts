@@ -32,7 +32,7 @@ export async function POST() {
 
     const rows = await inquiriesCol
       .aggregate([
-        { $match: { serviceId: { $type: "string", $ne: "" } } },
+        { $match: { serviceId: { $type: "string", $ne: "" }, isArchived: { $ne: true } } },
         { $group: { _id: "$serviceId", count: { $sum: 1 } } },
       ])
       .toArray();

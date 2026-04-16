@@ -25,7 +25,11 @@ function asString(v: unknown): string {
 }
 function asStringArray(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
-  return v.filter((x) => typeof x === "string").map((s) => s.trim()).filter(Boolean).slice(0, 50);
+  return v
+    .filter((x) => typeof x === "string")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 50);
 }
 function asBoolean(v: unknown): boolean | null {
   return typeof v === "boolean" ? v : null;
@@ -62,22 +66,10 @@ function sanitizeAppearances(v: unknown): Appearance[] {
     const notes = asString(item.notes).trim().slice(0, 2000);
     const link = asString(item.link).trim().slice(0, 500);
 
-    // Require at least a title or venue (so empty rows don’t pollute)
     if (!title && !venue) continue;
 
-    out.push({
-      kind,
-      title,
-      venue,
-      city,
-      country,
-      dateFrom,
-      dateTo,
-      notes,
-      link,
-    });
-
-    if (out.length >= 20) break; // safety
+    out.push({ kind, title, venue, city, country, dateFrom, dateTo, notes, link });
+    if (out.length >= 20) break;
   }
 
   return out;
@@ -133,6 +125,8 @@ export async function POST(request: Request) {
     }
   }
 
+  const now = new Date();
+
   const doc = {
     type,
     title,
@@ -140,29 +134,38 @@ export async function POST(request: Request) {
     location: location || null,
     event: event || null,
     year,
-
     tags,
     categories,
     people,
-
     isPublic,
     appearances,
 
     secureUrl: type === "embed" ? null : secureUrl,
     publicId: type === "embed" ? null : publicId,
     resourceType: type === "embed" ? null : resourceType,
-
     embedUrl: type === "embed" ? embedUrl : null,
 
     order: typeof bodyUnknown.order === "number" && Number.isFinite(bodyUnknown.order) ? bodyUnknown.order : 0,
-
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    updatedAt: now,
   };
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
-  const result = await db.collection("media").insertOne(doc);
+  const col = db.collection("media");
 
-  return noStore({ ok: true, id: String(result.insertedId) });
+  // ✅ Unique key to prevent duplicates
+  const keyFilter =
+    type === "embed"
+      ? ({ type: "embed", embedUrl } as const)
+      : ({ publicId } as const);
+
+  // ✅ Upsert without relying on findOneAndUpdate() return value typings
+  await col.updateOne(keyFilter, { $set: doc, $setOnInsert: { createdAt: now } }, { upsert: true });
+
+  // Fetch the id (guaranteed to exist now)
+  const found = await col.findOne(keyFilter, { projection: { _id: 1 } });
+  const id = found?._id ? String(found._id) : null;
+
+  if (!id) return noStore({ ok: false, error: "Save failed" }, { status: 500 });
+  return noStore({ ok: true, id });
 }
