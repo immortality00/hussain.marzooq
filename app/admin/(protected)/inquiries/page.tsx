@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Inquiry = {
   id: string;
@@ -53,8 +53,8 @@ export default function AdminInquiriesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showArchivedSection, setShowArchivedSection] = useState(false);
 
-  // ✅ Separate notes state to prevent focus loss
-  const [draftNotes, setDraftNotes] = useState<Record<string, string>>({});
+  // ✅ store live textarea content without re-rendering each keypress
+  const notesRef = useRef<Record<string, string>>({});
 
   async function load() {
     setMsg(null);
@@ -68,22 +68,21 @@ export default function AdminInquiriesPage() {
 
     if (!isApiResponse(raw) || raw.ok !== true || !Array.isArray(raw.items)) {
       const errText =
-        isApiResponse(raw) && raw.ok === false && typeof raw.error === "string" ? raw.error : "Failed to load inquiries.";
+        isApiResponse(raw) && raw.ok === false && typeof raw.error === "string"
+          ? raw.error
+          : "Failed to load inquiries.";
       setMsg({ type: "err", text: errText });
       return;
     }
 
-    const itemsArr = raw.items;
-    setItems(itemsArr);
+    setItems(raw.items);
 
-    // initialize draft notes if not present
-    setDraftNotes((prev) => {
-      const next: Record<string, string> = { ...prev };
-      for (const it of itemsArr) {
-        if (next[it.id] === undefined) next[it.id] = it.adminNotes ?? "";
+    // initialize ref values if missing
+    for (const it of raw.items) {
+      if (notesRef.current[it.id] === undefined) {
+        notesRef.current[it.id] = it.adminNotes ?? "";
       }
-      return next;
-    });
+    }
   }
 
   useEffect(() => {
@@ -205,10 +204,7 @@ export default function AdminInquiriesPage() {
                                   setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, status: s } : p)));
                                   setMsg({ type: "ok", text: "✅ Status updated." });
                                 } catch (err: unknown) {
-                                  setMsg({
-                                    type: "err",
-                                    text: err instanceof Error ? err.message : "Status update failed.",
-                                  });
+                                  setMsg({ type: "err", text: err instanceof Error ? err.message : "Status update failed." });
                                 }
                               }}
                             >
@@ -221,9 +217,17 @@ export default function AdminInquiriesPage() {
 
                     <div className="text-sm">
                       <div className="text-xs text-muted-foreground">Internal notes</div>
+
+                      {/* ✅ Uncontrolled textarea = no focus loss while typing */}
                       <textarea
-                        value={draftNotes[it.id] ?? ""}
-                        onChange={(e) => setDraftNotes((prev) => ({ ...prev, [it.id]: e.target.value }))}
+                        key={it.id}
+                        defaultValue={notesRef.current[it.id] ?? it.adminNotes ?? ""}
+                        onInput={(e) => {
+                          const v = (e.target as HTMLTextAreaElement).value;
+                          notesRef.current[it.id] = v;
+                        }}
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()}
                         className="mt-2 h-28 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
@@ -236,16 +240,12 @@ export default function AdminInquiriesPage() {
                             e.preventDefault();
                             e.stopPropagation();
                             try {
-                              await patch(it.id, { adminNotes: draftNotes[it.id] ?? "" });
-                              setItems((prev) =>
-                                prev.map((p) => (p.id === it.id ? { ...p, adminNotes: draftNotes[it.id] ?? "" } : p))
-                              );
+                              const value = notesRef.current[it.id] ?? "";
+                              await patch(it.id, { adminNotes: value });
+                              setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, adminNotes: value } : p)));
                               setMsg({ type: "ok", text: "✅ Notes saved." });
                             } catch (err: unknown) {
-                              setMsg({
-                                type: "err",
-                                text: err instanceof Error ? err.message : "Save notes failed.",
-                              });
+                              setMsg({ type: "err", text: err instanceof Error ? err.message : "Save notes failed." });
                             }
                           }}
                         >
@@ -265,10 +265,7 @@ export default function AdminInquiriesPage() {
                                 setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, isArchived: true } : p)));
                                 setMsg({ type: "ok", text: "✅ Archived." });
                               } catch (err: unknown) {
-                                setMsg({
-                                  type: "err",
-                                  text: err instanceof Error ? err.message : "Archive failed.",
-                                });
+                                setMsg({ type: "err", text: err instanceof Error ? err.message : "Archive failed." });
                               }
                             }}
                           >
@@ -283,15 +280,10 @@ export default function AdminInquiriesPage() {
                                 e.stopPropagation();
                                 try {
                                   await restore(it.id);
-                                  setItems((prev) =>
-                                    prev.map((p) => (p.id === it.id ? { ...p, isArchived: false } : p))
-                                  );
+                                  setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, isArchived: false } : p)));
                                   setMsg({ type: "ok", text: "✅ Restored." });
                                 } catch (err: unknown) {
-                                  setMsg({
-                                    type: "err",
-                                    text: err instanceof Error ? err.message : "Restore failed.",
-                                  });
+                                  setMsg({ type: "err", text: err instanceof Error ? err.message : "Restore failed." });
                                 }
                               }}
                             >
@@ -311,10 +303,7 @@ export default function AdminInquiriesPage() {
                                   setExpandedId("");
                                   setMsg({ type: "ok", text: "✅ Deleted forever." });
                                 } catch (err: unknown) {
-                                  setMsg({
-                                    type: "err",
-                                    text: err instanceof Error ? err.message : "Delete failed.",
-                                  });
+                                  setMsg({ type: "err", text: err instanceof Error ? err.message : "Delete failed." });
                                 }
                               }}
                             >

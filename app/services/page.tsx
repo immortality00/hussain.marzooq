@@ -48,30 +48,16 @@ async function getBaseUrlFromHeaders(): Promise<string> {
   return `${proto}://${host}`;
 }
 
-function workLinkForCategory(categorySlug: string, serviceSlug: string): { href: string; label: string } {
+function workLinkForCategory(categorySlug: string): { href: string; label: string } {
   const c = categorySlug.trim().toLowerCase();
 
-  // For "general" or empty, don’t redirect to random portfolio sections
-  if (!c || c === "general") {
-    return { href: `/services/${encodeURIComponent(serviceSlug)}`, label: "View details" };
-  }
-
   if (c.includes("photo")) return { href: "/photography", label: "See photos" };
-
-  if (c.includes("video") || c.includes("film") || c.includes("reel")) {
-    return { href: "/videography/videos", label: "See videos" };
-  }
-
+  if (c.includes("video") || c.includes("film") || c.includes("reel")) return { href: "/videography/videos", label: "See videos" };
   if (c.includes("dance")) return { href: "/dance", label: "See dance" };
-
   if (c.includes("nft")) return { href: "/nft", label: "See NFTs" };
+  if (c.includes("web") || c.includes("dev") || c.includes("code")) return { href: "/web-development", label: "See web work" };
 
-  if (c.includes("web") || c.includes("dev") || c.includes("code")) {
-    return { href: "/web-development", label: "See web work" };
-  }
-
-  // Unknown category: stay in services context
-  return { href: `/services/${encodeURIComponent(serviceSlug)}`, label: "View details" };
+  return { href: "/photography", label: "See my work" };
 }
 
 export default async function ServicesPage({
@@ -126,9 +112,10 @@ export default async function ServicesPage({
             <Link
               key={t.slug}
               href={t.slug === "all" ? "/services" : `/services?category=${encodeURIComponent(t.slug)}`}
-              className={`rounded-full border px-3 py-1.5 text-sm transition-colors ${
-                active ? "bg-accent" : "hover:bg-accent/40"
-              }`}
+              className={[
+                "rounded-full border px-4 py-2 text-xs transition-colors",
+                active ? "bg-foreground text-background" : "hover:bg-accent",
+              ].join(" ")}
             >
               {t.name}
             </Link>
@@ -136,14 +123,16 @@ export default async function ServicesPage({
         })}
       </div>
 
-      <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <section className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {services.length === 0 ? (
-          <div className="rounded-2xl border p-6 text-sm text-muted-foreground">No services yet.</div>
+          <div className="rounded-2xl border p-6 text-sm text-muted-foreground">
+            No services found for this category yet.
+          </div>
         ) : (
           services.map((s) => {
             const img = safeString(s.imageUrl, "").trim();
             const hasPrice = typeof s.startingPrice === "number" && Number.isFinite(s.startingPrice);
-            const workLink = workLinkForCategory(safeString(s.category, ""), safeString(s.slug, ""));
+            const workLink = workLinkForCategory(safeString(s.category, ""));
 
             return (
               <article key={s.id} className="group overflow-hidden rounded-2xl border bg-background">

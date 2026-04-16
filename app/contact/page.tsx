@@ -6,7 +6,7 @@ export const revalidate = 0;
 
 type SP = {
   success?: string;
-  service?: string;   // can be serviceId (24hex) OR slug/name
+  service?: string;   // can be: ObjectId OR slug OR name
   category?: string;
 };
 
@@ -21,10 +21,6 @@ type ServiceItem = {
 
 function asString(v: unknown): string | null {
   return typeof v === "string" ? v : null;
-}
-
-function looksLikeObjectId(s: string): boolean {
-  return /^[a-fA-F0-9]{24}$/.test(s.trim());
 }
 
 async function getActiveServices(): Promise<ServiceItem[]> {
@@ -55,11 +51,8 @@ export default async function ContactPage({
   const sp = await searchParams;
 
   const success = sp?.success === "1";
-  const serviceParam = typeof sp?.service === "string" ? sp.service.trim() : "";
+  const initialService = typeof sp?.service === "string" ? sp.service : "";
   const initialCategory = typeof sp?.category === "string" ? sp.category : "";
-
-  const initialServiceId = serviceParam && looksLikeObjectId(serviceParam) ? serviceParam : "";
-  const initialService = initialServiceId ? "" : serviceParam;
 
   const services = await getActiveServices();
 
@@ -79,7 +72,6 @@ export default async function ContactPage({
       <div className="mt-10">
         <ContactForm
           services={services}
-          initialServiceId={initialServiceId}
           initialService={initialService}
           initialCategory={initialCategory}
         />
