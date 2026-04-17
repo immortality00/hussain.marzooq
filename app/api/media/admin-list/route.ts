@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+import { requireAdminOr401 } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
 
 function asString(v: unknown): string | null {
   return typeof v === "string" ? v : null;
 }
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
 function asStringArray(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
   return v.map((x) => (typeof x === "string" ? x : String(x))).map((s) => s.trim()).filter(Boolean);
+}
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === "object" && v !== null;
 }
 
 type Appearance = {
@@ -52,24 +53,22 @@ function sanitizeAppearances(v: unknown): Appearance[] {
 }
 
 export async function GET(req: Request) {
-  const url = new URL(req.url);
+  const deny = await requireAdminOr401();
+  if (deny) return deny as unknown as Response;
 
-  const type = url.searchParams.get("type"); // image|video|embed|all
-  const category = url.searchParams.get("category")?.trim();
+  const url = new URL(req.url);
   const limitParam = url.searchParams.get("limit");
-  const limit = Math.min(Math.max(Number(limitParam || 24), 1), 60);
+  const limit = Math.min(Math.max(Number(limitParam || 50), 1), 200);
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
-  const query: Record<string, unknown> = {
-    $or: [{ isPublic: true }, { isPublic: { $exists: false } }],
-  };
-
-  if (type && type !== "all") query.type = type;
-  if (category) query.categories = category;
-
-  const docs = await db.collection("media").find(query).sort({ createdAt: -1 }).limit(limit).toArray();
+  const docs = await db
+    .collection("media")
+    .find({})
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .toArray();
 
   const items = docs.map((d) => {
     const asset = isRecord(d.asset) ? d.asset : {};
@@ -79,7 +78,6 @@ export async function GET(req: Request) {
       asString(asset.secureUrl) ??
       asString((asset as Record<string, unknown>).secure_url);
 
-    const publicId = asString(d.publicId) ?? asString(asset.publicId);
     const embedUrl = asString(d.embedUrl) ?? asString(asset.embedUrl);
 
     return {
@@ -92,15 +90,19 @@ export async function GET(req: Request) {
       year: typeof d.year === "number" ? d.year : null,
       tags: asStringArray(d.tags),
       categories: asStringArray(d.categories),
+      people: asStringArray(d.people),
+      isPublic: typeof d.isPublic === "boolean" ? d.isPublic : true,
       appearances: sanitizeAppearances(d.appearances),
       secureUrl: secureUrl ?? null,
-      publicId,
-      embedUrl,
+      publicId: asString(d.publicId),
+      resourceType: asString(d.resourceType),
+      embedUrl: embedUrl ?? null,
       createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : null,
+      updatedAt: d.updatedAt ? new Date(d.updatedAt).toISOString() : null,
     };
   });
 
-  const res = NextResponse.json({ items });
+  const res = NextResponse.json({ ok: true, items });
   res.headers.set("Cache-Control", "no-store");
   return res;
 }
