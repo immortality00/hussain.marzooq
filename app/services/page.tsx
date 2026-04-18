@@ -51,12 +51,26 @@ async function getBaseUrlFromHeaders(): Promise<string> {
 function workLinkForCategory(categorySlug: string): { href: string; label: string } {
   const c = categorySlug.trim().toLowerCase();
 
+  // photography
   if (c.includes("photo")) return { href: "/photography", label: "See photos" };
-  if (c.includes("video") || c.includes("film") || c.includes("reel")) return { href: "/videography/videos", label: "See videos" };
-  if (c.includes("dance")) return { href: "/dance", label: "See dance" };
-  if (c.includes("nft")) return { href: "/nft", label: "See NFTs" };
-  if (c.includes("web") || c.includes("dev") || c.includes("code")) return { href: "/web-development", label: "See web work" };
 
+  // videography
+  if (c.includes("video") || c.includes("film") || c.includes("reel")) {
+    return { href: "/videography/videos", label: "See videos" };
+  }
+
+  // dance
+  if (c.includes("dance")) return { href: "/dance", label: "See dance" };
+
+  // nft
+  if (c.includes("nft")) return { href: "/nft", label: "See NFTs" };
+
+  // web dev
+  if (c.includes("web") || c.includes("dev") || c.includes("code")) {
+    return { href: "/web-development", label: "See web work" };
+  }
+
+  // fallback
   return { href: "/photography", label: "See my work" };
 }
 
@@ -105,6 +119,7 @@ export default async function ServicesPage({
         </p>
       </header>
 
+      {/* Category tabs */}
       <div className="mt-6 flex flex-wrap gap-2">
         {tabs.map((t) => {
           const active = t.slug === selectedCategory;
@@ -123,6 +138,7 @@ export default async function ServicesPage({
         })}
       </div>
 
+      {/* Grid */}
       <section className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {services.length === 0 ? (
           <div className="rounded-2xl border p-6 text-sm text-muted-foreground">
@@ -136,7 +152,7 @@ export default async function ServicesPage({
 
             return (
               <article key={s.id} className="group overflow-hidden rounded-2xl border bg-background">
-                <div className="relative h-[200px] w-full overflow-hidden">
+                <div className="relative h-50 w-full overflow-hidden">
                   {img ? (
                     <Image
                       src={img}
@@ -147,9 +163,9 @@ export default async function ServicesPage({
                       priority={false}
                     />
                   ) : (
-                    <div className="h-full w-full bg-gradient-to-br from-muted to-background" />
+                    <div className="h-full w-full bg-linear-to-br from-muted to-background" />
                   )}
-                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/70 via-background/0 to-background/0" />
+                  <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-background/70 via-background/0 to-background/0" />
                 </div>
 
                 <div className="p-5">

@@ -1,13 +1,13 @@
-import Link from "next/link";
+"use client";
+
+import { useEffect, useState } from "react";
 import Image from "next/image";
-import clientPromise from "@/lib/mongodb";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
-type MediaDoc = {
-  _id: string;
-  type: "image" | "video" | "embed";
+type MediaItem = {
+  id: string;
+  type: string;
   title: string;
   location: string | null;
   event: string | null;
@@ -15,174 +15,176 @@ type MediaDoc = {
   tags: string[];
   categories: string[];
   isPublic: boolean;
-  assetUrl: string | null;
+  secureUrl: string | null;
   embedUrl: string | null;
-  createdAt?: string;
+  createdAt: string | null;
 };
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
-function getString(v: unknown): string | undefined {
-  return typeof v === "string" ? v : undefined;
-}
-function getStringArray(v: unknown): string[] {
-  if (!Array.isArray(v)) return [];
-  return v
-    .map((x) => (typeof x === "string" ? x : String(x)))
-    .map((x) => x.trim())
-    .filter(Boolean);
+function getErrorMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (typeof e === "string") return e;
+  return "Unknown error";
 }
 
-export default async function AdminMediaListPage() {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+export default function AdminMediaListPage() {
+  const router = useRouter();
+  const [items, setItems] = useState<MediaItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
-  const docs = await db.collection("media").find({}).sort({ createdAt: -1 }).limit(50).toArray();
+  async function load() {
+    setBanner(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/media/admin-list?limit=120", { cache: "no-store" });
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; items?: MediaItem[]; error?: string };
+      if (!res.ok || !data?.ok || !Array.isArray(data.items)) {
+        setBanner({ type: "err", text: data?.error ?? "Failed to load media." });
+        setLoading(false);
+        return;
+      }
+      setItems(data.items);
+    } catch (e: unknown) {
+      setBanner({ type: "err", text: `Failed to load: ${getErrorMessage(e)}` });
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const items: MediaDoc[] = docs.map((d) => {
-    const asset = isRecord(d.asset) ? d.asset : {};
+  async function del(id: string) {
+    const ok = confirm("Delete this media forever? This cannot be undone.");
+    if (!ok) return;
 
-    // Support BOTH legacy schema (asset.secureUrl) and current schema (root secureUrl)
-    const rootSecureUrl = getString(d.secureUrl);
-    const assetSecureUrl = getString(asset.secureUrl) ?? getString((asset as Record<string, unknown>).secure_url);
-    const assetUrl = rootSecureUrl ?? assetSecureUrl ?? null;
+    setBanner(null);
+    try {
+      const res = await fetch(`/api/media/${encodeURIComponent(id)}`, { method: "DELETE" });
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
+      if (!res.ok || !data?.ok) {
+        setBanner({ type: "err", text: data?.error ?? "Delete failed." });
+        return;
+      }
+      setItems((prev) => prev.filter((x) => x.id !== id));
+      setBanner({ type: "ok", text: "✅ Deleted." });
+    } catch (e: unknown) {
+      setBanner({ type: "err", text: `Delete error: ${getErrorMessage(e)}` });
+    }
+  }
 
-    const rootEmbedUrl = getString(d.embedUrl);
-    const assetEmbedUrl = getString(asset.embedUrl);
-    const embedUrl = rootEmbedUrl ?? assetEmbedUrl ?? null;
-
-    const categories = getStringArray(d.categories);
-
-    return {
-      _id: String(d._id),
-      type: d.type === "video" || d.type === "embed" || d.type === "image" ? d.type : "image",
-      title: typeof d.title === "string" ? d.title : "",
-      location: typeof d.location === "string" ? d.location : null,
-      event: typeof d.event === "string" ? d.event : null,
-      year: typeof d.year === "number" ? d.year : null,
-      tags: getStringArray(d.tags),
-      categories,
-      isPublic: typeof d.isPublic === "boolean" ? d.isPublic : true,
-      assetUrl,
-      embedUrl,
-      createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : undefined,
-    };
-  });
+  useEffect(() => {
+    void load();
+  }, []);
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Media • Saved</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Latest 50 media items saved in MongoDB.</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Media</h1>
+          <p className="mt-2 text-sm text-muted-foreground">Edit and delete media items.</p>
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href="/admin/media" className="rounded-full border px-3 py-1.5 text-sm hover:bg-accent transition-colors">
-            Upload new
+          <Link href="/admin/media" className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors">
+            Upload / Create
           </Link>
+          <button
+            type="button"
+            onClick={() => void load()}
+            disabled={loading}
+            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:opacity-60"
+          >
+            Refresh
+          </button>
         </div>
       </div>
 
+      {banner ? (
+        <div
+          className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
+            banner.type === "ok" ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"
+          }`}
+        >
+          {banner.text}
+        </div>
+      ) : null}
+
       <div className="mt-8 space-y-4">
         {items.length === 0 ? (
-          <div className="rounded-2xl border p-6 text-sm text-muted-foreground">No media saved yet.</div>
+          <div className="rounded-2xl border p-6 text-sm text-muted-foreground">No media yet.</div>
         ) : (
-          items.map((m) => {
-            const url = m.assetUrl ?? "";
-            const canPreviewImage = m.type === "image" && url.length > 0;
-            const canPreviewVideo = m.type === "video" && url.length > 0;
-
-            return (
-              <div key={m._id} className="rounded-2xl border p-5">
-                <div className="grid gap-4 md:grid-cols-[220px_1fr]">
-                  <div className="overflow-hidden rounded-2xl border bg-muted">
-                    {canPreviewImage ? (
-                      <div className="relative aspect-[4/3]">
-                        <Image
-                          src={url}
-                          alt={m.title}
-                          fill
-                          className="object-cover"
-                          sizes="(max-width: 768px) 100vw, 220px"
-                        />
-                      </div>
-                    ) : canPreviewVideo ? (
-                      <video className="h-full w-full" controls preload="metadata" src={url} />
-                    ) : m.type === "embed" && m.embedUrl ? (
-                      <div className="flex h-[165px] items-center justify-center p-3 text-xs text-muted-foreground">
-                        Embed
-                      </div>
+          items.map((m) => (
+            <div key={m.id} className="rounded-2xl border p-5">
+              <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+                <div className="overflow-hidden rounded-2xl border bg-muted">
+                  {m.secureUrl ? (
+                    m.type === "video" ? (
+                      <video className="h-full w-full" controls preload="metadata" src={m.secureUrl} />
                     ) : (
-                      <div className="flex h-[165px] items-center justify-center text-xs text-muted-foreground">
-                        No preview
+                      <div className="relative aspect-4/3">
+                        <Image src={m.secureUrl} alt={m.title} fill className="object-cover" sizes="240px" />
                       </div>
-                    )}
+                    )
+                  ) : (
+                    <div className="flex h-[180px] items-center justify-center text-xs text-muted-foreground">No preview</div>
+                  )}
+                </div>
+
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-lg font-semibold">{m.title}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">
+                        {m.type} • {m.isPublic ? "Public" : "Private"}
+                        {m.year ? ` • ${m.year}` : ""}
+                        {m.location ? ` • ${m.location}` : ""}
+                        {m.event ? ` • ${m.event}` : ""}
+                      </div>
+                    </div>
+
+                    <div className="flex shrink-0 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => router.push(`/admin/media?edit=${encodeURIComponent(m.id)}`)}
+                        className="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void del(m.id)}
+                        className="rounded-xl border px-4 py-2 text-sm hover:bg-red-500/10"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
 
-                  <div>
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <div className="font-semibold">{m.title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {m.createdAt ? new Date(m.createdAt).toLocaleString() : ""}
-                      </div>
+                  {m.categories?.length ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {m.categories.slice(0, 10).map((c) => (
+                        <span key={`${m.id}-${c}`} className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                          {c}
+                        </span>
+                      ))}
                     </div>
+                  ) : (
+                    <div className="mt-3 text-xs text-muted-foreground">No categories</div>
+                  )}
 
-                    <div className="mt-2 text-sm text-muted-foreground">
-                      <span className="rounded-full border px-2 py-0.5 text-xs">{m.type}</span>
-                      <span className="ml-2 rounded-full border px-2 py-0.5 text-xs">
-                        {m.isPublic ? "Public" : "Private"}
-                      </span>
-                      {m.year ? <span className="ml-2">• {m.year}</span> : null}
-                      {m.location ? <span className="ml-2">• {m.location}</span> : null}
-                      {m.event ? <span className="ml-2">• {m.event}</span> : null}
+                  {m.tags?.length ? (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {m.tags.slice(0, 12).map((t) => (
+                        <span key={`${m.id}-${t}`} className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
+                          {t}
+                        </span>
+                      ))}
                     </div>
+                  ) : null}
 
-                    {m.categories.length ? (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {m.categories.slice(0, 10).map((c) => (
-                          <span key={`${m._id}-${c}`} className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-                            {c}
-                          </span>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="mt-3 text-xs text-muted-foreground">No categories</div>
-                    )}
-
-                    {m.tags.length ? (
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {m.tags.slice(0, 12).map((t) => (
-                          <span key={`${m._id}-${t}`} className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null}
-
-                    <div className="mt-4 text-sm">
-                      {m.type === "embed" && m.embedUrl ? (
-                        <a className="underline" href={m.embedUrl} target="_blank" rel="noreferrer">
-                          Open embed URL
-                        </a>
-                      ) : url ? (
-                        <a className="underline" href={url} target="_blank" rel="noreferrer">
-                          Open Cloudinary file
-                        </a>
-                      ) : (
-                        <span className="text-muted-foreground">No asset URL</span>
-                      )}
-                    </div>
-
-                    <div className="mt-2 text-xs text-muted-foreground">
-                      ID: <span className="font-mono">{m._id}</span>
-                    </div>
-                  </div>
+                  <div className="mt-3 text-xs text-muted-foreground font-mono">ID: {m.id}</div>
                 </div>
               </div>
-            );
-          })
+            </div>
+          ))
         )}
       </div>
     </div>

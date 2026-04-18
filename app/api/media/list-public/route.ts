@@ -91,6 +91,7 @@ export async function GET(req: Request) {
       event: asString(d.event),
       year: typeof d.year === "number" ? d.year : null,
       tags: asStringArray(d.tags),
+      people: asStringArray(d.people),
       categories: asStringArray(d.categories),
       appearances: sanitizeAppearances(d.appearances),
       secureUrl: secureUrl ?? null,
