@@ -14,6 +14,7 @@ type MediaItem = {
   year: number | null;
   tags: string[];
   categories: string[];
+  people: string[];
   isPublic: boolean;
   secureUrl: string | null;
   embedUrl: string | null;
@@ -40,7 +41,6 @@ export default function AdminMediaListPage() {
       const data = (await res.json().catch(() => null)) as { ok?: boolean; items?: MediaItem[]; error?: string };
       if (!res.ok || !data?.ok || !Array.isArray(data.items)) {
         setBanner({ type: "err", text: data?.error ?? "Failed to load media." });
-        setLoading(false);
         return;
       }
       setItems(data.items);
@@ -75,16 +75,16 @@ export default function AdminMediaListPage() {
   }, []);
 
   return (
-    <div>
+    <main className="mx-auto max-w-6xl px-6 py-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Media</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Edit and delete media items.</p>
+          <p className="mt-2 text-sm text-muted-foreground">Edit or delete existing media items.</p>
         </div>
 
         <div className="flex items-center gap-2">
           <Link href="/admin/media" className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors">
-            Upload / Create
+            Upload new
           </Link>
           <button
             type="button"
@@ -124,7 +124,9 @@ export default function AdminMediaListPage() {
                       </div>
                     )
                   ) : (
-                    <div className="flex h-[180px] items-center justify-center text-xs text-muted-foreground">No preview</div>
+                    <div className="flex h-[180px] items-center justify-center text-xs text-muted-foreground">
+                      No preview
+                    </div>
                   )}
                 </div>
 
@@ -172,7 +174,7 @@ export default function AdminMediaListPage() {
 
                   {m.tags?.length ? (
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {m.tags.slice(0, 12).map((t) => (
+                      {m.tags.slice(0, 14).map((t) => (
                         <span key={`${m.id}-${t}`} className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
                           {t}
                         </span>
@@ -187,6 +189,6 @@ export default function AdminMediaListPage() {
           ))
         )}
       </div>
-    </div>
+    </main>
   );
 }

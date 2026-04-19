@@ -1,53 +1,44 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-
-type NextCta = { href: string; label: string };
-
-function getNextCta(pathname: string): NextCta {
-  // Simple, safe routing table (we’ll improve later)
-  if (pathname === "/showreel") return { href: "/services", label: "See Services" };
-  if (pathname === "/photo-reel") return { href: "/services", label: "See Services" };
-
-  if (pathname.startsWith("/photography")) return { href: "/photo-reel", label: "Photo Reel" };
-  if (pathname.startsWith("/videography")) return { href: "/showreel", label: "Showreel" };
-
-  if (pathname.startsWith("/nft")) return { href: "/nft", label: "Explore NFTs" };
-  if (pathname.startsWith("/dance")) return { href: "/dance", label: "More Dance" };
-  if (pathname.startsWith("/web-dev")) return { href: "/web-dev", label: "Explore Builds" };
-
-  if (pathname.startsWith("/people")) return { href: "/photography", label: "Explore Work" };
-
-  return { href: "/photography", label: "Explore Work" };
-}
 
 export function StickyCta() {
-  const pathname = usePathname();
-  const next = getNextCta(pathname);
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    function onOpen() {
+      setHidden(true);
+    }
+    function onClose() {
+      setHidden(false);
+    }
+
+    window.addEventListener("hm_modal_open", onOpen);
+    window.addEventListener("hm_modal_close", onClose);
+
+    return () => {
+      window.removeEventListener("hm_modal_open", onOpen);
+      window.removeEventListener("hm_modal_close", onClose);
+    };
+  }, []);
+
+  if (hidden) return null;
 
   return (
-    <div className="fixed bottom-4 left-0 right-0 z-50 px-4">
-      <div className="mx-auto max-w-6xl">
-        <div className="flex items-center justify-between gap-3 rounded-2xl border bg-background/80 backdrop-blur px-3 py-3 shadow-sm">
-          <div className="text-sm text-muted-foreground">
-            Ready when you are.
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href={next.href}
-              className="rounded-full border px-4 py-2 text-sm hover:bg-accent transition-colors"
-            >
-              {next.label}
-            </Link>
-            <Link
-              href="/contact"
-              className="rounded-full bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
-            >
-              Book
-            </Link>
-          </div>
+    <div className="fixed bottom-4 left-4 right-4 z-40 mx-auto max-w-4xl">
+      <div className="flex items-center justify-between gap-3 rounded-2xl border bg-background/80 px-4 py-3 backdrop-blur">
+        <div className="text-sm">
+          <div className="font-semibold">Ready to book?</div>
+          <div className="text-xs text-muted-foreground">Tell me what you need and I’ll reply fast.</div>
+        </div>
+        <div className="flex gap-2">
+          <Link
+            href="/contact"
+            className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90"
+          >
+            Book
+          </Link>
         </div>
       </div>
     </div>

@@ -11,7 +11,11 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 }
 function asStringArray(v: unknown): string[] {
   if (!Array.isArray(v)) return [];
-  return v.map((x) => (typeof x === "string" ? x : String(x))).map((s) => s.trim()).filter(Boolean);
+  return v
+    .map((x) => (typeof x === "string" ? x : String(x)))
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 60);
 }
 
 type Appearance = {
@@ -31,6 +35,7 @@ function sanitizeAppearances(v: unknown): Appearance[] {
   const out: Appearance[] = [];
   for (const item of v) {
     if (!isRecord(item)) continue;
+
     const kindRaw = asString(item.kind);
     const kind = kindRaw === "featured" ? "featured" : kindRaw === "exhibited" ? "exhibited" : null;
     if (!kind) continue;
@@ -46,9 +51,16 @@ function sanitizeAppearances(v: unknown): Appearance[] {
       notes: asString(item.notes) ?? "",
       link: asString(item.link) ?? "",
     });
+
     if (out.length >= 50) break;
   }
   return out;
+}
+
+function noStore(body: unknown, init?: ResponseInit) {
+  const res = NextResponse.json(body, init);
+  res.headers.set("Cache-Control", "no-store");
+  return res;
 }
 
 export async function GET(req: Request) {
@@ -75,9 +87,7 @@ export async function GET(req: Request) {
     const asset = isRecord(d.asset) ? d.asset : {};
 
     const secureUrl =
-      asString(d.secureUrl) ??
-      asString(asset.secureUrl) ??
-      asString((asset as Record<string, unknown>).secure_url);
+      asString(d.secureUrl) ?? asString(asset.secureUrl) ?? asString((asset as Record<string, unknown>).secure_url);
 
     const publicId = asString(d.publicId) ?? asString(asset.publicId);
     const embedUrl = asString(d.embedUrl) ?? asString(asset.embedUrl);
@@ -91,8 +101,8 @@ export async function GET(req: Request) {
       event: asString(d.event),
       year: typeof d.year === "number" ? d.year : null,
       tags: asStringArray(d.tags),
-      people: asStringArray(d.people),
       categories: asStringArray(d.categories),
+      people: asStringArray(d.people),
       appearances: sanitizeAppearances(d.appearances),
       secureUrl: secureUrl ?? null,
       publicId,
@@ -101,7 +111,5 @@ export async function GET(req: Request) {
     };
   });
 
-  const res = NextResponse.json({ items });
-  res.headers.set("Cache-Control", "no-store");
-  return res;
+  return noStore({ items });
 }

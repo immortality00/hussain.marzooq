@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 
 type Appearance = {
   kind: "featured" | "exhibited";
@@ -19,65 +19,53 @@ type MediaItem = {
   id: string;
   type: string;
   title: string;
-  description?: string | null;
+  description: string | null;
   location: string | null;
   event: string | null;
   year: number | null;
   tags: string[];
-  categories?: string[];
-  people?: string[];
-  appearances?: Appearance[];
+  categories: string[];
+  people: string[];
+  appearances: Appearance[];
   secureUrl: string | null;
-  embedUrl?: string | null;
+  embedUrl: string | null;
+  createdAt: string | null;
 };
 
-function toEmbedUrl(raw: string): string | null {
-  const input = raw.trim();
-  if (!input) return null;
-
-  let u: URL;
-  try {
-    u = new URL(input);
-  } catch {
-    return null;
-  }
-
-  const host = u.hostname.replace(/^www\./, "");
-
-  if (host === "youtube.com" || host === "m.youtube.com") {
-    const id = u.searchParams.get("v");
-    if (!id) return null;
-    return `https://www.youtube-nocookie.com/embed/${id}`;
-  }
-  if (host === "youtu.be") {
-    const id = u.pathname.split("/").filter(Boolean)[0];
-    if (!id) return null;
-    return `https://www.youtube-nocookie.com/embed/${id}`;
-  }
-  if (host === "vimeo.com") {
-    const id = u.pathname.split("/").filter(Boolean)[0];
-    if (!id) return null;
-    return `https://player.vimeo.com/video/${id}`;
-  }
-  if (host === "player.vimeo.com") return input;
-  if (host === "youtube-nocookie.com") return input;
-  if (host === "youtube.com" && u.pathname.includes("/embed/")) return input;
-
-  return null;
-}
-
 function Pill({ children }: { children: string }) {
-  return <span className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">{children}</span>;
+  return (
+    <span className="rounded-full border bg-background/60 px-2 py-0.5 text-xs text-muted-foreground">
+      {children}
+    </span>
+  );
 }
 
-function SectionTitle({ children }: { children: string }) {
-  return <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{children}</div>;
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border bg-background/50 p-4">
+      <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{title}</div>
+      <div className="mt-2">{children}</div>
+    </section>
+  );
+}
+
+function formatPlace(a: Appearance) {
+  return [a.venue, a.city, a.country].filter(Boolean).join(" • ");
+}
+function formatDates(a: Appearance) {
+  return [a.dateFrom, a.dateTo].filter(Boolean).join(" → ");
 }
 
 export function MediaGrid({ items }: { items: MediaItem[] }) {
   const [q, setQ] = useState("");
   const [activeTag, setActiveTag] = useState<string>("");
   const [active, setActive] = useState<MediaItem | null>(null);
+
+  // Hide sticky CTA while modal open
+  useEffect(() => {
+    if (active) window.dispatchEvent(new Event("hm_modal_open"));
+    else window.dispatchEvent(new Event("hm_modal_close"));
+  }, [active]);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -88,23 +76,25 @@ export function MediaGrid({ items }: { items: MediaItem[] }) {
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
     return items.filter((m) => {
-      const text = `${m.title} ${m.location ?? ""} ${m.event ?? ""} ${(m.tags ?? []).join(" ")} ${(m.people ?? []).join(" ")}`.toLowerCase();
+      const text =
+        `${m.title} ${m.description ?? ""} ${m.location ?? ""} ${m.event ?? ""} ${(m.tags ?? []).join(" ")} ${(m.people ?? []).join(" ")}`.toLowerCase();
       const matchesQuery = query ? text.includes(query) : true;
       const matchesTag = activeTag ? m.tags.includes(activeTag) : true;
       return matchesQuery && matchesTag;
     });
   }, [items, q, activeTag]);
 
-  const featured = useMemo(() => (active?.appearances ?? []).filter((a) => a.kind === "featured"), [active]);
-  const exhibited = useMemo(() => (active?.appearances ?? []).filter((a) => a.kind === "exhibited"), [active]);
+  const exhibitions = useMemo(() => (active?.appearances ?? []).filter((a) => a.kind === "exhibited"), [active]);
+  const features = useMemo(() => (active?.appearances ?? []).filter((a) => a.kind === "featured"), [active]);
 
   return (
     <div className="mt-10 space-y-6">
+      {/* Search */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search by title, location, event, tag, people…"
+          placeholder="Search by title, location, event, people, tag…"
           className="w-full rounded-2xl border bg-background px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-ring sm:max-w-md"
         />
         <button
@@ -119,21 +109,27 @@ export function MediaGrid({ items }: { items: MediaItem[] }) {
         </button>
       </div>
 
+      {/* Tags */}
       {allTags.length ? (
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setActiveTag("")}
-            className={`rounded-full border px-3 py-1 text-xs transition-colors ${activeTag === "" ? "bg-accent" : "hover:bg-accent/40"}`}
+            className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+              activeTag === "" ? "bg-accent" : "hover:bg-accent/40"
+            }`}
           >
             All
           </button>
+
           {allTags.slice(0, 30).map((t) => (
             <button
               key={t}
               type="button"
               onClick={() => setActiveTag(t === activeTag ? "" : t)}
-              className={`rounded-full border px-3 py-1 text-xs transition-colors ${t === activeTag ? "bg-accent" : "hover:bg-accent/40"}`}
+              className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                t === activeTag ? "bg-accent" : "hover:bg-accent/40"
+              }`}
             >
               {t}
             </button>
@@ -141,6 +137,7 @@ export function MediaGrid({ items }: { items: MediaItem[] }) {
         </div>
       ) : null}
 
+      {/* Grid */}
       {filtered.length === 0 ? (
         <div className="rounded-2xl border p-6 text-sm text-muted-foreground">No matches.</div>
       ) : (
@@ -181,14 +178,17 @@ export function MediaGrid({ items }: { items: MediaItem[] }) {
       {active ? (
         <div className="fixed inset-0 z-50 bg-black/70 p-4" onClick={() => setActive(null)}>
           <div
-            className="mx-auto w-full max-w-6xl overflow-hidden rounded-3xl border bg-background shadow-xl"
+            className="mx-auto w-full max-w-6xl overflow-hidden rounded-3xl border bg-background shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between gap-3 border-b p-4">
+            {/* Header */}
+            <div className="flex items-center justify-between gap-3 border-b bg-background/80 p-4 backdrop-blur">
               <div className="min-w-0">
                 <div className="truncate text-lg font-semibold">{active.title}</div>
                 <div className="mt-1 text-xs text-muted-foreground">
-                  {[active.year ? String(active.year) : "", active.location ?? "", active.event ?? ""].filter(Boolean).join(" • ")}
+                  {[active.year ? String(active.year) : "", active.location ?? "", active.event ?? ""]
+                    .filter(Boolean)
+                    .join(" • ")}
                 </div>
               </div>
               <button className="rounded-xl border px-3 py-2 text-sm hover:bg-accent" onClick={() => setActive(null)}>
@@ -196,131 +196,138 @@ export function MediaGrid({ items }: { items: MediaItem[] }) {
               </button>
             </div>
 
-            <div className="grid max-h-[82vh] lg:grid-cols-[1.25fr_0.75fr]">
-              {/* Media */}
-              <div className="bg-black/5 p-4 flex items-center justify-center">
-                {active.type === "embed" && active.embedUrl ? (
-                  <div className="w-full overflow-hidden rounded-2xl border bg-black">
-                    <div className="relative aspect-video">
-                      <iframe
-                        src={toEmbedUrl(active.embedUrl) ?? active.embedUrl}
-                        className="absolute inset-0 h-full w-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        title={active.title}
-                      />
-                    </div>
-                  </div>
-                ) : active.type === "video" && active.secureUrl ? (
-                  <div className="w-full overflow-hidden rounded-2xl border bg-black">
-                    <video className="h-full w-full" controls preload="metadata" src={active.secureUrl} />
-                  </div>
-                ) : active.secureUrl ? (
-                  <div className="w-full overflow-hidden rounded-2xl border bg-black/5">
-                    <div className="relative aspect-4/3 lg:aspect-auto lg:h-[78vh]">
-                      <Image src={active.secureUrl} alt={active.title} fill className="object-contain" sizes="100vw" />
+            {/* IMPORTANT: fixed height + min-h-0 so overflow works */}
+            <div className="grid h-[82vh] min-h-0 lg:grid-cols-[1.25fr_0.75fr]">
+              {/* Media area */}
+              <div className="min-h-0 bg-black/5 p-4">
+                {active.secureUrl ? (
+                  <div className="h-full w-full overflow-hidden rounded-2xl border bg-black/5">
+                    <div className="relative h-full min-h-0">
+                      {/* Fit inside available height */}
+                      <div className="relative h-full w-full">
+                        <Image
+                          src={active.secureUrl}
+                          alt={active.title}
+                          fill
+                          className="object-contain"
+                          sizes="100vw"
+                          priority
+                        />
+                      </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">No media</div>
+                  <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No media</div>
                 )}
               </div>
 
-              {/* Details */}
-              <div className="overflow-y-auto p-5 space-y-6">
-                {active.description ? (
-                  <div>
-                    <SectionTitle>Description</SectionTitle>
-                    <div className="mt-2 text-sm whitespace-pre-wrap">{active.description}</div>
-                  </div>
-                ) : null}
+              {/* Details (scroll) */}
+              <div className="min-h-0 overflow-y-auto p-5">
+                <div className="space-y-4">
+                  {active.description ? (
+                    <Section title="Description">
+                      <div className="text-sm whitespace-pre-wrap leading-relaxed">{active.description}</div>
+                    </Section>
+                  ) : null}
 
-                <div className="space-y-2">
-                  <SectionTitle>Details</SectionTitle>
-                  <div className="flex flex-wrap gap-2">
-                    {active.year ? <Pill>{String(active.year)}</Pill> : null}
-                    {active.location ? <Pill>{active.location}</Pill> : null}
-                    {active.event ? <Pill>{active.event}</Pill> : null}
-                    <Pill>{active.type}</Pill>
-                  </div>
+                  <Section title="Details">
+                    <div className="flex flex-wrap gap-2">
+                      {active.year ? <Pill>{String(active.year)}</Pill> : null}
+                      {active.location ? <Pill>{active.location}</Pill> : null}
+                      {active.event ? <Pill>{active.event}</Pill> : null}
+                    </div>
+                  </Section>
+
+                  {active.people?.length ? (
+                    <Section title="People">
+                      <div className="flex flex-wrap gap-2">
+                        {active.people.slice(0, 80).map((p) => (
+                          <Pill key={p}>{p}</Pill>
+                        ))}
+                      </div>
+                    </Section>
+                  ) : null}
+
+                  {active.categories?.length ? (
+                    <Section title="Categories">
+                      <div className="flex flex-wrap gap-2">
+                        {active.categories.slice(0, 80).map((c) => (
+                          <Pill key={c}>{c}</Pill>
+                        ))}
+                      </div>
+                    </Section>
+                  ) : null}
+
+                  {active.tags?.length ? (
+                    <Section title="Tags">
+                      <div className="flex flex-wrap gap-2">
+                        {active.tags.slice(0, 120).map((t) => (
+                          <Pill key={t}>{t}</Pill>
+                        ))}
+                      </div>
+                    </Section>
+                  ) : null}
+
+                  {(exhibitions.length || features.length) ? (
+                    <Section title="Exhibitions / Featured">
+                      <div className="space-y-4">
+                        {/* Exhibitions first */}
+                        {exhibitions.length ? (
+                          <div className="space-y-2">
+                            <div className="text-sm font-semibold">Exhibitions</div>
+                            {exhibitions.map((a, idx) => (
+                              <div key={`ex-${idx}`} className="rounded-2xl border bg-background p-3">
+                                <div className="text-sm font-medium">{a.title || a.venue || "Exhibition"}</div>
+                                <div className="mt-1 text-xs text-muted-foreground">{formatPlace(a)}</div>
+                                <div className="mt-1 text-xs text-muted-foreground">{formatDates(a)}</div>
+                                {a.notes ? (
+                                  <div className="mt-2 text-xs whitespace-pre-wrap leading-relaxed">{a.notes}</div>
+                                ) : null}
+                                {a.link ? (
+                                  <a
+                                    href={a.link}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mt-2 inline-flex text-xs underline underline-offset-2"
+                                  >
+                                    Link
+                                  </a>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+
+                        {/* Featured second */}
+                        {features.length ? (
+                          <div className="space-y-2">
+                            <div className="text-sm font-semibold">Featured</div>
+                            {features.map((a, idx) => (
+                              <div key={`fe-${idx}`} className="rounded-2xl border bg-background p-3">
+                                <div className="text-sm font-medium">{a.title || a.venue || "Featured"}</div>
+                                <div className="mt-1 text-xs text-muted-foreground">{formatPlace(a)}</div>
+                                <div className="mt-1 text-xs text-muted-foreground">{formatDates(a)}</div>
+                                {a.notes ? (
+                                  <div className="mt-2 text-xs whitespace-pre-wrap leading-relaxed">{a.notes}</div>
+                                ) : null}
+                                {a.link ? (
+                                  <a
+                                    href={a.link}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="mt-2 inline-flex text-xs underline underline-offset-2"
+                                  >
+                                    Link
+                                  </a>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    </Section>
+                  ) : null}
                 </div>
-
-                {active.people?.length ? (
-                  <div className="space-y-2">
-                    <SectionTitle>People</SectionTitle>
-                    <div className="flex flex-wrap gap-2">
-                      {active.people.slice(0, 30).map((p) => (
-                        <Pill key={p}>{p}</Pill>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                {active.categories?.length ? (
-                  <div className="space-y-2">
-                    <SectionTitle>Categories</SectionTitle>
-                    <div className="flex flex-wrap gap-2">
-                      {active.categories.slice(0, 30).map((c) => (
-                        <Pill key={c}>{c}</Pill>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                {active.tags?.length ? (
-                  <div className="space-y-2">
-                    <SectionTitle>Tags</SectionTitle>
-                    <div className="flex flex-wrap gap-2">
-                      {active.tags.slice(0, 40).map((t) => (
-                        <Pill key={t}>{t}</Pill>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-
-                {(featured.length || exhibited.length) ? (
-                  <div className="space-y-3">
-                    <SectionTitle>Featured / Exhibitions</SectionTitle>
-
-                    {featured.length ? (
-                      <div className="space-y-2">
-                        <div className="text-sm font-semibold">Featured</div>
-                        {featured.map((a, idx) => (
-                          <div key={`f-${idx}`} className="rounded-2xl border p-3">
-                            <div className="text-sm font-medium">{a.title || a.venue}</div>
-                            <div className="mt-1 text-xs text-muted-foreground">{[a.venue, a.city, a.country].filter(Boolean).join(" • ")}</div>
-                            <div className="mt-1 text-xs text-muted-foreground">{[a.dateFrom, a.dateTo].filter(Boolean).join(" → ")}</div>
-                            {a.notes ? <div className="mt-2 text-xs whitespace-pre-wrap">{a.notes}</div> : null}
-                            {a.link ? (
-                              <a href={a.link} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs underline underline-offset-2">
-                                Link
-                              </a>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-
-                    {exhibited.length ? (
-                      <div className="space-y-2">
-                        <div className="text-sm font-semibold">Exhibited</div>
-                        {exhibited.map((a, idx) => (
-                          <div key={`e-${idx}`} className="rounded-2xl border p-3">
-                            <div className="text-sm font-medium">{a.title || a.venue}</div>
-                            <div className="mt-1 text-xs text-muted-foreground">{[a.venue, a.city, a.country].filter(Boolean).join(" • ")}</div>
-                            <div className="mt-1 text-xs text-muted-foreground">{[a.dateFrom, a.dateTo].filter(Boolean).join(" → ")}</div>
-                            {a.notes ? <div className="mt-2 text-xs whitespace-pre-wrap">{a.notes}</div> : null}
-                            {a.link ? (
-                              <a href={a.link} target="_blank" rel="noreferrer" className="mt-2 inline-flex text-xs underline underline-offset-2">
-                                Link
-                              </a>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    ) : null}
-                  </div>
-                ) : null}
               </div>
             </div>
           </div>
