@@ -13,6 +13,10 @@ type MediaItem = {
   categories?: string[];
 };
 
+type ShowreelResponse = {
+  embedUrl?: string | null;
+};
+
 async function fetchMedia(url: string): Promise<MediaItem[]> {
   const res = await fetch(url, { cache: "no-store" });
   if (!res.ok) return [];
@@ -20,18 +24,32 @@ async function fetchMedia(url: string): Promise<MediaItem[]> {
   return Array.isArray(data?.items) ? data.items : [];
 }
 
+async function fetchShowreel(url: string): Promise<MediaItem | null> {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) return null;
+
+  const data = (await res.json().catch(() => null)) as ShowreelResponse | null;
+  const embedUrl = typeof data?.embedUrl === "string" ? data.embedUrl.trim() : "";
+  if (!embedUrl) return null;
+
+  return {
+    id: "site-showreel",
+    type: "embed",
+    title: "Showreel",
+    embedUrl,
+    secureUrl: null,
+    tags: [],
+    categories: ["showreel"],
+  };
+}
+
 export default async function VideographyPage() {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
-  const [showreelItems, videoItems] = await Promise.all([
-    fetchMedia(`${base}/api/media/list-public?type=all&category=showreel&limit=10`),
+  const [showreel, videoItems] = await Promise.all([
+    fetchShowreel(`${base}/api/site-settings/showreel`),
     fetchMedia(`${base}/api/media/list-public?type=all&category=videography&limit=60`),
   ]);
-
-  const showreel =
-    showreelItems.find((m) => m.type === "embed" && m.embedUrl) ??
-    showreelItems.find((m) => (m.type === "video" && m.secureUrl) || (m.type === "embed" && m.embedUrl)) ??
-    null;
 
   const videos = videoItems.filter((m) => m.type === "video" || m.type === "embed");
 
@@ -44,7 +62,6 @@ export default async function VideographyPage() {
 
       <VideographyClient showreel={showreel} videos={videos} />
 
-      {/* Inline CTA (no StickyCta component) */}
       <div className="mt-12 rounded-3xl border bg-background p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>

@@ -65,10 +65,11 @@ export default function AdminShowreelPage() {
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">Showreel</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        Paste a YouTube/Vimeo link. This will be used on the public Videography page.
+        Paste a YouTube/Vimeo link. This is the single source of truth for the public Showreel and the top video on the
+        public Videography page.
       </p>
 
-      <div className="mt-8 rounded-2xl border p-6 space-y-3">
+      <div className="mt-8 space-y-3 rounded-2xl border p-6">
         <label className="text-sm font-medium">Showreel URL</label>
         <input
           value={value}
@@ -77,12 +78,17 @@ export default function AdminShowreelPage() {
           placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/..."
         />
 
+        <div className="rounded-2xl border bg-muted/30 p-4 text-sm text-muted-foreground">
+          Keep your main showreel here only. Do not depend on a separate media item tagged as <code>showreel</code> for
+          the hero reel.
+        </div>
+
         <div className="flex items-center gap-3 pt-2">
           <button
             type="button"
             onClick={() => void save()}
             disabled={saving}
-            className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity disabled:opacity-60"
+            className="rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90 disabled:opacity-60"
           >
             {saving ? "Saving..." : "Save"}
           </button>

@@ -19,12 +19,13 @@ export default async function ServiceDetailPage({
   const doc = await db.collection("services").findOne({ slug, isActive: true });
   if (!doc) notFound();
 
-  const id = String(doc._id);
-  const name = typeof doc.name === "string" ? doc.name : "";
-  const description = typeof doc.description === "string" ? doc.description : "";
-  const imageUrl = typeof doc.imageUrl === "string" ? doc.imageUrl : "";
-  const currency = typeof doc.currency === "string" ? doc.currency : "AED";
-  const startingPrice = typeof doc.startingPrice === "number" ? doc.startingPrice : null;
+  const service = doc;
+  const id = String(service._id);
+  const name = typeof service.name === "string" ? service.name : "";
+  const description = typeof service.description === "string" ? service.description : "";
+  const imageUrl = typeof service.imageUrl === "string" ? service.imageUrl : "";
+  const currency = typeof service.currency === "string" ? service.currency : "AED";
+  const startingPrice = typeof service.startingPrice === "number" ? service.startingPrice : null;
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-12">
@@ -33,7 +34,7 @@ export default async function ServiceDetailPage({
           <h1 className="text-3xl font-semibold">{name}</h1>
           {startingPrice !== null && (
             <p className="mt-2 text-sm text-muted-foreground">
-              Starting from {startingPrice} {currency}
+              Starting from {currency} {startingPrice}
             </p>
           )}
         </div>

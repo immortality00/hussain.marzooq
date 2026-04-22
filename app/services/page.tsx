@@ -51,26 +51,19 @@ async function getBaseUrlFromHeaders(): Promise<string> {
 function workLinkForCategory(categorySlug: string): { href: string; label: string } {
   const c = categorySlug.trim().toLowerCase();
 
-  // photography
   if (c.includes("photo")) return { href: "/photography", label: "See photos" };
 
-  // videography
   if (c.includes("video") || c.includes("film") || c.includes("reel")) {
-    return { href: "/videography/videos", label: "See videos" };
+    return { href: "/videography", label: "See videos" };
   }
 
-  // dance
   if (c.includes("dance")) return { href: "/dance", label: "See dance" };
-
-  // nft
   if (c.includes("nft")) return { href: "/nft", label: "See NFTs" };
 
-  // web dev
   if (c.includes("web") || c.includes("dev") || c.includes("code")) {
-    return { href: "/web-development", label: "See web work" };
+    return { href: "/web-dev", label: "See web work" };
   }
 
-  // fallback
   return { href: "/photography", label: "See my work" };
 }
 
@@ -119,7 +112,6 @@ export default async function ServicesPage({
         </p>
       </header>
 
-      {/* Category tabs */}
       <div className="mt-6 flex flex-wrap gap-2">
         {tabs.map((t) => {
           const active = t.slug === selectedCategory;
@@ -138,7 +130,6 @@ export default async function ServicesPage({
         })}
       </div>
 
-      {/* Grid */}
       <section className="mt-8 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {services.length === 0 ? (
           <div className="rounded-2xl border p-6 text-sm text-muted-foreground">

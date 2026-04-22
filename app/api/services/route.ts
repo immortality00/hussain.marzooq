@@ -12,7 +12,15 @@ function asString(v: unknown): string | null {
 }
 function asNumberOrNull(v: unknown): number | null {
   if (v === null) return null;
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim() !== "") {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+function normalizeSlug(v: string): string {
+  return v.trim().toLowerCase();
 }
 function noStoreJson(body: unknown, init?: ResponseInit) {
   const res = NextResponse.json(body, init);
@@ -64,21 +72,38 @@ export async function POST(req: Request) {
   if (!isRecord(bodyUnknown)) return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
 
   const name = (asString(bodyUnknown.name) ?? "").trim();
-  const slug = (asString(bodyUnknown.slug) ?? "").trim();
-  const category = (asString(bodyUnknown.category) ?? "others").trim() || "others";
+  const slug = normalizeSlug(asString(bodyUnknown.slug) ?? "");
+  const category = normalizeSlug((asString(bodyUnknown.category) ?? "others").trim() || "others");
   const description = (asString(bodyUnknown.description) ?? "").trim();
-  const currency = (asString(bodyUnknown.currency) ?? "AED").trim();
+  const currency = (asString(bodyUnknown.currency) ?? "AED").trim() || "AED";
   const imageUrl = (asString(bodyUnknown.imageUrl) ?? "").trim();
   const startingPrice = asNumberOrNull(bodyUnknown.startingPrice);
 
   if (!name) return noStoreJson({ ok: false, error: "Name is required" }, { status: 400 });
-  if (!slug) return noStoreJson({ ok: false, error: "Slug is required" }, { status: 400 });
+  if (!slug || slug.includes(" ")) {
+    return noStoreJson({ ok: false, error: "Slug is required" }, { status: 400 });
+  }
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
   const existing = await db.collection("services").findOne({ slug }, { projection: { _id: 1 } });
   if (existing) return noStoreJson({ ok: false, error: "Slug already exists" }, { status: 409 });
+
+  if (category !== "others") {
+    const foundCategory = await db.collection("service_categories").findOne(
+      { slug: category },
+      { projection: { _id: 1, isActive: 1 } }
+    );
+
+    if (!foundCategory) {
+      return noStoreJson({ ok: false, error: "CATEGORY_NOT_FOUND" }, { status: 400 });
+    }
+
+    if (foundCategory.isActive === false) {
+      return noStoreJson({ ok: false, error: "CATEGORY_INACTIVE" }, { status: 409 });
+    }
+  }
 
   const last = await db.collection("services").find({}).sort({ order: -1 }).limit(1).toArray();
   const nextOrder =

@@ -16,6 +16,9 @@ function asFiniteNumber(v: unknown): number | null {
   }
   return null;
 }
+function normalizeSlug(v: string): string {
+  return v.trim().toLowerCase();
+}
 function noStore(body: unknown, init?: ResponseInit) {
   const res = NextResponse.json(body, init);
   res.headers.set("Cache-Control", "no-store");
@@ -34,47 +37,65 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
+  const categoryId = new ObjectId(id);
 
-  const existing = await db.collection("service_categories").findOne({ _id: new ObjectId(id) });
+  const existing = await db.collection("service_categories").findOne({ _id: categoryId });
   if (!existing) return noStore({ ok: false, error: "Not found" }, { status: 404 });
 
   const isSystem = existing.slug === "others" || existing.isSystem === true;
-
   const patch: Record<string, unknown> = { updatedAt: new Date() };
 
-  if (typeof body.name === "string" && !isSystem) patch.name = body.name.trim();
+  if (typeof body.name === "string" && !isSystem) {
+    const nextName = body.name.trim();
+    if (!nextName) return noStore({ ok: false, error: "Name is required" }, { status: 400 });
+    patch.name = nextName;
+  }
+
   if (typeof body.isActive === "boolean") patch.isActive = body.isActive;
 
   const order = asFiniteNumber(body.order);
   if (order !== null) patch.order = order;
 
+  const oldSlug = typeof existing.slug === "string" ? normalizeSlug(existing.slug) : "others";
+  let nextSlug = oldSlug;
+
   if (typeof body.slug === "string") {
     if (isSystem) {
       return noStore({ ok: false, error: "SYSTEM_CATEGORY_LOCKED" }, { status: 409 });
     }
-    const newSlug = body.slug.trim();
-    if (!newSlug || newSlug.includes(" ")) return noStore({ ok: false, error: "Invalid slug" }, { status: 400 });
-    if (newSlug === "others") return noStore({ ok: false, error: "Slug reserved" }, { status: 409 });
+
+    nextSlug = normalizeSlug(body.slug);
+    if (!nextSlug || nextSlug.includes(" ")) {
+      return noStore({ ok: false, error: "Invalid slug" }, { status: 400 });
+    }
+    if (nextSlug === "others") {
+      return noStore({ ok: false, error: "Slug reserved" }, { status: 409 });
+    }
 
     const conflict = await db.collection("service_categories").findOne({
-      slug: newSlug,
-      _id: { $ne: new ObjectId(id) },
+      slug: nextSlug,
+      _id: { $ne: categoryId },
     });
     if (conflict) return noStore({ ok: false, error: "Slug already exists" }, { status: 409 });
 
-    patch.slug = newSlug;
+    patch.slug = nextSlug;
   }
 
   const willDeactivate =
     typeof patch.isActive === "boolean" && patch.isActive === false && existing.isActive !== false;
 
-  const oldSlug = typeof existing.slug === "string" ? existing.slug : null;
+  await db.collection("service_categories").updateOne({ _id: categoryId }, { $set: patch });
 
-  await db.collection("service_categories").updateOne({ _id: new ObjectId(id) }, { $set: patch });
-
-  if (willDeactivate && oldSlug) {
+  if (nextSlug !== oldSlug) {
     await db.collection("services").updateMany(
       { category: oldSlug },
+      { $set: { category: nextSlug, updatedAt: new Date() } }
+    );
+  }
+
+  if (willDeactivate) {
+    await db.collection("services").updateMany(
+      { category: nextSlug },
       { $set: { isActive: false, updatedAt: new Date() } }
     );
   }
@@ -99,7 +120,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
     return noStore({ ok: false, error: "SYSTEM_CATEGORY_CANNOT_DELETE" }, { status: 409 });
   }
 
-  const slug = typeof cat.slug === "string" ? cat.slug : "";
+  const slug = typeof cat.slug === "string" ? normalizeSlug(cat.slug) : "";
   const servicesCount = await db.collection("services").countDocuments({ category: slug });
 
   if (servicesCount > 0) {
