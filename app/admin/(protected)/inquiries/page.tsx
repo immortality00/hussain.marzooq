@@ -46,6 +46,35 @@ function isApiResponse(v: unknown): v is ApiInquiriesResponse {
   return false;
 }
 
+function RowActionButton({
+  title,
+  label,
+  tone = "default",
+  onClick,
+}: {
+  title: string;
+  label: string;
+  tone?: "default" | "danger";
+  onClick: (e: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>;
+}) {
+  return (
+    <button
+      type="button"
+      title={title}
+      aria-label={title}
+      onClick={onClick}
+      className={[
+        "inline-flex h-8 w-8 items-center justify-center rounded-lg border text-sm transition-colors",
+        tone === "danger"
+          ? "hover:bg-red-500/10 hover:border-red-500/30"
+          : "hover:bg-accent",
+      ].join(" ")}
+    >
+      <span aria-hidden="true">{label}</span>
+    </button>
+  );
+}
+
 export default function AdminInquiriesPage() {
   const [items, setItems] = useState<Inquiry[]>([]);
   const [expandedId, setExpandedId] = useState<string>("");
@@ -53,7 +82,6 @@ export default function AdminInquiriesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showArchivedSection, setShowArchivedSection] = useState(false);
 
-  // ✅ store live textarea content without re-rendering each keypress
   const notesRef = useRef<Record<string, string>>({});
 
   async function load() {
@@ -77,7 +105,6 @@ export default function AdminInquiriesPage() {
 
     setItems(raw.items);
 
-    // initialize ref values if missing
     for (const it of raw.items) {
       if (notesRef.current[it.id] === undefined) {
         notesRef.current[it.id] = it.adminNotes ?? "";
@@ -130,6 +157,44 @@ export default function AdminInquiriesPage() {
     setMsg(null);
   }
 
+  async function handleArchive(id: string) {
+    const ok = confirm("Archive this inquiry?");
+    if (!ok) return;
+
+    try {
+      await archive(id);
+      setItems((prev) => prev.map((p) => (p.id === id ? { ...p, isArchived: true } : p)));
+      if (expandedId === id) setExpandedId("");
+      setMsg({ type: "ok", text: "✅ Archived." });
+    } catch (err: unknown) {
+      setMsg({ type: "err", text: err instanceof Error ? err.message : "Archive failed." });
+    }
+  }
+
+  async function handleRestore(id: string) {
+    try {
+      await restore(id);
+      setItems((prev) => prev.map((p) => (p.id === id ? { ...p, isArchived: false } : p)));
+      setMsg({ type: "ok", text: "✅ Restored." });
+    } catch (err: unknown) {
+      setMsg({ type: "err", text: err instanceof Error ? err.message : "Restore failed." });
+    }
+  }
+
+  async function handleDeleteForever(id: string) {
+    const ok = confirm("Delete forever? This cannot be undone.");
+    if (!ok) return;
+
+    try {
+      await hardDelete(id);
+      setItems((prev) => prev.filter((p) => p.id !== id));
+      if (expandedId === id) setExpandedId("");
+      setMsg({ type: "ok", text: "✅ Deleted forever." });
+    } catch (err: unknown) {
+      setMsg({ type: "err", text: err instanceof Error ? err.message : "Delete failed." });
+    }
+  }
+
   function Section({ title, list, archivedMode }: { title: string; list: Inquiry[]; archivedMode: boolean }) {
     return (
       <div className="mt-6 overflow-hidden rounded-2xl border">
@@ -142,8 +207,9 @@ export default function AdminInquiriesPage() {
           <div className="col-span-2">Date</div>
           <div className="col-span-2">Name</div>
           <div className="col-span-3">Email</div>
-          <div className="col-span-3">Service</div>
+          <div className="col-span-2">Service</div>
           <div className="col-span-2">Status</div>
+          <div className="col-span-1 text-right">Actions</div>
         </div>
 
         {list.map((it) => {
@@ -151,25 +217,68 @@ export default function AdminInquiriesPage() {
 
           return (
             <div key={it.id} className="border-b">
-              <button
-                type="button"
-                onClick={() => toggleExpand(it.id)}
-                className="grid w-full grid-cols-12 gap-2 px-4 py-3 text-left text-sm hover:bg-accent/20"
-              >
-                <div className="col-span-2 text-xs text-muted-foreground">{fmt(it.createdAt)}</div>
-                <div className="col-span-2 truncate">{it.name}</div>
-                <div className="col-span-3 truncate">{it.email}</div>
-                <div className="col-span-3 truncate">{it.serviceName ?? it.serviceId ?? "Other"}</div>
-                <div className="col-span-2">
-                  <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs ${statusPill(it.status)}`}>
-                    {it.status}
-                  </span>
+              <div className="grid grid-cols-12 gap-2 px-4 py-2 text-sm hover:bg-accent/20">
+                <button
+                  type="button"
+                  onClick={() => toggleExpand(it.id)}
+                  className="col-span-11 grid grid-cols-11 gap-2 text-left"
+                >
+                  <div className="col-span-2 text-xs text-muted-foreground self-center">{fmt(it.createdAt)}</div>
+                  <div className="col-span-2 truncate self-center">{it.name}</div>
+                  <div className="col-span-3 truncate self-center">{it.email}</div>
+                  <div className="col-span-2 truncate self-center">{it.serviceName ?? it.serviceId ?? "Other"}</div>
+                  <div className="col-span-2 self-center">
+                    <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs ${statusPill(it.status)}`}>
+                      {it.status}
+                    </span>
+                  </div>
+                </button>
+
+                <div
+                  className="col-span-1 flex items-center justify-end gap-1"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {!archivedMode ? (
+                    <RowActionButton
+                      title="Archive inquiry"
+                      label="🗄"
+                      tone="default"
+                      onClick={async (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        await handleArchive(it.id);
+                      }}
+                    />
+                  ) : (
+                    <>
+                      <RowActionButton
+                        title="Restore inquiry"
+                        label="↺"
+                        tone="default"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          await handleRestore(it.id);
+                        }}
+                      />
+                      <RowActionButton
+                        title="Delete forever"
+                        label="✕"
+                        tone="danger"
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          await handleDeleteForever(it.id);
+                        }}
+                      />
+                    </>
+                  )}
                 </div>
-              </button>
+              </div>
 
               {expanded ? (
                 <div className="px-4 pb-4">
-                  <div className="grid gap-4 rounded-2xl border p-4 bg-background">
+                  <div className="grid gap-4 rounded-2xl border bg-background p-4">
                     <div className="grid gap-3 md:grid-cols-2">
                       <div className="text-sm">
                         <div className="text-xs text-muted-foreground">Category</div>
@@ -204,7 +313,10 @@ export default function AdminInquiriesPage() {
                                   setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, status: s } : p)));
                                   setMsg({ type: "ok", text: "✅ Status updated." });
                                 } catch (err: unknown) {
-                                  setMsg({ type: "err", text: err instanceof Error ? err.message : "Status update failed." });
+                                  setMsg({
+                                    type: "err",
+                                    text: err instanceof Error ? err.message : "Status update failed.",
+                                  });
                                 }
                               }}
                             >
@@ -218,7 +330,6 @@ export default function AdminInquiriesPage() {
                     <div className="text-sm">
                       <div className="text-xs text-muted-foreground">Internal notes</div>
 
-                      {/* ✅ Uncontrolled textarea = no focus loss while typing */}
                       <textarea
                         key={it.id}
                         defaultValue={notesRef.current[it.id] ?? it.adminNotes ?? ""}
@@ -258,15 +369,7 @@ export default function AdminInquiriesPage() {
                             onClick={async (e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              const ok = confirm("Archive this inquiry?");
-                              if (!ok) return;
-                              try {
-                                await archive(it.id);
-                                setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, isArchived: true } : p)));
-                                setMsg({ type: "ok", text: "✅ Archived." });
-                              } catch (err: unknown) {
-                                setMsg({ type: "err", text: err instanceof Error ? err.message : "Archive failed." });
-                              }
+                              await handleArchive(it.id);
                             }}
                           >
                             Archive
@@ -278,13 +381,7 @@ export default function AdminInquiriesPage() {
                               onClick={async (e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                try {
-                                  await restore(it.id);
-                                  setItems((prev) => prev.map((p) => (p.id === it.id ? { ...p, isArchived: false } : p)));
-                                  setMsg({ type: "ok", text: "✅ Restored." });
-                                } catch (err: unknown) {
-                                  setMsg({ type: "err", text: err instanceof Error ? err.message : "Restore failed." });
-                                }
+                                await handleRestore(it.id);
                               }}
                             >
                               Restore
@@ -295,16 +392,7 @@ export default function AdminInquiriesPage() {
                               onClick={async (e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
-                                const ok = confirm("Delete forever? This cannot be undone.");
-                                if (!ok) return;
-                                try {
-                                  await hardDelete(it.id);
-                                  setItems((prev) => prev.filter((p) => p.id !== it.id));
-                                  setExpandedId("");
-                                  setMsg({ type: "ok", text: "✅ Deleted forever." });
-                                } catch (err: unknown) {
-                                  setMsg({ type: "err", text: err instanceof Error ? err.message : "Delete failed." });
-                                }
+                                await handleDeleteForever(it.id);
                               }}
                             >
                               Delete forever
