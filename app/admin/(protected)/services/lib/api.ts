@@ -34,7 +34,6 @@ export async function patchService(id: string, patch: Partial<Service>): Promise
   return data;
 }
 
-// ✅ default delete = archive
 export async function archiveService(id: string): Promise<JsonObject> {
   const res = await fetch(`/api/services/${encodeURIComponent(id)}`, { method: "DELETE" });
   const data = await readJson(res);
@@ -42,7 +41,6 @@ export async function archiveService(id: string): Promise<JsonObject> {
   return data;
 }
 
-// optional hard delete
 export async function deleteServiceForever(id: string): Promise<JsonObject> {
   const res = await fetch(`/api/services/${encodeURIComponent(id)}?hard=1`, { method: "DELETE" });
   const data = await readJson(res);
@@ -52,4 +50,13 @@ export async function deleteServiceForever(id: string): Promise<JsonObject> {
 
 export async function saveOrder(servicesInOrder: Service[]): Promise<void> {
   await Promise.all(servicesInOrder.map((s, idx) => patchService(s.id, { order: idx })));
+}
+
+export async function syncInquiryCounts(): Promise<JsonObject> {
+  const res = await fetch("/api/services/recount-inquiries", {
+    method: "POST",
+  });
+  const data = await readJson(res);
+  if (!res.ok) throw new Error(getError(data));
+  return data;
 }

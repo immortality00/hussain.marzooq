@@ -19,6 +19,20 @@ function noStore(body: unknown, init?: ResponseInit) {
   return res;
 }
 
+function hasValidServiceId(serviceId: unknown): serviceId is string {
+  return typeof serviceId === "string" && ObjectId.isValid(serviceId);
+}
+
+async function incrementServiceInquiriesCount(db: Db, serviceId: string): Promise<void> {
+  await db.collection("services").updateOne(
+    { _id: new ObjectId(serviceId) },
+    {
+      $inc: { inquiriesCount: 1 },
+      $set: { updatedAt: new Date() },
+    }
+  );
+}
+
 async function decrementServiceInquiriesCount(db: Db, serviceId: string): Promise<void> {
   await db.collection("services").updateOne(
     { _id: new ObjectId(serviceId) },
@@ -47,7 +61,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const status = asString(body.status).trim();
   const adminNotes = typeof body.adminNotes === "string" ? body.adminNotes.trim().slice(0, 5000) : null;
-  const isArchived = typeof body.isArchived === "boolean" ? body.isArchived : null;
+  const nextArchived = typeof body.isArchived === "boolean" ? body.isArchived : null;
+
+  const client = await clientPromise;
+  const db = client.db("hm_visuals");
+
+  const existing = await db.collection("inquiries").findOne({ _id: new ObjectId(id) });
+  if (!existing) return noStore({ ok: false, error: "Not found" }, { status: 404 });
 
   const patch: Record<string, unknown> = { updatedAt: new Date() };
 
@@ -56,12 +76,20 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     patch.status = status;
   }
   if (adminNotes !== null) patch.adminNotes = adminNotes;
-  if (isArchived !== null) patch.isArchived = isArchived;
-
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  if (nextArchived !== null) patch.isArchived = nextArchived;
 
   await db.collection("inquiries").updateOne({ _id: new ObjectId(id) }, { $set: patch });
+
+  const serviceId = existing.serviceId;
+  const prevArchived = existing.isArchived === true;
+
+  if (nextArchived !== null && nextArchived !== prevArchived && hasValidServiceId(serviceId)) {
+    if (nextArchived === true) {
+      await decrementServiceInquiriesCount(db, serviceId);
+    } else {
+      await incrementServiceInquiriesCount(db, serviceId);
+    }
+  }
 
   return noStore({ ok: true });
 }
@@ -82,9 +110,9 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const inquiry = await db.collection("inquiries").findOne({ _id: new ObjectId(id) });
   if (!inquiry) return noStore({ ok: false, error: "Not found" }, { status: 404 });
 
-  const serviceId = typeof inquiry.serviceId === "string" ? inquiry.serviceId : null;
+  const serviceId = inquiry.serviceId;
   const alreadyArchived = inquiry.isArchived === true;
-  const shouldDecrement = !alreadyArchived && serviceId !== null && ObjectId.isValid(serviceId);
+  const shouldDecrement = !alreadyArchived && hasValidServiceId(serviceId);
 
   if (!hard) {
     await db.collection("inquiries").updateOne(

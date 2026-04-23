@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   DndContext,
   closestCenter,
@@ -14,7 +15,14 @@ import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-ki
 import type { Service, ServiceCategory } from "./lib/types";
 import SortableServiceItem from "./components/SortableServiceItem";
 import ServiceEditorModal from "./components/ServiceEditorModal";
-import { createService, patchService, saveOrder, archiveService, deleteServiceForever } from "./lib/api";
+import {
+  createService,
+  patchService,
+  saveOrder,
+  archiveService,
+  deleteServiceForever,
+  syncInquiryCounts,
+} from "./lib/api";
 
 type CreateServiceResponse = { ok: true; id: string } | { ok: false; error: string };
 
@@ -62,6 +70,8 @@ export default function AdminServicesClient({
   initialServices: Service[];
   initialCategories: ServiceCategory[];
 }) {
+  const router = useRouter();
+
   const [services, setServices] = useState<Service[]>(initialServices);
   const categories = initialCategories;
 
@@ -69,7 +79,6 @@ export default function AdminServicesClient({
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  // Sticky banner
   const [banner, setBanner] = useState<Banner>(null);
   const bannerRef = useRef<HTMLDivElement | null>(null);
   const bannerTimerRef = useRef<number | null>(null);
@@ -85,12 +94,10 @@ export default function AdminServicesClient({
     clearBannerTimer();
     setBanner({ type, text });
 
-    // Ensure user sees it
     setTimeout(() => {
       bannerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 0);
 
-    // Auto-dismiss
     const ms = type === "ok" ? 4000 : 7000;
     bannerTimerRef.current = window.setTimeout(() => setBanner(null), ms);
   }
@@ -99,7 +106,6 @@ export default function AdminServicesClient({
     return () => clearBannerTimer();
   }, []);
 
-  // Hydration-safe DnD mount
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -149,6 +155,19 @@ export default function AdminServicesClient({
       showBanner("ok", "✅ Order saved.");
     } catch (e: unknown) {
       showBanner("err", e instanceof Error ? e.message : "Save order failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleSyncInquiryCounts() {
+    setBusy(true);
+    try {
+      await syncInquiryCounts();
+      router.refresh();
+      showBanner("ok", "✅ Inquiry counts synced from actual inquiries.");
+    } catch (e: unknown) {
+      showBanner("err", e instanceof Error ? e.message : "Sync inquiry counts failed.");
     } finally {
       setBusy(false);
     }
@@ -210,7 +229,6 @@ export default function AdminServicesClient({
     try {
       const next = !svc.isActive;
 
-      // NOTE: API enforces CATEGORY_INACTIVE and SERVICE_ARCHIVED rules
       await patchService(svc.id, { isActive: next });
 
       setServices((prev) => prev.map((p) => (p.id === svc.id ? { ...p, isActive: next } : p)));
@@ -236,7 +254,6 @@ export default function AdminServicesClient({
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
-      {/* Sticky banner */}
       <div ref={bannerRef} className="sticky top-3 z-40">
         {banner ? (
           <div
@@ -263,6 +280,13 @@ export default function AdminServicesClient({
       <div className="mt-4 flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold">Services</h1>
         <div className="flex gap-2">
+          <button
+            disabled={busy}
+            onClick={() => void handleSyncInquiryCounts()}
+            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent/40 disabled:opacity-60"
+          >
+            Sync Inquiry Counts
+          </button>
           <button
             disabled={busy}
             onClick={() => setCreating(true)}
@@ -295,7 +319,6 @@ export default function AdminServicesClient({
                   service={s}
                   onEdit={(x) => setEditing(x)}
                   onToggleActive={(x) => void handleToggleActive(x)}
-                  // We repurpose "Delete" to archive (Option A)
                   onDeleteForever={(x) => void handleArchive(x)}
                 />
               ))}

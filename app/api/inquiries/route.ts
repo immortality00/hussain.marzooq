@@ -80,7 +80,9 @@ export async function POST(req: Request) {
   if (rawServiceId !== null) {
     const trimmed = rawServiceId.trim();
     if (trimmed !== "") {
-      if (!isValidObjectIdString(trimmed)) return noStoreJson({ ok: false, error: "Invalid serviceId" }, { status: 400 });
+      if (!isValidObjectIdString(trimmed)) {
+        return noStoreJson({ ok: false, error: "Invalid serviceId" }, { status: 400 });
+      }
       serviceId = trimmed;
     }
   }
@@ -89,7 +91,10 @@ export async function POST(req: Request) {
   const db = client.db("hm_visuals");
 
   if (serviceId) {
-    const exists = await db.collection("services").findOne({ _id: new ObjectId(serviceId) }, { projection: { _id: 1 } });
+    const exists = await db
+      .collection("services")
+      .findOne({ _id: new ObjectId(serviceId) }, { projection: { _id: 1 } });
+
     if (!exists) return noStoreJson({ ok: false, error: "Unknown serviceId" }, { status: 400 });
   }
 
@@ -112,7 +117,13 @@ export async function POST(req: Request) {
   const r = await db.collection("inquiries").insertOne(doc);
 
   if (serviceId) {
-    await db.collection("services").updateOne({ _id: new ObjectId(serviceId) }, { $inc: { inquiriesCount: 1 } });
+    await db.collection("services").updateOne(
+      { _id: new ObjectId(serviceId) },
+      {
+        $inc: { inquiriesCount: 1 },
+        $set: { updatedAt: now },
+      }
+    );
   }
 
   return noStoreJson({ ok: true, id: r.insertedId.toString() });

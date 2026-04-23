@@ -27,18 +27,28 @@ export async function POST() {
     const servicesCol = db.collection("services");
     const inquiriesCol = db.collection("inquiries");
 
-    // Reset all to 0 first
-    await servicesCol.updateMany({}, { $set: { inquiriesCount: 0, updatedAt: new Date() } });
+    const now = new Date();
+
+    await servicesCol.updateMany({}, { $set: { inquiriesCount: 0, updatedAt: now } });
 
     const rows = await inquiriesCol
       .aggregate([
-        { $match: { serviceId: { $type: "string", $ne: "" }, isArchived: { $ne: true } } },
-        { $group: { _id: "$serviceId", count: { $sum: 1 } } },
+        {
+          $match: {
+            serviceId: { $type: "string", $ne: "" },
+            isArchived: { $ne: true },
+          },
+        },
+        {
+          $group: {
+            _id: "$serviceId",
+            count: { $sum: 1 },
+          },
+        },
       ])
       .toArray();
 
     const ops: AnyBulkWriteOperation<Document>[] = [];
-    const now = new Date();
 
     for (const r of rows) {
       if (!r || typeof r !== "object") continue;
@@ -61,7 +71,11 @@ export async function POST() {
       await servicesCol.bulkWrite(ops, { ordered: false });
     }
 
-    return noStoreJson({ ok: true, updated: ops.length });
+    return noStoreJson({
+      ok: true,
+      groupedInquiryServices: rows.length,
+      syncedServices: ops.length,
+    });
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return noStoreJson({ ok: false, error: message }, { status: 500 });
