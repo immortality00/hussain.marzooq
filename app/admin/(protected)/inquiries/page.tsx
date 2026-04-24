@@ -26,12 +26,28 @@ function fmt(iso: string | null) {
 
 function statusPill(status: string) {
   const s = status.toLowerCase();
-  if (s === "new") return "bg-blue-500/10 border-blue-500/30";
-  if (s === "pending") return "bg-yellow-500/10 border-yellow-500/30";
-  if (s === "replied") return "bg-purple-500/10 border-purple-500/30";
-  if (s === "approved") return "bg-green-500/10 border-green-500/30";
-  if (s === "rejected") return "bg-red-500/10 border-red-500/30";
-  return "bg-muted border-border";
+
+  if (s === "new") {
+    return "border-sky-400/50 bg-sky-950 text-sky-100";
+  }
+
+  if (s === "pending") {
+    return "border-amber-400/50 bg-amber-950 text-amber-100";
+  }
+
+  if (s === "replied") {
+    return "border-violet-400/50 bg-violet-950 text-violet-100";
+  }
+
+  if (s === "approved") {
+    return "border-emerald-400/50 bg-emerald-950 text-emerald-100";
+  }
+
+  if (s === "rejected") {
+    return "border-rose-400/50 bg-rose-950 text-rose-100";
+  }
+
+  return "border-zinc-400/40 bg-zinc-900 text-zinc-100";
 }
 
 type ApiInquiriesResponse =
@@ -46,15 +62,15 @@ function isApiResponse(v: unknown): v is ApiInquiriesResponse {
   return false;
 }
 
-function RowActionButton({
+function IconButton({
   title,
-  label,
   tone = "default",
+  children,
   onClick,
 }: {
   title: string;
-  label: string;
   tone?: "default" | "danger";
+  children: React.ReactNode;
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void | Promise<void>;
 }) {
   return (
@@ -64,14 +80,45 @@ function RowActionButton({
       aria-label={title}
       onClick={onClick}
       className={[
-        "inline-flex h-8 w-8 items-center justify-center rounded-lg border text-sm transition-colors",
+        "inline-flex h-8 w-8 items-center justify-center rounded-lg border transition-colors",
         tone === "danger"
-          ? "hover:bg-red-500/10 hover:border-red-500/30"
+          ? "hover:border-rose-500/30 hover:bg-rose-500/10"
           : "hover:bg-accent",
       ].join(" ")}
     >
-      <span aria-hidden="true">{label}</span>
+      {children}
     </button>
+  );
+}
+
+function ArchiveIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-[1.8]">
+      <path d="M3 7h18" />
+      <path d="M5 7h14v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V7Z" />
+      <path d="M9 12h6" />
+      <path d="M5 4h14v3H5z" />
+    </svg>
+  );
+}
+
+function RestoreIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-[1.8]">
+      <path d="M3 12a9 9 0 1 0 3-6.7" />
+      <path d="M3 4v5h5" />
+    </svg>
+  );
+}
+
+function DeleteIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-[1.8]">
+      <path d="M3 6h18" />
+      <path d="M8 6V4h8v2" />
+      <path d="M19 6l-1 13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+    </svg>
   );
 }
 
@@ -197,7 +244,7 @@ export default function AdminInquiriesPage() {
 
   function Section({ title, list, archivedMode }: { title: string; list: Inquiry[]; archivedMode: boolean }) {
     return (
-      <div className="mt-6 overflow-hidden rounded-2xl border">
+      <div className="mt-6 overflow-hidden rounded-2xl border bg-background/70">
         <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
           <div className="text-sm font-medium">{title}</div>
           <div className="text-xs text-muted-foreground">{list.length} item(s)</div>
@@ -216,19 +263,19 @@ export default function AdminInquiriesPage() {
           const expanded = expandedId === it.id;
 
           return (
-            <div key={it.id} className="border-b">
+            <div key={it.id} className="border-b last:border-b-0">
               <div className="grid grid-cols-12 gap-2 px-4 py-2 text-sm hover:bg-accent/20">
                 <button
                   type="button"
                   onClick={() => toggleExpand(it.id)}
                   className="col-span-11 grid grid-cols-11 gap-2 text-left"
                 >
-                  <div className="col-span-2 text-xs text-muted-foreground self-center">{fmt(it.createdAt)}</div>
-                  <div className="col-span-2 truncate self-center">{it.name}</div>
-                  <div className="col-span-3 truncate self-center">{it.email}</div>
+                  <div className="col-span-2 self-center text-xs text-muted-foreground">{fmt(it.createdAt)}</div>
+                  <div className="col-span-2 truncate self-center font-medium">{it.name}</div>
+                  <div className="col-span-3 truncate self-center text-muted-foreground">{it.email}</div>
                   <div className="col-span-2 truncate self-center">{it.serviceName ?? it.serviceId ?? "Other"}</div>
                   <div className="col-span-2 self-center">
-                    <span className={`inline-flex rounded-full border px-2 py-0.5 text-xs ${statusPill(it.status)}`}>
+                    <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium ${statusPill(it.status)}`}>
                       {it.status}
                     </span>
                   </div>
@@ -239,38 +286,39 @@ export default function AdminInquiriesPage() {
                   onClick={(e) => e.stopPropagation()}
                 >
                   {!archivedMode ? (
-                    <RowActionButton
+                    <IconButton
                       title="Archive inquiry"
-                      label="🗄"
-                      tone="default"
                       onClick={async (e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         await handleArchive(it.id);
                       }}
-                    />
+                    >
+                      <ArchiveIcon />
+                    </IconButton>
                   ) : (
                     <>
-                      <RowActionButton
+                      <IconButton
                         title="Restore inquiry"
-                        label="↺"
-                        tone="default"
                         onClick={async (e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           await handleRestore(it.id);
                         }}
-                      />
-                      <RowActionButton
+                      >
+                        <RestoreIcon />
+                      </IconButton>
+                      <IconButton
                         title="Delete forever"
-                        label="✕"
                         tone="danger"
                         onClick={async (e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           await handleDeleteForever(it.id);
                         }}
-                      />
+                      >
+                        <DeleteIcon />
+                      </IconButton>
                     </>
                   )}
                 </div>
@@ -286,13 +334,13 @@ export default function AdminInquiriesPage() {
                       </div>
                       <div className="text-sm">
                         <div className="text-xs text-muted-foreground">ServiceId</div>
-                        <div className="font-mono text-xs break-all text-muted-foreground">{it.serviceId ?? "-"}</div>
+                        <div className="break-all font-mono text-xs text-muted-foreground">{it.serviceId ?? "-"}</div>
                       </div>
                     </div>
 
                     <div className="text-sm">
                       <div className="text-xs text-muted-foreground">Message</div>
-                      <div className="whitespace-pre-wrap">{it.message}</div>
+                      <div className="whitespace-pre-wrap rounded-xl border bg-muted/25 px-3 py-3">{it.message}</div>
                     </div>
 
                     {!archivedMode ? (
@@ -365,7 +413,7 @@ export default function AdminInquiriesPage() {
 
                         {!archivedMode ? (
                           <button
-                            className="rounded-xl border px-4 py-2 text-sm hover:bg-red-500/10"
+                            className="rounded-xl border px-4 py-2 text-sm hover:bg-rose-500/10"
                             onClick={async (e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -388,7 +436,7 @@ export default function AdminInquiriesPage() {
                             </button>
 
                             <button
-                              className="rounded-xl border px-4 py-2 text-sm hover:bg-red-500/10"
+                              className="rounded-xl border px-4 py-2 text-sm hover:bg-rose-500/10"
                               onClick={async (e) => {
                                 e.preventDefault();
                                 e.stopPropagation();
@@ -444,7 +492,7 @@ export default function AdminInquiriesPage() {
       {msg ? (
         <div
           className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
-            msg.type === "ok" ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"
+            msg.type === "ok" ? "border-green-500/30 bg-green-500/10" : "border-red-500/30 bg-red-500/10"
           }`}
         >
           {msg.text}

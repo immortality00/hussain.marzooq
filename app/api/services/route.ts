@@ -51,6 +51,7 @@ export async function GET(req: Request) {
     name: typeof d.name === "string" ? d.name : "",
     slug: typeof d.slug === "string" ? d.slug : "",
     category: typeof d.category === "string" ? d.category : "others",
+    categoryId: typeof d.categoryId === "string" ? d.categoryId : null,
     description: typeof d.description === "string" ? d.description : "",
     startingPrice: asNumberOrNull(d.startingPrice),
     currency: typeof d.currency === "string" ? d.currency : "AED",
@@ -90,6 +91,8 @@ export async function POST(req: Request) {
   const existing = await db.collection("services").findOne({ slug }, { projection: { _id: 1 } });
   if (existing) return noStoreJson({ ok: false, error: "Slug already exists" }, { status: 409 });
 
+  let categoryId: string | null = null;
+
   if (category !== "others") {
     const foundCategory = await db.collection("service_categories").findOne(
       { slug: category },
@@ -103,16 +106,27 @@ export async function POST(req: Request) {
     if (foundCategory.isActive === false) {
       return noStoreJson({ ok: false, error: "CATEGORY_INACTIVE" }, { status: 409 });
     }
+
+    categoryId = String(foundCategory._id);
+  } else {
+    const others = await db.collection("service_categories").findOne(
+      { slug: "others" },
+      { projection: { _id: 1 } }
+    );
+    categoryId = others ? String(others._id) : null;
   }
 
   const last = await db.collection("services").find({}).sort({ order: -1 }).limit(1).toArray();
   const nextOrder =
     last.length && typeof last[0]?.order === "number" && Number.isFinite(last[0].order) ? last[0].order + 1 : 0;
 
+  const now = new Date();
+
   const r = await db.collection("services").insertOne({
     name,
     slug,
     category,
+    categoryId,
     description,
     startingPrice,
     currency,
@@ -121,8 +135,8 @@ export async function POST(req: Request) {
     isArchived: false,
     order: nextOrder,
     inquiriesCount: 0,
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: now,
+    updatedAt: now,
   });
 
   return noStoreJson({ ok: true, id: r.insertedId.toString() });

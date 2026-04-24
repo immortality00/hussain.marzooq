@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { Db, ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
@@ -8,9 +8,11 @@ export const dynamic = "force-dynamic";
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
+
 function asString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
+
 function asNumberOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null;
   if (typeof v === "number" && Number.isFinite(v)) return v;
@@ -20,6 +22,7 @@ function asNumberOrNull(v: unknown): number | null {
   }
   return null;
 }
+
 function asFiniteNumber(v: unknown): number | null {
   if (typeof v === "number" && Number.isFinite(v)) return v;
   if (typeof v === "string" && v.trim() !== "") {
@@ -28,10 +31,37 @@ function asFiniteNumber(v: unknown): number | null {
   }
   return null;
 }
+
+function normalizeSlug(v: string): string {
+  return v.trim().toLowerCase();
+}
+
+function escapeRegex(v: string): string {
+  return v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
 function noStore(body: unknown, init?: ResponseInit) {
   const res = NextResponse.json(body, init);
   res.headers.set("Cache-Control", "no-store");
   return res;
+}
+
+async function resolveCategory(db: Db, reference: string, categoryId?: string | null) {
+  if (categoryId && ObjectId.isValid(categoryId)) {
+    const byId = await db.collection("service_categories").findOne({ _id: new ObjectId(categoryId) });
+    if (byId) return byId;
+  }
+
+  const raw = reference.trim();
+  if (!raw) return null;
+
+  const normalized = normalizeSlug(raw);
+  const rxRaw = new RegExp(`^${escapeRegex(raw)}$`, "i");
+  const rxNormalized = new RegExp(`^${escapeRegex(normalized)}$`, "i");
+
+  return db.collection("service_categories").findOne({
+    $or: [{ slug: normalized }, { slug: rxRaw }, { slug: rxNormalized }, { name: rxRaw }],
+  });
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -53,7 +83,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const patch: Record<string, unknown> = { updatedAt: new Date() };
 
   if (typeof body.name === "string") patch.name = body.name.trim();
-  if (typeof body.slug === "string") patch.slug = body.slug.trim();
+  if (typeof body.slug === "string") patch.slug = normalizeSlug(body.slug);
   if (typeof body.description === "string") patch.description = body.description.trim();
   if (typeof body.currency === "string") patch.currency = body.currency.trim() || "AED";
   if (typeof body.imageUrl === "string") patch.imageUrl = body.imageUrl.trim();
@@ -68,22 +98,22 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (order !== null) patch.order = order;
 
   if (typeof body.category === "string") {
-    const catSlug = body.category.trim() || "others";
+    const requestedCategory = body.category.trim() || "others";
 
-    if (catSlug !== "others") {
-      const cat = await db.collection("service_categories").findOne(
-        { slug: catSlug },
-        { projection: { _id: 1, isActive: 1 } }
-      );
+    if (normalizeSlug(requestedCategory) === "others") {
+      patch.category = "others";
+      patch.categoryId = null;
+    } else {
+      const cat = await resolveCategory(db, requestedCategory);
       if (!cat) return noStore({ ok: false, error: "CATEGORY_NOT_FOUND" }, { status: 400 });
+
+      patch.category = typeof cat.slug === "string" ? normalizeSlug(cat.slug) : requestedCategory;
+      patch.categoryId = String(cat._id);
 
       if (cat.isActive === false) patch.isActive = false;
     }
-
-    patch.category = catSlug;
   }
 
-  // cannot activate archived service
   const existingArchived = existing.isArchived === true;
   const wantsActive = patch.isActive === true;
   const willBeArchived =
@@ -93,31 +123,45 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     return noStore({ ok: false, error: "SERVICE_ARCHIVED" }, { status: 409 });
   }
 
-  // guard: cannot activate under inactive category
   if (wantsActive) {
-    const catSlug =
+    const nextCategoryRef =
       typeof patch.category === "string"
-        ? String(patch.category)
+        ? patch.category
         : typeof existing.category === "string"
-        ? existing.category
-        : "others";
+          ? existing.category
+          : "others";
 
-    if (catSlug !== "others") {
-      const cat = await db.collection("service_categories").findOne(
-        { slug: catSlug },
-        { projection: { _id: 1, isActive: 1 } }
-      );
-      if (cat && cat.isActive === false) {
+    const nextCategoryId =
+      typeof patch.categoryId === "string"
+        ? patch.categoryId
+        : typeof existing.categoryId === "string"
+          ? existing.categoryId
+          : null;
+
+    if (normalizeSlug(nextCategoryRef) !== "others") {
+      const cat = await resolveCategory(db, nextCategoryRef, nextCategoryId);
+      if (!cat) {
+        return noStore({ ok: false, error: "CATEGORY_NOT_FOUND" }, { status: 400 });
+      }
+      if (cat.isActive === false) {
         return noStore({ ok: false, error: "CATEGORY_INACTIVE" }, { status: 409 });
       }
+
+      patch.category = typeof cat.slug === "string" ? normalizeSlug(cat.slug) : nextCategoryRef;
+      patch.categoryId = String(cat._id);
     }
   }
 
-  // unique slug if changed
   if ("slug" in patch) {
     const slug = asString(patch.slug).trim();
-    if (!slug || slug.includes(" ")) return noStore({ ok: false, error: "Invalid slug" }, { status: 400 });
-    const conflict = await db.collection("services").findOne({ slug, _id: { $ne: new ObjectId(id) } });
+    if (!slug || slug.includes(" ")) {
+      return noStore({ ok: false, error: "Invalid slug" }, { status: 400 });
+    }
+
+    const conflict = await db.collection("services").findOne({
+      slug,
+      _id: { $ne: new ObjectId(id) },
+    });
     if (conflict) return noStore({ ok: false, error: "Slug already exists" }, { status: 409 });
   }
 
@@ -139,7 +183,6 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   const db = client.db("hm_visuals");
 
   if (!hard) {
-    // ✅ archive
     await db.collection("services").updateOne(
       { _id: new ObjectId(id) },
       { $set: { isArchived: true, isActive: false, updatedAt: new Date() } }

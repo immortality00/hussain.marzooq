@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   DndContext,
   closestCenter,
@@ -9,8 +9,7 @@ import {
   useSensors,
   type DragEndEvent,
 } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
-import { useSortable } from "@dnd-kit/sortable";
+import { SortableContext, verticalListSortingStrategy, arrayMove, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 type Category = {
@@ -55,6 +54,78 @@ async function patchCategory(
   if (!res.ok || !data.ok) throw new Error(data.error ?? "Update failed");
 }
 
+function StaticRow({
+  category,
+  onEdit,
+  onToggle,
+  onDelete,
+}: {
+  category: Category;
+  onEdit: (id: string, patch: Partial<Pick<Category, "name" | "slug" | "order">>) => void;
+  onToggle: (id: string, value: boolean) => void;
+  onDelete: (cat: Category) => void;
+}) {
+  return (
+    <div className="grid grid-cols-12 gap-2 border-b px-4 py-3 text-sm">
+      <div className="col-span-1 flex items-center">
+        <span className="rounded-lg border px-2 py-1 text-xs opacity-70">⠿</span>
+      </div>
+
+      <div className="col-span-3">
+        <input
+          defaultValue={category.name}
+          className="w-full rounded-lg border bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-ring"
+          onBlur={(e) => {
+            const v = e.target.value.trim();
+            if (v && v !== category.name) onEdit(category.id, { name: v });
+          }}
+          disabled={category.isSystem}
+        />
+      </div>
+
+      <div className="col-span-3">
+        <input
+          defaultValue={category.slug}
+          className="w-full rounded-lg border bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-ring"
+          onBlur={(e) => {
+            const v = e.target.value.trim();
+            if (v && v !== category.slug) onEdit(category.id, { slug: v });
+          }}
+          disabled={category.isSystem}
+        />
+      </div>
+
+      <div className="col-span-2">
+        <label className="flex items-center gap-2">
+          <input type="checkbox" checked={category.isActive} onChange={(e) => onToggle(category.id, e.target.checked)} />
+          <span className="text-muted-foreground">{category.isActive ? "Yes" : "No"}</span>
+        </label>
+      </div>
+
+      <div className="col-span-1 text-muted-foreground">{category.order}</div>
+      <div className="col-span-1 text-muted-foreground">{category.servicesCount}</div>
+
+      <div className="col-span-1 flex justify-end">
+        <button
+          type="button"
+          className="rounded-lg border px-2 py-1 text-xs transition-colors hover:bg-accent disabled:opacity-50"
+          onClick={() => onDelete(category)}
+          disabled={category.isSystem || category.servicesCount > 0}
+          title={
+            category.isSystem
+              ? "System category cannot be deleted"
+              : category.servicesCount > 0
+              ? "Delete services first"
+              : "Delete category"
+          }
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function SortableRow({
   category,
   onEdit,
@@ -91,7 +162,7 @@ function SortableRow({
             const v = e.target.value.trim();
             if (v && v !== category.name) onEdit(category.id, { name: v });
           }}
-          disabled={category.isSystem} // optional lock
+          disabled={category.isSystem}
         />
       </div>
 
@@ -103,7 +174,7 @@ function SortableRow({
             const v = e.target.value.trim();
             if (v && v !== category.slug) onEdit(category.id, { slug: v });
           }}
-          disabled={category.isSystem} // ✅ system slug should not change
+          disabled={category.isSystem}
         />
       </div>
 
@@ -115,13 +186,12 @@ function SortableRow({
       </div>
 
       <div className="col-span-1 text-muted-foreground">{category.order}</div>
-
       <div className="col-span-1 text-muted-foreground">{category.servicesCount}</div>
 
       <div className="col-span-1 flex justify-end">
         <button
           type="button"
-          className="rounded-lg border px-2 py-1 text-xs hover:bg-accent transition-colors disabled:opacity-50"
+          className="rounded-lg border px-2 py-1 text-xs transition-colors hover:bg-accent disabled:opacity-50"
           onClick={() => onDelete(category)}
           disabled={category.isSystem || category.servicesCount > 0}
           title={
@@ -146,9 +216,13 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
   const [creating, setCreating] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
   const [msg, setMsg] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-
   const ordered = useMemo(() => [...items].sort((a, b) => a.order - b.order), [items]);
 
   async function refresh() {
@@ -204,7 +278,7 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
     try {
       await patchCategory(id, { isActive: value });
       setItems((prev) => prev.map((c) => (c.id === id ? ({ ...c, isActive: value } as Category) : c)));
-      // API cascade will deactivate services when category turns inactive
+      await refresh();
     } catch (e: unknown) {
       setMsg(getErrorMessage(e));
     }
@@ -253,7 +327,6 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
     setMsg("");
     setSavingOrder(true);
     try {
-      // Persist each category order (same pattern as services)
       await Promise.all(ordered.map((c, idx) => patchCategory(c.id, { order: idx })));
       setMsg("✅ Order saved.");
       await refresh();
@@ -270,7 +343,7 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Service Categories</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Drag categories to reorder (public tabs follow this order). Turning a category inactive deactivates its services.
+            Drag categories to reorder. Turning a category inactive deactivates linked services too.
           </p>
         </div>
 
@@ -278,7 +351,7 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
           type="button"
           onClick={() => void saveOrder()}
           disabled={savingOrder}
-          className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:opacity-60"
+          className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:opacity-60"
         >
           {savingOrder ? "Saving…" : "Save Order"}
         </button>
@@ -306,7 +379,7 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
             type="button"
             onClick={() => void createCategory()}
             disabled={creating}
-            className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity disabled:opacity-60"
+            className="rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90 disabled:opacity-60"
           >
             {creating ? "Creating…" : "Add"}
           </button>
@@ -326,26 +399,38 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
           <div className="col-span-1 text-right">Actions</div>
         </div>
 
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={ordered.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-            {ordered.map((c) => (
-              <SortableRow
-                key={c.id}
-                category={c}
-                onEdit={(id, patch) => editCategory(id, patch)}
-                onToggle={(id, v) => toggleCategory(id, v)}
-                onDelete={(cat) => deleteCategory(cat)}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
+        {!mounted ? (
+          ordered.map((c) => (
+            <StaticRow
+              key={c.id}
+              category={c}
+              onEdit={(id, patch) => editCategory(id, patch)}
+              onToggle={(id, v) => void toggleCategory(id, v)}
+              onDelete={(cat) => void deleteCategory(cat)}
+            />
+          ))
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={ordered.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+              {ordered.map((c) => (
+                <SortableRow
+                  key={c.id}
+                  category={c}
+                  onEdit={(id, patch) => editCategory(id, patch)}
+                  onToggle={(id, v) => void toggleCategory(id, v)}
+                  onDelete={(cat) => void deleteCategory(cat)}
+                />
+              ))}
+            </SortableContext>
+          </DndContext>
+        )}
       </div>
 
       <div className="mt-6">
         <button
           type="button"
           onClick={() => void refresh()}
-          className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+          className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
         >
           Refresh
         </button>

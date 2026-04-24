@@ -19,10 +19,22 @@ function asFiniteNumber(v: unknown): number | null {
 function normalizeSlug(v: string): string {
   return v.trim().toLowerCase();
 }
+function escapeRegex(v: string): string {
+  return v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
 function noStore(body: unknown, init?: ResponseInit) {
   const res = NextResponse.json(body, init);
   res.headers.set("Cache-Control", "no-store");
   return res;
+}
+
+function buildLegacyCategoryMatch(categoryId: string, slug: string, name: string) {
+  const rxSlug = new RegExp(`^${escapeRegex(slug)}$`, "i");
+  const rxName = new RegExp(`^${escapeRegex(name)}$`, "i");
+
+  return {
+    $or: [{ categoryId }, { category: slug }, { category: rxSlug }, { category: name }, { category: rxName }],
+  };
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -37,12 +49,15 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
-  const categoryId = new ObjectId(id);
+  const categoryObjectId = new ObjectId(id);
 
-  const existing = await db.collection("service_categories").findOne({ _id: categoryId });
+  const existing = await db.collection("service_categories").findOne({ _id: categoryObjectId });
   if (!existing) return noStore({ ok: false, error: "Not found" }, { status: 404 });
 
-  const isSystem = existing.slug === "others" || existing.isSystem === true;
+  const existingSlug = typeof existing.slug === "string" ? normalizeSlug(existing.slug) : "others";
+  const existingName = typeof existing.name === "string" ? existing.name.trim() : existingSlug;
+  const isSystem = existingSlug === "others" || existing.isSystem === true;
+
   const patch: Record<string, unknown> = { updatedAt: new Date() };
 
   if (typeof body.name === "string" && !isSystem) {
@@ -56,9 +71,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const order = asFiniteNumber(body.order);
   if (order !== null) patch.order = order;
 
-  const oldSlug = typeof existing.slug === "string" ? normalizeSlug(existing.slug) : "others";
-  let nextSlug = oldSlug;
-
+  let nextSlug = existingSlug;
   if (typeof body.slug === "string") {
     if (isSystem) {
       return noStore({ ok: false, error: "SYSTEM_CATEGORY_LOCKED" }, { status: 409 });
@@ -74,29 +87,43 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
     const conflict = await db.collection("service_categories").findOne({
       slug: nextSlug,
-      _id: { $ne: categoryId },
+      _id: { $ne: categoryObjectId },
     });
     if (conflict) return noStore({ ok: false, error: "Slug already exists" }, { status: 409 });
 
     patch.slug = nextSlug;
   }
 
+  const nextName =
+    typeof patch.name === "string" ? String(patch.name).trim() : existingName;
+
   const willDeactivate =
     typeof patch.isActive === "boolean" && patch.isActive === false && existing.isActive !== false;
 
-  await db.collection("service_categories").updateOne({ _id: categoryId }, { $set: patch });
+  await db.collection("service_categories").updateOne({ _id: categoryObjectId }, { $set: patch });
 
-  if (nextSlug !== oldSlug) {
-    await db.collection("services").updateMany(
-      { category: oldSlug },
-      { $set: { category: nextSlug, updatedAt: new Date() } }
-    );
-  }
+  await db.collection("services").updateMany(
+    buildLegacyCategoryMatch(id, existingSlug, existingName),
+    {
+      $set: {
+        category: nextSlug,
+        categoryId: id,
+        updatedAt: new Date(),
+        ...(willDeactivate ? { isActive: false } : {}),
+      },
+    }
+  );
 
-  if (willDeactivate) {
+  if (nextName !== existingName) {
     await db.collection("services").updateMany(
-      { category: nextSlug },
-      { $set: { isActive: false, updatedAt: new Date() } }
+      buildLegacyCategoryMatch(id, nextSlug, nextName),
+      {
+        $set: {
+          category: nextSlug,
+          categoryId: id,
+          updatedAt: new Date(),
+        },
+      }
     );
   }
 
@@ -116,12 +143,16 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   const cat = await db.collection("service_categories").findOne({ _id: new ObjectId(id) });
   if (!cat) return noStore({ ok: false, error: "Not found" }, { status: 404 });
 
-  if (cat.slug === "others" || cat.isSystem === true) {
+  const slug = typeof cat.slug === "string" ? normalizeSlug(cat.slug) : "";
+  const name = typeof cat.name === "string" ? cat.name.trim() : slug;
+
+  if (slug === "others" || cat.isSystem === true) {
     return noStore({ ok: false, error: "SYSTEM_CATEGORY_CANNOT_DELETE" }, { status: 409 });
   }
 
-  const slug = typeof cat.slug === "string" ? normalizeSlug(cat.slug) : "";
-  const servicesCount = await db.collection("services").countDocuments({ category: slug });
+  const servicesCount = await db.collection("services").countDocuments(
+    buildLegacyCategoryMatch(id, slug, name)
+  );
 
   if (servicesCount > 0) {
     return noStore({ ok: false, error: "CATEGORY_HAS_SERVICES", servicesCount }, { status: 409 });

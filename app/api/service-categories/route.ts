@@ -15,37 +15,41 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 function asString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
+function normalizeSlug(v: string): string {
+  return v.trim().toLowerCase();
+}
 
 export async function GET() {
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
-  const rows = await db
-    .collection("service_categories")
-    .aggregate([
-      { $sort: { order: 1, createdAt: -1 } },
-      {
-        $lookup: {
-          from: "services",
-          localField: "slug",
-          foreignField: "category",
-          as: "servicesForCategory",
-        },
-      },
-      { $addFields: { servicesCount: { $size: "$servicesForCategory" } } },
-      { $project: { servicesForCategory: 0 } },
-    ])
-    .toArray();
+  const [categories, services] = await Promise.all([
+    db.collection("service_categories").find({}).sort({ order: 1, createdAt: -1 }).toArray(),
+    db.collection("services").find({}).project({ category: 1, categoryId: 1 }).toArray(),
+  ]);
 
-  const items = rows.map((d) => ({
-    id: String(d._id),
-    name: typeof d.name === "string" ? d.name : "",
-    slug: typeof d.slug === "string" ? d.slug : "",
-    isActive: typeof d.isActive === "boolean" ? d.isActive : true,
-    order: typeof d.order === "number" ? d.order : 0,
-    servicesCount: typeof d.servicesCount === "number" ? d.servicesCount : 0,
-    isSystem: typeof d.isSystem === "boolean" ? d.isSystem : d.slug === "others",
-  }));
+  const items = categories.map((cat) => {
+    const id = String(cat._id);
+    const slug = typeof cat.slug === "string" ? normalizeSlug(cat.slug) : "";
+    const name = typeof cat.name === "string" ? cat.name.trim().toLowerCase() : "";
+
+    const servicesCount = services.filter((svc) => {
+      const svcCategoryId = typeof svc.categoryId === "string" ? svc.categoryId : "";
+      const svcCategory = typeof svc.category === "string" ? svc.category.trim().toLowerCase() : "";
+
+      return svcCategoryId === id || svcCategory === slug || svcCategory === name;
+    }).length;
+
+    return {
+      id,
+      name: typeof cat.name === "string" ? cat.name : "",
+      slug,
+      isActive: typeof cat.isActive === "boolean" ? cat.isActive : true,
+      order: typeof cat.order === "number" ? cat.order : 0,
+      servicesCount,
+      isSystem: typeof cat.isSystem === "boolean" ? cat.isSystem : slug === "others",
+    };
+  });
 
   return noStore({ ok: true, items });
 }
@@ -58,7 +62,7 @@ export async function POST(req: Request) {
   const body = isRecord(bodyUnknown) ? bodyUnknown : {};
 
   const name = asString(body.name).trim();
-  const slug = asString(body.slug).trim();
+  const slug = normalizeSlug(asString(body.slug));
 
   if (!name) return noStore({ ok: false, error: "Name is required" }, { status: 400 });
   if (!slug || slug.includes(" ")) return noStore({ ok: false, error: "Invalid slug" }, { status: 400 });
