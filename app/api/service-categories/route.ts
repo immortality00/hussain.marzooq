@@ -9,12 +9,15 @@ function noStore(body: unknown, init?: ResponseInit) {
   res.headers.set("Cache-Control", "no-store");
   return res;
 }
+
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
+
 function asString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
+
 function normalizeSlug(v: string): string {
   return v.trim().toLowerCase();
 }
@@ -25,19 +28,16 @@ export async function GET() {
 
   const [categories, services] = await Promise.all([
     db.collection("service_categories").find({}).sort({ order: 1, createdAt: -1 }).toArray(),
-    db.collection("services").find({}).project({ category: 1, categoryId: 1 }).toArray(),
+    db.collection("services").find({}).project({ categoryId: 1 }).toArray(),
   ]);
 
   const items = categories.map((cat) => {
     const id = String(cat._id);
     const slug = typeof cat.slug === "string" ? normalizeSlug(cat.slug) : "";
-    const name = typeof cat.name === "string" ? cat.name.trim().toLowerCase() : "";
 
     const servicesCount = services.filter((svc) => {
       const svcCategoryId = typeof svc.categoryId === "string" ? svc.categoryId : "";
-      const svcCategory = typeof svc.category === "string" ? svc.category.trim().toLowerCase() : "";
-
-      return svcCategoryId === id || svcCategory === slug || svcCategory === name;
+      return svcCategoryId === id;
     }).length;
 
     return {

@@ -3,6 +3,7 @@ export type Service = {
   name: string;
   slug: string;
   category: string;
+  categoryId: string | null;
   description: string;
   startingPrice: number | null;
   currency: string;

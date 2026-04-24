@@ -60,6 +60,7 @@ export default async function AdminServicesPage() {
       name: typeof d.name === "string" ? d.name : "",
       slug: typeof d.slug === "string" ? d.slug : "",
       category: typeof d.category === "string" ? d.category : "others",
+      categoryId: typeof d.categoryId === "string" ? d.categoryId : null,
       description: typeof d.description === "string" ? d.description : "",
       startingPrice: typeof d.startingPrice === "number" ? d.startingPrice : null,
       currency: typeof d.currency === "string" ? d.currency : "AED",

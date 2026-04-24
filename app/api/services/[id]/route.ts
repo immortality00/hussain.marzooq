@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { Db, ObjectId } from "mongodb";
+import { ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
@@ -36,32 +36,10 @@ function normalizeSlug(v: string): string {
   return v.trim().toLowerCase();
 }
 
-function escapeRegex(v: string): string {
-  return v.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
-
 function noStore(body: unknown, init?: ResponseInit) {
   const res = NextResponse.json(body, init);
   res.headers.set("Cache-Control", "no-store");
   return res;
-}
-
-async function resolveCategory(db: Db, reference: string, categoryId?: string | null) {
-  if (categoryId && ObjectId.isValid(categoryId)) {
-    const byId = await db.collection("service_categories").findOne({ _id: new ObjectId(categoryId) });
-    if (byId) return byId;
-  }
-
-  const raw = reference.trim();
-  if (!raw) return null;
-
-  const normalized = normalizeSlug(raw);
-  const rxRaw = new RegExp(`^${escapeRegex(raw)}$`, "i");
-  const rxNormalized = new RegExp(`^${escapeRegex(normalized)}$`, "i");
-
-  return db.collection("service_categories").findOne({
-    $or: [{ slug: normalized }, { slug: rxRaw }, { slug: rxNormalized }, { name: rxRaw }],
-  });
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -69,7 +47,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (guard) return guard as unknown as Response;
 
   const { id } = await ctx.params;
-  if (!ObjectId.isValid(id)) return noStore({ ok: false, error: "Invalid id" }, { status: 400 });
+  if (!ObjectId.isValid(id)) {
+    return noStore({ ok: false, error: "Invalid id" }, { status: 400 });
+  }
 
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
   const body = isRecord(bodyUnknown) ? bodyUnknown : {};
@@ -78,7 +58,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const db = client.db("hm_visuals");
 
   const existing = await db.collection("services").findOne({ _id: new ObjectId(id) });
-  if (!existing) return noStore({ ok: false, error: "Not found" }, { status: 404 });
+  if (!existing) {
+    return noStore({ ok: false, error: "Not found" }, { status: 404 });
+  }
 
   const patch: Record<string, unknown> = { updatedAt: new Date() };
 
@@ -98,19 +80,32 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (order !== null) patch.order = order;
 
   if (typeof body.category === "string") {
-    const requestedCategory = body.category.trim() || "others";
+    const requestedCategory = normalizeSlug(body.category || "others") || "others";
 
-    if (normalizeSlug(requestedCategory) === "others") {
+    if (requestedCategory === "others") {
+      const others = await db.collection("service_categories").findOne(
+        { slug: "others" },
+        { projection: { _id: 1 } }
+      );
+
       patch.category = "others";
-      patch.categoryId = null;
+      patch.categoryId = others ? String(others._id) : null;
     } else {
-      const cat = await resolveCategory(db, requestedCategory);
-      if (!cat) return noStore({ ok: false, error: "CATEGORY_NOT_FOUND" }, { status: 400 });
+      const cat = await db.collection("service_categories").findOne(
+        { slug: requestedCategory },
+        { projection: { _id: 1, slug: 1, isActive: 1 } }
+      );
+
+      if (!cat) {
+        return noStore({ ok: false, error: "CATEGORY_NOT_FOUND" }, { status: 400 });
+      }
 
       patch.category = typeof cat.slug === "string" ? normalizeSlug(cat.slug) : requestedCategory;
       patch.categoryId = String(cat._id);
 
-      if (cat.isActive === false) patch.isActive = false;
+      if (cat.isActive === false) {
+        patch.isActive = false;
+      }
     }
   }
 
@@ -124,13 +119,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }
 
   if (wantsActive) {
-    const nextCategoryRef =
-      typeof patch.category === "string"
-        ? patch.category
-        : typeof existing.category === "string"
-          ? existing.category
-          : "others";
-
     const nextCategoryId =
       typeof patch.categoryId === "string"
         ? patch.categoryId
@@ -138,16 +126,32 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
           ? existing.categoryId
           : null;
 
-    if (normalizeSlug(nextCategoryRef) !== "others") {
-      const cat = await resolveCategory(db, nextCategoryRef, nextCategoryId);
+    const nextCategorySlug =
+      typeof patch.category === "string"
+        ? patch.category
+        : typeof existing.category === "string"
+          ? existing.category
+          : "others";
+
+    if (normalizeSlug(nextCategorySlug) !== "others") {
+      if (!nextCategoryId || !ObjectId.isValid(nextCategoryId)) {
+        return noStore({ ok: false, error: "CATEGORY_NOT_FOUND" }, { status: 400 });
+      }
+
+      const cat = await db.collection("service_categories").findOne(
+        { _id: new ObjectId(nextCategoryId) },
+        { projection: { _id: 1, slug: 1, isActive: 1 } }
+      );
+
       if (!cat) {
         return noStore({ ok: false, error: "CATEGORY_NOT_FOUND" }, { status: 400 });
       }
+
       if (cat.isActive === false) {
         return noStore({ ok: false, error: "CATEGORY_INACTIVE" }, { status: 409 });
       }
 
-      patch.category = typeof cat.slug === "string" ? normalizeSlug(cat.slug) : nextCategoryRef;
+      patch.category = typeof cat.slug === "string" ? normalizeSlug(cat.slug) : nextCategorySlug;
       patch.categoryId = String(cat._id);
     }
   }
@@ -162,7 +166,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       slug,
       _id: { $ne: new ObjectId(id) },
     });
-    if (conflict) return noStore({ ok: false, error: "Slug already exists" }, { status: 409 });
+    if (conflict) {
+      return noStore({ ok: false, error: "Slug already exists" }, { status: 409 });
+    }
   }
 
   await db.collection("services").updateOne({ _id: new ObjectId(id) }, { $set: patch });
@@ -174,7 +180,9 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   if (guard) return guard as unknown as Response;
 
   const { id } = await ctx.params;
-  if (!ObjectId.isValid(id)) return noStore({ ok: false, error: "Invalid id" }, { status: 400 });
+  if (!ObjectId.isValid(id)) {
+    return noStore({ ok: false, error: "Invalid id" }, { status: 400 });
+  }
 
   const url = new URL(req.url);
   const hard = url.searchParams.get("hard") === "1";
