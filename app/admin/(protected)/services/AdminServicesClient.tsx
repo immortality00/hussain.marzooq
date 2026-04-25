@@ -36,6 +36,15 @@ function isCreateServiceResponse(v: unknown): v is CreateServiceResponse {
 
 type Banner = { type: "ok" | "err"; text: string } | null;
 
+function findCategoryById(categories: ServiceCategory[], categoryId: string | null | undefined) {
+  if (!categoryId) return null;
+  return categories.find((c) => c.id === categoryId) ?? null;
+}
+
+function findOthersCategory(categories: ServiceCategory[]) {
+  return categories.find((c) => c.slug === "others") ?? null;
+}
+
 function StaticRow({
   service,
   onEdit,
@@ -112,18 +121,12 @@ export default function AdminServicesClient({
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   const active = useMemo(
-    () =>
-      services
-        .filter((s) => s.isActive && !s.isArchived)
-        .sort((a, b) => a.order - b.order),
+    () => services.filter((s) => s.isActive && !s.isArchived).sort((a, b) => a.order - b.order),
     [services]
   );
 
   const inactive = useMemo(
-    () =>
-      services
-        .filter((s) => !s.isActive && !s.isArchived)
-        .sort((a, b) => a.order - b.order),
+    () => services.filter((s) => !s.isActive && !s.isArchived).sort((a, b) => a.order - b.order),
     [services]
   );
 
@@ -412,13 +415,21 @@ export default function AdminServicesClient({
             const raw = await createService(patch);
             if (!isCreateServiceResponse(raw) || raw.ok !== true) throw new Error("Create failed");
 
+            const nextCategoryId =
+              typeof patch.categoryId === "string" && patch.categoryId
+                ? patch.categoryId
+                : findOthersCategory(categories)?.id ?? null;
+
+            const nextCategory = findCategoryById(categories, nextCategoryId)?.slug ?? "others";
+
             setServices((prev) => [
               ...prev,
               {
                 id: raw.id,
                 name: String(patch.name ?? ""),
                 slug: String(patch.slug ?? ""),
-                category: String(patch.category ?? "others"),
+                category: nextCategory,
+                categoryId: nextCategoryId,
                 description: String(patch.description ?? ""),
                 startingPrice: patch.startingPrice ?? null,
                 currency: String(patch.currency ?? "AED"),
@@ -429,6 +440,7 @@ export default function AdminServicesClient({
                 inquiriesCount: 0,
               },
             ]);
+
             setCreating(false);
             showBanner("ok", "✅ Service created.");
           } catch (e: unknown) {
@@ -449,7 +461,29 @@ export default function AdminServicesClient({
           setBusy(true);
           try {
             await patchService(editing.id, patch);
-            setServices((prev) => prev.map((p) => (p.id === editing.id ? { ...p, ...patch } : p)));
+
+            const nextCategoryId =
+              typeof patch.categoryId === "string"
+                ? patch.categoryId
+                : editing.categoryId;
+
+            const nextCategory =
+              findCategoryById(categories, nextCategoryId)?.slug ??
+              (nextCategoryId ? editing.category : "others");
+
+            setServices((prev) =>
+              prev.map((p) =>
+                p.id === editing.id
+                  ? {
+                      ...p,
+                      ...patch,
+                      categoryId: nextCategoryId ?? null,
+                      category: nextCategory,
+                    }
+                  : p
+              )
+            );
+
             setEditing(null);
             showBanner("ok", "✅ Service updated.");
           } catch (e: unknown) {

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 import { isAdminAuthedServer, requireAdminOr401 } from "@/lib/auth/admin";
 
 export const dynamic = "force-dynamic";
@@ -7,9 +8,11 @@ export const dynamic = "force-dynamic";
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
 }
+
 function asString(v: unknown): string | null {
   return typeof v === "string" ? v : null;
 }
+
 function asNumberOrNull(v: unknown): number | null {
   if (v === null) return null;
   if (typeof v === "number" && Number.isFinite(v)) return v;
@@ -19,9 +22,11 @@ function asNumberOrNull(v: unknown): number | null {
   }
   return null;
 }
+
 function normalizeSlug(v: string): string {
   return v.trim().toLowerCase();
 }
+
 function noStoreJson(body: unknown, init?: ResponseInit) {
   const res = NextResponse.json(body, init);
   res.headers.set("Cache-Control", "no-store");
@@ -74,11 +79,11 @@ export async function POST(req: Request) {
 
   const name = (asString(bodyUnknown.name) ?? "").trim();
   const slug = normalizeSlug(asString(bodyUnknown.slug) ?? "");
-  const category = normalizeSlug((asString(bodyUnknown.category) ?? "others").trim() || "others");
   const description = (asString(bodyUnknown.description) ?? "").trim();
   const currency = (asString(bodyUnknown.currency) ?? "AED").trim() || "AED";
   const imageUrl = (asString(bodyUnknown.imageUrl) ?? "").trim();
   const startingPrice = asNumberOrNull(bodyUnknown.startingPrice);
+  const requestedCategoryId = (asString(bodyUnknown.categoryId) ?? "").trim();
 
   if (!name) return noStoreJson({ ok: false, error: "Name is required" }, { status: 400 });
   if (!slug || slug.includes(" ")) {
@@ -92,11 +97,16 @@ export async function POST(req: Request) {
   if (existing) return noStoreJson({ ok: false, error: "Slug already exists" }, { status: 409 });
 
   let categoryId: string | null = null;
+  let categorySlug = "others";
 
-  if (category !== "others") {
+  if (requestedCategoryId) {
+    if (!ObjectId.isValid(requestedCategoryId)) {
+      return noStoreJson({ ok: false, error: "CATEGORY_NOT_FOUND" }, { status: 400 });
+    }
+
     const foundCategory = await db.collection("service_categories").findOne(
-      { slug: category },
-      { projection: { _id: 1, isActive: 1 } }
+      { _id: new ObjectId(requestedCategoryId) },
+      { projection: { _id: 1, slug: 1, isActive: 1 } }
     );
 
     if (!foundCategory) {
@@ -108,12 +118,15 @@ export async function POST(req: Request) {
     }
 
     categoryId = String(foundCategory._id);
+    categorySlug = typeof foundCategory.slug === "string" ? normalizeSlug(foundCategory.slug) : "others";
   } else {
     const others = await db.collection("service_categories").findOne(
       { slug: "others" },
-      { projection: { _id: 1 } }
+      { projection: { _id: 1, slug: 1 } }
     );
+
     categoryId = others ? String(others._id) : null;
+    categorySlug = typeof others?.slug === "string" ? normalizeSlug(others.slug) : "others";
   }
 
   const last = await db.collection("services").find({}).sort({ order: -1 }).limit(1).toArray();
@@ -125,7 +138,7 @@ export async function POST(req: Request) {
   const r = await db.collection("services").insertOne({
     name,
     slug,
-    category,
+    category: categorySlug,
     categoryId,
     description,
     startingPrice,
