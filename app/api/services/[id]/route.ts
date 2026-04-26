@@ -79,16 +79,48 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const order = asFiniteNumber(body.order);
   if (order !== null) patch.order = order;
 
-  if (typeof body.category === "string") {
+  if ("categoryId" in body) {
+    const requestedCategoryId = asString(body.categoryId).trim();
+
+    if (!requestedCategoryId) {
+      const others = await db.collection("service_categories").findOne(
+        { slug: "others" },
+        { projection: { _id: 1, slug: 1 } }
+      );
+
+      patch.category = typeof others?.slug === "string" ? normalizeSlug(others.slug) : "others";
+      patch.categoryId = others ? String(others._id) : null;
+    } else {
+      if (!ObjectId.isValid(requestedCategoryId)) {
+        return noStore({ ok: false, error: "CATEGORY_NOT_FOUND" }, { status: 400 });
+      }
+
+      const cat = await db.collection("service_categories").findOne(
+        { _id: new ObjectId(requestedCategoryId) },
+        { projection: { _id: 1, slug: 1, isActive: 1 } }
+      );
+
+      if (!cat) {
+        return noStore({ ok: false, error: "CATEGORY_NOT_FOUND" }, { status: 400 });
+      }
+
+      patch.category = typeof cat.slug === "string" ? normalizeSlug(cat.slug) : "others";
+      patch.categoryId = String(cat._id);
+
+      if (cat.isActive === false) {
+        patch.isActive = false;
+      }
+    }
+  } else if (typeof body.category === "string") {
     const requestedCategory = normalizeSlug(body.category || "others") || "others";
 
     if (requestedCategory === "others") {
       const others = await db.collection("service_categories").findOne(
         { slug: "others" },
-        { projection: { _id: 1 } }
+        { projection: { _id: 1, slug: 1 } }
       );
 
-      patch.category = "others";
+      patch.category = typeof others?.slug === "string" ? normalizeSlug(others.slug) : "others";
       patch.categoryId = others ? String(others._id) : null;
     } else {
       const cat = await db.collection("service_categories").findOne(
