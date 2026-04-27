@@ -1,24 +1,14 @@
-import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import {
+  asNullableString,
+  isRecord,
+  isValidObjectIdString,
+  noStoreJson,
+} from "@/app/api/_lib/common";
 
 export const dynamic = "force-dynamic";
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
-function asString(v: unknown): string | null {
-  return typeof v === "string" ? v : null;
-}
-function isValidObjectIdString(s: string): boolean {
-  return /^[a-fA-F0-9]{24}$/.test(s);
-}
-function noStoreJson(body: unknown, init?: ResponseInit) {
-  const res = NextResponse.json(body, init);
-  res.headers.set("Cache-Control", "no-store");
-  return res;
-}
 
 export async function GET(req: Request) {
   const deny = await requireAdminOr401();
@@ -35,12 +25,7 @@ export async function GET(req: Request) {
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
-  const docs = await db
-    .collection("inquiries")
-    .find(filter)
-    .sort({ createdAt: -1 })
-    .limit(300)
-    .toArray();
+  const docs = await db.collection("inquiries").find(filter).sort({ createdAt: -1 }).limit(300).toArray();
 
   const items = docs.map((d) => ({
     id: String(d._id),
@@ -64,13 +49,13 @@ export async function POST(req: Request) {
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
   if (!isRecord(bodyUnknown)) return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
 
-  const name = (asString(bodyUnknown.name) ?? "").trim();
-  const email = (asString(bodyUnknown.email) ?? "").trim();
-  const message = (asString(bodyUnknown.message) ?? "").trim();
+  const name = asNullableString(bodyUnknown.name)?.trim() ?? "";
+  const email = asNullableString(bodyUnknown.email)?.trim() ?? "";
+  const message = asNullableString(bodyUnknown.message)?.trim() ?? "";
 
-  const category = asString(bodyUnknown.category);
-  const rawServiceId = asString(bodyUnknown.serviceId);
-  const serviceName = asString(bodyUnknown.serviceName);
+  const category = asNullableString(bodyUnknown.category);
+  const rawServiceId = asNullableString(bodyUnknown.serviceId);
+  const serviceName = asNullableString(bodyUnknown.serviceName);
 
   if (!name) return noStoreJson({ ok: false, error: "Name is required" }, { status: 400 });
   if (!email) return noStoreJson({ ok: false, error: "Email is required" }, { status: 400 });
@@ -91,10 +76,7 @@ export async function POST(req: Request) {
   const db = client.db("hm_visuals");
 
   if (serviceId) {
-    const exists = await db
-      .collection("services")
-      .findOne({ _id: new ObjectId(serviceId) }, { projection: { _id: 1 } });
-
+    const exists = await db.collection("services").findOne({ _id: new ObjectId(serviceId) }, { projection: { _id: 1 } });
     if (!exists) return noStoreJson({ ok: false, error: "Unknown serviceId" }, { status: 400 });
   }
 

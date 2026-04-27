@@ -1,37 +1,15 @@
-import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { isAdminAuthedServer, requireAdminOr401 } from "@/lib/auth/admin";
+import {
+  asNullableString,
+  asNumberOrNull,
+  isRecord,
+  noStoreJson,
+  normalizeSlug,
+} from "@/app/api/_lib/common";
 
 export const dynamic = "force-dynamic";
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
-
-function asString(v: unknown): string | null {
-  return typeof v === "string" ? v : null;
-}
-
-function asNumberOrNull(v: unknown): number | null {
-  if (v === null) return null;
-  if (typeof v === "number" && Number.isFinite(v)) return v;
-  if (typeof v === "string" && v.trim() !== "") {
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
-}
-
-function normalizeSlug(v: string): string {
-  return v.trim().toLowerCase();
-}
-
-function noStoreJson(body: unknown, init?: ResponseInit) {
-  const res = NextResponse.json(body, init);
-  res.headers.set("Cache-Control", "no-store");
-  return res;
-}
 
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -77,13 +55,13 @@ export async function POST(req: Request) {
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
   if (!isRecord(bodyUnknown)) return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
 
-  const name = (asString(bodyUnknown.name) ?? "").trim();
-  const slug = normalizeSlug(asString(bodyUnknown.slug) ?? "");
-  const description = (asString(bodyUnknown.description) ?? "").trim();
-  const currency = (asString(bodyUnknown.currency) ?? "AED").trim() || "AED";
-  const imageUrl = (asString(bodyUnknown.imageUrl) ?? "").trim();
+  const name = asNullableString(bodyUnknown.name)?.trim() ?? "";
+  const slug = normalizeSlug(asNullableString(bodyUnknown.slug) ?? "");
+  const description = (asNullableString(bodyUnknown.description) ?? "").trim();
+  const currency = (asNullableString(bodyUnknown.currency) ?? "AED").trim() || "AED";
+  const imageUrl = (asNullableString(bodyUnknown.imageUrl) ?? "").trim();
   const startingPrice = asNumberOrNull(bodyUnknown.startingPrice);
-  const requestedCategoryId = (asString(bodyUnknown.categoryId) ?? "").trim();
+  const requestedCategoryId = (asNullableString(bodyUnknown.categoryId) ?? "").trim();
 
   if (!name) return noStoreJson({ ok: false, error: "Name is required" }, { status: 400 });
   if (!slug || slug.includes(" ")) {

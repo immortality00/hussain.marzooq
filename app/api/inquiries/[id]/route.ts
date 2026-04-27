@@ -1,23 +1,11 @@
-import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { Db, ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { asString, isRecord, noStoreJson } from "@/app/api/_lib/common";
 
 export const dynamic = "force-dynamic";
 
 const ALLOWED = new Set(["new", "pending", "replied", "approved", "rejected", "resolved"]);
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
-function asString(v: unknown): string {
-  return typeof v === "string" ? v : "";
-}
-function noStore(body: unknown, init?: ResponseInit) {
-  const res = NextResponse.json(body, init);
-  res.headers.set("Cache-Control", "no-store");
-  return res;
-}
 
 function hasValidServiceId(serviceId: unknown): serviceId is string {
   return typeof serviceId === "string" && ObjectId.isValid(serviceId);
@@ -54,7 +42,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (deny) return deny as unknown as Response;
 
   const { id } = await params;
-  if (!ObjectId.isValid(id)) return noStore({ ok: false, error: "Invalid id" }, { status: 400 });
+  if (!ObjectId.isValid(id)) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
 
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
   const body = isRecord(bodyUnknown) ? bodyUnknown : {};
@@ -67,12 +55,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const db = client.db("hm_visuals");
 
   const existing = await db.collection("inquiries").findOne({ _id: new ObjectId(id) });
-  if (!existing) return noStore({ ok: false, error: "Not found" }, { status: 404 });
+  if (!existing) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
 
   const patch: Record<string, unknown> = { updatedAt: new Date() };
 
   if (status) {
-    if (!ALLOWED.has(status)) return noStore({ ok: false, error: "Invalid status" }, { status: 400 });
+    if (!ALLOWED.has(status)) return noStoreJson({ ok: false, error: "Invalid status" }, { status: 400 });
     patch.status = status;
   }
   if (adminNotes !== null) patch.adminNotes = adminNotes;
@@ -91,7 +79,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
   }
 
-  return noStore({ ok: true });
+  return noStoreJson({ ok: true });
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -99,7 +87,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   if (deny) return deny as unknown as Response;
 
   const { id } = await params;
-  if (!ObjectId.isValid(id)) return noStore({ ok: false, error: "Invalid id" }, { status: 400 });
+  if (!ObjectId.isValid(id)) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
 
   const url = new URL(req.url);
   const hard = url.searchParams.get("hard") === "1";
@@ -108,7 +96,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const db = client.db("hm_visuals");
 
   const inquiry = await db.collection("inquiries").findOne({ _id: new ObjectId(id) });
-  if (!inquiry) return noStore({ ok: false, error: "Not found" }, { status: 404 });
+  if (!inquiry) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
 
   const serviceId = inquiry.serviceId;
   const alreadyArchived = inquiry.isArchived === true;
@@ -124,7 +112,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
       await decrementServiceInquiriesCount(db, serviceId);
     }
 
-    return noStore({ ok: true, mode: "archived" });
+    return noStoreJson({ ok: true, mode: "archived" });
   }
 
   await db.collection("inquiries").deleteOne({ _id: new ObjectId(id) });
@@ -133,5 +121,5 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     await decrementServiceInquiriesCount(db, serviceId);
   }
 
-  return noStore({ ok: true, mode: "deleted" });
+  return noStoreJson({ ok: true, mode: "deleted" });
 }

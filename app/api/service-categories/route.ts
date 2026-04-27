@@ -1,26 +1,13 @@
-import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import {
+  asString,
+  isRecord,
+  noStoreJson,
+  normalizeSlug,
+} from "@/app/api/_lib/common";
 
 export const dynamic = "force-dynamic";
-
-function noStore(body: unknown, init?: ResponseInit) {
-  const res = NextResponse.json(body, init);
-  res.headers.set("Cache-Control", "no-store");
-  return res;
-}
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
-
-function asString(v: unknown): string {
-  return typeof v === "string" ? v : "";
-}
-
-function normalizeSlug(v: string): string {
-  return v.trim().toLowerCase();
-}
 
 export async function GET() {
   const client = await clientPromise;
@@ -51,7 +38,7 @@ export async function GET() {
     };
   });
 
-  return noStore({ ok: true, items });
+  return noStoreJson({ ok: true, items });
 }
 
 export async function POST(req: Request) {
@@ -64,15 +51,15 @@ export async function POST(req: Request) {
   const name = asString(body.name).trim();
   const slug = normalizeSlug(asString(body.slug));
 
-  if (!name) return noStore({ ok: false, error: "Name is required" }, { status: 400 });
-  if (!slug || slug.includes(" ")) return noStore({ ok: false, error: "Invalid slug" }, { status: 400 });
-  if (slug === "others") return noStore({ ok: false, error: "Slug reserved" }, { status: 409 });
+  if (!name) return noStoreJson({ ok: false, error: "Name is required" }, { status: 400 });
+  if (!slug || slug.includes(" ")) return noStoreJson({ ok: false, error: "Invalid slug" }, { status: 400 });
+  if (slug === "others") return noStoreJson({ ok: false, error: "Slug reserved" }, { status: 409 });
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
   const exists = await db.collection("service_categories").findOne({ slug }, { projection: { _id: 1 } });
-  if (exists) return noStore({ ok: false, error: "Slug already exists" }, { status: 409 });
+  if (exists) return noStoreJson({ ok: false, error: "Slug already exists" }, { status: 409 });
 
   const last = await db.collection("service_categories").find({}).sort({ order: -1 }).limit(1).toArray();
   const nextOrder =
@@ -89,5 +76,5 @@ export async function POST(req: Request) {
     updatedAt: now,
   });
 
-  return noStore({ ok: true, id: r.insertedId.toString() }, { status: 201 });
+  return noStoreJson({ ok: true, id: r.insertedId.toString() }, { status: 201 });
 }
