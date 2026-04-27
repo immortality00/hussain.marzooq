@@ -15,6 +15,10 @@ import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-ki
 import type { Service, ServiceCategory } from "./lib/types";
 import SortableServiceItem from "./components/SortableServiceItem";
 import ServiceEditorModal from "./components/ServiceEditorModal";
+import ServiceStaticRow from "./components/ServiceStaticRow";
+import ServiceSimpleSection from "./components/ServiceSimpleSection";
+import ServicesBanner from "./components/ServicesBanner";
+import ServicesToolbar from "./components/ServicesToolbar";
 import {
   createService,
   patchService,
@@ -23,54 +27,12 @@ import {
   deleteServiceForever,
   syncInquiryCounts,
 } from "./lib/api";
-
-type CreateServiceResponse = { ok: true; id: string } | { ok: false; error: string };
-
-function isCreateServiceResponse(v: unknown): v is CreateServiceResponse {
-  if (typeof v !== "object" || v === null) return false;
-  const r = v as Record<string, unknown>;
-  if (r.ok === true) return typeof r.id === "string";
-  if (r.ok === false) return typeof r.error === "string";
-  return false;
-}
-
-type Banner = { type: "ok" | "err"; text: string } | null;
-
-function findCategoryById(categories: ServiceCategory[], categoryId: string | null | undefined) {
-  if (!categoryId) return null;
-  return categories.find((c) => c.id === categoryId) ?? null;
-}
-
-function findOthersCategory(categories: ServiceCategory[]) {
-  return categories.find((c) => c.slug === "others") ?? null;
-}
-
-function StaticRow({
-  service,
-  onEdit,
-  onArchive,
-}: {
-  service: Service;
-  onEdit: (s: Service) => void;
-  onArchive: (s: Service) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-3 rounded-2xl border p-3">
-      <div className="min-w-0">
-        <div className="font-medium truncate">{service.name}</div>
-        <div className="text-xs text-muted-foreground truncate">/{service.slug}</div>
-      </div>
-      <div className="flex gap-2">
-        <button className="rounded-xl border px-3 py-2 text-sm hover:bg-accent/40" onClick={() => onEdit(service)}>
-          Edit
-        </button>
-        <button className="rounded-xl border px-3 py-2 text-sm hover:bg-red-500/10" onClick={() => onArchive(service)}>
-          Delete
-        </button>
-      </div>
-    </div>
-  );
-}
+import {
+  findCategoryById,
+  findOthersCategory,
+  isCreateServiceResponse,
+  type Banner,
+} from "./lib/ui";
 
 export default function AdminServicesClient({
   initialServices,
@@ -212,6 +174,7 @@ export default function AdminServicesClient({
       showBanner("err", "❌ Cannot delete forever: this service has inquiries. Keep it archived.");
       return;
     }
+
     const ok = confirm(`Delete "${svc.name}" FOREVER?\n\nThis cannot be undone.`);
     if (!ok) return;
 
@@ -231,11 +194,8 @@ export default function AdminServicesClient({
     setBusy(true);
     try {
       const next = !svc.isActive;
-
       await patchService(svc.id, { isActive: next });
-
       setServices((prev) => prev.map((p) => (p.id === svc.id ? { ...p, isActive: next } : p)));
-
       showBanner("ok", next ? `✅ Activated "${svc.name}".` : `✅ Deactivated "${svc.name}".`);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : "Update failed.";
@@ -255,63 +215,101 @@ export default function AdminServicesClient({
     }
   }
 
+  async function handleCreateSave(patch: Partial<Service>) {
+    setBusy(true);
+    try {
+      const raw = await createService(patch);
+      if (!isCreateServiceResponse(raw) || raw.ok !== true) throw new Error("Create failed");
+
+      const nextCategoryId =
+        typeof patch.categoryId === "string" && patch.categoryId
+          ? patch.categoryId
+          : findOthersCategory(categories)?.id ?? null;
+
+      const nextCategory = findCategoryById(categories, nextCategoryId)?.slug ?? "others";
+
+      setServices((prev) => [
+        ...prev,
+        {
+          id: raw.id,
+          name: String(patch.name ?? ""),
+          slug: String(patch.slug ?? ""),
+          category: nextCategory,
+          categoryId: nextCategoryId,
+          description: String(patch.description ?? ""),
+          startingPrice: patch.startingPrice ?? null,
+          currency: String(patch.currency ?? "AED"),
+          imageUrl: String(patch.imageUrl ?? ""),
+          isActive: patch.isActive ?? true,
+          isArchived: false,
+          order: 0,
+          inquiriesCount: 0,
+        },
+      ]);
+
+      setCreating(false);
+      showBanner("ok", "✅ Service created.");
+    } catch (e: unknown) {
+      showBanner("err", e instanceof Error ? e.message : "Create failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleEditSave(patch: Partial<Service>) {
+    if (!editing) return;
+
+    setBusy(true);
+    try {
+      await patchService(editing.id, patch);
+
+      const nextCategoryId =
+        typeof patch.categoryId === "string"
+          ? patch.categoryId
+          : editing.categoryId;
+
+      const nextCategory =
+        findCategoryById(categories, nextCategoryId)?.slug ??
+        (nextCategoryId ? editing.category : "others");
+
+      setServices((prev) =>
+        prev.map((p) =>
+          p.id === editing.id
+            ? {
+                ...p,
+                ...patch,
+                categoryId: nextCategoryId ?? null,
+                category: nextCategory,
+              }
+            : p
+        )
+      );
+
+      setEditing(null);
+      showBanner("ok", "✅ Service updated.");
+    } catch (e: unknown) {
+      showBanner("err", e instanceof Error ? e.message : "Save failed.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
-      <div ref={bannerRef} className="sticky top-3 z-40">
-        {banner ? (
-          <div
-            className={`rounded-2xl border px-4 py-3 text-sm shadow-sm backdrop-blur ${
-              banner.type === "ok"
-                ? "bg-green-500/10 border-green-500/30"
-                : "bg-red-500/10 border-red-500/30"
-            }`}
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div>{banner.text}</div>
-              <button
-                type="button"
-                onClick={() => setBanner(null)}
-                className="rounded-lg border px-2 py-1 text-xs hover:bg-accent/40"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        ) : null}
-      </div>
+      <ServicesBanner banner={banner} onClose={() => setBanner(null)} containerRef={bannerRef} />
 
-      <div className="mt-4 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-semibold">Services</h1>
-        <div className="flex gap-2">
-          <button
-            disabled={busy}
-            onClick={() => void handleSyncInquiryCounts()}
-            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent/40 disabled:opacity-60"
-          >
-            Sync Inquiry Counts
-          </button>
-          <button
-            disabled={busy}
-            onClick={() => setCreating(true)}
-            className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:opacity-60"
-          >
-            Create
-          </button>
-          <button
-            disabled={busy}
-            onClick={() => void handleSaveOrder()}
-            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent/40 disabled:opacity-60"
-          >
-            Save Order
-          </button>
-        </div>
-      </div>
+      <ServicesToolbar
+        busy={busy}
+        onSyncInquiryCounts={handleSyncInquiryCounts}
+        onCreate={() => setCreating(true)}
+        onSaveOrder={handleSaveOrder}
+      />
 
       <h2 className="mt-6 text-lg font-semibold">Active</h2>
       <div className="mt-3 space-y-3">
         {!mounted ? (
           active.map((s) => (
-            <StaticRow key={s.id} service={s} onEdit={setEditing} onArchive={(x) => void handleArchive(x)} />
+            <ServiceStaticRow key={s.id} service={s} onEdit={setEditing} onArchive={(x) => void handleArchive(x)} />
           ))
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -330,125 +328,38 @@ export default function AdminServicesClient({
         )}
       </div>
 
-      {inactive.length ? (
-        <>
-          <h2 className="mt-10 text-lg font-semibold">Inactive</h2>
-          <div className="mt-3 space-y-3">
-            {inactive.map((s) => (
-              <div key={s.id} className="rounded-2xl border p-3 flex items-center justify-between">
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{s.name}</div>
-                  <div className="text-xs text-muted-foreground truncate">/{s.slug}</div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    className="rounded-xl border px-3 py-2 text-sm hover:bg-accent/40"
-                    onClick={() => setEditing(s)}
-                  >
-                    Edit
-                  </button>
-                  <button
-                    className="rounded-xl border px-3 py-2 text-sm hover:bg-accent/40"
-                    onClick={() => void handleToggleActive(s)}
-                    disabled={busy}
-                  >
-                    Activate
-                  </button>
-                  <button
-                    className="rounded-xl border px-3 py-2 text-sm hover:bg-red-500/10"
-                    onClick={() => void handleArchive(s)}
-                    disabled={busy}
-                  >
-                    Delete
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      ) : null}
+      <ServiceSimpleSection
+        title="Inactive"
+        services={inactive}
+        busy={busy}
+        primaryActionLabel="Activate"
+        onPrimaryAction={handleToggleActive}
+        onEdit={setEditing}
+        onSecondaryAction={handleArchive}
+        secondaryActionLabel="Delete"
+        secondaryDanger={true}
+      />
 
-      {archived.length ? (
-        <>
-          <h2 className="mt-10 text-lg font-semibold">Archived</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Archived services are hidden from public pages. Restore them, or delete forever if there are no inquiries.
-          </p>
-          <div className="mt-3 space-y-3">
-            {archived.map((s) => (
-              <div key={s.id} className="rounded-2xl border p-3 flex items-center justify-between">
-                <div className="min-w-0">
-                  <div className="font-medium truncate">{s.name}</div>
-                  <div className="text-xs text-muted-foreground truncate">/{s.slug}</div>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    className="rounded-xl border px-3 py-2 text-sm hover:bg-accent/40"
-                    onClick={() => void handleRestore(s)}
-                    disabled={busy}
-                  >
-                    Restore
-                  </button>
-                  <button
-                    className="rounded-xl border px-3 py-2 text-sm hover:bg-red-500/10 disabled:opacity-50"
-                    onClick={() => void handleDeleteForever(s)}
-                    disabled={busy || s.inquiriesCount > 0}
-                    title={s.inquiriesCount > 0 ? "Has inquiries" : "Delete forever"}
-                  >
-                    Delete forever
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      ) : null}
+      <ServiceSimpleSection
+        title="Archived"
+        description="Archived services are hidden from public pages. Restore them, or delete forever if there are no inquiries."
+        services={archived}
+        busy={busy}
+        primaryActionLabel="Restore"
+        onPrimaryAction={handleRestore}
+        onEdit={setEditing}
+        onSecondaryAction={handleDeleteForever}
+        secondaryActionLabel="Delete forever"
+        secondaryDanger={true}
+        disableSecondaryWhen={(service) => service.inquiriesCount > 0}
+      />
 
       <ServiceEditorModal
         open={creating}
         initial={null}
         categories={categories}
         onClose={() => setCreating(false)}
-        onSave={async (patch) => {
-          setBusy(true);
-          try {
-            const raw = await createService(patch);
-            if (!isCreateServiceResponse(raw) || raw.ok !== true) throw new Error("Create failed");
-
-            const nextCategoryId =
-              typeof patch.categoryId === "string" && patch.categoryId
-                ? patch.categoryId
-                : findOthersCategory(categories)?.id ?? null;
-
-            const nextCategory = findCategoryById(categories, nextCategoryId)?.slug ?? "others";
-
-            setServices((prev) => [
-              ...prev,
-              {
-                id: raw.id,
-                name: String(patch.name ?? ""),
-                slug: String(patch.slug ?? ""),
-                category: nextCategory,
-                categoryId: nextCategoryId,
-                description: String(patch.description ?? ""),
-                startingPrice: patch.startingPrice ?? null,
-                currency: String(patch.currency ?? "AED"),
-                imageUrl: String(patch.imageUrl ?? ""),
-                isActive: patch.isActive ?? true,
-                isArchived: false,
-                order: 0,
-                inquiriesCount: 0,
-              },
-            ]);
-
-            setCreating(false);
-            showBanner("ok", "✅ Service created.");
-          } catch (e: unknown) {
-            showBanner("err", e instanceof Error ? e.message : "Create failed.");
-          } finally {
-            setBusy(false);
-          }
-        }}
+        onSave={handleCreateSave}
       />
 
       <ServiceEditorModal
@@ -456,42 +367,7 @@ export default function AdminServicesClient({
         initial={editing}
         categories={categories}
         onClose={() => setEditing(null)}
-        onSave={async (patch) => {
-          if (!editing) return;
-          setBusy(true);
-          try {
-            await patchService(editing.id, patch);
-
-            const nextCategoryId =
-              typeof patch.categoryId === "string"
-                ? patch.categoryId
-                : editing.categoryId;
-
-            const nextCategory =
-              findCategoryById(categories, nextCategoryId)?.slug ??
-              (nextCategoryId ? editing.category : "others");
-
-            setServices((prev) =>
-              prev.map((p) =>
-                p.id === editing.id
-                  ? {
-                      ...p,
-                      ...patch,
-                      categoryId: nextCategoryId ?? null,
-                      category: nextCategory,
-                    }
-                  : p
-              )
-            );
-
-            setEditing(null);
-            showBanner("ok", "✅ Service updated.");
-          } catch (e: unknown) {
-            showBanner("err", e instanceof Error ? e.message : "Save failed.");
-          } finally {
-            setBusy(false);
-          }
-        }}
+        onSave={handleEditSave}
       />
     </main>
   );
