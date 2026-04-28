@@ -1,5 +1,6 @@
 import { StickyCta } from "@/components/site/StickyCta";
 import { MediaGrid } from "@/components/media/MediaGrid";
+import { getBaseUrl } from "@/lib/server/get-base-url";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -41,7 +42,7 @@ async function fetchMedia(url: string): Promise<MediaItem[]> {
 }
 
 async function getPhotos(): Promise<MediaItem[]> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const base = await getBaseUrl();
   const primary = await fetchMedia(`${base}/api/media/list-public?type=image&category=photography&limit=60`);
   if (primary.length) return primary;
   return fetchMedia(`${base}/api/media/list-public?type=image&limit=60`);

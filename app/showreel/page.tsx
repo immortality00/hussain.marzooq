@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
+import { getBaseUrl } from "@/lib/server/get-base-url";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -42,7 +43,7 @@ function toEmbedUrl(raw: string): string | null {
 }
 
 async function getShowreel(): Promise<string | null> {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const base = await getBaseUrl();
   const res = await fetch(`${base}/api/site-settings/showreel`, { cache: "no-store" });
   if (!res.ok) return null;
   const data = (await res.json()) as { embedUrl?: string | null };

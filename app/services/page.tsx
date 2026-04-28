@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { headers } from "next/headers";
+import { getBaseUrl } from "@/lib/server/get-base-url";
 
 type ServiceItem = {
   id: string;
@@ -41,13 +41,6 @@ function extractItems<T>(json: unknown): T[] {
   return [];
 }
 
-async function getBaseUrlFromHeaders(): Promise<string> {
-  const h = await headers();
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
-  return `${proto}://${host}`;
-}
-
 function workLinkForCategory(categorySlug: string): { href: string; label: string } {
   const c = categorySlug.trim().toLowerCase();
 
@@ -75,7 +68,7 @@ export default async function ServicesPage({
   const sp = await searchParams;
   const selectedCategory = typeof sp.category === "string" ? sp.category : "all";
 
-  const baseUrl = await getBaseUrlFromHeaders();
+  const baseUrl = await getBaseUrl();
 
   const [servicesRes, categoriesRes] = await Promise.all([
     fetch(`${baseUrl}/api/services`, { cache: "no-store" }),

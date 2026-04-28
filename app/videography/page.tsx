@@ -1,4 +1,5 @@
 import VideographyClient from "./videographyClient";
+import { getBaseUrl } from "@/lib/server/get-base-url";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -44,7 +45,7 @@ async function fetchShowreel(url: string): Promise<MediaItem | null> {
 }
 
 export default async function VideographyPage() {
-  const base = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  const base = await getBaseUrl();
 
   const [showreel, videoItems] = await Promise.all([
     fetchShowreel(`${base}/api/site-settings/showreel`),
