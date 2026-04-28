@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
-import { getBaseUrl } from "@/lib/server/get-base-url";
+import { getShowreelUrl } from "@/lib/server/public-media";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -42,16 +42,8 @@ function toEmbedUrl(raw: string): string | null {
   return null;
 }
 
-async function getShowreel(): Promise<string | null> {
-  const base = await getBaseUrl();
-  const res = await fetch(`${base}/api/site-settings/showreel`, { cache: "no-store" });
-  if (!res.ok) return null;
-  const data = (await res.json()) as { embedUrl?: string | null };
-  return typeof data.embedUrl === "string" ? data.embedUrl : null;
-}
-
 export default async function ShowreelPage() {
-  const showreelRaw = await getShowreel();
+  const showreelRaw = await getShowreelUrl();
   const showreelEmbed = showreelRaw ? toEmbedUrl(showreelRaw) : null;
 
   return (

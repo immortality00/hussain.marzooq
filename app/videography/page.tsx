@@ -1,5 +1,5 @@
+import { getShowreelUrl, getVideographyItems } from "@/lib/server/public-media";
 import VideographyClient from "./videographyClient";
-import { getBaseUrl } from "@/lib/server/get-base-url";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,45 +14,20 @@ type MediaItem = {
   categories?: string[];
 };
 
-type ShowreelResponse = {
-  embedUrl?: string | null;
-};
-
-async function fetchMedia(url: string): Promise<MediaItem[]> {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) return [];
-  const data = (await res.json().catch(() => null)) as { items?: MediaItem[] };
-  return Array.isArray(data?.items) ? data.items : [];
-}
-
-async function fetchShowreel(url: string): Promise<MediaItem | null> {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) return null;
-
-  const data = (await res.json().catch(() => null)) as ShowreelResponse | null;
-  const embedUrl = typeof data?.embedUrl === "string" ? data.embedUrl.trim() : "";
-  if (!embedUrl) return null;
-
-  return {
-    id: "site-showreel",
-    type: "embed",
-    title: "Showreel",
-    embedUrl,
-    secureUrl: null,
-    tags: [],
-    categories: ["showreel"],
-  };
-}
-
 export default async function VideographyPage() {
-  const base = await getBaseUrl();
+  const [showreelUrl, videos] = await Promise.all([getShowreelUrl(), getVideographyItems()]);
 
-  const [showreel, videoItems] = await Promise.all([
-    fetchShowreel(`${base}/api/site-settings/showreel`),
-    fetchMedia(`${base}/api/media/list-public?type=all&category=videography&limit=60`),
-  ]);
-
-  const videos = videoItems.filter((m) => m.type === "video" || m.type === "embed");
+  const showreel: MediaItem | null = showreelUrl
+    ? {
+        id: "site-showreel",
+        type: "embed",
+        title: "Showreel",
+        embedUrl: showreelUrl,
+        secureUrl: null,
+        tags: [],
+        categories: ["showreel"],
+      }
+    : null;
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-16">
