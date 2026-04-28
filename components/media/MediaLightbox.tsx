@@ -1,0 +1,63 @@
+"use client";
+
+import Image from "next/image";
+import MediaDetailsSections from "./MediaDetailsSections";
+import type { MediaItem } from "./types";
+
+export default function MediaLightbox({
+  active,
+  onClose,
+}: {
+  active: MediaItem;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/70 p-4" onClick={onClose}>
+      <div
+        className="mx-auto w-full max-w-6xl overflow-hidden rounded-3xl border bg-background shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-3 border-b bg-background/80 p-4 backdrop-blur">
+          <div className="min-w-0">
+            <div className="truncate text-lg font-semibold">{active.title}</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {[active.year ? String(active.year) : "", active.location ?? "", active.event ?? ""]
+                .filter(Boolean)
+                .join(" • ")}
+            </div>
+          </div>
+          <button className="rounded-xl border px-3 py-2 text-sm hover:bg-accent" onClick={onClose}>
+            Close
+          </button>
+        </div>
+
+        <div className="grid h-[82vh] min-h-0 lg:grid-cols-[1.25fr_0.75fr]">
+          <div className="min-h-0 bg-black/5 p-4">
+            {active.secureUrl ? (
+              <div className="h-full w-full overflow-hidden rounded-2xl border bg-black/5">
+                <div className="relative h-full min-h-0">
+                  <div className="relative h-full w-full">
+                    <Image
+                      src={active.secureUrl}
+                      alt={active.title}
+                      fill
+                      className="object-contain"
+                      sizes="100vw"
+                      priority
+                    />
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No media</div>
+            )}
+          </div>
+
+          <div className="min-h-0 overflow-y-auto p-5">
+            <MediaDetailsSections active={active} />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
