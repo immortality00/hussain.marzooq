@@ -3,6 +3,61 @@
 import Image from "next/image";
 import MediaDetailsSections from "./MediaDetailsSections";
 import type { MediaItem } from "./types";
+import { toEmbedUrl } from "./utils";
+
+function MediaSurface({ active }: { active: MediaItem }) {
+  if (active.type === "embed" && active.embedUrl) {
+    const src = toEmbedUrl(active.embedUrl) ?? active.embedUrl;
+
+    return (
+      <div className="h-full w-full overflow-hidden rounded-2xl border bg-black">
+        <iframe
+          className="h-full w-full"
+          src={src}
+          title={active.title}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+
+  if (active.type === "video" && active.secureUrl) {
+    return (
+      <div className="h-full w-full overflow-hidden rounded-2xl border bg-black">
+        <video
+          className="h-full w-full object-contain"
+          controls
+          preload="metadata"
+          playsInline
+          src={active.secureUrl}
+        />
+      </div>
+    );
+  }
+
+  if (active.secureUrl) {
+    return (
+      <div className="h-full w-full overflow-hidden rounded-2xl border bg-black/5">
+        <div className="relative h-full min-h-0">
+          <div className="relative h-full w-full">
+            <Image
+              src={active.secureUrl}
+              alt={active.title}
+              fill
+              className="object-contain"
+              sizes="100vw"
+              priority
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No media</div>;
+}
 
 export default function MediaLightbox({
   active,
@@ -33,24 +88,7 @@ export default function MediaLightbox({
 
         <div className="grid h-[82vh] min-h-0 lg:grid-cols-[1.25fr_0.75fr]">
           <div className="min-h-0 bg-black/5 p-4">
-            {active.secureUrl ? (
-              <div className="h-full w-full overflow-hidden rounded-2xl border bg-black/5">
-                <div className="relative h-full min-h-0">
-                  <div className="relative h-full w-full">
-                    <Image
-                      src={active.secureUrl}
-                      alt={active.title}
-                      fill
-                      className="object-contain"
-                      sizes="100vw"
-                      priority
-                    />
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No media</div>
-            )}
+            <MediaSurface active={active} />
           </div>
 
           <div className="min-h-0 overflow-y-auto p-5">

@@ -26,7 +26,7 @@ export default function HomePage() {
             Explore Photography
           </Link>
           <Link
-            href="/showreel"
+            href="/videography#showreel"
             className="rounded-full border px-4 py-2 text-sm hover:bg-accent transition-colors"
           >
             Watch Showreel

@@ -1,69 +1,69 @@
+import { MediaGrid } from "@/components/media/MediaGrid";
+import { StickyCta } from "@/components/site/StickyCta";
+import { toEmbedUrl } from "@/components/media/utils";
 import { getShowreelUrl, getVideographyItems } from "@/lib/server/public-media";
-import VideographyClient from "./videographyClient";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-type MediaItem = {
-  id: string;
-  type: string;
-  title: string;
-  embedUrl: string | null;
-  secureUrl: string | null;
-  tags: string[];
-  categories?: string[];
-};
-
 export default async function VideographyPage() {
   const [showreelUrl, videos] = await Promise.all([getShowreelUrl(), getVideographyItems()]);
 
-  const showreel: MediaItem | null = showreelUrl
-    ? {
-        id: "site-showreel",
-        type: "embed",
-        title: "Showreel",
-        embedUrl: showreelUrl,
-        secureUrl: null,
-        tags: [],
-        categories: ["showreel"],
-      }
-    : null;
+  const showreelEmbed = showreelUrl ? toEmbedUrl(showreelUrl) ?? showreelUrl : null;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-16">
-      <h1 className="text-4xl font-semibold tracking-tight">Videography</h1>
-      <p className="mt-3 max-w-2xl text-muted-foreground">
-        Showreel on top — full video library below. No extra clicks.
-      </p>
+    <>
+      <main className="mx-auto max-w-6xl px-4 py-16">
+        <h1 className="text-4xl font-semibold tracking-tight">Videography</h1>
+        <p className="mt-3 max-w-2xl text-muted-foreground">
+          Showreel on top — searchable, filterable video library below.
+        </p>
 
-      <VideographyClient showreel={showreel} videos={videos} />
-
-      <div className="mt-12 rounded-3xl border bg-background p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="text-lg font-semibold">Ready to book?</div>
-            <div className="mt-1 text-sm text-muted-foreground">
-              Describe your project — I’ll reply with next steps.
+        <section id="showreel" className="mt-10 overflow-hidden rounded-3xl border bg-muted scroll-mt-24">
+          <div className="border-b px-5 py-4 flex items-center justify-between gap-3">
+            <div>
+              <div className="text-sm font-medium">Showreel</div>
+              <div className="text-xs text-muted-foreground">
+                A curated entry point into the video library.
+              </div>
             </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <a
-              href="/contact?category=videography"
-              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
-            >
-              Book
-            </a>
 
             <a
               href="#videos"
-              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+              className="rounded-xl border px-3 py-2 text-sm hover:bg-accent transition-colors"
             >
               Watch videos
             </a>
           </div>
-        </div>
-      </div>
-    </main>
+
+          <div className="aspect-video w-full bg-black">
+            {showreelEmbed ? (
+              <iframe
+                className="h-full w-full"
+                src={showreelEmbed}
+                title="Showreel"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                loading="lazy"
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center text-sm text-white/70">
+                No showreel set yet — set it in Admin → Showreel
+              </div>
+            )}
+          </div>
+        </section>
+
+        {videos.length === 0 ? (
+          <div className="mt-10 rounded-2xl border p-6 text-sm text-muted-foreground">
+            No videos yet. Upload from Admin → Media.
+          </div>
+        ) : (
+          <MediaGrid items={videos} mediaMode="video" />
+        )}
+      </main>
+
+      <StickyCta />
+    </>
   );
 }

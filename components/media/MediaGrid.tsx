@@ -6,7 +6,13 @@ import MediaFilterBar from "./MediaFilterBar";
 import MediaLightbox from "./MediaLightbox";
 import type { MediaItem } from "./types";
 
-export function MediaGrid({ items }: { items: MediaItem[] }) {
+export function MediaGrid({
+  items,
+  mediaMode = "image",
+}: {
+  items: MediaItem[];
+  mediaMode?: "image" | "video";
+}) {
   const [q, setQ] = useState("");
   const [activeTag, setActiveTag] = useState<string>("");
   const [active, setActive] = useState<MediaItem | null>(null);
@@ -18,7 +24,9 @@ export function MediaGrid({ items }: { items: MediaItem[] }) {
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
-    for (const it of items) for (const t of it.tags) set.add(t);
+    for (const it of items) {
+      for (const t of it.tags) set.add(t);
+    }
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [items]);
 
@@ -37,7 +45,7 @@ export function MediaGrid({ items }: { items: MediaItem[] }) {
   }, [items, q, activeTag]);
 
   return (
-    <div className="mt-10 space-y-6">
+    <div id={mediaMode === "video" ? "videos" : undefined} className="mt-10 space-y-6 scroll-mt-24">
       <MediaFilterBar
         q={q}
         setQ={setQ}
@@ -46,7 +54,7 @@ export function MediaGrid({ items }: { items: MediaItem[] }) {
         allTags={allTags}
       />
 
-      <MediaCardGrid items={filtered} onSelect={setActive} />
+      <MediaCardGrid items={filtered} onSelect={setActive} mediaMode={mediaMode} />
 
       {active ? <MediaLightbox active={active} onClose={() => setActive(null)} /> : null}
     </div>

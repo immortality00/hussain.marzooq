@@ -1,69 +1,9 @@
-import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { asNullableString, asStringArray, isRecord, noStoreJson } from "@/app/api/_lib/common";
+import { sanitizeAppearances } from "@/app/api/_lib/media";
 
 export const dynamic = "force-dynamic";
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
-function asString(v: unknown): string | null {
-  return typeof v === "string" ? v : null;
-}
-function asStringArray(v: unknown): string[] {
-  if (!Array.isArray(v)) return [];
-  return v
-    .map((x) => (typeof x === "string" ? x : String(x)))
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, 60);
-}
-
-type Appearance = {
-  kind: "featured" | "exhibited";
-  title: string;
-  venue: string;
-  city: string;
-  country: string;
-  dateFrom: string;
-  dateTo: string;
-  notes: string;
-  link: string;
-};
-
-function sanitizeAppearances(v: unknown): Appearance[] {
-  if (!Array.isArray(v)) return [];
-  const out: Appearance[] = [];
-
-  for (const item of v) {
-    if (!isRecord(item)) continue;
-    const kindRaw = asString(item.kind);
-    const kind = kindRaw === "featured" ? "featured" : kindRaw === "exhibited" ? "exhibited" : null;
-    if (!kind) continue;
-
-    out.push({
-      kind,
-      title: asString(item.title) ?? "",
-      venue: asString(item.venue) ?? "",
-      city: asString(item.city) ?? "",
-      country: asString(item.country) ?? "",
-      dateFrom: asString(item.dateFrom) ?? "",
-      dateTo: asString(item.dateTo) ?? "",
-      notes: asString(item.notes) ?? "",
-      link: asString(item.link) ?? "",
-    });
-
-    if (out.length >= 50) break;
-  }
-
-  return out;
-}
-
-function noStore(body: unknown, init?: ResponseInit) {
-  const res = NextResponse.json(body, init);
-  res.headers.set("Cache-Control", "no-store");
-  return res;
-}
 
 export async function GET(req: Request) {
   const deny = await requireAdminOr401();
@@ -82,19 +22,24 @@ export async function GET(req: Request) {
     const asset = isRecord(d.asset) ? d.asset : {};
 
     const secureUrl =
-      asString(d.secureUrl) ?? asString(asset.secureUrl) ?? asString((asset as Record<string, unknown>).secure_url);
+      asNullableString(d.secureUrl) ??
+      asNullableString(asset.secureUrl) ??
+      asNullableString((asset as Record<string, unknown>).secure_url);
 
-    const publicId = asString(d.publicId) ?? asString(asset.publicId);
-    const resourceType = asString(d.resourceType) ?? asString(asset.resourceType) ?? asString(asset.resource_type);
-    const embedUrl = asString(d.embedUrl) ?? asString(asset.embedUrl);
+    const publicId = asNullableString(d.publicId) ?? asNullableString(asset.publicId);
+    const resourceType =
+      asNullableString(d.resourceType) ??
+      asNullableString(asset.resourceType) ??
+      asNullableString(asset.resource_type);
+    const embedUrl = asNullableString(d.embedUrl) ?? asNullableString(asset.embedUrl);
 
     return {
       id: String(d._id),
-      type: asString(d.type) ?? "image",
-      title: asString(d.title) ?? "",
-      description: asString(d.description),
-      location: asString(d.location),
-      event: asString(d.event),
+      type: asNullableString(d.type) ?? "image",
+      title: asNullableString(d.title) ?? "",
+      description: asNullableString(d.description),
+      location: asNullableString(d.location),
+      event: asNullableString(d.event),
       year: typeof d.year === "number" ? d.year : null,
       tags: asStringArray(d.tags),
       categories: asStringArray(d.categories),
@@ -110,5 +55,5 @@ export async function GET(req: Request) {
     };
   });
 
-  return noStore({ ok: true, items });
+  return noStoreJson({ ok: true, items });
 }

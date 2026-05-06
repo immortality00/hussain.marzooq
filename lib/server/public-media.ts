@@ -29,16 +29,6 @@ export type PublicMediaItem = {
   createdAt: string | null;
 };
 
-export type PublicVideoItem = {
-  id: string;
-  type: string;
-  title: string;
-  embedUrl: string | null;
-  secureUrl: string | null;
-  tags: string[];
-  categories?: string[];
-};
-
 type PublicListResponse<T> = {
   items?: T[];
 };
@@ -58,11 +48,6 @@ export async function fetchPublicMediaList(url: string): Promise<PublicMediaItem
   return Array.isArray(data?.items) ? data.items : [];
 }
 
-export async function fetchPublicVideoList(url: string): Promise<PublicVideoItem[]> {
-  const data = await fetchJson<PublicListResponse<PublicVideoItem>>(url);
-  return Array.isArray(data?.items) ? data.items : [];
-}
-
 export async function getPhotographyItems(): Promise<PublicMediaItem[]> {
   const base = await getBaseUrl();
   const primary = await fetchPublicMediaList(
@@ -73,9 +58,9 @@ export async function getPhotographyItems(): Promise<PublicMediaItem[]> {
   return fetchPublicMediaList(`${base}/api/media/list-public?type=image&limit=60`);
 }
 
-export async function getVideographyItems(): Promise<PublicVideoItem[]> {
+export async function getVideographyItems(): Promise<PublicMediaItem[]> {
   const base = await getBaseUrl();
-  const all = await fetchPublicVideoList(
+  const all = await fetchPublicMediaList(
     `${base}/api/media/list-public?type=all&category=videography&limit=60`
   );
 

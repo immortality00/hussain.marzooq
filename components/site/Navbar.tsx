@@ -5,7 +5,6 @@ const nav = [
   { href: "/photography", label: "Photography" },
   { href: "/videography", label: "Videography" },
   { href: "/services", label: "Services" },
-  { href: "/showreel", label: "Showreel" },
   { href: "/photo-reel", label: "Photo Reel" },
   { href: "/nft", label: "NFT" },
   { href: "/dance", label: "Dance" },
