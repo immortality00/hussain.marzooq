@@ -101,7 +101,7 @@ export default async function ServicesPage({
       <header className="flex flex-col gap-3">
         <h1 className="text-3xl font-semibold tracking-tight">Services</h1>
         <p className="max-w-2xl text-sm text-muted-foreground">
-          Cinematic. Creative. Premium. Pick a service and book instantly — your request will be pre-filled.
+          Cinematic. Creative. Premium. Explore each service in detail, then book with your request pre-filled.
         </p>
       </header>
 
@@ -136,26 +136,30 @@ export default async function ServicesPage({
 
             return (
               <article key={s.id} className="group overflow-hidden rounded-2xl border bg-background">
-                <div className="relative h-50 w-full overflow-hidden">
-                  {img ? (
-                    <Image
-                      src={img}
-                      alt={safeString(s.name, "Service")}
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                      className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                      priority={false}
-                    />
-                  ) : (
-                    <div className="h-full w-full bg-linear-to-br from-muted to-background" />
-                  )}
-                  <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-background/70 via-background/0 to-background/0" />
-                </div>
+                <Link href={`/services/${encodeURIComponent(s.slug)}`} className="block">
+                  <div className="relative h-50 w-full overflow-hidden">
+                    {img ? (
+                      <Image
+                        src={img}
+                        alt={safeString(s.name, "Service")}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                        className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                        priority={false}
+                      />
+                    ) : (
+                      <div className="h-full w-full bg-linear-to-br from-muted to-background" />
+                    )}
+                    <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-background/70 via-background/0 to-background/0" />
+                  </div>
+                </Link>
 
                 <div className="p-5">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h2 className="text-lg font-semibold leading-tight">{safeString(s.name, "Service")}</h2>
+                      <Link href={`/services/${encodeURIComponent(s.slug)}`} className="hover:opacity-85 transition-opacity">
+                        <h2 className="text-lg font-semibold leading-tight">{safeString(s.name, "Service")}</h2>
+                      </Link>
                       <div className="mt-1 text-xs text-muted-foreground">{safeString(s.category, "").toUpperCase()}</div>
                     </div>
 
@@ -172,7 +176,14 @@ export default async function ServicesPage({
                     <p className="mt-3 text-sm text-muted-foreground">Premium coverage tailored to your vision.</p>
                   )}
 
-                  <div className="mt-5 flex items-center gap-2">
+                  <div className="mt-5 flex flex-wrap items-center gap-2">
+                    <Link
+                      href={`/services/${encodeURIComponent(s.slug)}`}
+                      className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+                    >
+                      View details
+                    </Link>
+
                     <Link
                       href={`/contact?service=${encodeURIComponent(s.slug)}&category=${encodeURIComponent(
                         safeString(s.category, "")

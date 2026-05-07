@@ -6,6 +6,25 @@ import { notFound } from "next/navigation";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
+function workLinkForCategory(categorySlug: string): { href: string; label: string } {
+  const c = categorySlug.trim().toLowerCase();
+
+  if (c.includes("photo")) return { href: "/photography", label: "See photos" };
+
+  if (c.includes("video") || c.includes("film") || c.includes("reel")) {
+    return { href: "/videography", label: "See videos" };
+  }
+
+  if (c.includes("dance")) return { href: "/dance", label: "See dance" };
+  if (c.includes("nft")) return { href: "/nft", label: "See NFTs" };
+
+  if (c.includes("web") || c.includes("dev") || c.includes("code")) {
+    return { href: "/web-dev", label: "See web work" };
+  }
+
+  return { href: "/photography", label: "See my work" };
+}
+
 export default async function ServiceDetailPage({
   params,
 }: {
@@ -19,51 +38,92 @@ export default async function ServiceDetailPage({
   const doc = await db.collection("services").findOne({ slug, isActive: true });
   if (!doc) notFound();
 
-  const service = doc;
-  const id = String(service._id);
-  const name = typeof service.name === "string" ? service.name : "";
-  const description = typeof service.description === "string" ? service.description : "";
-  const imageUrl = typeof service.imageUrl === "string" ? service.imageUrl : "";
-  const category = typeof service.category === "string" ? service.category : "others";
-  const currency = typeof service.currency === "string" ? service.currency : "AED";
-  const startingPrice = typeof service.startingPrice === "number" ? service.startingPrice : null;
+  const name = typeof doc.name === "string" ? doc.name : "";
+  const description = typeof doc.description === "string" ? doc.description : "";
+  const imageUrl = typeof doc.imageUrl === "string" ? doc.imageUrl : "";
+  const category = typeof doc.category === "string" ? doc.category : "others";
+  const currency = typeof doc.currency === "string" ? doc.currency : "AED";
+  const startingPrice = typeof doc.startingPrice === "number" ? doc.startingPrice : null;
+
+  const workLink = workLinkForCategory(category);
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-12">
-      <div className="flex items-start justify-between gap-6">
-        <div>
-          <h1 className="text-3xl font-semibold">{name}</h1>
-          {startingPrice !== null && (
-            <p className="mt-2 text-sm text-muted-foreground">
-              Starting from {currency} {startingPrice}
+    <main className="mx-auto max-w-6xl px-4 py-12">
+      <Link
+        href="/services"
+        className="inline-flex text-sm text-muted-foreground underline underline-offset-4"
+      >
+        ← Back to services
+      </Link>
+
+      <section className="mt-6 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="space-y-6">
+          <div className="inline-flex rounded-full border px-3 py-1 text-xs tracking-wide text-muted-foreground">
+            {category.toUpperCase()}
+          </div>
+
+          <div className="space-y-3">
+            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">{name}</h1>
+
+            {startingPrice !== null ? (
+              <div className="inline-flex rounded-full border px-4 py-2 text-sm text-muted-foreground">
+                Starting from {currency} {startingPrice}
+              </div>
+            ) : null}
+          </div>
+
+          <div className="rounded-2xl border bg-background/60 p-5">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Service overview
+            </div>
+
+            <p className="mt-3 whitespace-pre-wrap text-base leading-7 text-muted-foreground">
+              {description || "Service details will appear here once added from the admin dashboard."}
             </p>
+          </div>
+
+          <div className="rounded-2xl border bg-background/60 p-5">
+            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Next step
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Link
+                href={`/contact?service=${encodeURIComponent(slug)}&category=${encodeURIComponent(category)}`}
+                className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+              >
+                Book this service
+              </Link>
+
+              <Link
+                href={workLink.href}
+                className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+              >
+                {workLink.label}
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          {imageUrl ? (
+            <div className="overflow-hidden rounded-3xl border bg-muted">
+              <Image
+                src={imageUrl}
+                alt={name}
+                width={1600}
+                height={1000}
+                className="h-auto w-full object-cover"
+                priority
+              />
+            </div>
+          ) : (
+            <div className="flex min-h-[320px] items-center justify-center rounded-3xl border bg-muted/40 text-sm text-muted-foreground">
+              No service image yet.
+            </div>
           )}
         </div>
-
-        <Link
-          href={`/contact?service=${encodeURIComponent(id)}&category=${encodeURIComponent(category)}`}
-          className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90"
-        >
-          Book this service
-        </Link>
-      </div>
-
-      {imageUrl ? (
-        <div className="mt-8 overflow-hidden rounded-2xl border">
-          <Image
-            src={imageUrl}
-            alt={name}
-            width={1600}
-            height={900}
-            className="h-auto w-full object-cover"
-            priority
-          />
-        </div>
-      ) : null}
-
-      <div className="mt-8 prose prose-invert max-w-none">
-        <p>{description}</p>
-      </div>
+      </section>
     </main>
   );
 }
