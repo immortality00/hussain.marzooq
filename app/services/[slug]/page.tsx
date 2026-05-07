@@ -24,6 +24,7 @@ export default async function ServiceDetailPage({
   const name = typeof service.name === "string" ? service.name : "";
   const description = typeof service.description === "string" ? service.description : "";
   const imageUrl = typeof service.imageUrl === "string" ? service.imageUrl : "";
+  const category = typeof service.category === "string" ? service.category : "others";
   const currency = typeof service.currency === "string" ? service.currency : "AED";
   const startingPrice = typeof service.startingPrice === "number" ? service.startingPrice : null;
 
@@ -40,7 +41,7 @@ export default async function ServiceDetailPage({
         </div>
 
         <Link
-          href={`/contact?service=${encodeURIComponent(id)}`}
+          href={`/contact?service=${encodeURIComponent(id)}&category=${encodeURIComponent(category)}`}
           className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90"
         >
           Book this service

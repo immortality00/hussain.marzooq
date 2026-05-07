@@ -2,85 +2,51 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-
-type ServiceItem = {
-  id: string;
-  name: string;
-  slug: string;
-  category: string;
-  startingPrice: number | null;
-  currency: string;
-};
+import ContactCategorySelector from "./ContactCategorySelector";
+import ContactIdentityFields from "./ContactIdentityFields";
+import ContactMessageField from "./ContactMessageField";
+import ContactServiceSelector from "./ContactServiceSelector";
+import type { CategoryMode, ServiceItem, ServiceMode } from "./types";
+import {
+  findInitialServiceMatch,
+  getServiceCategories,
+  isValidEmail,
+  normalize,
+  safeTrim,
+} from "./utils";
 
 type Props = {
   services: ServiceItem[];
-  initialService?: string; // ObjectId OR slug OR name
+  initialService?: string;
   initialCategory?: string;
 };
-
-function safeTrim(v: string) {
-  return v.trim().slice(0, 5000);
-}
-
-function isValidEmail(email: string) {
-  const v = email.trim();
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
-}
-
-function normalize(s: string) {
-  return s.trim().toLowerCase();
-}
-
-function looksLikeObjectId(s: string) {
-  return /^[a-fA-F0-9]{24}$/.test(s.trim());
-}
 
 export function ContactForm({ services, initialService = "", initialCategory = "" }: Props) {
   const router = useRouter();
 
-  const categories = useMemo(() => {
-    const set = new Set<string>();
-    for (const s of services) {
-      const c = s.category?.trim();
-      if (c) set.add(c);
-    }
-    set.add("others");
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [services]);
+  const categories = useMemo(() => getServiceCategories(services), [services]);
 
-  const initialServiceMatch = useMemo(() => {
-    const raw = initialService.trim();
-    if (!raw) return null;
-
-    if (looksLikeObjectId(raw)) {
-      return services.find((s) => s.id === raw) ?? null;
-    }
-
-    const target = normalize(raw);
-
-    const bySlug = services.find((s) => normalize(s.slug) === target);
-    if (bySlug) return bySlug;
-
-    const byName = services.find((s) => normalize(s.name) === target);
-    if (byName) return byName;
-
-    return null;
-  }, [initialService, services]);
+  const initialServiceMatch = useMemo(
+    () => findInitialServiceMatch(services, initialService),
+    [initialService, services]
+  );
 
   const normalizedInitialCategory = safeTrim(initialCategory);
-  const hasKnownInitialCategory = categories.some((c) => normalize(c) === normalize(normalizedInitialCategory));
+  const hasKnownInitialCategory = categories.some(
+    (c) => normalize(c) === normalize(normalizedInitialCategory)
+  );
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
 
-  const [serviceMode, setServiceMode] = useState<"select" | "other">(
+  const [serviceMode, setServiceMode] = useState<ServiceMode>(
     initialServiceMatch ? "select" : initialService.trim() ? "other" : "select"
   );
   const [selectedServiceId, setSelectedServiceId] = useState<string>(initialServiceMatch?.id ?? "");
   const [otherService, setOtherService] = useState<string>(!initialServiceMatch ? initialService : "");
 
-  const [categoryMode, setCategoryMode] = useState<"select" | "other">(() => {
+  const [categoryMode, setCategoryMode] = useState<CategoryMode>(() => {
     if (initialServiceMatch?.category) return "select";
     if (!normalizedInitialCategory) return "select";
     return hasKnownInitialCategory ? "select" : "other";
@@ -178,7 +144,7 @@ export function ContactForm({ services, initialService = "", initialCategory = "
     setMessage("");
     setMsg("");
 
-    setServiceMode(initialServiceMatch ? "select" : "select");
+    setServiceMode("select");
     setSelectedServiceId(initialServiceMatch?.id ?? "");
     setOtherService("");
 
@@ -268,130 +234,37 @@ export function ContactForm({ services, initialService = "", initialCategory = "
       {msg ? <div className="mb-4 text-sm text-muted-foreground">{msg}</div> : null}
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Name *</label>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Your name"
-          />
-        </div>
+        <ContactIdentityFields
+          name={name}
+          setName={setName}
+          email={email}
+          setEmail={setEmail}
+        />
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Email *</label>
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            placeholder="you@email.com"
-            inputMode="email"
-          />
-        </div>
+        <ContactServiceSelector
+          services={services}
+          serviceMode={serviceMode}
+          setModeSelect={setModeSelect}
+          setModeOther={setModeOther}
+          selectedServiceId={selectedServiceId}
+          onSelectService={handleSelectService}
+          otherService={otherService}
+          setOtherService={setOtherService}
+        />
 
-        <div className="space-y-2 sm:col-span-2">
-          <label className="text-sm font-medium">Service</label>
+        <ContactCategorySelector
+          serviceMode={serviceMode}
+          selectedService={selectedService}
+          categoryMode={categoryMode}
+          setCategoryMode={setCategoryMode}
+          selectedCategory={selectedCategory}
+          setSelectedCategory={setSelectedCategory}
+          otherCategory={otherCategory}
+          setOtherCategory={setOtherCategory}
+          categories={categories}
+        />
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={setModeSelect}
-              className={`rounded-full border px-3 py-1.5 text-sm ${serviceMode === "select" ? "bg-accent" : "hover:bg-accent/40"}`}
-            >
-              Choose from list
-            </button>
-            <button
-              type="button"
-              onClick={setModeOther}
-              className={`rounded-full border px-3 py-1.5 text-sm ${serviceMode === "other" ? "bg-accent" : "hover:bg-accent/40"}`}
-            >
-              Other (specify)
-            </button>
-          </div>
-
-          {serviceMode === "select" ? (
-            <select
-              value={selectedServiceId}
-              onChange={(e) => handleSelectService(e.target.value)}
-              className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Select…</option>
-              {services.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name}
-                  {s.startingPrice !== null ? ` — from ${s.currency} ${s.startingPrice}` : ""}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              value={otherService}
-              onChange={(e) => setOtherService(e.target.value)}
-              className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              placeholder="Describe what you need"
-            />
-          )}
-        </div>
-
-        <div className="space-y-2 sm:col-span-2">
-          <label className="text-sm font-medium">Category</label>
-
-          {serviceMode === "select" ? (
-            <div className="rounded-xl border bg-muted px-3 py-2 text-sm text-muted-foreground">
-              {selectedService?.category || "Select a service to auto-fill category"}
-            </div>
-          ) : (
-            <>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => setCategoryMode("select")}
-                  className={`rounded-full border px-3 py-1.5 text-sm ${categoryMode === "select" ? "bg-accent" : "hover:bg-accent/40"}`}
-                >
-                  Choose category
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCategoryMode("other")}
-                  className={`rounded-full border px-3 py-1.5 text-sm ${categoryMode === "other" ? "bg-accent" : "hover:bg-accent/40"}`}
-                >
-                  Other category
-                </button>
-              </div>
-
-              {categoryMode === "select" ? (
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                >
-                  {categories.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  value={otherCategory}
-                  onChange={(e) => setOtherCategory(e.target.value)}
-                  className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="Type a category"
-                />
-              )}
-            </>
-          )}
-        </div>
-
-        <div className="space-y-2 sm:col-span-2">
-          <label className="text-sm font-medium">Message *</label>
-          <textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            className="h-32 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Tell me about your project"
-          />
-        </div>
+        <ContactMessageField message={message} setMessage={setMessage} />
       </div>
 
       <div className="mt-5 flex items-center gap-3">
