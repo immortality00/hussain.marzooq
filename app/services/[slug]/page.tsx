@@ -2,28 +2,10 @@ import Link from "next/link";
 import Image from "next/image";
 import clientPromise from "@/lib/mongodb";
 import { notFound } from "next/navigation";
+import { workLinkForCategory } from "@/lib/server/public-services";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
-
-function workLinkForCategory(categorySlug: string): { href: string; label: string } {
-  const c = categorySlug.trim().toLowerCase();
-
-  if (c.includes("photo")) return { href: "/photography", label: "See photos" };
-
-  if (c.includes("video") || c.includes("film") || c.includes("reel")) {
-    return { href: "/videography", label: "See videos" };
-  }
-
-  if (c.includes("dance")) return { href: "/dance", label: "See dance" };
-  if (c.includes("nft")) return { href: "/nft", label: "See NFTs" };
-
-  if (c.includes("web") || c.includes("dev") || c.includes("code")) {
-    return { href: "/web-dev", label: "See web work" };
-  }
-
-  return { href: "/photography", label: "See my work" };
-}
 
 export default async function ServiceDetailPage({
   params,

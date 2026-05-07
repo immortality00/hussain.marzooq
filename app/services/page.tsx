@@ -1,64 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { getBaseUrl } from "@/lib/server/get-base-url";
-
-type ServiceItem = {
-  id: string;
-  name: string;
-  slug: string;
-  category: string;
-  description: string;
-  startingPrice: number | null;
-  currency: string;
-  isActive: boolean;
-  imageUrl: string;
-  order: number;
-};
-
-type CategoryItem = {
-  id: string;
-  name: string;
-  slug: string;
-  isActive: boolean;
-  order: number;
-};
-
-function safeString(v: unknown, fallback = ""): string {
-  return typeof v === "string" ? v : fallback;
-}
-function safeNumberOrNull(v: unknown): number | null {
-  return typeof v === "number" && Number.isFinite(v) ? v : null;
-}
-function safeBool(v: unknown, fallback = false): boolean {
-  return typeof v === "boolean" ? v : fallback;
-}
-
-function extractItems<T>(json: unknown): T[] {
-  if (!json || typeof json !== "object") return [];
-  const obj = json as Record<string, unknown>;
-  if (Array.isArray(obj.items)) return obj.items as T[];
-  if (obj.ok === true && Array.isArray(obj.items)) return obj.items as T[];
-  return [];
-}
-
-function workLinkForCategory(categorySlug: string): { href: string; label: string } {
-  const c = categorySlug.trim().toLowerCase();
-
-  if (c.includes("photo")) return { href: "/photography", label: "See photos" };
-
-  if (c.includes("video") || c.includes("film") || c.includes("reel")) {
-    return { href: "/videography", label: "See videos" };
-  }
-
-  if (c.includes("dance")) return { href: "/dance", label: "See dance" };
-  if (c.includes("nft")) return { href: "/nft", label: "See NFTs" };
-
-  if (c.includes("web") || c.includes("dev") || c.includes("code")) {
-    return { href: "/web-dev", label: "See web work" };
-  }
-
-  return { href: "/photography", label: "See my work" };
-}
+import { getPublicServicesData, workLinkForCategory } from "@/lib/server/public-services";
 
 export default async function ServicesPage({
   searchParams,
@@ -68,31 +10,12 @@ export default async function ServicesPage({
   const sp = await searchParams;
   const selectedCategory = typeof sp.category === "string" ? sp.category : "all";
 
-  const baseUrl = await getBaseUrl();
-
-  const [servicesRes, categoriesRes] = await Promise.all([
-    fetch(`${baseUrl}/api/services`, { cache: "no-store" }),
-    fetch(`${baseUrl}/api/service-categories`, { cache: "no-store" }),
-  ]);
-
-  const servicesJson = (await servicesRes.json().catch(() => null)) as unknown;
-  const categoriesJson = (await categoriesRes.json().catch(() => null)) as unknown;
-
-  const rawServices = extractItems<ServiceItem>(servicesJson);
-  const rawCategories = extractItems<CategoryItem>(categoriesJson);
-
-  const categories = rawCategories
-    .filter((c) => safeBool(c.isActive, false))
-    .sort((a, b) => (safeNumberOrNull(a.order) ?? 0) - (safeNumberOrNull(b.order) ?? 0));
-
-  const servicesAll = rawServices
-    .filter((s) => safeBool(s.isActive, true))
-    .sort((a, b) => (safeNumberOrNull(a.order) ?? 0) - (safeNumberOrNull(b.order) ?? 0));
+  const { services: servicesAll, categories } = await getPublicServicesData();
 
   const services =
     selectedCategory === "all"
       ? servicesAll
-      : servicesAll.filter((s) => safeString(s.category).toLowerCase() === selectedCategory.toLowerCase());
+      : servicesAll.filter((s) => s.category.toLowerCase() === selectedCategory.toLowerCase());
 
   const tabs = [{ slug: "all", name: "All" }, ...categories.map((c) => ({ slug: c.slug, name: c.name }))];
 
@@ -130,9 +53,9 @@ export default async function ServicesPage({
           </div>
         ) : (
           services.map((s) => {
-            const img = safeString(s.imageUrl, "").trim();
+            const img = s.imageUrl.trim();
             const hasPrice = typeof s.startingPrice === "number" && Number.isFinite(s.startingPrice);
-            const workLink = workLinkForCategory(safeString(s.category, ""));
+            const workLink = workLinkForCategory(s.category);
 
             return (
               <article key={s.id} className="group overflow-hidden rounded-2xl border bg-background">
@@ -141,7 +64,7 @@ export default async function ServicesPage({
                     {img ? (
                       <Image
                         src={img}
-                        alt={safeString(s.name, "Service")}
+                        alt={s.name || "Service"}
                         fill
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                         className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
@@ -158,9 +81,9 @@ export default async function ServicesPage({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <Link href={`/services/${encodeURIComponent(s.slug)}`} className="hover:opacity-85 transition-opacity">
-                        <h2 className="text-lg font-semibold leading-tight">{safeString(s.name, "Service")}</h2>
+                        <h2 className="text-lg font-semibold leading-tight">{s.name || "Service"}</h2>
                       </Link>
-                      <div className="mt-1 text-xs text-muted-foreground">{safeString(s.category, "").toUpperCase()}</div>
+                      <div className="mt-1 text-xs text-muted-foreground">{s.category.toUpperCase()}</div>
                     </div>
 
                     {hasPrice ? (
@@ -185,9 +108,7 @@ export default async function ServicesPage({
                     </Link>
 
                     <Link
-                      href={`/contact?service=${encodeURIComponent(s.slug)}&category=${encodeURIComponent(
-                        safeString(s.category, "")
-                      )}`}
+                      href={`/contact?service=${encodeURIComponent(s.slug)}&category=${encodeURIComponent(s.category)}`}
                       className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
                     >
                       Book

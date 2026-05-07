@@ -1,47 +1,14 @@
-import clientPromise from "@/lib/mongodb";
 import { ContactForm } from "@/components/contact/ContactForm";
+import { getActiveServicesForContact } from "@/lib/server/public-services";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 type SP = {
   success?: string;
-  service?: string;   // can be: ObjectId OR slug OR name
+  service?: string;
   category?: string;
 };
-
-type ServiceItem = {
-  id: string;
-  name: string;
-  slug: string;
-  category: string;
-  startingPrice: number | null;
-  currency: string;
-};
-
-function asString(v: unknown): string | null {
-  return typeof v === "string" ? v : null;
-}
-
-async function getActiveServices(): Promise<ServiceItem[]> {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
-
-  const docs = await db
-    .collection("services")
-    .find({ isActive: true, isArchived: { $ne: true } })
-    .sort({ order: 1, createdAt: -1 })
-    .toArray();
-
-  return docs.map((d) => ({
-    id: String(d._id),
-    name: asString(d.name) ?? "",
-    slug: asString(d.slug) ?? "",
-    category: asString(d.category) ?? "others",
-    startingPrice: typeof d.startingPrice === "number" ? d.startingPrice : null,
-    currency: asString(d.currency) ?? "AED",
-  }));
-}
 
 export default async function ContactPage({
   searchParams,
@@ -54,7 +21,7 @@ export default async function ContactPage({
   const initialService = typeof sp?.service === "string" ? sp.service : "";
   const initialCategory = typeof sp?.category === "string" ? sp.category : "";
 
-  const services = await getActiveServices();
+  const services = await getActiveServicesForContact();
 
   return (
     <main className="mx-auto max-w-3xl px-4 py-16">
