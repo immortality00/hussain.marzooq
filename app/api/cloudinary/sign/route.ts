@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
 import { v2 as cloudinary } from "cloudinary";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { noStoreJson } from "@/app/api/_lib/common";
 
 export const dynamic = "force-dynamic";
 
@@ -10,19 +10,11 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET ?? "",
 });
 
-function noStoreJson(body: unknown, init?: ResponseInit) {
-  const res = NextResponse.json(body, init);
-  res.headers.set("Cache-Control", "no-store");
-  return res;
-}
-
 export async function POST() {
   const deny = await requireAdminOr401();
   if (deny) return deny as unknown as Response;
 
   const timestamp = Math.round(Date.now() / 1000);
-
-  // Locked to hm_visuals folder
   const folder = "hm_visuals";
 
   const apiSecret = process.env.CLOUDINARY_API_SECRET ?? "";

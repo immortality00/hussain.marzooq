@@ -1,20 +1,10 @@
-import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import type { AnyBulkWriteOperation, Document } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { isValidObjectIdString, noStoreJson } from "@/app/api/_lib/common";
 
 export const dynamic = "force-dynamic";
-
-function looksLikeObjectId(s: string): boolean {
-  return /^[a-fA-F0-9]{24}$/.test(s.trim());
-}
-
-function noStoreJson(body: unknown, init?: ResponseInit) {
-  const res = NextResponse.json(body, init);
-  res.headers.set("Cache-Control", "no-store");
-  return res;
-}
 
 export async function POST() {
   const deny = await requireAdminOr401();
@@ -57,7 +47,7 @@ export async function POST() {
       const serviceId = typeof obj._id === "string" ? obj._id : "";
       const count = typeof obj.count === "number" ? obj.count : 0;
 
-      if (!serviceId || !looksLikeObjectId(serviceId)) continue;
+      if (!serviceId || !isValidObjectIdString(serviceId)) continue;
 
       ops.push({
         updateOne: {

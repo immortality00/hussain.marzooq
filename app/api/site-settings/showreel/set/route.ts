@@ -1,15 +1,8 @@
-import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { asNullableString, isRecord, noStoreJson } from "@/app/api/_lib/common";
 
 export const dynamic = "force-dynamic";
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
-function asString(v: unknown): string | null {
-  return typeof v === "string" ? v : null;
-}
 
 export async function POST(req: Request) {
   const deny = await requireAdminOr401();
@@ -17,12 +10,12 @@ export async function POST(req: Request) {
 
   const body = (await req.json().catch(() => null)) as unknown;
   if (!isRecord(body)) {
-    return NextResponse.json({ ok: false, error: "Invalid body" }, { status: 400 });
+    return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
   }
 
-  const embedUrl = asString(body.embedUrl)?.trim() ?? "";
+  const embedUrl = asNullableString(body.embedUrl)?.trim() ?? "";
   if (!embedUrl) {
-    return NextResponse.json({ ok: false, error: "embedUrl is required" }, { status: 400 });
+    return noStoreJson({ ok: false, error: "embedUrl is required" }, { status: 400 });
   }
 
   const client = await clientPromise;
@@ -34,7 +27,5 @@ export async function POST(req: Request) {
     { upsert: true }
   );
 
-  const res = NextResponse.json({ ok: true });
-  res.headers.set("Cache-Control", "no-store");
-  return res;
+  return noStoreJson({ ok: true });
 }
