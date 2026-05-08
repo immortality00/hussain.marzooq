@@ -30,7 +30,7 @@ export default async function ServiceDetailPage({
   const workLink = workLinkForCategory(category);
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-12">
+    <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
       <Link
         href="/services"
         className="inline-flex text-sm text-muted-foreground underline underline-offset-4"
@@ -38,9 +38,9 @@ export default async function ServiceDetailPage({
         ← Back to services
       </Link>
 
-      <section className="mt-6 grid gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-        <div className="space-y-6">
-          <div className="inline-flex rounded-full border px-3 py-1 text-xs tracking-wide text-muted-foreground">
+      <section className="mt-8 grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+        <div className="space-y-5">
+          <div className="inline-flex rounded-full border px-3 py-1 text-[11px] tracking-[0.14em] text-muted-foreground">
             {category.toUpperCase()}
           </div>
 
@@ -54,53 +54,41 @@ export default async function ServiceDetailPage({
             ) : null}
           </div>
 
-          <div className="rounded-2xl border bg-background/60 p-5">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Service overview
-            </div>
+          <p className="max-w-xl whitespace-pre-wrap text-base leading-7 text-muted-foreground">
+            {description || "Service details will appear here once added from the admin dashboard."}
+          </p>
 
-            <p className="mt-3 whitespace-pre-wrap text-base leading-7 text-muted-foreground">
-              {description || "Service details will appear here once added from the admin dashboard."}
-            </p>
-          </div>
+          <div className="flex flex-wrap gap-3 pt-2">
+            <Link
+              href={`/contact?service=${encodeURIComponent(slug)}&category=${encodeURIComponent(category)}`}
+              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+            >
+              Book this service
+            </Link>
 
-          <div className="rounded-2xl border bg-background/60 p-5">
-            <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Next step
-            </div>
-
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Link
-                href={`/contact?service=${encodeURIComponent(slug)}&category=${encodeURIComponent(category)}`}
-                className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
-              >
-                Book this service
-              </Link>
-
-              <Link
-                href={workLink.href}
-                className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
-              >
-                {workLink.label}
-              </Link>
-            </div>
+            <Link
+              href={workLink.href}
+              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+            >
+              {workLink.label}
+            </Link>
           </div>
         </div>
 
         <div>
           {imageUrl ? (
-            <div className="overflow-hidden rounded-3xl border bg-muted">
+            <div className="overflow-hidden rounded-[2rem] border bg-muted">
               <Image
                 src={imageUrl}
                 alt={name}
                 width={1600}
-                height={1000}
+                height={1100}
                 className="h-auto w-full object-cover"
                 priority
               />
             </div>
           ) : (
-            <div className="flex min-h-[320px] items-center justify-center rounded-3xl border bg-muted/40 text-sm text-muted-foreground">
+            <div className="flex min-h-[420px] items-center justify-center rounded-[2rem] border bg-muted/40 text-sm text-muted-foreground">
               No service image yet.
             </div>
           )}
