@@ -1,11 +1,13 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 const nav = [
   { href: "/", label: "Home" },
   { href: "/photography", label: "Photography" },
   { href: "/videography", label: "Videography" },
   { href: "/services", label: "Services" },
-  { href: "/photo-reel", label: "Photo Reel" },
   { href: "/nft", label: "NFT" },
   { href: "/dance", label: "Dance" },
   { href: "/web-dev", label: "Web Dev" },
@@ -14,8 +16,33 @@ const nav = [
 ];
 
 export function Navbar() {
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    function onOpen() {
+      setHidden(true);
+    }
+
+    function onClose() {
+      setHidden(false);
+    }
+
+    window.addEventListener("hm_modal_open", onOpen);
+    window.addEventListener("hm_modal_close", onClose);
+
+    return () => {
+      window.removeEventListener("hm_modal_open", onOpen);
+      window.removeEventListener("hm_modal_close", onClose);
+    };
+  }, []);
+
   return (
-    <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur">
+    <header
+      className={[
+        "sticky top-0 z-50 border-b bg-background/80 backdrop-blur transition-all duration-300",
+        hidden ? "pointer-events-none -translate-y-full opacity-0" : "translate-y-0 opacity-100",
+      ].join(" ")}
+    >
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
         <Link href="/" className="font-semibold tracking-tight">
           HM Visuals
