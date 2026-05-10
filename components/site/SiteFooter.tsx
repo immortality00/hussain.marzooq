@@ -13,7 +13,6 @@ const secondaryLinks = [
   { href: "/web-dev", label: "Web Dev" },
   { href: "/people", label: "People" },
   { href: "/blog", label: "Blog" },
-  { href: "/photo-reel", label: "Photo Reel" },
 ];
 
 export function SiteFooter() {
