@@ -6,18 +6,29 @@ import { useRouter, useSearchParams } from "next/navigation";
 import MediaAppearancesSection from "./components/MediaAppearancesSection";
 import MediaAssetSection from "./components/MediaAssetSection";
 import MediaDetailsSection from "./components/MediaDetailsSection";
+import MediaNftSection from "./components/MediaNftSection";
 import MediaPlacementSection from "./components/MediaPlacementSection";
 import { deleteMediaItem, fetchMediaItem, buildMediaPayload, saveMediaItem } from "./lib/editor-actions";
 import { useMediaEditorState } from "./lib/editor-state";
+import type { MediaCategory } from "./lib/types";
+
+const allowedCategories: MediaCategory[] = ["photography", "videography", "showreel", "nft", "art"];
 
 export default function AdminMediaPage() {
   const sp = useSearchParams();
   const router = useRouter();
   const editId = (sp.get("edit") ?? "").trim();
+  const prefillCategory = (sp.get("category") ?? "").trim() as MediaCategory;
 
   const editor = useMediaEditorState();
   const [busy, setBusy] = useState(false);
   const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  useEffect(() => {
+    if (!editId && prefillCategory && editor.categories.length === 0 && allowedCategories.includes(prefillCategory)) {
+      editor.setPrimaryCategory(prefillCategory);
+    }
+  }, [editId, prefillCategory, editor]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!editId) return;
@@ -56,6 +67,11 @@ export default function AdminMediaPage() {
       return;
     }
 
+    if (editor.categories.length === 0) {
+      setBanner({ type: "err", text: "Choose a category first." });
+      return;
+    }
+
     setBusy(true);
     try {
       const { payloadBase, payloadWithAsset } = buildMediaPayload({
@@ -73,6 +89,14 @@ export default function AdminMediaPage() {
         appearances: editor.appearances,
         embedUrl: editor.embedUrl,
         uploaded: editor.uploaded,
+        nftPrice: editor.nftPrice,
+        nftCurrency: editor.nftCurrency,
+        nftEditionType: editor.nftEditionType,
+        nftEditionsTotal: editor.nftEditionsTotal,
+        nftEditionsRemaining: editor.nftEditionsRemaining,
+        nftOpenUntil: editor.nftOpenUntil,
+        nftStatus: editor.nftStatus,
+        nftMarketplaceUrl: editor.nftMarketplaceUrl,
       });
 
       const result = await saveMediaItem({
@@ -130,7 +154,7 @@ export default function AdminMediaPage() {
             {editor.editingId ? "Edit Media" : "Upload Media"}
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Form only. Manage items list separately.
+            Category first. The form adapts to the selected media destination.
           </p>
         </div>
 
@@ -168,6 +192,15 @@ export default function AdminMediaPage() {
       ) : null}
 
       <div className="mt-8 space-y-6">
+        <MediaPlacementSection
+          primaryCategory={editor.primaryCategory}
+          setPrimaryCategory={editor.setPrimaryCategory}
+          categories={editor.categories}
+          toggleCategory={editor.toggleCategory}
+          isPublic={editor.isPublic}
+          setIsPublic={editor.setIsPublic}
+        />
+
         <MediaAssetSection
           mode={editor.mode}
           setMode={editor.setMode}
@@ -175,7 +208,29 @@ export default function AdminMediaPage() {
           setUploaded={editor.setUploaded}
           embedUrl={editor.embedUrl}
           setEmbedUrl={editor.setEmbedUrl}
+          allowEmbed={!editor.isNft}
         />
+
+        {editor.isNft ? (
+          <MediaNftSection
+            nftPrice={editor.nftPrice}
+            setNftPrice={editor.setNftPrice}
+            nftCurrency={editor.nftCurrency}
+            setNftCurrency={editor.setNftCurrency}
+            nftEditionType={editor.nftEditionType}
+            setNftEditionType={editor.setNftEditionType}
+            nftEditionsTotal={editor.nftEditionsTotal}
+            setNftEditionsTotal={editor.setNftEditionsTotal}
+            nftEditionsRemaining={editor.nftEditionsRemaining}
+            setNftEditionsRemaining={editor.setNftEditionsRemaining}
+            nftOpenUntil={editor.nftOpenUntil}
+            setNftOpenUntil={editor.setNftOpenUntil}
+            nftStatus={editor.nftStatus}
+            setNftStatus={editor.setNftStatus}
+            nftMarketplaceUrl={editor.nftMarketplaceUrl}
+            setNftMarketplaceUrl={editor.setNftMarketplaceUrl}
+          />
+        ) : null}
 
         <MediaDetailsSection
           title={editor.title}
@@ -192,13 +247,6 @@ export default function AdminMediaPage() {
           setTagsText={editor.setTagsText}
           peopleText={editor.peopleText}
           setPeopleText={editor.setPeopleText}
-        />
-
-        <MediaPlacementSection
-          categories={editor.categories}
-          toggleCategory={editor.toggleCategory}
-          isPublic={editor.isPublic}
-          setIsPublic={editor.setIsPublic}
         />
 
         <MediaAppearancesSection

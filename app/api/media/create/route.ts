@@ -7,7 +7,7 @@ import {
   isRecord,
   noStoreJson,
 } from "@/app/api/_lib/common";
-import { getMediaLists, isCloudinarySecureUrl, sanitizeAppearances } from "@/app/api/_lib/media";
+import { getMediaLists, isCloudinarySecureUrl, parseNftMeta, sanitizeAppearances } from "@/app/api/_lib/media";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +39,11 @@ export async function POST(req: Request) {
   const embedUrl = (asNullableString(bodyUnknown.embedUrl) ?? "").trim();
 
   if (!title) return noStoreJson({ ok: false, error: "Title required" }, { status: 400 });
+  if (categories.length === 0) return noStoreJson({ ok: false, error: "Choose at least one category." }, { status: 400 });
+
+  if (categories.includes("nft") && type === "embed") {
+    return noStoreJson({ ok: false, error: "NFT items must use an uploaded image or video." }, { status: 400 });
+  }
 
   if (type === "embed") {
     if (!embedUrl) return noStoreJson({ ok: false, error: "embedUrl required" }, { status: 400 });
@@ -50,6 +55,11 @@ export async function POST(req: Request) {
     if (resourceType !== "image" && resourceType !== "video" && resourceType !== "auto") {
       return noStoreJson({ ok: false, error: "Invalid resourceType" }, { status: 400 });
     }
+  }
+
+  const nftParsed = parseNftMeta(bodyUnknown, categories.includes("nft"));
+  if (!nftParsed.ok) {
+    return noStoreJson({ ok: false, error: nftParsed.error }, { status: 400 });
   }
 
   const now = new Date();
@@ -66,6 +76,7 @@ export async function POST(req: Request) {
     people,
     isPublic,
     appearances,
+    nft: nftParsed.value,
     secureUrl: type === "embed" ? null : secureUrl,
     publicId: type === "embed" ? null : publicId,
     resourceType: type === "embed" ? null : resourceType,

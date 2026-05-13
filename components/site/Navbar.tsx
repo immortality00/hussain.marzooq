@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 
 const nav = [
   { href: "/", label: "Home" },
@@ -16,15 +17,16 @@ const nav = [
 ];
 
 export function Navbar() {
-  const [hidden, setHidden] = useState(false);
+  const [hiddenByModal, setHiddenByModal] = useState(false);
+  const pathname = usePathname();
 
   useEffect(() => {
     function onOpen() {
-      setHidden(true);
+      setHiddenByModal(true);
     }
 
     function onClose() {
-      setHidden(false);
+      setHiddenByModal(false);
     }
 
     window.addEventListener("hm_modal_open", onOpen);
@@ -36,36 +38,45 @@ export function Navbar() {
     };
   }, []);
 
+  const isVisible = useMemo(() => {
+    return !hiddenByModal || pathname === "/contact";
+  }, [hiddenByModal, pathname]);
+
   return (
     <header
       className={[
-        "sticky top-0 z-50 border-b bg-background/80 backdrop-blur transition-all duration-300",
-        hidden ? "pointer-events-none -translate-y-full opacity-0" : "translate-y-0 opacity-100",
+        "sticky top-0 z-50 border-b bg-background/68 backdrop-blur-xl transition-all duration-300",
+        isVisible ? "translate-y-0 opacity-100" : "pointer-events-none -translate-y-full opacity-0",
       ].join(" ")}
     >
-      <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4">
-        <Link href="/" className="font-semibold tracking-tight">
-          HM Visuals
-        </Link>
+      <div className="section-shell">
+        <div className="flex min-h-16 items-center justify-between gap-4">
+          <Link href="/" className="flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border text-xs tracking-[0.18em] text-muted-foreground">
+              HM
+            </span>
+            <span className="text-sm font-semibold tracking-[0.14em]">HM VISUALS</span>
+          </Link>
 
-        <nav className="hidden items-center gap-4 md:flex">
-          {nav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+          <nav className="hidden items-center gap-5 xl:flex">
+            {nav.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="text-sm text-muted-foreground hover:text-foreground"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
 
-        <Link
-          href="/contact"
-          className="rounded-full border px-3 py-1.5 text-sm hover:bg-accent transition-colors"
-        >
-          Book
-        </Link>
+          <Link
+            href="/contact"
+            className="rounded-full border px-4 py-2 text-sm hover:bg-accent"
+          >
+            Book
+          </Link>
+        </div>
       </div>
     </header>
   );

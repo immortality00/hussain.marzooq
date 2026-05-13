@@ -8,6 +8,7 @@ type SP = {
   success?: string;
   service?: string;
   category?: string;
+  context?: string;
 };
 
 export default async function ContactPage({
@@ -20,6 +21,7 @@ export default async function ContactPage({
   const success = sp?.success === "1";
   const initialService = typeof sp?.service === "string" ? sp.service : "";
   const initialCategory = typeof sp?.category === "string" ? sp.category : "";
+  const initialContextMessage = typeof sp?.context === "string" ? sp.context : "";
 
   const services = await getActiveServicesForContact();
 
@@ -41,6 +43,7 @@ export default async function ContactPage({
           services={services}
           initialService={initialService}
           initialCategory={initialCategory}
+          initialContextMessage={initialContextMessage}
         />
       </div>
     </main>

@@ -1,6 +1,5 @@
 import clientPromise from "@/lib/mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
-import { ObjectId } from "mongodb";
 import {
   asBooleanOrNull,
   asNullableString,
@@ -10,7 +9,7 @@ import {
   noStoreJson,
   parseObjectId,
 } from "@/app/api/_lib/common";
-import { sanitizeAppearances } from "@/app/api/_lib/media";
+import { parseNftMeta, sanitizeAppearances } from "@/app/api/_lib/media";
 
 export const dynamic = "force-dynamic";
 
@@ -40,6 +39,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     categories: asStringArray(doc.categories),
     people: asStringArray(doc.people),
     appearances: sanitizeAppearances(doc.appearances),
+    nft: doc.nft && typeof doc.nft === "object" ? doc.nft : null,
     isPublic: typeof doc.isPublic === "boolean" ? doc.isPublic : true,
     secureUrl: typeof doc.secureUrl === "string" ? doc.secureUrl : null,
     publicId: typeof doc.publicId === "string" ? doc.publicId : null,
@@ -79,11 +79,24 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const isPublic = asBooleanOrNull(bodyUnknown.isPublic);
   const appearances = sanitizeAppearances(bodyUnknown.appearances);
 
+  if (categories.length === 0) {
+    return noStoreJson({ ok: false, error: "Choose at least one category." }, { status: 400 });
+  }
+
   const incomingType = asNullableString(bodyUnknown.type);
   const incomingEmbedUrl = asNullableString(bodyUnknown.embedUrl);
   const incomingSecureUrl = asNullableString(bodyUnknown.secureUrl);
   const incomingPublicId = asNullableString(bodyUnknown.publicId);
   const incomingResourceType = asNullableString(bodyUnknown.resourceType);
+
+  if (categories.includes("nft") && incomingType === "embed") {
+    return noStoreJson({ ok: false, error: "NFT items must use an uploaded image or video." }, { status: 400 });
+  }
+
+  const nftParsed = parseNftMeta(bodyUnknown, categories.includes("nft"));
+  if (!nftParsed.ok) {
+    return noStoreJson({ ok: false, error: nftParsed.error }, { status: 400 });
+  }
 
   const set: Record<string, unknown> = {
     title,
@@ -95,6 +108,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     categories,
     people,
     appearances,
+    nft: nftParsed.value,
     updatedAt: new Date(),
   };
 

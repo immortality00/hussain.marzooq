@@ -12,6 +12,7 @@ export default function MediaAssetSection({
   setUploaded,
   embedUrl,
   setEmbedUrl,
+  allowEmbed = true,
 }: {
   mode: "upload" | "embed";
   setMode: (value: "upload" | "embed") => void;
@@ -19,6 +20,7 @@ export default function MediaAssetSection({
   setUploaded: (value: Uploaded | null) => void;
   embedUrl: string;
   setEmbedUrl: (value: string) => void;
+  allowEmbed?: boolean;
 }) {
   return (
     <section className="rounded-3xl border p-5">
@@ -30,13 +32,15 @@ export default function MediaAssetSection({
         >
           Upload file
         </button>
-        <button
-          type="button"
-          onClick={() => setMode("embed")}
-          className={`rounded-xl border px-4 py-2 text-sm ${mode === "embed" ? "bg-accent" : "hover:bg-accent"}`}
-        >
-          Embed URL
-        </button>
+        {allowEmbed ? (
+          <button
+            type="button"
+            onClick={() => setMode("embed")}
+            className={`rounded-xl border px-4 py-2 text-sm ${mode === "embed" ? "bg-accent" : "hover:bg-accent"}`}
+          >
+            Embed URL
+          </button>
+        ) : null}
       </div>
 
       {mode === "upload" ? (

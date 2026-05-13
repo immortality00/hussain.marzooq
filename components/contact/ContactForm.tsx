@@ -19,9 +19,15 @@ type Props = {
   services: ServiceItem[];
   initialService?: string;
   initialCategory?: string;
+  initialContextMessage?: string;
 };
 
-export function ContactForm({ services, initialService = "", initialCategory = "" }: Props) {
+export function ContactForm({
+  services,
+  initialService = "",
+  initialCategory = "",
+  initialContextMessage = "",
+}: Props) {
   const router = useRouter();
 
   const categories = useMemo(() => getServiceCategories(services), [services]);
@@ -32,6 +38,8 @@ export function ContactForm({ services, initialService = "", initialCategory = "
   );
 
   const normalizedInitialCategory = safeTrim(initialCategory);
+  const lockedContextMessage = safeTrim(initialContextMessage);
+
   const hasKnownInitialCategory = categories.some(
     (c) => normalize(c) === normalize(normalizedInitialCategory)
   );
@@ -146,7 +154,7 @@ export function ContactForm({ services, initialService = "", initialCategory = "
 
     setServiceMode("select");
     setSelectedServiceId(initialServiceMatch?.id ?? "");
-    setOtherService("");
+    setOtherService(!initialServiceMatch ? initialService : "");
 
     if (initialServiceMatch?.category) {
       setCategoryMode("select");
@@ -180,16 +188,20 @@ export function ContactForm({ services, initialService = "", initialCategory = "
 
     const n = safeTrim(name);
     const e = safeTrim(email);
-    const m = safeTrim(message);
+    const userMessage = safeTrim(message);
 
     if (!n) return setMsg("Name is required.");
     if (!e) return setMsg("Email is required.");
     if (!isValidEmail(e)) return setMsg("Email format is invalid.");
-    if (!m) return setMsg("Message is required.");
+    if (!userMessage) return setMsg("Message is required.");
 
     if (serviceMode === "other" && !safeTrim(otherService)) {
       return setMsg("Please specify the service you need.");
     }
+
+    const composedMessage = lockedContextMessage
+      ? `${lockedContextMessage}\n\nUser message:\n${userMessage}`
+      : userMessage;
 
     setLoading(true);
     try {
@@ -199,7 +211,7 @@ export function ContactForm({ services, initialService = "", initialCategory = "
         body: JSON.stringify({
           name: n,
           email: e,
-          message: m,
+          message: composedMessage,
           category: finalCategory,
           serviceId: finalServiceId,
           serviceName: finalServiceName,
@@ -264,7 +276,11 @@ export function ContactForm({ services, initialService = "", initialCategory = "
           categories={categories}
         />
 
-        <ContactMessageField message={message} setMessage={setMessage} />
+        <ContactMessageField
+          message={message}
+          setMessage={setMessage}
+          contextMessage={lockedContextMessage}
+        />
       </div>
 
       <div className="mt-5 flex items-center gap-3">

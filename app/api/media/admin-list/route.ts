@@ -45,6 +45,7 @@ export async function GET(req: Request) {
       categories: asStringArray(d.categories),
       people: asStringArray(d.people),
       appearances: sanitizeAppearances(d.appearances),
+      nft: d.nft && typeof d.nft === "object" ? d.nft : null,
       isPublic: typeof d.isPublic === "boolean" ? d.isPublic : true,
       secureUrl: secureUrl ?? null,
       publicId: publicId ?? null,

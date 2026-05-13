@@ -1,8 +1,6 @@
 import type { MediaItem } from "./types";
 import { validateEmbed } from "./utils";
 
-type BannerSetter = (value: { type: "ok" | "err"; text: string } | null) => void;
-
 export async function fetchMediaItem(id: string): Promise<MediaItem> {
   const res = await fetch(`/api/media/${encodeURIComponent(id)}`, { cache: "no-store" });
   const data = (await res.json().catch(() => null)) as { ok?: boolean; item?: MediaItem; error?: string };
@@ -29,7 +27,25 @@ export function buildMediaPayload(args: {
   appearances: unknown[];
   embedUrl: string;
   uploaded: { secureUrl: string; publicId: string; resourceType: string } | null;
+  nftPrice: string;
+  nftCurrency: string;
+  nftEditionType: string;
+  nftEditionsTotal: string;
+  nftEditionsRemaining: string;
+  nftOpenUntil: string;
+  nftStatus: string;
+  nftMarketplaceUrl: string;
 }) {
+  if (args.categories.length === 0) {
+    throw new Error("Choose a category first.");
+  }
+
+  const isNft = args.categories.includes("nft");
+
+  if (isNft && args.mode === "embed") {
+    throw new Error("NFT items must use an uploaded image or video.");
+  }
+
   const yearNum = args.year.trim() ? Number(args.year.trim()) : null;
   const yearValue = yearNum !== null && Number.isFinite(yearNum) ? yearNum : null;
 
@@ -44,6 +60,19 @@ export function buildMediaPayload(args: {
     people: args.people,
     isPublic: args.isPublic,
     appearances: args.appearances,
+    nft: isNft
+      ? {
+          price: args.nftPrice.trim() === "" ? null : Number(args.nftPrice),
+          currency: args.nftCurrency,
+          editionType: args.nftEditionType,
+          editionsTotal: args.nftEditionsTotal.trim() === "" ? null : Number(args.nftEditionsTotal),
+          editionsRemaining:
+            args.nftEditionsRemaining.trim() === "" ? null : Number(args.nftEditionsRemaining),
+          openUntil: args.nftOpenUntil.trim() || null,
+          status: args.nftStatus,
+          marketplaceUrl: args.nftMarketplaceUrl.trim() || null,
+        }
+      : null,
   };
 
   let payloadWithAsset: Record<string, unknown> | null = null;
@@ -63,7 +92,7 @@ export function buildMediaPayload(args: {
         resourceType: args.uploaded.resourceType,
       };
     } else if (!args.editingId) {
-      throw new Error("Upload a file first (or switch to Embed mode).");
+      throw new Error("Upload a file first.");
     }
   }
 

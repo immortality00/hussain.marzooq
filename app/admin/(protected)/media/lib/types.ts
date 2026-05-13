@@ -20,6 +20,21 @@ export type Appearance = {
   link: string;
 };
 
+export type CryptoCurrency = "ETH" | "SOL" | "XTZ" | "BTC";
+export type NftEditionType = "1/1" | "limited" | "open";
+export type NftStatus = "available" | "sold" | "coming-soon";
+
+export type NftMeta = {
+  price: number | null;
+  currency: CryptoCurrency;
+  editionType: NftEditionType;
+  editionsTotal: number | null;
+  editionsRemaining: number | null;
+  openUntil: string | null;
+  status: NftStatus;
+  marketplaceUrl: string | null;
+};
+
 export type MediaType = "image" | "video" | "embed";
 
 export type MediaItem = {
@@ -34,6 +49,7 @@ export type MediaItem = {
   categories: string[];
   people: string[];
   appearances: Appearance[];
+  nft: NftMeta | null;
   isPublic: boolean;
   secureUrl: string | null;
   publicId: string | null;
