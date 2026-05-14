@@ -81,6 +81,12 @@ export function editionSubline(item: PublicNftItem) {
   return "Unavailable, open edition ended";
 }
 
+export function getNftPublicHref(item: PublicNftItem) {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "";
+  const path = `/nft#nft-${item.id}`;
+  return siteUrl ? `${siteUrl}${path}` : path;
+}
+
 export function buildInquiryContext(item: PublicNftItem) {
   const priceText =
     item.nft.price !== null
@@ -96,11 +102,11 @@ export function buildInquiryContext(item: PublicNftItem) {
 
   return [
     "NFT inquiry",
-    `Item: ${item.title}`,
+    `NFT title: ${item.title}`,
+    `NFT link: ${getNftPublicHref(item)}`,
     `Price: ${priceText}`,
     `Edition: ${editionText}`,
     `Status: ${displayStatus(item)}`,
-    `Reference: /nft#nft-${item.id}`,
   ].join("\n");
 }
 
