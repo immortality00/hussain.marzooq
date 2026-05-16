@@ -1,43 +1,46 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import { useSearchParams } from "next/navigation";
+import { CldUploadWidget } from "next-cloudinary";
+
+type WidgetResult = { info?: unknown };
 
 type PersonItem = {
   id: string;
   name: string;
   slug: string;
-  headline: string | null;
   bio: string | null;
-  aliases: string[];
   avatarUrl: string | null;
-  coverUrl: string | null;
   isPublic: boolean;
-  createdAt: string | null;
-  updatedAt: string | null;
 };
 
-function toAliases(value: string) {
-  return value
-    .split(",")
-    .map((x) => x.trim())
-    .filter(Boolean);
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function getString(value: unknown) {
+  return typeof value === "string" ? value : "";
 }
 
 export default function PeopleAdminClient() {
+  const searchParams = useSearchParams();
+  const createPrefill = (searchParams.get("create") ?? "").trim();
+
   const [items, setItems] = useState<PersonItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
+  const [mode, setMode] = useState<"list" | "form">(createPrefill ? "form" : "list");
   const [editingId, setEditingId] = useState("");
   const [query, setQuery] = useState("");
 
-  const [name, setName] = useState("");
+  const [name, setName] = useState(createPrefill);
   const [slug, setSlug] = useState("");
-  const [headline, setHeadline] = useState("");
   const [bio, setBio] = useState("");
-  const [aliasesText, setAliasesText] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [coverUrl, setCoverUrl] = useState("");
   const [isPublic, setIsPublic] = useState(true);
 
   async function load() {
@@ -62,36 +65,48 @@ export default function PeopleAdminClient() {
     void load();
   }, []);
 
+  useEffect(() => {
+    if (!editingId && createPrefill) {
+      setName(createPrefill);
+      setMode("form");
+    }
+  }, [createPrefill, editingId]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return items;
     return items.filter((item) =>
-      `${item.name} ${item.slug} ${item.headline ?? ""} ${item.aliases.join(" ")}`.toLowerCase().includes(q)
+      `${item.name} ${item.slug} ${item.bio ?? ""}`.toLowerCase().includes(q)
     );
   }, [items, query]);
 
   function resetForm() {
     setEditingId("");
-    setName("");
+    setName(createPrefill);
     setSlug("");
-    setHeadline("");
     setBio("");
-    setAliasesText("");
     setAvatarUrl("");
-    setCoverUrl("");
     setIsPublic(true);
   }
 
-  function loadIntoForm(item: PersonItem) {
+  function openCreate() {
+    resetForm();
+    setMode("form");
+  }
+
+  function openEdit(item: PersonItem) {
     setEditingId(item.id);
     setName(item.name);
     setSlug(item.slug);
-    setHeadline(item.headline ?? "");
     setBio(item.bio ?? "");
-    setAliasesText(item.aliases.join(", "));
     setAvatarUrl(item.avatarUrl ?? "");
-    setCoverUrl(item.coverUrl ?? "");
     setIsPublic(item.isPublic);
+    setMode("form");
+  }
+
+  function backToList() {
+    resetForm();
+    setMode("list");
   }
 
   async function save() {
@@ -102,14 +117,17 @@ export default function PeopleAdminClient() {
       return;
     }
 
+    if (!avatarUrl.trim()) {
+      setBanner({ type: "err", text: "Avatar is required." });
+      return;
+    }
+
+    setSaving(true);
     const payload = {
       name: name.trim(),
       slug: slug.trim(),
-      headline: headline.trim(),
       bio: bio.trim(),
-      aliases: toAliases(aliasesText),
       avatarUrl: avatarUrl.trim(),
-      coverUrl: coverUrl.trim(),
       isPublic,
     };
 
@@ -123,14 +141,17 @@ export default function PeopleAdminClient() {
       const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
       if (!res.ok || !data?.ok) {
         setBanner({ type: "err", text: data?.error ?? "Save failed." });
+        setSaving(false);
         return;
       }
 
       setBanner({ type: "ok", text: editingId ? "✅ Person updated." : "✅ Person created." });
-      resetForm();
       await load();
+      backToList();
     } catch {
       setBanner({ type: "err", text: "Save failed." });
+    } finally {
+      setSaving(false);
     }
   }
 
@@ -147,36 +168,49 @@ export default function PeopleAdminClient() {
         return;
       }
 
-      if (editingId === id) resetForm();
       setItems((prev) => prev.filter((x) => x.id !== id));
       setBanner({ type: "ok", text: "✅ Person deleted." });
+
+      if (editingId === id) {
+        backToList();
+      }
     } catch {
       setBanner({ type: "err", text: "Delete failed." });
     }
   }
 
   return (
-    <div className="space-y-6">
+    <main className="mx-auto max-w-6xl px-6 py-10">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">People</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            Create public people profiles and connect them to media through tagged people names.
+            Create clean people profiles and link them from media using existing profiles only.
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={resetForm}
-          className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
-        >
-          New profile
-        </button>
+        {mode === "list" ? (
+          <button
+            type="button"
+            onClick={openCreate}
+            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+          >
+            New profile
+          </button>
+        ) : (
+          <button
+            type="button"
+            onClick={backToList}
+            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+          >
+            Back to list
+          </button>
+        )}
       </div>
 
       {banner ? (
         <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${
+          className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
             banner.type === "ok" ? "border-green-500/30 bg-green-500/10" : "border-red-500/30 bg-red-500/10"
           }`}
         >
@@ -184,94 +218,15 @@ export default function PeopleAdminClient() {
         </div>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[1.05fr_0.95fr]">
-        <section className="rounded-2xl border p-5">
-          <div className="text-sm font-medium">{editingId ? "Edit profile" : "New profile"}</div>
-
-          <div className="mt-5 grid gap-4">
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Name"
-              className="rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-
-            <input
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              placeholder="Slug (optional)"
-              className="rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-
-            <input
-              value={headline}
-              onChange={(e) => setHeadline(e.target.value)}
-              placeholder="Headline"
-              className="rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-
-            <textarea
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
-              placeholder="Bio"
-              className="min-h-32 rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-
-            <input
-              value={aliasesText}
-              onChange={(e) => setAliasesText(e.target.value)}
-              placeholder="Aliases, comma separated"
-              className="rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-
-            <input
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="Avatar URL"
-              className="rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-
-            <input
-              value={coverUrl}
-              onChange={(e) => setCoverUrl(e.target.value)}
-              placeholder="Cover URL"
-              className="rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
-              Public
-            </label>
-
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => void save()}
-                className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90"
-              >
-                {editingId ? "Update" : "Create"}
-              </button>
-
-              {editingId ? (
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
-                >
-                  Cancel
-                </button>
-              ) : null}
-            </div>
-          </div>
-        </section>
-
-        <section className="rounded-2xl border p-5">
-          <div className="flex items-center justify-between gap-3">
+      {mode === "list" ? (
+        <section className="mt-8 rounded-[2rem] border p-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm font-medium">Profiles</div>
+
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search people..."
+              placeholder="Search profiles..."
               className="w-full max-w-xs rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
           </div>
@@ -280,25 +235,28 @@ export default function PeopleAdminClient() {
             {loading ? (
               <div className="rounded-2xl border p-4 text-sm text-muted-foreground">Loading…</div>
             ) : filtered.length === 0 ? (
-              <div className="rounded-2xl border p-4 text-sm text-muted-foreground">No people profiles yet.</div>
+              <div className="rounded-2xl border p-4 text-sm text-muted-foreground">No profiles yet.</div>
             ) : (
               filtered.map((item) => (
-                <div key={item.id} className="rounded-2xl border p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
+                <article key={item.id} className="rounded-[2rem] border p-4">
+                  <div className="flex items-center gap-4">
+                    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border bg-muted">
+                      {item.avatarUrl ? (
+                        <Image src={item.avatarUrl} alt={item.name} fill className="object-cover" sizes="56px" />
+                      ) : null}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">{item.name}</div>
                       <div className="mt-1 text-xs text-muted-foreground">
                         /people/{item.slug} • {item.isPublic ? "Public" : "Private"}
                       </div>
-                      {item.headline ? (
-                        <div className="mt-2 line-clamp-2 text-sm text-muted-foreground">{item.headline}</div>
-                      ) : null}
                     </div>
 
                     <div className="flex gap-2">
                       <button
                         type="button"
-                        onClick={() => loadIntoForm(item)}
+                        onClick={() => openEdit(item)}
                         className="rounded-xl border px-3 py-2 text-sm hover:bg-accent"
                       >
                         Edit
@@ -312,22 +270,126 @@ export default function PeopleAdminClient() {
                       </button>
                     </div>
                   </div>
-
-                  {item.aliases.length ? (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {item.aliases.map((alias) => (
-                        <span key={`${item.id}-${alias}`} className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-                          {alias}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
+                </article>
               ))
             )}
           </div>
         </section>
-      </div>
-    </div>
+      ) : (
+        <section className="mt-8 mx-auto max-w-2xl rounded-[2rem] border p-5">
+          <div className="text-sm font-medium">{editingId ? "Edit person" : "Create person"}</div>
+
+          <div className="mt-5 space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Name</label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Person name"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Slug</label>
+              <input
+                value={slug}
+                onChange={(e) => setSlug(e.target.value)}
+                className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Avatar</label>
+
+              <div className="flex flex-wrap gap-2">
+                <CldUploadWidget
+                  signatureEndpoint="/api/sign-cloudinary-params"
+                  options={{
+                    folder: "hm_visuals/people",
+                    multiple: false,
+                    resourceType: "image",
+                    cropping: true,
+                    croppingAspectRatio: 1,
+                    showSkipCropButton: false,
+                  }}
+                  onSuccess={(result: unknown) => {
+                    const info = (result as WidgetResult)?.info;
+                    if (!isRecord(info)) return;
+                    const secureUrl = getString(info.secure_url);
+                    if (secureUrl) setAvatarUrl(secureUrl);
+                  }}
+                >
+                  {({ open }) => (
+                    <button
+                      type="button"
+                      onClick={() => open()}
+                      className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+                    >
+                      Upload & crop avatar
+                    </button>
+                  )}
+                </CldUploadWidget>
+
+                <button
+                  type="button"
+                  onClick={() => setAvatarUrl("")}
+                  className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+                >
+                  Clear
+                </button>
+              </div>
+
+              {avatarUrl ? (
+                <div className="flex justify-center pt-2">
+                  <div className="relative h-28 w-28 overflow-hidden rounded-full border bg-muted">
+                    <Image src={avatarUrl} alt="Avatar preview" fill className="object-cover" sizes="112px" />
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-2xl border p-4 text-sm text-muted-foreground">
+                  No avatar uploaded yet.
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Bio</label>
+              <textarea
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                className="min-h-32 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                placeholder="Optional"
+              />
+            </div>
+
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
+              Public
+            </label>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void save()}
+                className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:opacity-60"
+              >
+                {saving ? "Saving..." : editingId ? "Update" : "Create"}
+              </button>
+
+              <button
+                type="button"
+                onClick={backToList}
+                className="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+    </main>
   );
 }

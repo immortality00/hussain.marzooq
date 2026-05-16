@@ -13,7 +13,7 @@ export default function PeopleIndex({ items }: { items: PublicPersonIndexItem[] 
     if (!q) return items;
 
     return items.filter((item) => {
-      const text = `${item.name} ${item.headline ?? ""} ${item.bio ?? ""} ${item.aliases.join(" ")}`.toLowerCase();
+      const text = `${item.name} ${item.bio ?? ""}`.toLowerCase();
       return text.includes(q);
     });
   }, [items, query]);
@@ -24,7 +24,7 @@ export default function PeopleIndex({ items }: { items: PublicPersonIndexItem[] 
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search people, aliases, or headline..."
+          placeholder="Search people..."
           className="w-full rounded-2xl border bg-background px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-ring sm:max-w-md"
         />
 
@@ -38,63 +38,55 @@ export default function PeopleIndex({ items }: { items: PublicPersonIndexItem[] 
           No people match this search.
         </div>
       ) : (
-        <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((item) => {
-            const image = item.coverUrl || item.avatarUrl || item.featuredImage;
+        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filtered.map((item) => (
+            <article key={item.id} className="rounded-[1.75rem] border bg-background/60 p-4">
+              <div className="flex flex-col items-center text-center">
+                <div className="relative h-20 w-20 overflow-hidden rounded-full border bg-muted">
+                  {item.avatarUrl || item.featuredImage ? (
+                    <Image
+                      src={item.avatarUrl || item.featuredImage || ""}
+                      alt={item.name}
+                      fill
+                      className="object-cover"
+                      sizes="80px"
+                    />
+                  ) : null}
+                </div>
 
-            return (
-              <article key={item.id} className="overflow-hidden rounded-[2rem] border bg-background/60">
-                <Link href={`/people/${item.slug}`} className="block">
-                  <div className="relative h-72 overflow-hidden bg-muted">
-                    {image ? (
-                      <Image
-                        src={image}
-                        alt={item.name}
-                        fill
-                        className="object-cover transition-transform duration-700 hover:scale-[1.03]"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-linear-to-br from-muted to-background" />
-                    )}
+                <h2 className="mt-3 text-lg font-semibold tracking-tight">{item.name}</h2>
 
-                    <div className="absolute inset-0 bg-linear-to-t from-black/72 via-black/8 to-transparent" />
+                {item.bio ? (
+                  <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">{item.bio}</p>
+                ) : null}
 
-                    <div className="absolute inset-x-0 bottom-0 p-5">
-                      <div className="text-2xl font-semibold tracking-tight text-white">{item.name}</div>
-                      {item.headline ? (
-                        <div className="mt-2 line-clamp-2 text-sm text-white/80">{item.headline}</div>
-                      ) : null}
+                <div className="mt-4 flex w-full gap-2">
+                  <div className="min-w-0 flex-1 rounded-2xl border px-3 py-2 text-center">
+                    <div className="text-base font-semibold">{item.photoCount}</div>
+                    <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                      photos
                     </div>
                   </div>
-                </Link>
 
-                <div className="p-5">
-                  {item.bio ? (
-                    <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">{item.bio}</p>
-                  ) : null}
-
-                  <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                    <span className="rounded-full border px-3 py-1">{item.mediaCount} linked media</span>
-                    {item.aliases.slice(0, 3).map((alias) => (
-                      <span key={`${item.id}-${alias}`} className="rounded-full border px-3 py-1">
-                        {alias}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="mt-5">
-                    <Link
-                      href={`/people/${item.slug}`}
-                      className="inline-flex rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
-                    >
-                      Open profile
-                    </Link>
+                  <div className="min-w-0 flex-1 rounded-2xl border px-3 py-2 text-center">
+                    <div className="text-base font-semibold">{item.videoCount}</div>
+                    <div className="mt-1 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
+                      videos
+                    </div>
                   </div>
                 </div>
-              </article>
-            );
-          })}
+
+                <div className="mt-4 w-full">
+                  <Link
+                    href={`/people/${item.slug}`}
+                    className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+                  >
+                    Open profile
+                  </Link>
+                </div>
+              </div>
+            </article>
+          ))}
         </section>
       )}
     </div>

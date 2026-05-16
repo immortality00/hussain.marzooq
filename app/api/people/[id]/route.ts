@@ -1,6 +1,12 @@
 import clientPromise from "@/lib/mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
-import { asBooleanOrNull, asNullableString, asStringArray, isRecord, noStoreJson, parseObjectId } from "@/app/api/_lib/common";
+import {
+  asBooleanOrNull,
+  asNullableString,
+  isRecord,
+  noStoreJson,
+  parseObjectId,
+} from "@/app/api/_lib/common";
 
 export const dynamic = "force-dynamic";
 
@@ -49,11 +55,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       id: String(doc._id),
       name: typeof doc.name === "string" ? doc.name : "",
       slug: typeof doc.slug === "string" ? doc.slug : "",
-      headline: typeof doc.headline === "string" ? doc.headline : null,
       bio: typeof doc.bio === "string" ? doc.bio : null,
-      aliases: Array.isArray(doc.aliases) ? doc.aliases.filter((x): x is string => typeof x === "string") : [],
       avatarUrl: typeof doc.avatarUrl === "string" ? doc.avatarUrl : null,
-      coverUrl: typeof doc.coverUrl === "string" ? doc.coverUrl : null,
       isPublic: typeof doc.isPublic === "boolean" ? doc.isPublic : true,
     },
   });
@@ -72,37 +75,26 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   const name = (asNullableString(body.name) ?? "").trim().slice(0, 120);
   const slugInput = (asNullableString(body.slug) ?? "").trim();
-  const headline = (asNullableString(body.headline) ?? "").trim().slice(0, 180);
   const bio = (asNullableString(body.bio) ?? "").trim().slice(0, 4000);
-  const aliases = asStringArray(body.aliases, 30);
   const avatarUrl = (asNullableString(body.avatarUrl) ?? "").trim().slice(0, 500);
-  const coverUrl = (asNullableString(body.coverUrl) ?? "").trim().slice(0, 500);
   const isPublic = asBooleanOrNull(body.isPublic) ?? true;
 
-  if (!name) {
-    return noStoreJson({ ok: false, error: "Name is required." }, { status: 400 });
-  }
+  if (!name) return noStoreJson({ ok: false, error: "Name is required." }, { status: 400 });
+  if (!avatarUrl) return noStoreJson({ ok: false, error: "Avatar is required." }, { status: 400 });
 
-  const baseSlug = slugify(slugInput || name);
-  if (!baseSlug) {
-    return noStoreJson({ ok: false, error: "Valid slug is required." }, { status: 400 });
-  }
-
-  const slug = await ensureUniqueSlug(baseSlug, id);
+  const slug = await ensureUniqueSlug(slugify(slugInput || name), id);
 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
+
   const result = await db.collection("people_profiles").updateOne(
     { _id: oid },
     {
       $set: {
         name,
         slug,
-        headline: headline || null,
         bio: bio || null,
-        aliases,
-        avatarUrl: avatarUrl || null,
-        coverUrl: coverUrl || null,
+        avatarUrl,
         isPublic,
         updatedAt: new Date(),
       },

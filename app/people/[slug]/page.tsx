@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { StickyCta } from "@/components/site/StickyCta";
@@ -19,47 +20,47 @@ export default async function PersonDetailPage({
   return (
     <>
       <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
-        <section className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
-          <div>
-            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">{person.name}</h1>
-
-            {person.headline ? (
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-                {person.headline}
-              </p>
-            ) : null}
-
-            {person.bio ? (
-              <div className="mt-6 max-w-3xl whitespace-pre-wrap text-sm leading-7 text-muted-foreground">
-                {person.bio}
-              </div>
-            ) : null}
-          </div>
-
-          <div className="rounded-[2rem] border bg-background/60 p-6">
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Profile
-            </div>
-
-            <div className="mt-4 space-y-3 text-sm text-muted-foreground">
-              <div>{person.mediaCount} linked public media</div>
-              {person.aliases.length ? <div>Aliases: {person.aliases.join(", ")}</div> : null}
+        <section className="mx-auto max-w-3xl text-center">
+          <div className="flex justify-center">
+            <div className="relative h-28 w-28 overflow-hidden rounded-full border bg-muted sm:h-36 sm:w-36">
+              {person.avatarUrl ? (
+                <Image
+                  src={person.avatarUrl}
+                  alt={person.name}
+                  fill
+                  className="object-cover"
+                  sizes="144px"
+                  priority
+                />
+              ) : null}
             </div>
           </div>
+
+          <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl">{person.name}</h1>
+
+          {person.bio ? (
+            <div className="mt-5 whitespace-pre-wrap text-sm leading-7 text-muted-foreground sm:text-base">
+              {person.bio}
+            </div>
+          ) : null}
         </section>
 
         {person.mediaItems.length === 0 ? (
-          <div className="mt-10 rounded-[2rem] border p-8 text-sm text-muted-foreground">
-            No public media linked to this profile yet.
+          <div className="mt-12 rounded-[2rem] border p-8 text-sm text-muted-foreground">
+            No public work linked to this profile yet.
           </div>
         ) : (
-          <MediaGrid items={person.mediaItems} />
+          <div className="mt-12">
+            <MediaGrid items={person.mediaItems} />
+          </div>
         )}
       </main>
 
       <StickyCta
-        title={`Interested in work connected to ${person.name}?`}
-        description="Use contact for bookings, collaborations, or appearance-based inquiries."
+        title="Inspired by this style of work?"
+        description="Book a portrait, fashion, or people-focused shoot."
+        buttonLabel="Book a shoot"
+        href={`/contact?service=Portrait%20Inquiry&category=photography&context=${encodeURIComponent(`Inquiry source: /people/${person.slug}\nRelated profile: ${person.name}`)}`}
       />
     </>
   );
