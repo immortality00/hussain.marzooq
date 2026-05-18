@@ -1,3 +1,4 @@
+import { v2 as cloudinary } from "cloudinary";
 import clientPromise from "@/lib/mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import {
@@ -12,6 +13,10 @@ import {
 import { parseNftMeta, sanitizeAppearances } from "@/app/api/_lib/media";
 
 export const dynamic = "force-dynamic";
+
+type PrivateGalleryRecord = {
+  mediaIds?: string[];
+};
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const deny = await requireAdminOr401();
@@ -61,7 +66,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (!oid) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
 
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
-  if (!isRecord(bodyUnknown)) return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
+  if (!isRecord(bodyUnknown)) {
+    return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
+  }
 
   const title = (asNullableString(bodyUnknown.title) ?? "").trim().slice(0, 160);
   if (!title) return noStoreJson({ ok: false, error: "Title required" }, { status: 400 });
@@ -90,7 +97,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const incomingResourceType = asNullableString(bodyUnknown.resourceType);
 
   if (categories.includes("nft") && incomingType === "embed") {
-    return noStoreJson({ ok: false, error: "NFT items must use an uploaded image or video." }, { status: 400 });
+    return noStoreJson(
+      { ok: false, error: "NFT items must use an uploaded image or video." },
+      { status: 400 }
+    );
   }
 
   const nftParsed = parseNftMeta(bodyUnknown, categories.includes("nft"));
@@ -162,8 +172,48 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   const client = await clientPromise;
   const db = client.db("hm_visuals");
 
-  const result = await db.collection("media").deleteOne({ _id: oid });
-  if (!result.deletedCount) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  const existing = await db.collection("media").findOne({ _id: oid });
+  if (!existing) {
+    return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  }
+
+  const publicId = typeof existing.publicId === "string" ? existing.publicId : "";
+  const resourceType =
+    typeof existing.resourceType === "string" && existing.resourceType
+      ? existing.resourceType
+      : typeof existing.type === "string" && existing.type === "video"
+        ? "video"
+        : "image";
+
+  if (publicId) {
+    cloudinary.config({
+      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+      api_key: process.env.CLOUDINARY_API_KEY,
+      api_secret: process.env.CLOUDINARY_API_SECRET,
+      secure: true,
+    });
+
+    try {
+      await cloudinary.uploader.destroy(publicId, {
+        resource_type: resourceType,
+        invalidate: true,
+      });
+    } catch {
+      return noStoreJson(
+        {
+          ok: false,
+          error: "Cloudinary delete failed. Media was not removed from the database.",
+        },
+        { status: 500 }
+      );
+    }
+  }
+
+  await db.collection("media").deleteOne({ _id: oid });
+
+  await db
+    .collection<PrivateGalleryRecord>("private_galleries")
+    .updateMany({}, { $pull: { mediaIds: String(oid) } });
 
   return noStoreJson({ ok: true });
 }
