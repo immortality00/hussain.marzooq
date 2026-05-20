@@ -13,6 +13,7 @@ const nav = [
   { href: "/dance", label: "Dance" },
   { href: "/web-dev", label: "Web Dev" },
   { href: "/people", label: "People" },
+  { href: "/testimonials", label: "Testimonials" },
   { href: "/blog", label: "Blog" },
 ];
 
@@ -42,6 +43,8 @@ export function Navbar() {
     return !hiddenByModal || pathname === "/contact";
   }, [hiddenByModal, pathname]);
 
+  const normalizedPath = useMemo(() => pathname.replace(/\/+$/, "") || "/", [pathname]);
+
   return (
     <header
       className={[
@@ -59,15 +62,27 @@ export function Navbar() {
           </Link>
 
           <nav className="hidden items-center gap-5 xl:flex">
-            {nav.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="text-sm text-muted-foreground hover:text-foreground"
-              >
-                {item.label}
-              </Link>
-            ))}
+            {nav.map((item) => {
+              const isActive =
+                item.href === "/"
+                  ? normalizedPath === "/"
+                  : normalizedPath === item.href || normalizedPath.startsWith(`${item.href}/`);
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={[
+                    "rounded-full px-3 py-1.5 text-sm transition-colors",
+                    isActive
+                      ? "border border-foreground/15 bg-foreground/8 text-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  ].join(" ")}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
           </nav>
 
           <Link
