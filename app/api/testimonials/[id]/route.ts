@@ -13,8 +13,7 @@ import {
 export const dynamic = "force-dynamic";
 
 function normalizeRating(value: number | null) {
-  if (value === null) return null;
-  if (!Number.isFinite(value)) return null;
+  if (value === null || !Number.isFinite(value)) return null;
   const rounded = Math.round(value);
   if (rounded < 1 || rounded > 5) return null;
   return rounded;
@@ -39,14 +38,16 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     item: {
       id: String(doc._id),
       name: typeof doc.name === "string" ? doc.name : "",
+      email: typeof doc.email === "string" ? doc.email : null,
       about: typeof doc.about === "string" ? doc.about : null,
+      location: typeof doc.location === "string" ? doc.location : null,
       review: typeof doc.review === "string" ? doc.review : "",
       rating:
         typeof doc.rating === "number" && doc.rating >= 1 && doc.rating <= 5
           ? doc.rating
-          : 5,
+          : 0,
+      profilePhotoUrl: typeof doc.profilePhotoUrl === "string" ? doc.profilePhotoUrl : null,
       photoUrls: asStringArray(doc.photoUrls, 12),
-      featured: typeof doc.featured === "boolean" ? doc.featured : false,
       isApproved: typeof doc.isApproved === "boolean" ? doc.isApproved : false,
       sortOrder: typeof doc.sortOrder === "number" ? doc.sortOrder : 100,
     },
@@ -67,22 +68,19 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }
 
   const name = (asNullableString(body.name) ?? "").trim().slice(0, 120);
+  const email = (asNullableString(body.email) ?? "").trim().slice(0, 200);
   const about = (asNullableString(body.about) ?? "").trim().slice(0, 120);
+  const location = (asNullableString(body.location) ?? "").trim().slice(0, 120);
   const review = (asNullableString(body.review) ?? "").trim().slice(0, 3000);
+  const rating = normalizeRating(asNumberOrNull(body.rating));
+  const profilePhotoUrl = (asNullableString(body.profilePhotoUrl) ?? "").trim().slice(0, 500);
   const photoUrls = asStringArray(body.photoUrls, 12);
-  const featured = asBooleanOrNull(body.featured) ?? false;
   const isApproved = asBooleanOrNull(body.isApproved) ?? true;
   const sortOrder = asNumberOrNull(body.sortOrder) ?? 100;
-  const rating = normalizeRating(asNumberOrNull(body.rating));
 
-  if (!name) {
-    return noStoreJson({ ok: false, error: "Name is required." }, { status: 400 });
-  }
-
-  if (!review) {
-    return noStoreJson({ ok: false, error: "Review is required." }, { status: 400 });
-  }
-
+  if (!name) return noStoreJson({ ok: false, error: "Name is required." }, { status: 400 });
+  if (!email) return noStoreJson({ ok: false, error: "Email is required." }, { status: 400 });
+  if (!review) return noStoreJson({ ok: false, error: "Review is required." }, { status: 400 });
   if (rating === null) {
     return noStoreJson({ ok: false, error: "Rating must be between 1 and 5." }, { status: 400 });
   }
@@ -95,11 +93,13 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     {
       $set: {
         name,
+        email,
         about: about || null,
+        location: location || null,
         review,
         rating,
+        profilePhotoUrl: profilePhotoUrl || null,
         photoUrls,
-        featured,
         isApproved,
         sortOrder,
         updatedAt: new Date(),

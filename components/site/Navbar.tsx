@@ -73,13 +73,17 @@ export function Navbar() {
                   key={item.href}
                   href={item.href}
                   className={[
-                    "rounded-full px-3 py-1.5 text-sm transition-colors",
-                    isActive
-                      ? "border border-foreground/15 bg-foreground/8 text-foreground"
-                      : "text-muted-foreground hover:text-foreground",
+                    "relative px-1 py-1.5 text-sm transition-colors",
+                    isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                   ].join(" ")}
                 >
                   {item.label}
+                  <span
+                    className={[
+                      "absolute inset-x-0 -bottom-[1px] mx-auto h-px w-0 bg-foreground transition-all duration-300",
+                      isActive ? "w-full" : "group-hover:w-full",
+                    ].join(" ")}
+                  />
                 </Link>
               );
             })}
