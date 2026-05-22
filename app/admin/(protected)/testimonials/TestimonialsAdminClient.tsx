@@ -15,7 +15,11 @@ type TestimonialItem = {
   photoUrls: string[];
   isApproved: boolean;
   sortOrder: number;
+  createdAt: string | null;
+  updatedAt: string | null;
 };
+
+type Banner = { type: "ok" | "err"; text: string } | null;
 
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
@@ -23,9 +27,27 @@ function getInitials(name: string) {
   return parts.map((part) => part.charAt(0).toUpperCase()).join("");
 }
 
+function renderStars(rating: number) {
+  return Array.from({ length: 5 }, (_, index) => (index < rating ? "★" : "☆")).join("");
+}
+
+function formatDate(value: string | null) {
+  if (!value) return "Unknown date";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Unknown date";
+  return new Intl.DateTimeFormat("en", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(date);
+}
+
+function identityLine(item: TestimonialItem) {
+  return [item.about, item.location].filter(Boolean).join(" • ") || "Client";
+}
+
 function Avatar({ name, profilePhotoUrl }: { name: string; profilePhotoUrl: string | null }) {
   return (
-    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full bg-muted/55">
+    <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full bg-muted/55 ring-1 ring-border/60">
       {profilePhotoUrl ? (
         <Image src={profilePhotoUrl} alt={name} fill className="object-cover" sizes="56px" />
       ) : (
@@ -37,16 +59,183 @@ function Avatar({ name, profilePhotoUrl }: { name: string; profilePhotoUrl: stri
   );
 }
 
+function StatusPill({ approved }: { approved: boolean }) {
+  return (
+    <span
+      className={`inline-flex rounded-full px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] ring-1 ${
+        approved
+          ? "bg-green-500/10 text-green-700 ring-green-500/20 dark:text-green-300"
+          : "bg-amber-500/10 text-amber-700 ring-amber-500/20 dark:text-amber-300"
+      }`}
+    >
+      {approved ? "Approved" : "Pending"}
+    </span>
+  );
+}
+
+function ReviewPhotos({ item }: { item: TestimonialItem }) {
+  if (item.photoUrls.length === 0) {
+    return (
+      <div className="rounded-[1.4rem] border border-dashed border-border/70 p-5 text-sm text-muted-foreground">
+        No extra photos attached to this review.
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+      {item.photoUrls.map((url, index) => (
+        <div
+          key={url}
+          className="relative aspect-[4/5] overflow-hidden rounded-[1.1rem] bg-muted/50"
+        >
+          <Image
+            src={url}
+            alt={`${item.name} submitted photo ${index + 1}`}
+            fill
+            className="object-cover"
+            sizes="260px"
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function InspectModal({
+  item,
+  approving,
+  deleting,
+  onApprove,
+  onDelete,
+  onClose,
+}: {
+  item: TestimonialItem;
+  approving: boolean;
+  deleting: boolean;
+  onApprove: (id: string, value: boolean) => void;
+  onDelete: (id: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 bg-black/72 p-4 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="mx-auto mt-6 w-full max-w-6xl overflow-hidden rounded-[2rem] bg-background shadow-2xl ring-1 ring-white/10"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 p-5">
+          <div>
+            <h2 className="text-2xl font-semibold tracking-[-0.04em]">{item.name}</h2>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              disabled={approving}
+              onClick={() => onApprove(item.id, !item.isApproved)}
+              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:opacity-60"
+            >
+              {item.isApproved ? "Move to pending" : "Approve"}
+            </button>
+
+            <button
+              type="button"
+              disabled={deleting}
+              onClick={() => onDelete(item.id)}
+              className="rounded-xl border border-red-500/30 px-4 py-2 text-sm text-red-600 hover:bg-red-500/10 disabled:opacity-60 dark:text-red-300"
+            >
+              Delete
+            </button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-xl border border-border/60 px-4 py-2 text-sm hover:bg-accent"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+
+        <div className="max-h-[82vh] overflow-y-auto p-5 sm:p-6">
+          <div className="grid gap-6 lg:grid-cols-[0.84fr_1.16fr]">
+            <div className="space-y-5">
+              <section className="rounded-[1.6rem] border border-border/60 p-5">
+                <div className="flex items-start gap-4">
+                  <Avatar name={item.name} profilePhotoUrl={item.profilePhotoUrl} />
+
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="text-lg font-semibold tracking-[-0.02em]">{item.name}</div>
+                      <StatusPill approved={item.isApproved} />
+                    </div>
+
+                    <div className="mt-1 text-sm text-muted-foreground">{identityLine(item)}</div>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      {item.email ?? "No email"}
+                    </div>
+                    <div className="mt-3 text-xl text-amber-400">{renderStars(item.rating)}</div>
+                  </div>
+                </div>
+              </section>
+
+              <section className="rounded-[1.6rem] border border-border/60 p-5">
+                <dl className="space-y-3 text-sm">
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Created</dt>
+                    <dd className="text-right">{formatDate(item.createdAt)}</dd>
+                  </div>
+
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Updated</dt>
+                    <dd className="text-right">{formatDate(item.updatedAt)}</dd>
+                  </div>
+
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Sort order</dt>
+                    <dd>{item.sortOrder}</dd>
+                  </div>
+
+                  <div className="flex justify-between gap-4">
+                    <dt className="text-muted-foreground">Attached photos</dt>
+                    <dd>{item.photoUrls.length}</dd>
+                  </div>
+                </dl>
+              </section>
+            </div>
+
+            <div className="space-y-5">
+              <section className="rounded-[1.6rem] border border-border/60 bg-muted/20 p-5">
+                <blockquote className="whitespace-pre-wrap text-2xl leading-10 tracking-[-0.04em] text-foreground">
+                  “{item.review}”
+                </blockquote>
+              </section>
+
+              <section>
+                <ReviewPhotos item={item} />
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function TestimonialsAdminClient() {
   const [items, setItems] = useState<TestimonialItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [banner, setBanner] = useState<Banner>(null);
   const [search, setSearch] = useState("");
+  const [status, setStatus] = useState<"all" | "pending" | "approved">("all");
   const [active, setActive] = useState<TestimonialItem | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
     setBanner(null);
+
     try {
       const res = await fetch("/api/testimonials", { cache: "no-store" });
       const data = (await res.json().catch(() => null)) as {
@@ -72,21 +261,43 @@ export default function TestimonialsAdminClient() {
     void load();
   }, []);
 
+  const stats = useMemo(() => {
+    const approved = items.filter((item) => item.isApproved).length;
+    const pending = items.length - approved;
+    const withPhotos = items.filter((item) => item.photoUrls.length > 0).length;
+    const locations = new Set(items.map((item) => item.location?.trim()).filter(Boolean)).size;
+
+    return { approved, pending, withPhotos, locations };
+  }, [items]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter((item) =>
-      `${item.name} ${item.email ?? ""} ${item.about ?? ""} ${item.location ?? ""} ${item.review}`
+
+    return items.filter((item) => {
+      if (status === "approved" && !item.isApproved) return false;
+      if (status === "pending" && item.isApproved) return false;
+      if (!q) return true;
+
+      return `${item.name} ${item.email ?? ""} ${item.about ?? ""} ${item.location ?? ""} ${
+        item.review
+      }`
         .toLowerCase()
-        .includes(q)
-    );
-  }, [items, search]);
+        .includes(q);
+    });
+  }, [items, search, status]);
+
+  function updateItem(id: string, updates: Partial<TestimonialItem>) {
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)));
+    setActive((prev) => (prev?.id === id ? { ...prev, ...updates } : prev));
+  }
 
   async function remove(id: string) {
-    const ok = confirm("Delete this review?");
+    const ok = confirm("Delete this submitted review permanently?");
     if (!ok) return;
 
     setBanner(null);
+    setDeletingId(id);
+
     try {
       const res = await fetch(`/api/testimonials/${encodeURIComponent(id)}`, { method: "DELETE" });
       const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
@@ -99,60 +310,88 @@ export default function TestimonialsAdminClient() {
       setItems((prev) => prev.filter((item) => item.id !== id));
       setBanner({ type: "ok", text: "✅ Review deleted." });
 
-      if (active?.id === id) setActive(null);
+      if (active?.id === id) {
+        setActive(null);
+      }
     } catch {
       setBanner({ type: "err", text: "Delete failed." });
+    } finally {
+      setDeletingId(null);
     }
   }
 
-  async function quickApprove(id: string, value: boolean) {
-    const current = items.find((item) => item.id === id);
-    if (!current) return;
+  async function setApproval(id: string, value: boolean) {
+    setBanner(null);
+    setUpdatingId(id);
 
     try {
       const res = await fetch(`/api/testimonials/${encodeURIComponent(id)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: current.name,
-          email: current.email ?? "",
-          about: current.about ?? "",
-          location: current.location ?? "",
-          review: current.review,
-          rating: current.rating,
-          profilePhotoUrl: current.profilePhotoUrl ?? "",
-          photoUrls: current.photoUrls,
-          isApproved: value,
-          sortOrder: current.sortOrder,
-        }),
+        body: JSON.stringify({ isApproved: value }),
       });
 
       const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
+
       if (!res.ok || !data?.ok) {
         setBanner({ type: "err", text: data?.error ?? "Update failed." });
         return;
       }
 
-      setItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, isApproved: value } : item))
-      );
+      updateItem(id, { isApproved: value, updatedAt: new Date().toISOString() });
+
+      setBanner({
+        type: "ok",
+        text: value ? "✅ Review approved." : "Review moved back to pending.",
+      });
     } catch {
       setBanner({ type: "err", text: "Update failed." });
+    } finally {
+      setUpdatingId(null);
     }
   }
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Testimonials</h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Inspect, approve, or delete submitted reviews.
-        </p>
+    <main className="mx-auto max-w-7xl px-6 pb-10 pt-4">
+      <div className="grid gap-6 lg:grid-cols-[1fr_420px] lg:items-start">
+        <div>
+          <h1 className="text-4xl font-semibold tracking-[-0.06em]">Testimonials</h1>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
+          <div className="rounded-[1.4rem] border border-border/60 p-4">
+            <div className="text-2xl font-semibold tracking-[-0.05em]">{stats.pending}</div>
+            <div className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              Pending
+            </div>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-border/60 p-4">
+            <div className="text-2xl font-semibold tracking-[-0.05em]">{stats.approved}</div>
+            <div className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              Approved
+            </div>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-border/60 p-4">
+            <div className="text-2xl font-semibold tracking-[-0.05em]">{stats.locations}</div>
+            <div className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              Locations
+            </div>
+          </div>
+
+          <div className="rounded-[1.4rem] border border-border/60 p-4">
+            <div className="text-2xl font-semibold tracking-[-0.05em]">{stats.withPhotos}</div>
+            <div className="mt-1 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+              With photos
+            </div>
+          </div>
+        </div>
       </div>
 
       {banner ? (
         <div
-          className={`mt-4 rounded-2xl px-4 py-3 text-sm ring-1 ${
+          className={`mt-5 rounded-2xl px-4 py-3 text-sm ring-1 ${
             banner.type === "ok"
               ? "bg-green-500/10 text-foreground ring-green-500/20"
               : "bg-red-500/10 text-foreground ring-red-500/20"
@@ -162,15 +401,30 @@ export default function TestimonialsAdminClient() {
         </div>
       ) : null}
 
-      <section className="mt-8 rounded-[2rem] border border-border/50 p-5">
+      <section className="mt-6 rounded-[2rem] border border-border/50 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="text-sm font-medium">Reviews</div>
+          <div className="flex flex-wrap gap-2">
+            {(["all", "pending", "approved"] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setStatus(value)}
+                className={`rounded-full border px-4 py-2 text-sm capitalize ${
+                  status === value
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border/60 hover:bg-accent"
+                }`}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
 
           <input
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search reviews..."
-            className="w-full max-w-xs rounded-xl border border-border/60 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search by name, email, review, location..."
+            className="w-full max-w-sm rounded-xl border border-border/60 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
 
@@ -181,50 +435,80 @@ export default function TestimonialsAdminClient() {
             </div>
           ) : filtered.length === 0 ? (
             <div className="rounded-2xl border border-border/50 p-4 text-sm text-muted-foreground">
-              No reviews yet.
+              No reviews match this view.
             </div>
           ) : (
             filtered.map((item) => (
-              <article key={item.id} className="rounded-[1.5rem] bg-background/78 p-4 ring-1 ring-border/45">
+              <article
+                key={item.id}
+                className="rounded-[1.6rem] bg-background/78 p-4 ring-1 ring-border/45"
+              >
                 <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
-                  <button type="button" onClick={() => setActive(item)} className="min-w-0 text-left">
+                  <button
+                    type="button"
+                    onClick={() => setActive(item)}
+                    className="min-w-0 text-left"
+                  >
                     <div className="flex gap-4">
                       <Avatar name={item.name} profilePhotoUrl={item.profilePhotoUrl} />
 
                       <div className="min-w-0 flex-1">
-                        <div className="text-sm font-medium">{item.name}</div>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {[item.about, item.location].filter(Boolean).join(" • ") || "Client"}
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="text-sm font-medium">{item.name}</div>
+                          <StatusPill approved={item.isApproved} />
                         </div>
+
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {identityLine(item)}
+                        </div>
+
                         <div className="mt-1 text-xs text-muted-foreground">
                           {item.email || "No email"}
                         </div>
+
                         <div className="mt-2 text-sm text-amber-400">
-                          {Array.from({ length: item.rating }, () => "★").join("")}
+                          {renderStars(item.rating)}
                         </div>
+
                         <div className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">
                           {item.review}
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                          <span>
+                            {item.photoUrls.length} photo
+                            {item.photoUrls.length === 1 ? "" : "s"}
+                          </span>
+                          <span>·</span>
+                          <span>Submitted {formatDate(item.createdAt)}</span>
                         </div>
                       </div>
                     </div>
                   </button>
 
-                  <div className="flex min-w-[180px] flex-col gap-3 lg:items-end">
-                    <div className="w-full rounded-[1.1rem] border border-border/60 p-3 lg:w-[180px]">
-                      <label className="flex items-center justify-between gap-3 text-sm">
-                        <span>Approved</span>
-                        <input
-                          type="checkbox"
-                          checked={item.isApproved}
-                          onChange={(e) => void quickApprove(item.id, e.target.checked)}
-                        />
-                      </label>
-                    </div>
+                  <div className="flex min-w-[220px] flex-wrap gap-2 lg:justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setActive(item)}
+                      className="rounded-xl border border-border/60 px-3 py-2 text-sm hover:bg-accent"
+                    >
+                      Inspect
+                    </button>
 
                     <button
                       type="button"
+                      disabled={updatingId === item.id}
+                      onClick={() => void setApproval(item.id, !item.isApproved)}
+                      className="rounded-xl bg-foreground px-3 py-2 text-sm text-background hover:opacity-90 disabled:opacity-60"
+                    >
+                      {item.isApproved ? "Unapprove" : "Approve"}
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={deletingId === item.id}
                       onClick={() => void remove(item.id)}
-                      className="rounded-xl border border-border/60 px-3 py-2 text-sm hover:bg-red-500/10"
+                      className="rounded-xl border border-red-500/30 px-3 py-2 text-sm text-red-600 hover:bg-red-500/10 disabled:opacity-60 dark:text-red-300"
                     >
                       Delete
                     </button>
@@ -237,76 +521,14 @@ export default function TestimonialsAdminClient() {
       </section>
 
       {active ? (
-        <div className="fixed inset-0 z-50 bg-black/72 p-4" onClick={() => setActive(null)}>
-          <div
-            className="mx-auto mt-6 w-full max-w-5xl overflow-hidden rounded-[2rem] bg-background shadow-2xl ring-1 ring-white/10"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-end border-b border-border/50 p-5">
-              <button
-                type="button"
-                onClick={() => setActive(null)}
-                className="rounded-xl border border-border/60 px-3 py-2 text-sm hover:bg-accent"
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="max-h-[82vh] overflow-y-auto p-5 sm:p-6">
-              <div className="grid gap-6 lg:grid-cols-[0.82fr_1.18fr]">
-                <div className="space-y-5">
-                  <div className="flex items-start gap-4">
-                    <Avatar name={active.name} profilePhotoUrl={active.profilePhotoUrl} />
-
-                    <div className="min-w-0">
-                      <div className="text-xl font-semibold tracking-tight">{active.name}</div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        {[active.about, active.location].filter(Boolean).join(" • ") || "Client"}
-                      </div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        {active.email || "No email"}
-                      </div>
-                      <div className="mt-3 text-2xl text-amber-400">
-                        {Array.from({ length: active.rating }, () => "★").join("")}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="rounded-[1.5rem] bg-background/85 p-5 ring-1 ring-border/45">
-                    <div className="whitespace-pre-wrap text-base leading-8 text-foreground">
-                      {active.review}
-                    </div>
-                  </div>
-                </div>
-
-                <div>
-                  {active.photoUrls.length > 0 ? (
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {active.photoUrls.map((url) => (
-                        <div
-                          key={url}
-                          className="relative flex min-h-[300px] items-center justify-center overflow-hidden rounded-[1.1rem] bg-muted/50"
-                        >
-                          <Image
-                            src={url}
-                            alt={active.name}
-                            fill
-                            className="object-contain"
-                            sizes="420px"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="rounded-[1.5rem] bg-background/85 p-6 text-sm text-muted-foreground ring-1 ring-border/45">
-                      No photos attached to this review.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        <InspectModal
+          item={active}
+          approving={updatingId === active.id}
+          deleting={deletingId === active.id}
+          onApprove={(id, value) => void setApproval(id, value)}
+          onDelete={(id) => void remove(id)}
+          onClose={() => setActive(null)}
+        />
       ) : null}
     </main>
   );
