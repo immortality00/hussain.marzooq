@@ -22,44 +22,76 @@ export default async function TestimonialsPage() {
 
   return (
     <main className="relative overflow-hidden bg-background text-foreground">
-      <section className="mx-auto max-w-7xl px-4 pb-14 pt-6 sm:px-6 sm:pb-16 sm:pt-8 lg:pb-20 lg:pt-10">
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
-          <div>
-            <h1 className="max-w-3xl text-balance text-3xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-5xl lg:text-6xl">
-              What people say about me
-            </h1>
+      <section className="mx-auto max-w-7xl px-4 pb-12 pt-4 sm:px-6 sm:pb-16 sm:pt-5 lg:pb-20 lg:pt-6">
+        <div className="overflow-hidden rounded-[2rem] border border-border/60 bg-muted/20 shadow-sm">
+          <div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_390px]">
+            <div className="relative p-6 sm:p-8 lg:p-10">
+              <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-px bg-border/60 lg:block" />
+
+              <div className="max-w-3xl">
+                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                  Reviews
+                </p>
+
+                <h1 className="mt-4 text-balance text-3xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-4xl lg:text-5xl">
+                  What people say about me
+                </h1>
+
+                <p className="mt-5 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
+                  Real feedback from shoots, films, events, classes, and creative collaborations.
+                </p>
+              </div>
+
+              <div className="mt-7 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <span className="rounded-full border border-border/60 bg-background px-3 py-1.5">
+                  Photography
+                </span>
+                <span className="rounded-full border border-border/60 bg-background px-3 py-1.5">
+                  Videography
+                </span>
+                <span className="rounded-full border border-border/60 bg-background px-3 py-1.5">
+                  Creative direction
+                </span>
+              </div>
+            </div>
+
+            <aside className="bg-background/70 p-5 sm:p-6 lg:p-7">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-[1.25rem] border border-border/60 bg-muted/20 p-4">
+                  <div className="text-3xl font-semibold tracking-[-0.07em]">
+                    {data.averageRating.toFixed(1)}
+                  </div>
+                  <div className="mt-1.5 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                    Average
+                  </div>
+                </div>
+
+                <div className="rounded-[1.25rem] border border-border/60 bg-muted/20 p-4">
+                  <div className="text-3xl font-semibold tracking-[-0.07em]">
+                    {data.totalReviews}
+                  </div>
+                  <div className="mt-1.5 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                    Reviews
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-[1.25rem] border border-border/60 bg-muted/20 p-4">
+                <div className="text-lg tracking-[0.08em] text-amber-500">
+                  {renderStars(data.averageRating)}
+                </div>
+
+                <div className="mt-4">
+                  <PublicReviewForm triggerOnly />
+                </div>
+              </div>
+            </aside>
           </div>
-
-          <aside className="rounded-[1.5rem] border border-border/60 bg-muted/25 p-5 shadow-sm">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-4xl font-semibold tracking-[-0.07em]">
-                  {data.averageRating.toFixed(1)}
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">Average rating</div>
-              </div>
-
-              <div>
-                <div className="text-4xl font-semibold tracking-[-0.07em]">
-                  {data.totalReviews}
-                </div>
-                <div className="mt-2 text-sm text-muted-foreground">Reviews</div>
-              </div>
-            </div>
-
-            <div className="mt-5 text-xl tracking-[0.08em] text-amber-500">
-              {renderStars(data.averageRating)}
-            </div>
-
-            <div className="mt-5">
-              <PublicReviewForm triggerOnly />
-            </div>
-          </aside>
         </div>
 
-        <div className="mt-8 sm:mt-10">
+        <div className="mt-7 sm:mt-8">
           {data.items.length === 0 ? (
-            <div className="rounded-[1.5rem] border border-border/60 bg-muted/25 p-8 text-sm text-muted-foreground">
+            <div className="rounded-[1.5rem] border border-border/60 bg-muted/20 p-8 text-sm text-muted-foreground">
               No approved public reviews yet.
             </div>
           ) : (

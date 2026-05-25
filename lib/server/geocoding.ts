@@ -1,0 +1,2 @@
+export type { ResolvedTestimonialLocation as GeocodedLocation } from "@/lib/locations/testimonial-locations";
+export { resolveTestimonialLocationByLabel as geocodeLocation } from "@/lib/server/location-search";

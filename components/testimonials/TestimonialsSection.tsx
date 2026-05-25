@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import Image from "next/image";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { PublicTestimonial } from "@/lib/server/testimonials";
 
 type GeoPoint = {
@@ -12,100 +13,31 @@ type GeoPoint = {
   lon: number;
 };
 
-type ProjectedPoint = GeoPoint & {
-  x: number;
-  y: number;
-  visible: boolean;
-  scale: number;
-};
-
-const LOCATION_COORDINATES: Record<string, { lat: number; lon: number; label: string }> = {
-  dubai: { lat: 25.2048, lon: 55.2708, label: "Dubai" },
-  "dubai uae": { lat: 25.2048, lon: 55.2708, label: "Dubai" },
-  uae: { lat: 23.4241, lon: 53.8478, label: "UAE" },
-  "united arab emirates": { lat: 23.4241, lon: 53.8478, label: "UAE" },
-  "abu dhabi": { lat: 24.4539, lon: 54.3773, label: "Abu Dhabi" },
-  bahrain: { lat: 26.0667, lon: 50.5577, label: "Bahrain" },
-  manama: { lat: 26.2235, lon: 50.5876, label: "Manama" },
-  riyadh: { lat: 24.7136, lon: 46.6753, label: "Riyadh" },
-  jeddah: { lat: 21.4858, lon: 39.1925, label: "Jeddah" },
-  doha: { lat: 25.2854, lon: 51.531, label: "Doha" },
-  kuwait: { lat: 29.3759, lon: 47.9774, label: "Kuwait" },
-  muscat: { lat: 23.588, lon: 58.3829, label: "Muscat" },
-  london: { lat: 51.5072, lon: -0.1276, label: "London" },
-  paris: { lat: 48.8566, lon: 2.3522, label: "Paris" },
-  amsterdam: { lat: 52.3676, lon: 4.9041, label: "Amsterdam" },
-  netherlands: { lat: 52.1326, lon: 5.2913, label: "Netherlands" },
-  berlin: { lat: 52.52, lon: 13.405, label: "Berlin" },
-  madrid: { lat: 40.4168, lon: -3.7038, label: "Madrid" },
-  spain: { lat: 40.4637, lon: -3.7492, label: "Spain" },
-  rome: { lat: 41.9028, lon: 12.4964, label: "Rome" },
-  istanbul: { lat: 41.0082, lon: 28.9784, label: "Istanbul" },
-  jordan: { lat: 30.5852, lon: 36.2384, label: "Jordan" },
-  amman: { lat: 31.9539, lon: 35.9106, label: "Amman" },
-  india: { lat: 20.5937, lon: 78.9629, label: "India" },
-  delhi: { lat: 28.6139, lon: 77.209, label: "Delhi" },
-  mumbai: { lat: 19.076, lon: 72.8777, label: "Mumbai" },
-  "new york": { lat: 40.7128, lon: -74.006, label: "New York" },
-  nyc: { lat: 40.7128, lon: -74.006, label: "NYC" },
-  "new york city": { lat: 40.7128, lon: -74.006, label: "New York" },
-  "los angeles": { lat: 34.0522, lon: -118.2437, label: "Los Angeles" },
-  toronto: { lat: 43.6532, lon: -79.3832, label: "Toronto" },
-  tokyo: { lat: 35.6762, lon: 139.6503, label: "Tokyo" },
-  singapore: { lat: 1.3521, lon: 103.8198, label: "Singapore" },
-  sydney: { lat: -33.8688, lon: 151.2093, label: "Sydney" },
-};
-
-const CONTINENT_PATHS = [
-  "M191 203c34-49 92-75 148-58 38 12 72 42 113 39 37-3 62-31 100-24 25 5 47 22 58 45 15 31 5 69-17 95-26 31-64 44-104 46-43 2-81-12-123-19-49-8-89 22-137 11-55-13-78-86-38-135Z",
-  "M223 363c42 31 84 24 129 32 50 9 78 51 121 70 39 17 93 16 121 51-62 39-155 37-232 8-82-31-136-88-139-161Z",
-  "M539 164c51-36 122-42 183-21 66 23 116 76 122 143 6 60-32 107-78 142-41 31-77 64-133 65-57 1-97-42-116-92-18-49-6-90 7-135 10-36-12-73 15-102Z",
-  "M656 403c36 5 62 30 91 48 35 22 72 31 92 69-54 29-125 18-169-27-30-31-43-66-14-90Z",
-  "M741 188c40 5 73 30 94 65 25 42 21 87-8 121-20 24-51 39-83 29-34-11-41-48-50-79-13-46-2-103 47-136Z",
-];
-
-function normalizeLocation(value: string) {
+function normalizeLocationKey(value: string) {
   return value
     .trim()
     .toLowerCase()
-    .replace(/[,._-]+/g, " ")
-    .replace(/\s+/g, " ");
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9\s]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
-function titleCase(value: string) {
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
-}
+function getReviewPoint(item: PublicTestimonial): GeoPoint | null {
+  if (typeof item.locationLat !== "number") return null;
+  if (typeof item.locationLon !== "number") return null;
+  if (!Number.isFinite(item.locationLat) || !Number.isFinite(item.locationLon)) return null;
 
-function fallbackCoordinates(value: string) {
-  let hash = 0;
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash = (hash * 31 + value.charCodeAt(index)) >>> 0;
-  }
+  const label = item.locationLabel || item.location || "Mapped location";
 
   return {
-    lat: -55 + (hash % 110),
-    lon: -170 + ((hash >> 8) % 340),
-  };
-}
-
-function resolveCoordinates(location: string) {
-  const normalized = normalizeLocation(location);
-  const exact = LOCATION_COORDINATES[normalized];
-
-  if (exact) return exact;
-
-  const partial = Object.entries(LOCATION_COORDINATES).find(([key]) => normalized.includes(key));
-
-  if (partial) return partial[1];
-
-  return {
-    ...fallbackCoordinates(normalized),
-    label: titleCase(location),
+    key: normalizeLocationKey(label),
+    label,
+    count: 1,
+    lat: item.locationLat,
+    lon: item.locationLon,
   };
 }
 
@@ -113,66 +45,33 @@ function buildGeoPoints(items: PublicTestimonial[]): GeoPoint[] {
   const map = new Map<string, GeoPoint>();
 
   for (const item of items) {
-    if (!item.location) continue;
+    const point = getReviewPoint(item);
+    if (!point) continue;
 
-    const key = normalizeLocation(item.location);
-    if (!key) continue;
-
-    const resolved = resolveCoordinates(item.location);
-    const existing = map.get(key);
+    const existing = map.get(point.key);
 
     if (existing) {
       existing.count += 1;
       continue;
     }
 
-    map.set(key, {
-      key,
-      label: resolved.label,
-      count: 1,
-      lat: resolved.lat,
-      lon: resolved.lon,
-    });
+    map.set(point.key, point);
   }
 
   return [...map.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
 
-function getGeoPointForReview(item: PublicTestimonial) {
-  if (!item.location) return null;
+function getMapEmbedUrl(point: GeoPoint | null) {
+  const lat = point?.lat ?? 20;
+  const lon = point?.lon ?? 0;
+  const delta = point ? 0.85 : 105;
+  const marker = point ? `&marker=${lat.toFixed(6)},${lon.toFixed(6)}` : "";
 
-  const resolved = resolveCoordinates(item.location);
+  const bbox = [lon - delta, lat - delta, lon + delta, lat + delta]
+    .map((value) => value.toFixed(6))
+    .join("%2C");
 
-  return {
-    key: normalizeLocation(item.location),
-    label: resolved.label,
-    count: 1,
-    lat: resolved.lat,
-    lon: resolved.lon,
-  };
-}
-
-function degreesToRadians(value: number) {
-  return (value * Math.PI) / 180;
-}
-
-function projectPoint(point: GeoPoint, rotationLon: number, rotationLat: number): ProjectedPoint {
-  const lat = degreesToRadians(point.lat);
-  const lon = degreesToRadians(point.lon - rotationLon);
-  const tilt = degreesToRadians(rotationLat);
-
-  const cosLat = Math.cos(lat);
-  const x = cosLat * Math.sin(lon);
-  const rawY = Math.sin(lat) * Math.cos(tilt) - cosLat * Math.cos(lon) * Math.sin(tilt);
-  const z = Math.sin(lat) * Math.sin(tilt) + cosLat * Math.cos(lon) * Math.cos(tilt);
-
-  return {
-    ...point,
-    x: 50 + x * 38,
-    y: 50 - rawY * 38,
-    visible: z > -0.08,
-    scale: Math.max(0.6, Math.min(1.2, 0.8 + z * 0.35)),
-  };
+  return `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik${marker}`;
 }
 
 function renderStars(rating: number) {
@@ -186,7 +85,21 @@ function getInitials(name: string) {
 }
 
 function getIdentityLine(item: PublicTestimonial) {
-  return [item.about, item.location].filter(Boolean).join(" • ") || "Client";
+  return [item.about, item.locationLabel || item.location].filter(Boolean).join(" • ") || "Client";
+}
+
+function SafeImage({
+  src,
+  alt,
+  className,
+  sizes = "240px",
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  sizes?: string;
+}) {
+  return <Image src={src} alt={alt} fill unoptimized className={className} sizes={sizes} />;
 }
 
 function Avatar({
@@ -198,20 +111,14 @@ function Avatar({
   profilePhotoUrl: string | null;
   size?: "card" | "modal";
 }) {
-  const sizeClass = size === "modal" ? "h-20 w-20 text-xl" : "h-12 w-12 text-sm";
+  const sizeClass = size === "modal" ? "h-16 w-16 text-lg" : "h-10 w-10 text-xs";
 
   return (
     <div
       className={`relative shrink-0 overflow-hidden rounded-full bg-muted ring-1 ring-border/70 ${sizeClass}`}
     >
       {profilePhotoUrl ? (
-        <Image
-          src={profilePhotoUrl}
-          alt={name}
-          fill
-          className="object-cover"
-          sizes={size === "modal" ? "80px" : "48px"}
-        />
+        <SafeImage src={profilePhotoUrl} alt={name} className="object-cover" sizes="96px" />
       ) : (
         <div className="flex h-full w-full items-center justify-center font-medium text-muted-foreground">
           {getInitials(name)}
@@ -228,26 +135,25 @@ function ReviewPhotoStrip({ item }: { item: PublicTestimonial }) {
   if (visiblePhotos.length === 0) return null;
 
   return (
-    <div className="mt-6 flex items-end gap-2 overflow-hidden">
+    <div className="mt-4 flex items-end gap-2 overflow-hidden">
       {visiblePhotos.map((url, index) => (
         <div
           key={url}
-          className={`relative overflow-hidden rounded-[1rem] bg-muted ring-1 ring-border/60 ${
-            index === 0 ? "h-24 w-20" : "h-16 w-16"
+          className={`relative overflow-hidden rounded-[0.85rem] bg-muted ring-1 ring-border/60 ${
+            index === 0 ? "h-16 w-14" : "h-12 w-12"
           }`}
         >
-          <Image
+          <SafeImage
             src={url}
             alt={`${item.name} review photo ${index + 1}`}
-            fill
             className="object-cover"
-            sizes="120px"
+            sizes="100px"
           />
         </div>
       ))}
 
       {hiddenPhotosCount > 0 ? (
-        <div className="flex h-16 w-16 items-center justify-center rounded-[1rem] bg-foreground text-xs font-semibold text-background">
+        <div className="flex h-12 w-12 items-center justify-center rounded-[0.85rem] bg-foreground text-xs font-semibold text-background">
           +{hiddenPhotosCount}
         </div>
       ) : null}
@@ -255,94 +161,44 @@ function ReviewPhotoStrip({ item }: { item: PublicTestimonial }) {
   );
 }
 
-function TestimonialGlobe({
+function TestimonialMap({
   points,
   activePoint,
 }: {
   points: GeoPoint[];
   activePoint: GeoPoint | null;
 }) {
-  const targetLon = activePoint?.lon ?? 55.2708;
-  const targetLat = activePoint?.lat ?? 18;
-  const projectedPoints = points.map((point) => projectPoint(point, targetLon, targetLat));
-  const activeProjected = activePoint ? projectPoint(activePoint, targetLon, targetLat) : null;
+  const mapUrl = getMapEmbedUrl(activePoint);
 
   return (
-    <section className="rounded-[1.5rem] border border-border/60 bg-muted/20 p-4 shadow-sm sm:p-5">
-      <h2 className="max-w-xs text-xl font-semibold leading-tight tracking-[-0.045em] sm:text-2xl">
-        Stories across the world.
-      </h2>
+    <section className="overflow-hidden rounded-[1.25rem] border border-border/60 bg-muted/20 p-2 shadow-sm">
+      <div className="relative overflow-hidden rounded-[1rem] border border-border/70 bg-background">
+        {activePoint ? (
+          <>
+            <iframe
+              key={activePoint.key}
+              title={`Map centered on ${activePoint.label}`}
+              src={mapUrl}
+              className="h-[250px] w-full translate-y-[-8px] scale-[1.05] border-0 grayscale-[0.08] sm:h-[290px]"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
 
-      <div className="relative mx-auto mt-4 aspect-square max-w-[390px] overflow-hidden rounded-full border border-border/70 bg-background shadow-[inset_0_-28px_70px_rgba(0,0,0,0.08)]">
-        <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle_at_35%_28%,rgba(255,255,255,0.96),rgba(255,255,255,0.12)_30%,rgba(0,0,0,0.08)_72%,rgba(0,0,0,0.18)_100%)]" />
-        <div className="absolute inset-[7%] rounded-full border border-border/50" />
-        <div className="absolute inset-[14%] rounded-full border border-border/35" />
-        <div className="absolute inset-0 opacity-45 [background-image:linear-gradient(to_right,rgba(0,0,0,0.08)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.07)_1px,transparent_1px)] [background-size:42px_42px]" />
+            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background via-background/95 to-transparent" />
 
-        <svg
-          viewBox="0 0 1000 580"
-          role="img"
-          aria-label="Animated globe map showing review locations"
-          className="absolute inset-0 h-full w-full text-foreground/12 transition-transform duration-700 ease-out"
-          style={{
-            transform: `translateX(${-(targetLon / 180) * 12}px) translateY(${(targetLat / 90) * 7}px) scale(1.22)`,
-          }}
-          preserveAspectRatio="xMidYMid meet"
-        >
-          {CONTINENT_PATHS.map((path) => (
-            <path key={path} d={path} fill="currentColor" />
-          ))}
-        </svg>
+            <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-background/90 px-3 py-1.5 text-xs font-medium shadow-sm ring-1 ring-border/60 backdrop-blur">
+              {activePoint.label}
+            </div>
 
-        <div className="absolute inset-0 rounded-full ring-1 ring-inset ring-border/70" />
-        <div className="absolute inset-0 rounded-full shadow-[inset_-34px_-24px_80px_rgba(0,0,0,0.16),inset_22px_18px_60px_rgba(255,255,255,0.75)]" />
-
-        {points.length === 0 ? (
-          <div className="absolute inset-0 flex items-center justify-center px-8 text-center text-sm text-muted-foreground">
-            Review locations will appear here.
+            <div className="pointer-events-none absolute bottom-2 right-3 rounded-full bg-background/90 px-2.5 py-1 text-[10px] text-muted-foreground shadow-sm ring-1 ring-border/60 backdrop-blur">
+              © OpenStreetMap
+            </div>
+          </>
+        ) : (
+          <div className="flex h-[250px] items-center justify-center px-6 text-center text-sm text-muted-foreground sm:h-[290px]">
+            The map appears after a review has a selected location.
           </div>
-        ) : null}
-
-        {projectedPoints.map((point) => (
-          <div
-            key={point.key}
-            className={`absolute z-10 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out ${
-              point.visible ? "opacity-100" : "opacity-20"
-            }`}
-            style={{
-              left: `${point.x}%`,
-              top: `${point.y}%`,
-              transform: `translate(-50%, -50%) scale(${point.scale})`,
-            }}
-          >
-            <span className="absolute -inset-3 rounded-full bg-foreground/10" />
-            <span className="relative block h-2.5 w-2.5 rounded-full bg-foreground shadow-[0_0_22px_rgba(0,0,0,0.35)]" />
-          </div>
-        ))}
-
-        {activeProjected ? (
-          <div
-            className="absolute z-20 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out"
-            style={{
-              left: `${activeProjected.x}%`,
-              top: `${activeProjected.y}%`,
-            }}
-          >
-            <span className="absolute -inset-5 animate-ping rounded-full bg-foreground/20" />
-            <span className="relative block h-4 w-4 rounded-full bg-foreground ring-4 ring-background shadow-xl" />
-          </div>
-        ) : null}
-      </div>
-
-      <div className="mt-4 rounded-[1.15rem] border border-border/60 bg-background p-4">
-        <div className="text-sm font-medium">
-          {activePoint?.label ?? points[0]?.label ?? "No location yet"}
-        </div>
-        <div className="mt-1 text-xs leading-5 text-muted-foreground">
-          {activePoint
-            ? "The globe rotates toward the active review location."
-            : "Add a city or country when submitting a review."}
-        </div>
+        )}
       </div>
     </section>
   );
@@ -399,10 +255,9 @@ function ReviewModal({
                       key={url}
                       className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-[1.2rem] bg-muted/40 ring-1 ring-border/60"
                     >
-                      <Image
+                      <SafeImage
                         src={url}
                         alt={`${item.name} review photo ${index + 1}`}
-                        fill
                         className="object-contain"
                         sizes="520px"
                       />
@@ -422,25 +277,47 @@ function ReviewModal({
   );
 }
 
-function ReviewPanel({
+function SingleReviewCard({
   item,
-  isActive,
+  activeIndex,
+  total,
   onOpen,
-  panelRef,
+  onPrevious,
+  onNext,
 }: {
   item: PublicTestimonial;
-  isActive: boolean;
+  activeIndex: number;
+  total: number;
   onOpen: (item: PublicTestimonial) => void;
-  panelRef: (node: HTMLElement | null) => void;
+  onPrevious: () => void;
+  onNext: () => void;
 }) {
   return (
-    <article
-      ref={panelRef}
-      data-review-id={item.id}
-      className="flex min-h-[520px] snap-start items-center rounded-[1.5rem] border border-border/60 bg-background p-5 shadow-sm sm:p-7 lg:min-h-[620px]"
-    >
+    <article className="relative flex min-h-[285px] items-center rounded-[1.25rem] border border-border/60 bg-background p-4 shadow-sm sm:p-5 lg:min-h-[330px]">
+      <div className="absolute right-4 top-4 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onPrevious}
+          disabled={activeIndex === 0}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+          aria-label="Previous review"
+        >
+          <ChevronUp className="h-4 w-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={onNext}
+          disabled={activeIndex === total - 1}
+          className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/70 bg-background text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+          aria-label="Next review"
+        >
+          <ChevronDown className="h-4 w-4" />
+        </button>
+      </div>
+
       <button type="button" onClick={() => onOpen(item)} className="block w-full text-left">
-        <div className="flex items-start justify-between gap-5">
+        <div className="flex items-start justify-between gap-5 pr-20">
           <div className="flex min-w-0 items-center gap-3">
             <Avatar name={item.name} profilePhotoUrl={item.profilePhotoUrl} />
 
@@ -452,23 +329,25 @@ function ReviewPanel({
             </div>
           </div>
 
-          <div className="shrink-0 text-sm tracking-[0.08em] text-amber-500">
+          <div className="shrink-0 text-xs tracking-[0.08em] text-amber-500">
             {renderStars(item.rating)}
           </div>
         </div>
 
         <blockquote
-          className={`mt-10 text-balance font-medium leading-[1.06] tracking-[-0.065em] transition-opacity duration-300 ${
-            isActive ? "opacity-100" : "opacity-65"
-          } text-4xl sm:text-5xl lg:text-6xl`}
+          key={item.id}
+          className="mt-5 text-balance text-xl font-medium leading-[1.12] tracking-[-0.045em] sm:text-2xl lg:text-3xl"
         >
           “{item.review}”
         </blockquote>
 
         <ReviewPhotoStrip item={item} />
 
-        <div className="mt-8 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-          Read review
+        <div className="mt-5 flex items-center justify-between gap-4 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+          <span>Read review</span>
+          <span>
+            {activeIndex + 1} / {total}
+          </span>
         </div>
       </button>
     </article>
@@ -476,71 +355,117 @@ function ReviewPanel({
 }
 
 export default function TestimonialsSection({ items }: { items: PublicTestimonial[] }) {
-  const [active, setActive] = useState<PublicTestimonial | null>(items[0] ?? null);
+  const [activeIndex, setActiveIndex] = useState(0);
   const [modalItem, setModalItem] = useState<PublicTestimonial | null>(null);
-  const panelRefs = useRef<Record<string, HTMLElement | null>>({});
+  const scrollLockRef = useRef(false);
+  const touchStartYRef = useRef<number | null>(null);
 
+  const activeItem = items[activeIndex] ?? items[0];
   const points = useMemo(() => buildGeoPoints(items), [items]);
-  const activePoint = useMemo(() => {
-    if (!active) return points[0] ?? null;
-    return getGeoPointForReview(active) ?? points[0] ?? null;
-  }, [active, points]);
+  const activePoint = useMemo(
+    () => (activeItem ? getReviewPoint(activeItem) ?? points[0] ?? null : null),
+    [activeItem, points]
+  );
 
   useEffect(() => {
     if (modalItem) window.dispatchEvent(new Event("hm_modal_open"));
     else window.dispatchEvent(new Event("hm_modal_close"));
   }, [modalItem]);
 
-  useEffect(() => {
-    const nodes = Object.values(panelRefs.current).filter(Boolean) as HTMLElement[];
+  const goToIndex = useCallback(
+    (nextIndex: number) => {
+      setActiveIndex(Math.max(0, Math.min(items.length - 1, nextIndex)));
+    },
+    [items.length]
+  );
 
-    if (nodes.length === 0) return;
+  const goNext = useCallback(() => {
+    goToIndex(activeIndex + 1);
+  }, [activeIndex, goToIndex]);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const mostVisible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+  const goPrevious = useCallback(() => {
+    goToIndex(activeIndex - 1);
+  }, [activeIndex, goToIndex]);
 
-        if (!mostVisible) return;
+  function handleWheel(event: React.WheelEvent<HTMLDivElement>) {
+    if (Math.abs(event.deltaY) < 16) return;
 
-        const reviewId = mostVisible.target.getAttribute("data-review-id");
-        const nextActive = items.find((item) => item.id === reviewId);
+    const movingDown = event.deltaY > 0;
+    const movingUp = event.deltaY < 0;
+    const canMoveDown = activeIndex < items.length - 1;
+    const canMoveUp = activeIndex > 0;
 
-        if (nextActive) setActive(nextActive);
-      },
-      {
-        threshold: [0.45, 0.6, 0.75],
-        rootMargin: "-20% 0px -20% 0px",
-      }
-    );
+    if ((movingDown && canMoveDown) || (movingUp && canMoveUp)) {
+      event.preventDefault();
+      event.stopPropagation();
 
-    for (const node of nodes) observer.observe(node);
+      if (scrollLockRef.current) return;
 
-    return () => observer.disconnect();
-  }, [items]);
+      scrollLockRef.current = true;
+
+      if (movingDown) goNext();
+      else goPrevious();
+
+      window.setTimeout(() => {
+        scrollLockRef.current = false;
+      }, 650);
+    }
+  }
+
+  function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
+    touchStartYRef.current = event.touches[0]?.clientY ?? null;
+  }
+
+  function handleTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
+    const startY = touchStartYRef.current;
+    const endY = event.changedTouches[0]?.clientY ?? null;
+
+    touchStartYRef.current = null;
+
+    if (startY === null || endY === null) return;
+
+    const difference = startY - endY;
+
+    if (Math.abs(difference) < 40) return;
+
+    if (difference > 0) goNext();
+    else goPrevious();
+  }
+
+  if (!activeItem) return null;
 
   return (
     <>
-      <section className="grid gap-6 lg:grid-cols-[minmax(300px,0.78fr)_minmax(0,1.22fr)] lg:items-start">
+      <section className="grid gap-5 lg:grid-cols-[minmax(260px,0.72fr)_minmax(0,1.28fr)] lg:items-start">
         <div className="lg:sticky lg:top-20">
-          <TestimonialGlobe points={points} activePoint={activePoint} />
+          <TestimonialMap points={points} activePoint={activePoint} />
         </div>
 
-        <div className="relative">
-          <div className="pointer-events-none absolute left-0 right-0 top-0 z-10 h-10 bg-gradient-to-b from-background to-transparent" />
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 z-10 h-10 bg-gradient-to-t from-background to-transparent" />
+        <div
+          className="relative"
+          onWheel={handleWheel}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          <SingleReviewCard
+            item={activeItem}
+            activeIndex={activeIndex}
+            total={items.length}
+            onOpen={setModalItem}
+            onPrevious={goPrevious}
+            onNext={goNext}
+          />
 
-          <div className="max-h-[calc(100vh-120px)] snap-y snap-mandatory space-y-5 overflow-y-auto pr-1 scroll-smooth">
-            {items.map((item) => (
-              <ReviewPanel
+          <div className="mt-4 flex justify-center gap-2">
+            {items.map((item, index) => (
+              <button
                 key={item.id}
-                item={item}
-                isActive={active?.id === item.id}
-                onOpen={setModalItem}
-                panelRef={(node) => {
-                  panelRefs.current[item.id] = node;
-                }}
+                type="button"
+                onClick={() => goToIndex(index)}
+                className={`h-2 rounded-full transition-all ${
+                  index === activeIndex ? "w-8 bg-foreground" : "w-2 bg-muted-foreground/30"
+                }`}
+                aria-label={`Go to review ${index + 1}`}
               />
             ))}
           </div>
