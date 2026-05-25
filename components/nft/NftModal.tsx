@@ -60,8 +60,9 @@ export default function NftModal({
                       alt={item.title}
                       fill
                       className="object-contain"
-                      sizes="100vw"
-                      priority
+                      sizes="(min-width: 1024px) 58vw, 100vw"
+                      loading="eager"
+                      fetchPriority="high"
                     />
                   </div>
                 )
@@ -78,7 +79,11 @@ export default function NftModal({
               <div className="min-h-0 flex-1 overflow-y-auto p-5">
                 <div className="space-y-5">
                   <div className="flex flex-wrap gap-2">
-                    <span className={`inline-flex rounded-full px-3 py-1 text-xs ${statusClasses(shownStatus)}`}>
+                    <span
+                      className={`inline-flex rounded-full px-3 py-1 text-xs ${statusClasses(
+                        shownStatus
+                      )}`}
+                    >
                       {shownStatus}
                     </span>
                     <span className="inline-flex rounded-full border px-3 py-1 text-xs text-muted-foreground">
@@ -115,11 +120,17 @@ export default function NftModal({
                         Edition
                       </div>
                       <div className="mt-3 text-lg font-semibold">{editionLabel(item)}</div>
-                      <div className="mt-1 text-sm text-muted-foreground">{editionSubline(item)}</div>
+                      <div className="mt-1 text-sm text-muted-foreground">
+                        {editionSubline(item)}
+                      </div>
                     </div>
                   </div>
 
-                  {(item.location || item.event || item.year || item.people.length || item.categories.length) ? (
+                  {item.location ||
+                  item.event ||
+                  item.year ||
+                  item.people.length ||
+                  item.categories.length ? (
                     <div className="rounded-2xl border bg-background/50 p-4">
                       <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                         Media details
@@ -129,7 +140,9 @@ export default function NftModal({
                         {item.event ? <div>Event: {item.event}</div> : null}
                         {item.year ? <div>Year: {item.year}</div> : null}
                         {item.people.length ? <div>People: {item.people.join(", ")}</div> : null}
-                        {item.categories.length ? <div>Categories: {item.categories.join(", ")}</div> : null}
+                        {item.categories.length ? (
+                          <div>Categories: {item.categories.join(", ")}</div>
+                        ) : null}
                       </div>
                     </div>
                   ) : null}
@@ -193,14 +206,14 @@ export default function NftModal({
                     href={item.nft.marketplaceUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+                    className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
                   >
                     Buy
                   </a>
                 ) : (
                   <Link
                     href={inquiryHref}
-                    className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+                    className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
                   >
                     Inquire
                   </Link>

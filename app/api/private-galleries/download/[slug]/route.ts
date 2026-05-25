@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { ObjectId } from "mongodb";
 import { v2 as cloudinary } from "cloudinary";
-import clientPromise from "@/lib/mongodb";
+import { getDb } from "@/lib/server/db";
 import { privateGalleryCookieName } from "@/lib/private-galleries";
 
 export const dynamic = "force-dynamic";
@@ -12,13 +12,10 @@ function getExpiryDate(doc: Record<string, unknown>) {
   return null;
 }
 
-export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
+export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
-  const url = new URL(req.url);
-  const token = (url.searchParams.get("token") ?? "").trim();
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const gallery = await db.collection("private_galleries").findOne({ slug });
   if (!gallery) {
@@ -35,8 +32,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
   const jar = await cookies();
   const cookieValue = jar.get(privateGalleryCookieName(String(gallery._id)))?.value ?? "";
 
-  const hasAccess = (token && token === accessToken) || (cookieValue && cookieValue === accessToken);
-  if (!hasAccess) {
+  if (!accessToken || !cookieValue || cookieValue !== accessToken) {
     return new Response("Forbidden", { status: 403 });
   }
 

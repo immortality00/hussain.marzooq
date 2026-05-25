@@ -13,9 +13,11 @@ import {
 export default function NftCard({
   item,
   onOpen,
+  imagePriority = false,
 }: {
   item: PublicNftItem;
   onOpen: (item: PublicNftItem) => void;
+  imagePriority?: boolean;
 }) {
   const priceText = getPriceText(item);
   const shownStatus = displayStatus(item);
@@ -53,6 +55,8 @@ export default function NftCard({
                 fill
                 className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                 sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                loading={imagePriority ? "eager" : "lazy"}
+                fetchPriority={imagePriority ? "high" : undefined}
               />
             )
           ) : (
@@ -66,7 +70,11 @@ export default function NftCard({
               Sold
             </div>
           ) : (
-            <div className={`absolute left-4 top-4 inline-flex rounded-full px-3 py-1 text-xs ${statusClasses(shownStatus)}`}>
+            <div
+              className={`absolute left-4 top-4 inline-flex rounded-full px-3 py-1 text-xs ${statusClasses(
+                shownStatus
+              )}`}
+            >
               {shownStatus}
             </div>
           )}
@@ -79,7 +87,9 @@ export default function NftCard({
 
       <div className="p-5">
         {item.description ? (
-          <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
+          <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
+            {item.description}
+          </p>
         ) : null}
 
         <div className="mt-5 grid grid-cols-2 gap-4">
@@ -105,7 +115,7 @@ export default function NftCard({
               target="_blank"
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+              className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
             >
               Buy
             </a>
@@ -113,7 +123,7 @@ export default function NftCard({
             <Link
               href={inquiryHref}
               onClick={(e) => e.stopPropagation()}
-              className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+              className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
             >
               Inquire
             </Link>

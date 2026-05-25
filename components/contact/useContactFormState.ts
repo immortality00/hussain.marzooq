@@ -41,12 +41,16 @@ export function useContactFormState({
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [website, setWebsite] = useState("");
+  const [formStartedAt, setFormStartedAt] = useState<number>(() => Date.now());
 
   const [serviceMode, setServiceMode] = useState<ServiceMode>(
     initialServiceMatch ? "select" : initialService.trim() ? "other" : "select"
   );
   const [selectedServiceId, setSelectedServiceId] = useState<string>(initialServiceMatch?.id ?? "");
-  const [otherService, setOtherService] = useState<string>(!initialServiceMatch ? initialService : "");
+  const [otherService, setOtherService] = useState<string>(
+    !initialServiceMatch ? initialService : ""
+  );
 
   const [categoryMode, setCategoryMode] = useState<CategoryMode>(() => {
     if (initialServiceMatch?.category) return "select";
@@ -57,7 +61,9 @@ export function useContactFormState({
   const [selectedCategory, setSelectedCategory] = useState<string>(() => {
     if (initialServiceMatch?.category) return initialServiceMatch.category;
     if (hasKnownInitialCategory) {
-      return categories.find((c) => normalize(c) === normalize(normalizedInitialCategory)) ?? "others";
+      return (
+        categories.find((c) => normalize(c) === normalize(normalizedInitialCategory)) ?? "others"
+      );
     }
     return "others";
   });
@@ -144,6 +150,8 @@ export function useContactFormState({
     setName("");
     setEmail("");
     setMessage("");
+    setWebsite("");
+    setFormStartedAt(Date.now());
     setMsg("");
 
     setServiceMode("select");
@@ -183,14 +191,23 @@ export function useContactFormState({
     const n = safeTrim(name);
     const e = safeTrim(email);
     const userMessage = safeTrim(message);
+    const honeypot = safeTrim(website);
 
     if (!n) return setMsg("Name is required.");
     if (!e) return setMsg("Email is required.");
     if (!isValidEmail(e)) return setMsg("Email format is invalid.");
     if (!userMessage) return setMsg("Message is required.");
 
+    if (serviceMode === "select" && !selectedService?.id) {
+      return setMsg("Please choose a service.");
+    }
+
     if (serviceMode === "other" && !safeTrim(otherService)) {
       return setMsg("Please specify the service you need.");
+    }
+
+    if (!finalCategory) {
+      return setMsg("Please choose a category.");
     }
 
     const composedMessage = lockedContextMessage
@@ -209,11 +226,15 @@ export function useContactFormState({
           category: finalCategory,
           serviceId: finalServiceId,
           serviceName: finalServiceName,
+          website: honeypot,
+          formStartedAt,
         }),
       });
 
       const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
+
       if (!res.ok || !data?.ok) {
+        router.replace("/contact");
         setMsg(data?.error ? `Send failed: ${data.error}` : "Send failed.");
         setLoading(false);
         return;
@@ -223,6 +244,7 @@ export function useContactFormState({
       router.replace("/contact?success=1");
       router.refresh();
     } catch {
+      router.replace("/contact");
       setMsg("Send failed.");
     } finally {
       setLoading(false);
@@ -238,6 +260,8 @@ export function useContactFormState({
     setEmail,
     message,
     setMessage,
+    website,
+    setWebsite,
     serviceMode,
     setServiceMode,
     selectedServiceId,

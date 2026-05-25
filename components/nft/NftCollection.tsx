@@ -49,8 +49,13 @@ export default function NftCollection({ items }: { items: PublicNftItem[] }) {
         </div>
       ) : (
         <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((item) => (
-            <NftCard key={item.id} item={item} onOpen={setActive} />
+          {filtered.map((item, index) => (
+            <NftCard
+              key={item.id}
+              item={item}
+              onOpen={setActive}
+              imagePriority={index === 0}
+            />
           ))}
         </section>
       )}

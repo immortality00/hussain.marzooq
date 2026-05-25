@@ -29,7 +29,14 @@ export function ContactForm({
   });
 
   return (
-    <div className="rounded-2xl border p-6">
+    <form
+      className="rounded-2xl border p-6"
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        void form.submit();
+      }}
+    >
       {form.bookingBadge ? (
         <div className="mb-4 inline-flex rounded-full border px-3 py-1 text-xs text-muted-foreground">
           Booking: {form.bookingBadge}
@@ -37,6 +44,19 @@ export function ContactForm({
       ) : null}
 
       {form.msg ? <div className="mb-4 text-sm text-muted-foreground">{form.msg}</div> : null}
+
+      <div className="sr-only" aria-hidden="true">
+        <label htmlFor="contact-website">Website</label>
+        <input
+          id="contact-website"
+          name="website"
+          type="text"
+          tabIndex={-1}
+          autoComplete="off"
+          value={form.website}
+          onChange={(e) => form.setWebsite(e.target.value)}
+        />
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <ContactIdentityFields
@@ -81,6 +101,6 @@ export function ContactForm({
         onSubmit={() => void form.submit()}
         onReset={form.resetForm}
       />
-    </div>
+    </form>
   );
 }

@@ -26,6 +26,41 @@ type MediaItem = {
   event: string | null;
 };
 
+function parseLocalDateTime(value: string) {
+  if (!value) return null;
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function getGalleryStatus(item: GalleryItem) {
+  const expiry = parseLocalDateTime(item.expiresAtLocal);
+  const isExpired = expiry ? expiry.getTime() <= Date.now() : false;
+
+  if (isExpired) {
+    return {
+      label: "Expired",
+      className: "border-red-500/30 bg-red-500/10 text-red-200",
+    };
+  }
+
+  if (!item.isActive) {
+    return {
+      label: "Inactive",
+      className: "border-amber-500/30 bg-amber-500/10 text-amber-200",
+    };
+  }
+
+  return {
+    label: "Active",
+    className: "border-green-500/30 bg-green-500/10 text-green-200",
+  };
+}
+
+function buildGalleryUrl(slug: string) {
+  if (typeof window === "undefined") return `/g/${slug}`;
+  return `${window.location.origin}/g/${slug}`;
+}
+
 export default function PrivateGalleriesAdminClient() {
   const [view, setView] = useState<"list" | "form">("list");
   const [items, setItems] = useState<GalleryItem[]>([]);
@@ -216,6 +251,17 @@ export default function PrivateGalleriesAdminClient() {
     }
   }
 
+  async function copyLink(slugValue: string) {
+    const url = buildGalleryUrl(slugValue);
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setBanner({ type: "ok", text: "✅ Gallery link copied." });
+    } catch {
+      setBanner({ type: "err", text: "Failed to copy gallery link." });
+    }
+  }
+
   function toggleMedia(id: string) {
     setSelectedMediaIds((prev) =>
       prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]
@@ -281,7 +327,9 @@ export default function PrivateGalleriesAdminClient() {
       {banner ? (
         <div
           className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
-            banner.type === "ok" ? "border-green-500/30 bg-green-500/10" : "border-red-500/30 bg-red-500/10"
+            banner.type === "ok"
+              ? "border-green-500/30 bg-green-500/10"
+              : "border-red-500/30 bg-red-500/10"
           }`}
         >
           {banner.text}
@@ -304,40 +352,65 @@ export default function PrivateGalleriesAdminClient() {
             {loading ? (
               <div className="rounded-2xl border p-4 text-sm text-muted-foreground">Loading…</div>
             ) : filteredItems.length === 0 ? (
-              <div className="rounded-2xl border p-4 text-sm text-muted-foreground">No galleries yet.</div>
+              <div className="rounded-2xl border p-4 text-sm text-muted-foreground">
+                No galleries yet.
+              </div>
             ) : (
-              filteredItems.map((item) => (
-                <article key={item.id} className="rounded-[2rem] border p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <div className="text-sm font-medium">{item.title}</div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        /g/{item.slug} • {item.mediaIds.length} media • {item.isActive ? "Active" : "Inactive"}
-                      </div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        Expires: {item.expiresAtLocal.replace("T", " ")}
-                      </div>
-                    </div>
+              filteredItems.map((item) => {
+                const status = getGalleryStatus(item);
 
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => void openEdit(item.id)}
-                        className="rounded-xl border px-3 py-2 text-sm hover:bg-accent"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void remove(item.id)}
-                        className="rounded-xl border px-3 py-2 text-sm hover:bg-red-500/10"
-                      >
-                        Delete
-                      </button>
+                return (
+                  <article key={item.id} className="rounded-[2rem] border p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="text-sm font-medium">{item.title}</div>
+                          <span
+                            className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-[0.14em] ${status.className}`}
+                          >
+                            {status.label}
+                          </span>
+                        </div>
+
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          /g/{item.slug} • {item.mediaIds.length} media •{" "}
+                          {item.isActive ? "Enabled" : "Disabled"}
+                        </div>
+
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          Expires: {item.expiresAtLocal.replace("T", " ")}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => void copyLink(item.slug)}
+                          className="rounded-xl border px-3 py-2 text-sm hover:bg-accent"
+                        >
+                          Copy link
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => void openEdit(item.id)}
+                          className="rounded-xl border px-3 py-2 text-sm hover:bg-accent"
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => void remove(item.id)}
+                          className="rounded-xl border px-3 py-2 text-sm hover:bg-red-500/10"
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                </article>
-              ))
+                  </article>
+                );
+              })
             )}
           </div>
         </section>
@@ -396,7 +469,11 @@ export default function PrivateGalleriesAdminClient() {
               </div>
 
               <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={isActive}
+                  onChange={(e) => setIsActive(e.target.checked)}
+                />
                 Active
               </label>
             </div>
