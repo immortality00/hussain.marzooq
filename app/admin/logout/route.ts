@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 
 export async function GET(req: Request) {
-  const res = NextResponse.redirect(new URL("/admin", req.url));
+  const res = NextResponse.redirect(new URL("/admin?loggedout=1", req.url));
+  res.headers.set("Cache-Control", "no-store");
 
   res.cookies.set("hm_admin", "", {
     httpOnly: true,
