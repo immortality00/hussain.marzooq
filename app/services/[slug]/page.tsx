@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import clientPromise from "@/lib/mongodb";
 import { notFound } from "next/navigation";
+import { getDb } from "@/lib/server/db";
 import { workLinkForCategory } from "@/lib/server/public-services";
 
 export const dynamic = "force-dynamic";
@@ -14,10 +14,12 @@ export default async function ServiceDetailPage({
 }) {
   const { slug } = await params;
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
-  const doc = await db.collection("services").findOne({ slug, isActive: true });
+  const doc = await db
+    .collection("services")
+    .findOne({ slug, isActive: true, isArchived: { $ne: true } });
+
   if (!doc) notFound();
 
   const name = typeof doc.name === "string" ? doc.name : "";
@@ -61,14 +63,14 @@ export default async function ServiceDetailPage({
           <div className="flex flex-wrap gap-3 pt-2">
             <Link
               href={`/contact?service=${encodeURIComponent(slug)}&category=${encodeURIComponent(category)}`}
-              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
             >
               Book this service
             </Link>
 
             <Link
               href={workLink.href}
-              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
             >
               {workLink.label}
             </Link>

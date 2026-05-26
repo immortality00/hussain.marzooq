@@ -1,6 +1,6 @@
-import clientPromise from "@/lib/mongodb";
 import { sanitizeAppearances } from "@/app/api/_lib/media";
 import type { MediaItem as PublicMediaItem } from "@/components/media/types";
+import { getDb } from "@/lib/server/db";
 
 export type PublicPersonIndexItem = {
   id: string;
@@ -50,8 +50,7 @@ function isVideoType(value: unknown) {
 }
 
 export async function getPublicPeople(): Promise<PublicPersonIndexItem[]> {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const docs = await db
     .collection("people_profiles")
@@ -95,8 +94,7 @@ export async function getPublicPeople(): Promise<PublicPersonIndexItem[]> {
 }
 
 export async function getPublicPersonBySlug(slug: string): Promise<PublicPersonDetail | null> {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const doc = await db.collection("people_profiles").findOne({
     slug,

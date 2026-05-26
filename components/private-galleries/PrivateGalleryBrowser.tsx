@@ -24,11 +24,9 @@ function downloadFile(url: string) {
 export default function PrivateGalleryBrowser({
   items,
   gallerySlug,
-  downloadToken,
 }: {
   items: MediaItem[];
   gallerySlug: string;
-  downloadToken: string;
 }) {
   const [active, setActive] = useState<MediaItem | null>(null);
 
@@ -37,10 +35,13 @@ export default function PrivateGalleryBrowser({
     else window.dispatchEvent(new Event("hm_modal_close"));
   }, [active]);
 
-  const downloadableItems = useMemo(() => items.filter((item) => !!item.secureUrl), [items]);
+  const downloadableItems = useMemo(
+    () => items.filter((item) => !!item.secureUrl),
+    [items]
+  );
 
   function downloadGallery() {
-    window.location.href = `/api/private-galleries/download/${encodeURIComponent(gallerySlug)}?token=${encodeURIComponent(downloadToken)}`;
+    window.location.href = `/api/private-galleries/download/${encodeURIComponent(gallerySlug)}`;
   }
 
   return (
@@ -50,7 +51,7 @@ export default function PrivateGalleryBrowser({
           <button
             type="button"
             onClick={downloadGallery}
-            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
           >
             Download gallery
           </button>
@@ -58,65 +59,87 @@ export default function PrivateGalleryBrowser({
       ) : null}
 
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {items.map((item) => (
-          <article key={item.id} className="overflow-hidden rounded-[2rem] border bg-background/60">
-            <button type="button" onClick={() => setActive(item)} className="block w-full text-left">
-              <div className="relative h-80 overflow-hidden bg-muted">
-                {item.secureUrl ? (
-                  item.type === "video" ? (
-                    <video className="h-full w-full object-cover bg-black" preload="metadata" src={item.secureUrl} />
+        {items.map((item) => {
+          const secureUrl = item.secureUrl;
+
+          return (
+            <article
+              key={item.id}
+              className="overflow-hidden rounded-[2rem] border bg-background/60"
+            >
+              <button
+                type="button"
+                onClick={() => setActive(item)}
+                className="block w-full text-left"
+              >
+                <div className="relative h-80 overflow-hidden bg-muted">
+                  {secureUrl ? (
+                    item.type === "video" ? (
+                      <video
+                        className="h-full w-full object-cover bg-black"
+                        preload="metadata"
+                        src={secureUrl}
+                      />
+                    ) : (
+                      <Image
+                        src={secureUrl}
+                        alt={item.title}
+                        fill
+                        className="object-cover transition-transform duration-700 hover:scale-[1.03]"
+                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                      />
+                    )
                   ) : (
-                    <Image
-                      src={item.secureUrl}
-                      alt={item.title}
-                      fill
-                      className="object-cover transition-transform duration-700 hover:scale-[1.03]"
-                      sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                    />
-                  )
-                ) : (
-                  <div className="h-full w-full bg-linear-to-br from-muted to-background" />
-                )}
+                    <div className="h-full w-full bg-linear-to-br from-muted to-background" />
+                  )}
 
-                <div className="absolute inset-0 bg-linear-to-t from-black/72 via-black/10 to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/72 via-black/10 to-transparent" />
 
-                <div className="absolute inset-x-0 bottom-0 p-5">
-                  <div className="text-2xl font-semibold tracking-tight text-white">{item.title}</div>
+                  <div className="absolute inset-x-0 bottom-0 p-5">
+                    <div className="text-2xl font-semibold tracking-tight text-white">
+                      {item.title}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </button>
+              </button>
 
-            <div className="p-5">
-              {item.description ? (
-                <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
-              ) : null}
+              <div className="p-5">
+                {item.description ? (
+                  <p className="line-clamp-2 text-sm leading-6 text-muted-foreground">
+                    {item.description}
+                  </p>
+                ) : null}
 
-              <div className="mt-5 flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setActive(item)}
-                  className="flex-1 rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
-                >
-                  View
-                </button>
-
-                {item.secureUrl ? (
+                <div className="mt-5 flex gap-2">
                   <button
                     type="button"
-                    onClick={() => downloadFile(item.secureUrl as string)}
-                    className="flex-1 rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+                    onClick={() => setActive(item)}
+                    className="flex-1 rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
                   >
-                    Download
+                    View
                   </button>
-                ) : null}
+
+                  {secureUrl ? (
+                    <button
+                      type="button"
+                      onClick={() => downloadFile(secureUrl)}
+                      className="flex-1 rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
+                    >
+                      Download
+                    </button>
+                  ) : null}
+                </div>
               </div>
-            </div>
-          </article>
-        ))}
+            </article>
+          );
+        })}
       </section>
 
       {active ? (
-        <div className="fixed inset-0 z-50 bg-black/72 p-4" onClick={() => setActive(null)}>
+        <div
+          className="fixed inset-0 z-50 bg-black/72 p-4"
+          onClick={() => setActive(null)}
+        >
           <div
             className="mx-auto w-full max-w-6xl overflow-hidden rounded-[2rem] border bg-background shadow-2xl"
             onClick={(e) => e.stopPropagation()}
@@ -125,7 +148,9 @@ export default function PrivateGalleryBrowser({
               <div className="min-w-0">
                 <div className="truncate text-lg font-semibold">{active.title}</div>
                 {active.description ? (
-                  <div className="mt-1 text-xs text-muted-foreground">{active.description}</div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {active.description}
+                  </div>
                 ) : null}
               </div>
 
@@ -156,7 +181,7 @@ export default function PrivateGalleryBrowser({
                           alt={active.title}
                           fill
                           className="object-contain"
-                          sizes="100vw"
+                          sizes="(min-width: 1024px) 58vw, 100vw"
                           priority
                         />
                       </div>
@@ -183,7 +208,11 @@ export default function PrivateGalleryBrowser({
                       </div>
                     ) : null}
 
-                    {(active.location || active.event || active.year || active.people.length || active.categories.length) ? (
+                    {active.location ||
+                    active.event ||
+                    active.year ||
+                    active.people.length ||
+                    active.categories.length ? (
                       <div className="rounded-2xl border bg-background/50 p-4">
                         <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           Details
@@ -192,8 +221,12 @@ export default function PrivateGalleryBrowser({
                           {active.location ? <div>Location: {active.location}</div> : null}
                           {active.event ? <div>Event: {active.event}</div> : null}
                           {active.year ? <div>Year: {active.year}</div> : null}
-                          {active.people.length ? <div>People: {active.people.join(", ")}</div> : null}
-                          {active.categories.length ? <div>Categories: {active.categories.join(", ")}</div> : null}
+                          {active.people.length ? (
+                            <div>People: {active.people.join(", ")}</div>
+                          ) : null}
+                          {active.categories.length ? (
+                            <div>Categories: {active.categories.join(", ")}</div>
+                          ) : null}
                         </div>
                       </div>
                     ) : null}
@@ -205,7 +238,7 @@ export default function PrivateGalleryBrowser({
                     <button
                       type="button"
                       onClick={() => downloadFile(active.secureUrl as string)}
-                      className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+                      className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
                     >
                       Download
                     </button>

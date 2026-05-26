@@ -1,4 +1,4 @@
-import clientPromise from "@/lib/mongodb";
+import { getDb } from "@/lib/server/db";
 
 export type PublicNftItem = {
   id: string;
@@ -35,9 +35,16 @@ export type PublicNftItem = {
   };
 };
 
+function normalizeStringArray(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((x): x is string => typeof x === "string") : [];
+}
+
+function isAppearance(value: unknown): value is PublicNftItem["appearances"][number] {
+  return typeof value === "object" && value !== null;
+}
+
 export async function getPublicNfts(): Promise<PublicNftItem[]> {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const docs = await db
     .collection("media")
@@ -57,12 +64,10 @@ export async function getPublicNfts(): Promise<PublicNftItem[]> {
       location: typeof d.location === "string" ? d.location : null,
       event: typeof d.event === "string" ? d.event : null,
       year: typeof d.year === "number" ? d.year : null,
-      tags: Array.isArray(d.tags) ? d.tags.filter((x) => typeof x === "string") : [],
-      people: Array.isArray(d.people) ? d.people.filter((x) => typeof x === "string") : [],
-      categories: Array.isArray(d.categories) ? d.categories.filter((x) => typeof x === "string") : [],
-      appearances: Array.isArray(d.appearances)
-        ? d.appearances.filter((x): x is PublicNftItem["appearances"][number] => typeof x === "object" && x !== null)
-        : [],
+      tags: normalizeStringArray(d.tags),
+      people: normalizeStringArray(d.people),
+      categories: normalizeStringArray(d.categories),
+      appearances: Array.isArray(d.appearances) ? d.appearances.filter(isAppearance) : [],
       mediaUrl: typeof d.secureUrl === "string" ? d.secureUrl : null,
       mediaType: d.type === "video" ? "video" : "image",
       nft:
@@ -77,15 +82,19 @@ export async function getPublicNfts(): Promise<PublicNftItem[]> {
                   ? d.nft.currency
                   : "ETH",
               editionType:
-                d.nft.editionType === "limited" || d.nft.editionType === "open" ? d.nft.editionType : "1/1",
-              editionsTotal:
-                typeof d.nft.editionsTotal === "number" ? d.nft.editionsTotal : null,
+                d.nft.editionType === "limited" || d.nft.editionType === "open"
+                  ? d.nft.editionType
+                  : "1/1",
+              editionsTotal: typeof d.nft.editionsTotal === "number" ? d.nft.editionsTotal : null,
               editionsRemaining:
                 typeof d.nft.editionsRemaining === "number" ? d.nft.editionsRemaining : null,
               openUntil: typeof d.nft.openUntil === "string" ? d.nft.openUntil : null,
               status:
-                d.nft.status === "sold" || d.nft.status === "coming-soon" ? d.nft.status : "available",
-              marketplaceUrl: typeof d.nft.marketplaceUrl === "string" ? d.nft.marketplaceUrl : null,
+                d.nft.status === "sold" || d.nft.status === "coming-soon"
+                  ? d.nft.status
+                  : "available",
+              marketplaceUrl:
+                typeof d.nft.marketplaceUrl === "string" ? d.nft.marketplaceUrl : null,
             }
           : null,
     }))

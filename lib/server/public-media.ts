@@ -1,4 +1,6 @@
-import { getBaseUrl } from "./get-base-url";
+import { asNullableString, asStringArray, isRecord } from "@/app/api/_lib/common";
+import { sanitizeAppearances } from "@/app/api/_lib/media";
+import { getDb } from "@/lib/server/db";
 
 export type PublicAppearance = {
   kind: "featured" | "exhibited";
@@ -29,46 +31,93 @@ export type PublicMediaItem = {
   createdAt: string | null;
 };
 
-type PublicListResponse<T> = {
-  items?: T[];
-};
+function toPublicMediaItem(doc: Record<string, unknown>): PublicMediaItem {
+  const asset = isRecord(doc.asset) ? doc.asset : {};
 
-type ShowreelResponse = {
-  embedUrl?: string | null;
-};
+  const secureUrl =
+    asNullableString(doc.secureUrl) ??
+    asNullableString(asset.secureUrl) ??
+    asNullableString((asset as Record<string, unknown>).secure_url);
 
-async function fetchJson<T>(url: string): Promise<T | null> {
-  const res = await fetch(url, { cache: "no-store" });
-  if (!res.ok) return null;
-  return (await res.json().catch(() => null)) as T | null;
+  return {
+    id: String(doc._id),
+    type: asNullableString(doc.type) ?? "image",
+    title: asNullableString(doc.title) ?? "",
+    description: asNullableString(doc.description),
+    location: asNullableString(doc.location),
+    event: asNullableString(doc.event),
+    year: typeof doc.year === "number" ? doc.year : null,
+    tags: asStringArray(doc.tags),
+    categories: asStringArray(doc.categories),
+    people: asStringArray(doc.people),
+    appearances: sanitizeAppearances(doc.appearances),
+    secureUrl: secureUrl ?? null,
+    embedUrl: asNullableString(doc.embedUrl) ?? asNullableString(asset.embedUrl),
+    createdAt: doc.createdAt ? new Date(doc.createdAt as string | number | Date).toISOString() : null,
+  };
 }
 
-export async function fetchPublicMediaList(url: string): Promise<PublicMediaItem[]> {
-  const data = await fetchJson<PublicListResponse<PublicMediaItem>>(url);
-  return Array.isArray(data?.items) ? data.items : [];
+async function listPublicMedia({
+  type,
+  category,
+  limit,
+}: {
+  type: "all" | "image" | "video" | "embed";
+  category?: string;
+  limit: number;
+}) {
+  const db = await getDb();
+
+  const query: Record<string, unknown> = {
+    $or: [{ isPublic: true }, { isPublic: { $exists: false } }],
+  };
+
+  if (type !== "all") {
+    query.type = type;
+  }
+
+  if (category?.trim()) {
+    query.categories = category.trim();
+  }
+
+  const docs = await db
+    .collection("media")
+    .find(query)
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .toArray();
+
+  return docs.map((doc) => toPublicMediaItem(doc as Record<string, unknown>));
 }
 
 export async function getPhotographyItems(): Promise<PublicMediaItem[]> {
-  const base = await getBaseUrl();
-  const primary = await fetchPublicMediaList(
-    `${base}/api/media/list-public?type=image&category=photography&limit=60`
-  );
+  const primary = await listPublicMedia({
+    type: "image",
+    category: "photography",
+    limit: 60,
+  });
+
   if (primary.length) return primary;
 
-  return fetchPublicMediaList(`${base}/api/media/list-public?type=image&limit=60`);
+  return listPublicMedia({
+    type: "image",
+    limit: 60,
+  });
 }
 
 export async function getVideographyItems(): Promise<PublicMediaItem[]> {
-  const base = await getBaseUrl();
-  const all = await fetchPublicMediaList(
-    `${base}/api/media/list-public?type=all&category=videography&limit=60`
-  );
+  const all = await listPublicMedia({
+    type: "all",
+    category: "videography",
+    limit: 60,
+  });
 
-  return all.filter((m) => m.type === "video" || m.type === "embed");
+  return all.filter((item) => item.type === "video" || item.type === "embed");
 }
 
 export async function getShowreelUrl(): Promise<string | null> {
-  const base = await getBaseUrl();
-  const data = await fetchJson<ShowreelResponse>(`${base}/api/site-settings/showreel`);
-  return typeof data?.embedUrl === "string" ? data.embedUrl : null;
+  const db = await getDb();
+
+  const doc = await db.collection("site_settings").findOne({ key: "showreel" });
+  return doc && typeof doc.value === "string" ? doc.value : null;
 }

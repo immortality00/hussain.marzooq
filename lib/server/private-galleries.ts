@@ -1,9 +1,9 @@
 import { cookies } from "next/headers";
 import { ObjectId } from "mongodb";
-import clientPromise from "@/lib/mongodb";
-import { privateGalleryCookieName } from "@/lib/private-galleries";
-import type { MediaItem } from "@/components/media/types";
 import { sanitizeAppearances } from "@/app/api/_lib/media";
+import type { MediaItem } from "@/components/media/types";
+import { privateGalleryCookieName } from "@/lib/private-galleries";
+import { getDb } from "@/lib/server/db";
 
 export type PrivateGallerySummary = {
   id: string;
@@ -66,10 +66,13 @@ function isExpired(expiresAt: Date | null | undefined) {
 }
 
 export async function getPrivateGalleryAdminList(): Promise<PrivateGallerySummary[]> {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
-  const docs = await db.collection("private_galleries").find({}).sort({ updatedAt: -1, createdAt: -1 }).toArray();
+  const docs = await db
+    .collection("private_galleries")
+    .find({})
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .toArray();
 
   return docs.map((doc) => ({
     id: String(doc._id),
@@ -85,8 +88,7 @@ export async function getPrivateGalleryAdminList(): Promise<PrivateGallerySummar
 }
 
 export async function getPrivateGalleryById(id: string) {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
   const oid = new ObjectId(id);
 
   const doc = await db.collection("private_galleries").findOne({ _id: oid });
@@ -103,13 +105,21 @@ export async function getPrivateGalleryById(id: string) {
   };
 }
 
-export async function getPrivateGalleryPublicBySlug(slug: string): Promise<
+export async function getPrivateGalleryPublicBySlug(
+  slug: string
+): Promise<
   | { state: "missing" }
-  | { state: "locked"; id: string; title: string; slug: string; description: string | null; expiresAtLocal: string }
+  | {
+      state: "locked";
+      id: string;
+      title: string;
+      slug: string;
+      description: string | null;
+      expiresAtLocal: string;
+    }
   | { state: "open"; gallery: PrivateGalleryPublic }
 > {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const doc = await db.collection("private_galleries").findOne({ slug });
   if (!doc) return { state: "missing" };

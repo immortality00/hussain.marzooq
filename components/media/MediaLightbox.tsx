@@ -47,7 +47,7 @@ function MediaSurface({ active }: { active: MediaItem }) {
               alt={active.title}
               fill
               className="object-contain"
-              sizes="100vw"
+              sizes="(min-width: 1024px) 62vw, 100vw"
               priority
             />
           </div>
