@@ -1,12 +1,9 @@
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { noStoreJson } from "@/app/api/_lib/common";
 import { getDb } from "@/lib/server/db";
+import { toAdminMediaListItem } from "@/lib/server/media-serializers";
 
 export const dynamic = "force-dynamic";
-
-function normalizeStringArray(value: unknown): string[] {
-  return Array.isArray(value) ? value.filter((x): x is string => typeof x === "string") : [];
-}
 
 export async function GET(req: Request) {
   const deny = await requireAdminOr401();
@@ -18,20 +15,7 @@ export async function GET(req: Request) {
   const db = await getDb();
 
   const docs = await db.collection("media").find({}).sort({ createdAt: -1 }).limit(limit).toArray();
-
-  const items = docs.map((doc) => ({
-    id: String(doc._id),
-    type: typeof doc.type === "string" ? doc.type : "image",
-    title: typeof doc.title === "string" ? doc.title : "",
-    secureUrl: typeof doc.secureUrl === "string" ? doc.secureUrl : null,
-    embedUrl: typeof doc.embedUrl === "string" ? doc.embedUrl : null,
-    categories: normalizeStringArray(doc.categories),
-    tags: normalizeStringArray(doc.tags),
-    location: typeof doc.location === "string" ? doc.location : null,
-    peopleIds: normalizeStringArray(doc.peopleIds),
-    people: normalizeStringArray(doc.people),
-    event: typeof doc.event === "string" ? doc.event : null,
-  }));
+  const items = docs.map((doc) => toAdminMediaListItem(doc as Record<string, unknown>));
 
   return noStoreJson({ ok: true, items });
 }

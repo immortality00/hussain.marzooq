@@ -85,7 +85,7 @@ function getInitials(name: string) {
 }
 
 function getIdentityLine(item: PublicTestimonial) {
-  return [item.about, item.locationLabel || item.location].filter(Boolean).join(" • ") || "Client";
+  return [item.about, item.locationLabel || item.location].filter(Boolean).join(" • ");
 }
 
 function SafeImage({
@@ -222,9 +222,11 @@ function ReviewModal({
             <Avatar name={item.name} profilePhotoUrl={item.profilePhotoUrl} size="card" />
             <div className="min-w-0">
               <div className="truncate text-lg font-semibold tracking-[-0.03em]">{item.name}</div>
-              <div className="mt-1 truncate text-sm text-muted-foreground">
-                {getIdentityLine(item)}
-              </div>
+              {getIdentityLine(item) ? (
+                <div className="mt-1 truncate text-sm text-muted-foreground">
+                  {getIdentityLine(item)}
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -323,9 +325,11 @@ function SingleReviewCard({
 
             <div className="min-w-0">
               <div className="truncate text-sm font-medium tracking-[-0.01em]">{item.name}</div>
-              <div className="mt-1 truncate text-xs text-muted-foreground">
-                {getIdentityLine(item)}
-              </div>
+              {getIdentityLine(item) ? (
+                <div className="mt-1 truncate text-xs text-muted-foreground">
+                  {getIdentityLine(item)}
+                </div>
+              ) : null}
             </div>
           </div>
 
