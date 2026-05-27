@@ -33,6 +33,7 @@ export default function MediaCardGrid({
         const isEmbed = m.type === "embed" && !!m.embedUrl;
         const isVideo = m.type === "video" && !!m.secureUrl;
         const isImage = !isEmbed && !isVideo && !!m.secureUrl;
+        const imagePriority = idx === 0;
 
         return (
           <button
@@ -48,8 +49,9 @@ export default function MediaCardGrid({
                   alt={m.title}
                   fill
                   className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  priority={idx < 3}
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                  loading={imagePriority ? "eager" : "lazy"}
+                  fetchPriority={imagePriority ? "high" : undefined}
                 />
               ) : isVideo ? (
                 <div className="absolute inset-0 bg-black">
@@ -82,9 +84,11 @@ export default function MediaCardGrid({
             </div>
 
             <div className="p-4">
-              <div className="text-sm font-medium line-clamp-1">{m.title}</div>
-              <div className="mt-1 text-xs text-muted-foreground line-clamp-1">
-                {[m.year ? String(m.year) : "", m.location ?? "", m.event ?? ""].filter(Boolean).join(" • ")}
+              <div className="line-clamp-1 text-sm font-medium">{m.title}</div>
+              <div className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+                {[m.year ? String(m.year) : "", m.location ?? "", m.event ?? ""]
+                  .filter(Boolean)
+                  .join(" • ")}
               </div>
             </div>
           </button>

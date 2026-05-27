@@ -49,10 +49,11 @@ export default async function ServicesPage({
             No services found for this category yet.
           </div>
         ) : (
-          services.map((s) => {
+          services.map((s, index) => {
             const img = s.imageUrl.trim();
             const hasPrice = typeof s.startingPrice === "number" && Number.isFinite(s.startingPrice);
             const workLink = workLinkForCategory(s.category);
+            const imagePriority = index === 0;
 
             return (
               <article
@@ -68,7 +69,8 @@ export default async function ServicesPage({
                         fill
                         sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
                         className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-                        priority={false}
+                        loading={imagePriority ? "eager" : "lazy"}
+                        fetchPriority={imagePriority ? "high" : undefined}
                       />
                     ) : (
                       <div className="h-full w-full bg-linear-to-br from-muted to-background" />
@@ -106,21 +108,21 @@ export default async function ServicesPage({
                   <div className="mt-6 flex flex-wrap gap-2">
                     <Link
                       href={`/services/${encodeURIComponent(s.slug)}`}
-                      className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+                      className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
                     >
                       View details
                     </Link>
 
                     <Link
                       href={`/contact?service=${encodeURIComponent(s.slug)}&category=${encodeURIComponent(s.category)}`}
-                      className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+                      className="rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
                     >
                       Book
                     </Link>
 
                     <Link
                       href={workLink.href}
-                      className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+                      className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
                     >
                       {workLink.label}
                     </Link>
