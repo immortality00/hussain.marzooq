@@ -30,7 +30,7 @@ export default function SortableServiceItem({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 rounded-2xl border p-3 hover:bg-accent/20 transition-colors"
+      className="flex items-center gap-3 rounded-2xl border p-3 transition-colors hover:bg-accent/20"
     >
       <button
         type="button"
@@ -52,6 +52,8 @@ export default function SortableServiceItem({
             height={224}
             className="h-full w-full object-cover"
             sizes="80px"
+            loading="eager"
+            fetchPriority="high"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">
@@ -89,7 +91,7 @@ export default function SortableServiceItem({
         <button
           type="button"
           onClick={() => onEdit(service)}
-          className="rounded-xl border px-3 py-2 text-sm hover:bg-accent/40 transition-colors"
+          className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent/40"
         >
           Edit
         </button>
@@ -97,7 +99,7 @@ export default function SortableServiceItem({
         <button
           type="button"
           onClick={() => onToggleActive(service)}
-          className="rounded-xl border px-3 py-2 text-sm hover:bg-accent/40 transition-colors"
+          className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent/40"
           title={service.isActive ? "Deactivate service" : "Activate service"}
         >
           {service.isActive ? "Deactivate" : "Activate"}
@@ -106,7 +108,7 @@ export default function SortableServiceItem({
         <button
           type="button"
           onClick={() => onDeleteForever(service)}
-          className="rounded-xl border px-3 py-2 text-sm hover:bg-red-500/10 transition-colors"
+          className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-red-500/10"
           title="Delete forever"
         >
           Delete

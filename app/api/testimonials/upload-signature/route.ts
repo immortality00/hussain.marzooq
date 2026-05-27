@@ -16,6 +16,13 @@ const SIGNATURE_RATE_LIMIT_MAX = 18;
 
 const signatureAttempts = new Map<string, { count: number; resetAt: number }>();
 
+const ALLOWED_SIGN_KEYS = new Set([
+  "timestamp",
+  "upload_preset",
+  "source",
+  "custom_coordinates",
+]);
+
 function getClientKey(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const realIp = request.headers.get("x-real-ip")?.trim();
@@ -49,6 +56,20 @@ function toValidTimestamp(value: unknown) {
   return roundedTimestamp;
 }
 
+function sanitizeParamsToSign(rawParams: Record<string, unknown>) {
+  const paramsToSign: Record<string, string | number> = {
+    folder: TESTIMONIALS_FOLDER,
+  };
+
+  for (const [key, value] of Object.entries(rawParams)) {
+    if (!ALLOWED_SIGN_KEYS.has(key)) continue;
+    if (typeof value !== "string" && typeof value !== "number") continue;
+    paramsToSign[key] = value;
+  }
+
+  return paramsToSign;
+}
+
 export async function POST(request: Request) {
   const apiSecret = process.env.CLOUDINARY_API_SECRET ?? "";
 
@@ -74,16 +95,14 @@ export async function POST(request: Request) {
     return noStoreJson({ error: "Missing paramsToSign." }, { status: 400 });
   }
 
-  const timestamp = toValidTimestamp(rawParams.timestamp);
+  const paramsToSign = sanitizeParamsToSign(rawParams);
 
+  const timestamp = toValidTimestamp(paramsToSign.timestamp);
   if (timestamp === null) {
     return noStoreJson({ error: "Invalid upload timestamp." }, { status: 400 });
   }
 
-  const paramsToSign: Record<string, string | number> = {
-    folder: TESTIMONIALS_FOLDER,
-    timestamp,
-  };
+  paramsToSign.timestamp = timestamp;
 
   const signature = cloudinary.utils.api_sign_request(paramsToSign, apiSecret);
 

@@ -1,35 +1,33 @@
-import { v2 as cloudinary } from "cloudinary";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { noStoreJson } from "@/app/api/_lib/common";
+import {
+  getCloudinaryPublicConfig,
+  isCloudinaryConfigured,
+  signCloudinaryParams,
+  sanitizeCloudinaryFolder,
+} from "@/lib/server/cloudinary";
 
 export const dynamic = "force-dynamic";
-
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? process.env.CLOUDINARY_CLOUD_NAME ?? "",
-  api_key: process.env.CLOUDINARY_API_KEY ?? "",
-  api_secret: process.env.CLOUDINARY_API_SECRET ?? "",
-});
 
 export async function POST() {
   const deny = await requireAdminOr401();
   if (deny) return deny as unknown as Response;
 
-  const timestamp = Math.round(Date.now() / 1000);
-  const folder = "hm_visuals";
-
-  const apiSecret = process.env.CLOUDINARY_API_SECRET ?? "";
-  if (!apiSecret) {
-    return noStoreJson({ ok: false, error: "Missing CLOUDINARY_API_SECRET" }, { status: 500 });
+  if (!isCloudinaryConfigured()) {
+    return noStoreJson({ ok: false, error: "Cloudinary config missing." }, { status: 500 });
   }
 
-  const signature = cloudinary.utils.api_sign_request({ timestamp, folder }, apiSecret);
+  const timestamp = Math.round(Date.now() / 1000);
+  const folder = sanitizeCloudinaryFolder("hm_visuals");
+  const signature = signCloudinaryParams({ timestamp, folder });
+  const { cloudName, apiKey } = getCloudinaryPublicConfig();
 
   return noStoreJson({
     ok: true,
     timestamp,
     signature,
-    cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? process.env.CLOUDINARY_CLOUD_NAME ?? "",
-    apiKey: process.env.CLOUDINARY_API_KEY ?? "",
+    cloudName,
+    apiKey,
     folder,
   });
 }
