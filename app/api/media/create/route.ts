@@ -1,5 +1,5 @@
-import clientPromise from "@/lib/mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { getDb } from "@/lib/server/db";
 import {
   asBooleanOrNull,
   asNullableString,
@@ -7,7 +7,13 @@ import {
   isRecord,
   noStoreJson,
 } from "@/app/api/_lib/common";
-import { getMediaLists, isCloudinarySecureUrl, parseNftMeta, sanitizeAppearances } from "@/app/api/_lib/media";
+import {
+  getMediaLists,
+  isCloudinarySecureUrl,
+  parseNftMeta,
+  resolvePeopleSelection,
+  sanitizeAppearances,
+} from "@/app/api/_lib/media";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +22,9 @@ export async function POST(req: Request) {
   if (deny) return deny as unknown as Response;
 
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
-  if (!isRecord(bodyUnknown)) return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
+  if (!isRecord(bodyUnknown)) {
+    return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
+  }
 
   const typeRaw = asNullableString(bodyUnknown.type)?.trim() ?? "";
   const type = typeRaw === "video" || typeRaw === "embed" ? typeRaw : "image";
@@ -29,7 +37,7 @@ export async function POST(req: Request) {
   const yearNum = asNumberOrNull(bodyUnknown.year);
   const year = yearNum !== null && yearNum > 1900 && yearNum < 2100 ? yearNum : null;
 
-  const { tags, categories, people } = getMediaLists(bodyUnknown);
+  const { tags, categories, peopleIds } = getMediaLists(bodyUnknown);
   const isPublic = asBooleanOrNull(bodyUnknown.isPublic) ?? true;
   const appearances = sanitizeAppearances(bodyUnknown.appearances);
 
@@ -39,10 +47,15 @@ export async function POST(req: Request) {
   const embedUrl = (asNullableString(bodyUnknown.embedUrl) ?? "").trim();
 
   if (!title) return noStoreJson({ ok: false, error: "Title required" }, { status: 400 });
-  if (categories.length === 0) return noStoreJson({ ok: false, error: "Choose at least one category." }, { status: 400 });
+  if (categories.length === 0) {
+    return noStoreJson({ ok: false, error: "Choose at least one category." }, { status: 400 });
+  }
 
   if (categories.includes("nft") && type === "embed") {
-    return noStoreJson({ ok: false, error: "NFT items must use an uploaded image or video." }, { status: 400 });
+    return noStoreJson(
+      { ok: false, error: "NFT items must use an uploaded image or video." },
+      { status: 400 }
+    );
   }
 
   if (type === "embed") {
@@ -62,6 +75,9 @@ export async function POST(req: Request) {
     return noStoreJson({ ok: false, error: nftParsed.error }, { status: 400 });
   }
 
+  const db = await getDb();
+  const resolvedPeople = await resolvePeopleSelection(db, { peopleIds });
+
   const now = new Date();
 
   const doc = {
@@ -73,7 +89,8 @@ export async function POST(req: Request) {
     year,
     tags,
     categories,
-    people,
+    peopleIds: resolvedPeople.peopleIds,
+    people: resolvedPeople.people,
     isPublic,
     appearances,
     nft: nftParsed.value,
@@ -81,20 +98,21 @@ export async function POST(req: Request) {
     publicId: type === "embed" ? null : publicId,
     resourceType: type === "embed" ? null : resourceType,
     embedUrl: type === "embed" ? embedUrl : null,
-    order: typeof bodyUnknown.order === "number" && Number.isFinite(bodyUnknown.order) ? bodyUnknown.order : 0,
+    order:
+      typeof bodyUnknown.order === "number" && Number.isFinite(bodyUnknown.order)
+        ? bodyUnknown.order
+        : 0,
     updatedAt: now,
   };
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
   const col = db.collection("media");
+  const keyFilter = type === "embed" ? ({ type: "embed", embedUrl } as const) : ({ publicId } as const);
 
-  const keyFilter =
-    type === "embed"
-      ? ({ type: "embed", embedUrl } as const)
-      : ({ publicId } as const);
-
-  await col.updateOne(keyFilter, { $set: doc, $setOnInsert: { createdAt: now } }, { upsert: true });
+  await col.updateOne(
+    keyFilter,
+    { $set: doc, $setOnInsert: { createdAt: now } },
+    { upsert: true }
+  );
 
   const found = await col.findOne(keyFilter, { projection: { _id: 1 } });
   const id = found?._id ? String(found._id) : null;

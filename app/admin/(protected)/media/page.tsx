@@ -46,7 +46,9 @@ export default function AdminMediaPage() {
       {banner ? (
         <div
           className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
-            banner.type === "ok" ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"
+            banner.type === "ok"
+              ? "bg-green-500/10 border-green-500/30"
+              : "bg-red-500/10 border-red-500/30"
           }`}
         >
           {banner.text}
@@ -107,8 +109,9 @@ export default function AdminMediaPage() {
           setEvent={editor.setEvent}
           tagsText={editor.tagsText}
           setTagsText={editor.setTagsText}
-          peopleText={editor.peopleText}
-          setPeopleText={editor.setPeopleText}
+          selectedPeopleIds={editor.selectedPeopleIds}
+          selectedPeopleNames={editor.selectedPeopleNames}
+          setSelectedPeople={editor.setSelectedPeople}
         />
 
         <MediaAppearancesSection

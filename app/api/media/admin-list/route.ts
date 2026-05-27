@@ -1,6 +1,6 @@
-import clientPromise from "@/lib/mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { noStoreJson } from "@/app/api/_lib/common";
+import { getDb } from "@/lib/server/db";
 
 export const dynamic = "force-dynamic";
 
@@ -15,15 +15,9 @@ export async function GET(req: Request) {
   const url = new URL(req.url);
   const limit = Math.min(Math.max(Number(url.searchParams.get("limit") ?? 120), 1), 300);
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
-  const docs = await db
-    .collection("media")
-    .find({})
-    .sort({ createdAt: -1 })
-    .limit(limit)
-    .toArray();
+  const docs = await db.collection("media").find({}).sort({ createdAt: -1 }).limit(limit).toArray();
 
   const items = docs.map((doc) => ({
     id: String(doc._id),
@@ -34,6 +28,7 @@ export async function GET(req: Request) {
     categories: normalizeStringArray(doc.categories),
     tags: normalizeStringArray(doc.tags),
     location: typeof doc.location === "string" ? doc.location : null,
+    peopleIds: normalizeStringArray(doc.peopleIds),
     people: normalizeStringArray(doc.people),
     event: typeof doc.event === "string" ? doc.event : null,
   }));

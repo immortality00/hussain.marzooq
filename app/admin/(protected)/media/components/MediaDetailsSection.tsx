@@ -2,25 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import type { PersonProfileOption } from "../lib/types";
 
-type PersonProfile = {
+type SelectedPerson = {
   id: string;
   name: string;
-  slug: string;
-  avatarUrl: string | null;
-  isPublic: boolean;
+  legacy?: boolean;
 };
-
-function parsePeople(value: string) {
-  return value
-    .split(",")
-    .map((x) => x.trim())
-    .filter(Boolean);
-}
-
-function joinPeople(values: string[]) {
-  return values.join(", ");
-}
 
 export default function MediaDetailsSection({
   title,
@@ -35,8 +23,9 @@ export default function MediaDetailsSection({
   setEvent,
   tagsText,
   setTagsText,
-  peopleText,
-  setPeopleText,
+  selectedPeopleIds,
+  selectedPeopleNames,
+  setSelectedPeople,
 }: {
   title: string;
   setTitle: (value: string) => void;
@@ -50,10 +39,11 @@ export default function MediaDetailsSection({
   setEvent: (value: string) => void;
   tagsText: string;
   setTagsText: (value: string) => void;
-  peopleText: string;
-  setPeopleText: (value: string) => void;
+  selectedPeopleIds: string[];
+  selectedPeopleNames: string[];
+  setSelectedPeople: (next: { ids: string[]; names: string[] }) => void;
 }) {
-  const [profiles, setProfiles] = useState<PersonProfile[]>([]);
+  const [profiles, setProfiles] = useState<PersonProfileOption[]>([]);
   const [peopleQuery, setPeopleQuery] = useState("");
 
   useEffect(() => {
@@ -62,7 +52,11 @@ export default function MediaDetailsSection({
     async function loadPeople() {
       try {
         const res = await fetch("/api/people", { cache: "no-store" });
-        const data = (await res.json().catch(() => null)) as { ok?: boolean; items?: PersonProfile[] };
+        const data = (await res.json().catch(() => null)) as {
+          ok?: boolean;
+          items?: PersonProfileOption[];
+        };
+
         if (!cancelled && res.ok && data?.ok && Array.isArray(data.items)) {
           setProfiles(data.items);
         }
@@ -76,14 +70,38 @@ export default function MediaDetailsSection({
     };
   }, []);
 
-  const selectedPeople = useMemo(() => parsePeople(peopleText), [peopleText]);
+  const selectedPeople = useMemo<SelectedPerson[]>(() => {
+    const out: SelectedPerson[] = [];
+    const seen = new Set<string>();
+
+    for (let i = 0; i < selectedPeopleNames.length; i += 1) {
+      const name = selectedPeopleNames[i] ?? "";
+      const id = selectedPeopleIds[i] ?? "";
+
+      if (!name) continue;
+
+      const key = id ? `id:${id}` : `legacy:${name.toLowerCase()}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      out.push({
+        id,
+        name,
+        legacy: !id,
+      });
+    }
+
+    return out;
+  }, [selectedPeopleIds, selectedPeopleNames]);
 
   const availableMatches = useMemo(() => {
     const q = peopleQuery.trim().toLowerCase();
     if (!q) return [];
 
+    const selectedIdSet = new Set(selectedPeople.filter((p) => p.id).map((p) => p.id));
+
     return profiles
-      .filter((profile) => !selectedPeople.includes(profile.name))
+      .filter((profile) => !selectedIdSet.has(profile.id))
       .filter((profile) => profile.name.toLowerCase().includes(q))
       .slice(0, 8);
   }, [peopleQuery, profiles, selectedPeople]);
@@ -94,14 +112,28 @@ export default function MediaDetailsSection({
     return profiles.some((profile) => profile.name.toLowerCase() === q);
   }, [peopleQuery, profiles]);
 
-  function addPerson(name: string) {
-    const next = Array.from(new Set([...selectedPeople, name]));
-    setPeopleText(joinPeople(next));
+  function addPerson(profile: PersonProfileOption) {
+    const next = [...selectedPeople.filter((p) => p.id)];
+    if (!next.some((p) => p.id === profile.id)) {
+      next.push({ id: profile.id, name: profile.name });
+    }
+
+    setSelectedPeople({
+      ids: next.map((p) => p.id),
+      names: next.map((p) => p.name),
+    });
     setPeopleQuery("");
   }
 
-  function removePerson(name: string) {
-    setPeopleText(joinPeople(selectedPeople.filter((item) => item !== name)));
+  function removePerson(target: SelectedPerson) {
+    const next = selectedPeople.filter((person) =>
+      target.id ? person.id !== target.id : person.name !== target.name
+    );
+
+    setSelectedPeople({
+      ids: next.filter((p) => p.id).map((p) => p.id),
+      names: next.map((p) => p.name),
+    });
   }
 
   return (
@@ -169,14 +201,15 @@ export default function MediaDetailsSection({
 
           {selectedPeople.length ? (
             <div className="flex flex-wrap gap-2">
-              {selectedPeople.map((name) => (
+              {selectedPeople.map((person) => (
                 <button
-                  key={name}
+                  key={person.id || `legacy-${person.name}`}
                   type="button"
-                  onClick={() => removePerson(name)}
+                  onClick={() => removePerson(person)}
                   className="rounded-full border px-3 py-1 text-xs text-muted-foreground hover:bg-accent"
                 >
-                  {name} ×
+                  {person.name}
+                  {person.legacy ? " (legacy)" : ""} ×
                 </button>
               ))}
             </div>
@@ -197,7 +230,7 @@ export default function MediaDetailsSection({
                     <button
                       key={profile.id}
                       type="button"
-                      onClick={() => addPerson(profile.name)}
+                      onClick={() => addPerson(profile)}
                       className="rounded-full border px-3 py-1 text-xs hover:bg-accent"
                     >
                       {profile.name}

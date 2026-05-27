@@ -1,6 +1,7 @@
+import { ObjectId } from "mongodb";
 import { v2 as cloudinary } from "cloudinary";
-import clientPromise from "@/lib/mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { getDb } from "@/lib/server/db";
 import {
   asBooleanOrNull,
   asNullableString,
@@ -10,7 +11,11 @@ import {
   noStoreJson,
   parseObjectId,
 } from "@/app/api/_lib/common";
-import { parseNftMeta, sanitizeAppearances } from "@/app/api/_lib/media";
+import {
+  parseNftMeta,
+  resolvePeopleSelection,
+  sanitizeAppearances,
+} from "@/app/api/_lib/media";
 
 export const dynamic = "force-dynamic";
 
@@ -26,11 +31,17 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const oid = parseObjectId(id);
   if (!oid) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
-
+  const db = await getDb();
   const doc = await db.collection("media").findOne({ _id: oid });
+
   if (!doc) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+
+  const rawPeopleIds = asStringArray(doc.peopleIds);
+  const rawPeople = asStringArray(doc.people);
+  const resolvedPeople = await resolvePeopleSelection(db, {
+    peopleIds: rawPeopleIds,
+    people: rawPeople,
+  });
 
   const item = {
     id: String(doc._id),
@@ -42,7 +53,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     year: typeof doc.year === "number" ? doc.year : null,
     tags: asStringArray(doc.tags),
     categories: asStringArray(doc.categories),
-    people: asStringArray(doc.people),
+    peopleIds: resolvedPeople.peopleIds,
+    people: resolvedPeople.people.length ? resolvedPeople.people : rawPeople,
     appearances: sanitizeAppearances(doc.appearances),
     nft: doc.nft && typeof doc.nft === "object" ? doc.nft : null,
     isPublic: typeof doc.isPublic === "boolean" ? doc.isPublic : true,
@@ -82,7 +94,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   const tags = asStringArray(bodyUnknown.tags);
   const categories = asStringArray(bodyUnknown.categories);
-  const people = asStringArray(bodyUnknown.people);
+  const peopleIds = asStringArray(bodyUnknown.peopleIds);
+  const legacyPeople = asStringArray(bodyUnknown.people);
   const isPublic = asBooleanOrNull(bodyUnknown.isPublic);
   const appearances = sanitizeAppearances(bodyUnknown.appearances);
 
@@ -108,6 +121,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     return noStoreJson({ ok: false, error: nftParsed.error }, { status: 400 });
   }
 
+  const db = await getDb();
+  const resolvedPeople = await resolvePeopleSelection(db, { peopleIds, people: legacyPeople });
+
   const set: Record<string, unknown> = {
     title,
     description: description || null,
@@ -116,7 +132,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     year,
     tags,
     categories,
-    people,
+    peopleIds: resolvedPeople.peopleIds,
+    people: resolvedPeople.people,
     appearances,
     nft: nftParsed.value,
     updatedAt: new Date(),
@@ -152,9 +169,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     set.embedUrl = null;
   }
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
-
   const result = await db.collection("media").updateOne({ _id: oid }, { $set: set });
   if (!result.matchedCount) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
 
@@ -169,51 +183,70 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   const oid = parseObjectId(id);
   if (!oid) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
+  const media = await db.collection("media").findOne({ _id: oid });
+  if (!media) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
 
-  const existing = await db.collection("media").findOne({ _id: oid });
-  if (!existing) {
-    return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
-  }
-
-  const publicId = typeof existing.publicId === "string" ? existing.publicId : "";
+  const publicId = typeof media.publicId === "string" ? media.publicId : "";
   const resourceType =
-    typeof existing.resourceType === "string" && existing.resourceType
-      ? existing.resourceType
-      : typeof existing.type === "string" && existing.type === "video"
+    typeof media.resourceType === "string" && media.resourceType
+      ? media.resourceType
+      : typeof media.type === "string" && media.type === "video"
         ? "video"
         : "image";
 
-  if (publicId) {
-    cloudinary.config({
-      cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-      api_key: process.env.CLOUDINARY_API_KEY,
-      api_secret: process.env.CLOUDINARY_API_SECRET,
-      secure: true,
-    });
+  const galleryDocs = await db
+    .collection("private_galleries")
+    .find({ mediaIds: String(oid) })
+    .project({ _id: 1, mediaIds: 1 })
+    .toArray();
 
-    try {
-      await cloudinary.uploader.destroy(publicId, {
-        resource_type: resourceType,
-        invalidate: true,
-      });
-    } catch {
-      return noStoreJson(
-        {
-          ok: false,
-          error: "Cloudinary delete failed. Media was not removed from the database.",
-        },
-        { status: 500 }
-      );
-    }
+  if (galleryDocs.length > 0) {
+    await Promise.all(
+      galleryDocs.map((galleryDoc) => {
+        const currentMediaIds = Array.isArray((galleryDoc as PrivateGalleryRecord).mediaIds)
+          ? ((galleryDoc as PrivateGalleryRecord).mediaIds ?? []).filter(
+              (value): value is string => typeof value === "string"
+            )
+          : [];
+
+        return db.collection("private_galleries").updateOne(
+          { _id: galleryDoc._id as ObjectId },
+          {
+            $set: {
+              mediaIds: currentMediaIds.filter((value) => value !== String(oid)),
+              updatedAt: new Date(),
+            },
+          }
+        );
+      })
+    );
   }
 
-  await db.collection("media").deleteOne({ _id: oid });
+  const result = await db.collection("media").deleteOne({ _id: oid });
+  if (!result.deletedCount) return noStoreJson({ ok: false, error: "Delete failed" }, { status: 500 });
 
-  await db
-    .collection<PrivateGalleryRecord>("private_galleries")
-    .updateMany({}, { $pull: { mediaIds: String(oid) } });
+  if (publicId) {
+    const cloudName = (process.env.CLOUDINARY_CLOUD_NAME ?? "").trim();
+    const apiKey = (process.env.CLOUDINARY_API_KEY ?? "").trim();
+    const apiSecret = (process.env.CLOUDINARY_API_SECRET ?? "").trim();
+
+    if (cloudName && apiKey && apiSecret) {
+      cloudinary.config({
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret,
+        secure: true,
+      });
+
+      try {
+        await cloudinary.uploader.destroy(publicId, {
+          resource_type: resourceType === "video" ? "video" : "image",
+          invalidate: true,
+        });
+      } catch {}
+    }
+  }
 
   return noStoreJson({ ok: true });
 }

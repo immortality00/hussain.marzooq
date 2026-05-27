@@ -47,6 +47,7 @@ export type MediaItem = {
   year: number | null;
   tags: string[];
   categories: string[];
+  peopleIds: string[];
   people: string[];
   appearances: Appearance[];
   nft: NftMeta | null;
@@ -55,4 +56,12 @@ export type MediaItem = {
   publicId: string | null;
   resourceType: string | null;
   embedUrl: string | null;
+};
+
+export type PersonProfileOption = {
+  id: string;
+  name: string;
+  slug: string;
+  avatarUrl: string | null;
+  isPublic: boolean;
 };

@@ -15,12 +15,14 @@ export function useBaseMediaEditorState() {
   const [event, setEvent] = useState("");
   const [year, setYear] = useState("");
   const [tagsText, setTagsText] = useState("");
-  const [peopleText, setPeopleText] = useState("");
+  const [selectedPeopleIds, setSelectedPeopleIds] = useState<string[]>([]);
+  const [selectedPeopleNames, setSelectedPeopleNames] = useState<string[]>([]);
   const [categories, setCategories] = useState<MediaCategory[]>([]);
   const [isPublic, setIsPublic] = useState(true);
 
   const tags = useMemo(() => toList(tagsText), [tagsText]);
-  const people = useMemo(() => toList(peopleText), [peopleText]);
+  const peopleIds = useMemo(() => selectedPeopleIds.slice(0, 60), [selectedPeopleIds]);
+  const people = useMemo(() => selectedPeopleNames.slice(0, 60), [selectedPeopleNames]);
   const primaryCategory = categories[0] ?? null;
   const isNft = primaryCategory === "nft" || categories.includes("nft");
 
@@ -36,6 +38,11 @@ export function useBaseMediaEditorState() {
     setCategories((prev) => [key, ...prev.filter((x) => x !== key)]);
   }
 
+  function setSelectedPeople(next: { ids: string[]; names: string[] }) {
+    setSelectedPeopleIds(next.ids.slice(0, 60));
+    setSelectedPeopleNames(next.names.slice(0, 60));
+  }
+
   function resetBaseFields() {
     setEditingId("");
     setMode("upload");
@@ -47,7 +54,8 @@ export function useBaseMediaEditorState() {
     setEvent("");
     setYear("");
     setTagsText("");
-    setPeopleText("");
+    setSelectedPeopleIds([]);
+    setSelectedPeopleNames([]);
     setCategories([]);
     setIsPublic(true);
   }
@@ -79,7 +87,8 @@ export function useBaseMediaEditorState() {
     setEvent(m.event ?? "");
     setYear(m.year ? String(m.year) : "");
     setTagsText((m.tags ?? []).join(", "));
-    setPeopleText((m.people ?? []).join(", "));
+    setSelectedPeopleIds(m.peopleIds ?? []);
+    setSelectedPeopleNames(m.people ?? []);
     setCategories((m.categories ?? []) as MediaCategory[]);
     setIsPublic(Boolean(m.isPublic));
   }
@@ -105,8 +114,9 @@ export function useBaseMediaEditorState() {
     setYear,
     tagsText,
     setTagsText,
-    peopleText,
-    setPeopleText,
+    selectedPeopleIds,
+    selectedPeopleNames,
+    setSelectedPeople,
     categories,
     setCategories,
     primaryCategory,
@@ -116,6 +126,7 @@ export function useBaseMediaEditorState() {
     isPublic,
     setIsPublic,
     tags,
+    peopleIds,
     people,
     resetBaseFields,
     loadBaseIntoState,

@@ -1,4 +1,4 @@
-import clientPromise from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import {
   asBooleanOrNull,
@@ -7,6 +7,7 @@ import {
   noStoreJson,
   parseObjectId,
 } from "@/app/api/_lib/common";
+import { getDb } from "@/lib/server/db";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,7 @@ function slugify(value: string) {
 }
 
 async function ensureUniqueSlug(baseSlug: string, excludeId?: string) {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   let slug = baseSlug || "person";
   let counter = 1;
@@ -43,8 +43,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const oid = parseObjectId(id);
   if (!oid) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
   const doc = await db.collection("people_profiles").findOne({ _id: oid });
 
   if (!doc) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
@@ -84,8 +83,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   const slug = await ensureUniqueSlug(slugify(slugInput || name), id);
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
+
+  const existing = await db.collection("people_profiles").findOne({ _id: oid }, { projection: { name: 1 } });
+  if (!existing) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+
+  const previousName = typeof existing.name === "string" ? existing.name : "";
 
   const result = await db.collection("people_profiles").updateOne(
     { _id: oid },
@@ -103,6 +106,18 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   if (!result.matchedCount) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
 
+  if (previousName && previousName !== name) {
+    await db.collection("media").updateMany(
+      { peopleIds: String(oid) },
+      {
+        $set: { "people.$[matched]": name, updatedAt: new Date() },
+      },
+      {
+        arrayFilters: [{ matched: previousName }],
+      }
+    );
+  }
+
   return noStoreJson({ ok: true, slug });
 }
 
@@ -114,10 +129,27 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   const oid = parseObjectId(id);
   if (!oid) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
-  const result = await db.collection("people_profiles").deleteOne({ _id: oid });
+  const db = await getDb();
+  const person = await db.collection("people_profiles").findOne({ _id: oid }, { projection: { name: 1 } });
+  if (!person) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
 
+  const personName = typeof person.name === "string" ? person.name : "";
+
+  const linkedMedia = await db.collection("media").findOne({
+    $or: [{ peopleIds: id }, ...(personName ? [{ people: personName }] : [])],
+  });
+
+  if (linkedMedia) {
+    return noStoreJson(
+      {
+        ok: false,
+        error: "This profile is linked to media. Remove it from media items first.",
+      },
+      { status: 409 }
+    );
+  }
+
+  const result = await db.collection("people_profiles").deleteOne({ _id: oid });
   if (!result.deletedCount) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
 
   return noStoreJson({ ok: true });

@@ -22,7 +22,8 @@ export function buildMediaPayload(args: {
   year: string;
   tags: string[];
   categories: string[];
-  people: string[];
+  peopleIds: string[];
+  peopleNames: string[];
   isPublic: boolean;
   appearances: unknown[];
   embedUrl: string;
@@ -57,7 +58,8 @@ export function buildMediaPayload(args: {
     year: yearValue,
     tags: args.tags,
     categories: args.categories,
-    people: args.people,
+    peopleIds: args.peopleIds,
+    people: args.peopleNames,
     isPublic: args.isPublic,
     appearances: args.appearances,
     nft: isNft
