@@ -44,11 +44,7 @@ export default async function PrivateGalleryPage({
           This gallery has no media yet.
         </div>
       ) : (
-        <PrivateGalleryBrowser
-          items={gallery.mediaItems}
-          gallerySlug={gallery.slug}
-          downloadToken={gallery.downloadToken}
-        />
+        <PrivateGalleryBrowser items={gallery.mediaItems} gallerySlug={gallery.slug} />
       )}
 
       <div className="mt-10 rounded-[2rem] border p-5 text-sm text-muted-foreground">

@@ -35,10 +35,7 @@ export default function PrivateGalleryBrowser({
     else window.dispatchEvent(new Event("hm_modal_close"));
   }, [active]);
 
-  const downloadableItems = useMemo(
-    () => items.filter((item) => !!item.secureUrl),
-    [items]
-  );
+  const downloadableItems = useMemo(() => items.filter((item) => !!item.secureUrl), [items]);
 
   function downloadGallery() {
     window.location.href = `/api/private-galleries/download/${encodeURIComponent(gallerySlug)}`;
@@ -59,8 +56,9 @@ export default function PrivateGalleryBrowser({
       ) : null}
 
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {items.map((item) => {
+        {items.map((item, index) => {
           const secureUrl = item.secureUrl;
+          const isPriorityImage = index === 0;
 
           return (
             <article
@@ -87,6 +85,8 @@ export default function PrivateGalleryBrowser({
                         fill
                         className="object-cover transition-transform duration-700 hover:scale-[1.03]"
                         sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                        loading={isPriorityImage ? "eager" : "lazy"}
+                        fetchPriority={isPriorityImage ? "high" : undefined}
                       />
                     )
                   ) : (
@@ -237,7 +237,11 @@ export default function PrivateGalleryBrowser({
                   {active.secureUrl ? (
                     <button
                       type="button"
-                      onClick={() => downloadFile(active.secureUrl as string)}
+                      onClick={() => {
+                        const downloadUrl = active.secureUrl;
+                        if (!downloadUrl) return;
+                        downloadFile(downloadUrl);
+                      }}
                       className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
                     >
                       Download

@@ -24,7 +24,6 @@ export type PrivateGalleryPublic = {
   description: string | null;
   expiresAtLocal: string;
   mediaItems: MediaItem[];
-  downloadToken: string;
 };
 
 function normalizeStringArray(value: unknown): string[] {
@@ -172,7 +171,6 @@ export async function getPrivateGalleryPublicBySlug(
       description,
       expiresAtLocal,
       mediaItems,
-      downloadToken: accessToken,
     },
   };
 }

@@ -1,5 +1,6 @@
 import { v2 as cloudinary } from "cloudinary";
 import { isRecord, noStoreJson } from "@/app/api/_lib/common";
+import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 
 export const dynamic = "force-dynamic";
 
@@ -14,8 +15,6 @@ const MAX_TIMESTAMP_AGE_SECONDS = 10 * 60;
 const SIGNATURE_RATE_LIMIT_WINDOW_MS = 60_000;
 const SIGNATURE_RATE_LIMIT_MAX = 18;
 
-const signatureAttempts = new Map<string, { count: number; resetAt: number }>();
-
 const ALLOWED_SIGN_KEYS = new Set([
   "timestamp",
   "upload_preset",
@@ -27,19 +26,6 @@ function getClientKey(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
   const realIp = request.headers.get("x-real-ip")?.trim();
   return forwardedFor || realIp || "anonymous";
-}
-
-function isRateLimited(key: string) {
-  const now = Date.now();
-  const existing = signatureAttempts.get(key);
-
-  if (!existing || existing.resetAt <= now) {
-    signatureAttempts.set(key, { count: 1, resetAt: now + SIGNATURE_RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-
-  existing.count += 1;
-  return existing.count > SIGNATURE_RATE_LIMIT_MAX;
 }
 
 function toValidTimestamp(value: unknown) {
@@ -83,7 +69,14 @@ export async function POST(request: Request) {
 
   const clientKey = getClientKey(request);
 
-  if (isRateLimited(clientKey)) {
+  const rateLimit = await consumeFixedWindowRateLimit({
+    bucket: "public-testimonials-upload-signature",
+    key: clientKey,
+    limit: SIGNATURE_RATE_LIMIT_MAX,
+    windowMs: SIGNATURE_RATE_LIMIT_WINDOW_MS,
+  });
+
+  if (rateLimit.limited) {
     return noStoreJson({ error: "Too many upload attempts. Try again later." }, { status: 429 });
   }
 

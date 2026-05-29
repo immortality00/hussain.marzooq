@@ -1,4 +1,5 @@
-import clientPromise from "@/lib/mongodb";
+import { getDb } from "@/lib/server/db";
+import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import {
   resolveTestimonialLocationById,
   resolveTestimonialLocationByLabel,
@@ -10,6 +11,11 @@ import {
   isRecord,
   noStoreJson,
 } from "@/app/api/_lib/common";
+import {
+  getClientAddress,
+  isValidEmail,
+  isValidFormStartedAt,
+} from "@/app/api/_lib/public-form-security";
 
 export const dynamic = "force-dynamic";
 
@@ -18,42 +24,20 @@ const SUBMIT_RATE_LIMIT_WINDOW_MS = 10 * 60_000;
 const SUBMIT_RATE_LIMIT_MAX = 4;
 const MINIMUM_FORM_TIME_MS = 2500;
 
-const submitAttempts = new Map<string, { count: number; resetAt: number }>();
+type NormalizedResolvedLocation = {
+  locationId: string | null;
+  locationLabel: string | null;
+  location: string | null;
+  locationLat: number | null;
+  locationLon: number | null;
+  locationCountryCode: string | null;
+};
 
 function normalizeRating(value: number | null) {
   if (value === null || !Number.isFinite(value)) return null;
   const rounded = Math.round(value);
   if (rounded < 1 || rounded > 5) return null;
   return rounded;
-}
-
-function getClientKey(request: Request) {
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = request.headers.get("x-real-ip")?.trim();
-  return forwardedFor || realIp || "anonymous";
-}
-
-function isRateLimited(key: string) {
-  const now = Date.now();
-  const existing = submitAttempts.get(key);
-
-  if (!existing || existing.resetAt <= now) {
-    submitAttempts.set(key, { count: 1, resetAt: now + SUBMIT_RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-
-  existing.count += 1;
-  return existing.count > SUBMIT_RATE_LIMIT_MAX;
-}
-
-function isValidEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-}
-
-function isValidFormStartedAt(value: unknown) {
-  const startedAt = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(startedAt)) return false;
-  return Date.now() - startedAt >= MINIMUM_FORM_TIME_MS;
 }
 
 function isAllowedCloudinaryTestimonialUrl(value: string) {
@@ -83,10 +67,68 @@ function normalizeOptionalPhotoUrl(value: string) {
   return isAllowedCloudinaryTestimonialUrl(trimmed) ? trimmed : null;
 }
 
-export async function POST(req: Request) {
-  const clientKey = getClientKey(req);
+function normalizeResolvedLocation(value: unknown): NormalizedResolvedLocation | null {
+  if (!value || typeof value !== "object") return null;
 
-  if (isRateLimited(clientKey)) {
+  const record = value as Record<string, unknown>;
+
+  return {
+    locationId:
+      typeof record.locationId === "string"
+        ? record.locationId
+        : typeof record.id === "string"
+          ? record.id
+          : null,
+    locationLabel:
+      typeof record.locationLabel === "string"
+        ? record.locationLabel
+        : typeof record.label === "string"
+          ? record.label
+          : typeof record.displayName === "string"
+            ? record.displayName
+            : null,
+    location:
+      typeof record.location === "string"
+        ? record.location
+        : typeof record.name === "string"
+          ? record.name
+          : typeof record.label === "string"
+            ? record.label
+            : null,
+    locationLat:
+      typeof record.locationLat === "number"
+        ? record.locationLat
+        : typeof record.lat === "number"
+          ? record.lat
+          : null,
+    locationLon:
+      typeof record.locationLon === "number"
+        ? record.locationLon
+        : typeof record.lon === "number"
+          ? record.lon
+          : typeof record.lng === "number"
+            ? record.lng
+            : null,
+    locationCountryCode:
+      typeof record.locationCountryCode === "string"
+        ? record.locationCountryCode
+        : typeof record.countryCode === "string"
+          ? record.countryCode
+          : null,
+  };
+}
+
+export async function POST(req: Request) {
+  const clientKey = getClientAddress(req);
+
+  const rateLimit = await consumeFixedWindowRateLimit({
+    bucket: "public-testimonials-submit",
+    key: clientKey,
+    limit: SUBMIT_RATE_LIMIT_MAX,
+    windowMs: SUBMIT_RATE_LIMIT_WINDOW_MS,
+  });
+
+  if (rateLimit.limited) {
     return noStoreJson(
       { ok: false, error: "Too many submissions. Try again later." },
       { status: 429 }
@@ -102,7 +144,7 @@ export async function POST(req: Request) {
   const honeypot = (asNullableString(body.website) ?? "").trim();
   if (honeypot) return noStoreJson({ ok: true });
 
-  if (!isValidFormStartedAt(body.formStartedAt)) {
+  if (!isValidFormStartedAt(body.formStartedAt, MINIMUM_FORM_TIME_MS)) {
     return noStoreJson(
       { ok: false, error: "Submission was too fast. Please try again." },
       { status: 400 }
@@ -119,49 +161,52 @@ export async function POST(req: Request) {
   const profilePhotoUrl = normalizeOptionalPhotoUrl(asNullableString(body.profilePhotoUrl) ?? "");
   const photoUrls = asStringArray(body.photoUrls, 12)
     .map(normalizeOptionalPhotoUrl)
-    .filter((url): url is string => Boolean(url));
+    .filter((value): value is string => Boolean(value));
 
   if (!name) return noStoreJson({ ok: false, error: "Name is required." }, { status: 400 });
   if (!email) return noStoreJson({ ok: false, error: "Email is required." }, { status: 400 });
-
   if (!isValidEmail(email)) {
-    return noStoreJson({ ok: false, error: "Use a valid email address." }, { status: 400 });
+    return noStoreJson({ ok: false, error: "Email format is invalid." }, { status: 400 });
+  }
+  if (!review) return noStoreJson({ ok: false, error: "Review is required." }, { status: 400 });
+  if (!rating) return noStoreJson({ ok: false, error: "Star rating is required." }, { status: 400 });
+
+  let resolvedLocation: NormalizedResolvedLocation | null = null;
+
+  if (locationId) {
+    resolvedLocation = normalizeResolvedLocation(await resolveTestimonialLocationById(locationId));
+    if (!resolvedLocation) {
+      return noStoreJson({ ok: false, error: "Selected location is invalid." }, { status: 400 });
+    }
+  } else if (locationLabel) {
+    resolvedLocation = normalizeResolvedLocation(
+      await resolveTestimonialLocationByLabel(locationLabel)
+    );
   }
 
-  if (!review) return noStoreJson({ ok: false, error: "Review is required." }, { status: 400 });
-  if (rating === null) return noStoreJson({ ok: false, error: "Stars are required." }, { status: 400 });
-
-  const verifiedLocation =
-    locationId.length > 0
-      ? await resolveTestimonialLocationById(locationId)
-      : locationLabel.length > 0
-        ? await resolveTestimonialLocationByLabel(locationLabel)
-        : null;
-
+  const db = await getDb();
   const now = new Date();
-  const client = await clientPromise;
-  const db = client.db(process.env.MONGODB_DB_NAME || "hm_visuals");
 
-  const result = await db.collection("testimonials").insertOne({
+  await db.collection("testimonials").insertOne({
     name,
     email,
     about: about || null,
-    location: verifiedLocation?.label ?? null,
-    locationId: verifiedLocation?.id ?? null,
-    locationLabel: verifiedLocation?.label ?? null,
-    locationLat: verifiedLocation?.lat ?? null,
-    locationLon: verifiedLocation?.lon ?? null,
-    locationCountryCode: verifiedLocation?.countryCode ?? null,
+    location:
+      resolvedLocation?.location ?? (locationLabel || null),
+    locationId: resolvedLocation?.locationId ?? null,
+    locationLabel: resolvedLocation?.locationLabel ?? null,
+    locationLat: resolvedLocation?.locationLat ?? null,
+    locationLon: resolvedLocation?.locationLon ?? null,
+    locationCountryCode: resolvedLocation?.locationCountryCode ?? null,
     review,
     rating,
     profilePhotoUrl,
     photoUrls,
     isApproved: false,
     sortOrder: 100,
-    source: "public-form",
     createdAt: now,
     updatedAt: now,
   });
 
-  return noStoreJson({ ok: true, id: String(result.insertedId) });
+  return noStoreJson({ ok: true });
 }

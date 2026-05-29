@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
+import { claimDuplicateWindow, consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import {
   asNullableString,
   isRecord,
@@ -8,9 +9,7 @@ import {
   noStoreJson,
 } from "@/app/api/_lib/common";
 import {
-  consumeFixedWindowRateLimit,
   getClientAddress,
-  isDuplicateSubmission,
   isValidEmail,
   isValidFormStartedAt,
 } from "@/app/api/_lib/public-form-security";
@@ -64,14 +63,14 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   const clientAddress = getClientAddress(req);
 
-  if (
-    consumeFixedWindowRateLimit({
-      bucket: "public-inquiries",
-      key: clientAddress,
-      limit: INQUIRIES_RATE_LIMIT_MAX,
-      windowMs: INQUIRIES_RATE_LIMIT_WINDOW_MS,
-    })
-  ) {
+  const rateLimit = await consumeFixedWindowRateLimit({
+    bucket: "public-inquiries",
+    key: clientAddress,
+    limit: INQUIRIES_RATE_LIMIT_MAX,
+    windowMs: INQUIRIES_RATE_LIMIT_WINDOW_MS,
+  });
+
+  if (rateLimit.limited) {
     return noStoreJson(
       { ok: false, error: "Too many submissions. Try again later." },
       { status: 429 }
@@ -140,13 +139,13 @@ export async function POST(req: Request) {
     .join("|")
     .toLowerCase();
 
-  if (
-    isDuplicateSubmission({
-      bucket: "public-inquiries-dedupe",
-      key: duplicateKey,
-      windowMs: INQUIRIES_DUPLICATE_WINDOW_MS,
-    })
-  ) {
+  const dedupe = await claimDuplicateWindow({
+    bucket: "public-inquiries-dedupe",
+    key: duplicateKey,
+    windowMs: INQUIRIES_DUPLICATE_WINDOW_MS,
+  });
+
+  if (dedupe.duplicated) {
     return noStoreJson(
       { ok: false, error: "This inquiry looks duplicated. Please wait before sending again." },
       { status: 409 }
