@@ -1,6 +1,6 @@
-import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { getDb } from "@/lib/server/db";
 import {
   asFiniteNumber,
   isRecord,
@@ -22,8 +22,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
   const body = isRecord(bodyUnknown) ? bodyUnknown : {};
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
   const categoryObjectId = new ObjectId(id);
 
   const existing = await db.collection("service_categories").findOne({ _id: categoryObjectId });
@@ -72,6 +71,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       slug: nextSlug,
       _id: { $ne: categoryObjectId },
     });
+
     if (conflict) {
       return noStoreJson({ ok: false, error: "Slug already exists" }, { status: 409 });
     }
@@ -107,8 +107,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
     return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
   }
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const cat = await db.collection("service_categories").findOne({ _id: new ObjectId(id) });
   if (!cat) {
@@ -118,13 +117,19 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   const slug = typeof cat.slug === "string" ? normalizeSlug(cat.slug) : "";
 
   if (slug === "others" || cat.isSystem === true) {
-    return noStoreJson({ ok: false, error: "SYSTEM_CATEGORY_CANNOT_DELETE" }, { status: 409 });
+    return noStoreJson(
+      { ok: false, error: "SYSTEM_CATEGORY_CANNOT_DELETE" },
+      { status: 409 }
+    );
   }
 
   const servicesCount = await db.collection("services").countDocuments({ categoryId: id });
 
   if (servicesCount > 0) {
-    return noStoreJson({ ok: false, error: "CATEGORY_HAS_SERVICES", servicesCount }, { status: 409 });
+    return noStoreJson(
+      { ok: false, error: "CATEGORY_HAS_SERVICES", servicesCount },
+      { status: 409 }
+    );
   }
 
   await db.collection("service_categories").deleteOne({ _id: new ObjectId(id) });

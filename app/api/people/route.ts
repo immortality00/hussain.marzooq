@@ -1,5 +1,5 @@
-import clientPromise from "@/lib/mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { getDb } from "@/lib/server/db";
 import {
   asBooleanOrNull,
   asNullableString,
@@ -19,8 +19,7 @@ function slugify(value: string) {
 }
 
 async function ensureUniqueSlug(baseSlug: string, excludeId?: string) {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   let slug = baseSlug || "person";
   let counter = 1;
@@ -38,10 +37,13 @@ export async function GET() {
   const deny = await requireAdminOr401();
   if (deny) return deny as unknown as Response;
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
-  const docs = await db.collection("people_profiles").find({}).sort({ updatedAt: -1, createdAt: -1 }).toArray();
+  const docs = await db
+    .collection("people_profiles")
+    .find({})
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .toArray();
 
   const items = docs.map((doc) => ({
     id: String(doc._id),
@@ -74,8 +76,7 @@ export async function POST(req: Request) {
   const slug = await ensureUniqueSlug(slugify(slugInput || name));
 
   const now = new Date();
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const result = await db.collection("people_profiles").insertOne({
     name,

@@ -1,5 +1,5 @@
-import clientPromise from "@/lib/mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { getDb } from "@/lib/server/db";
 import {
   asString,
   isRecord,
@@ -10,8 +10,7 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const [categories, services] = await Promise.all([
     db.collection("service_categories").find({}).sort({ order: 1, createdAt: -1 }).toArray(),
@@ -52,18 +51,32 @@ export async function POST(req: Request) {
   const slug = normalizeSlug(asString(body.slug));
 
   if (!name) return noStoreJson({ ok: false, error: "Name is required" }, { status: 400 });
-  if (!slug || slug.includes(" ")) return noStoreJson({ ok: false, error: "Invalid slug" }, { status: 400 });
-  if (slug === "others") return noStoreJson({ ok: false, error: "Slug reserved" }, { status: 409 });
+  if (!slug || slug.includes(" ")) {
+    return noStoreJson({ ok: false, error: "Invalid slug" }, { status: 400 });
+  }
+  if (slug === "others") {
+    return noStoreJson({ ok: false, error: "Slug reserved" }, { status: 409 });
+  }
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
-  const exists = await db.collection("service_categories").findOne({ slug }, { projection: { _id: 1 } });
+  const exists = await db
+    .collection("service_categories")
+    .findOne({ slug }, { projection: { _id: 1 } });
+
   if (exists) return noStoreJson({ ok: false, error: "Slug already exists" }, { status: 409 });
 
-  const last = await db.collection("service_categories").find({}).sort({ order: -1 }).limit(1).toArray();
+  const last = await db
+    .collection("service_categories")
+    .find({})
+    .sort({ order: -1 })
+    .limit(1)
+    .toArray();
+
   const nextOrder =
-    last.length && typeof last[0]?.order === "number" && Number.isFinite(last[0].order) ? last[0].order + 1 : 0;
+    last.length && typeof last[0]?.order === "number" && Number.isFinite(last[0].order)
+      ? last[0].order + 1
+      : 0;
 
   const now = new Date();
   const r = await db.collection("service_categories").insertOne({

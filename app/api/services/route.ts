@@ -1,6 +1,6 @@
-import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { isAdminAuthedServer, requireAdminOr401 } from "@/lib/auth/admin";
+import { getDb } from "@/lib/server/db";
 import {
   asNullableString,
   asNumberOrNull,
@@ -18,8 +18,7 @@ export async function GET(req: Request) {
   const admin = await isAdminAuthedServer();
   const all = wantsAll && admin;
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const filter: Record<string, unknown> = {};
   if (!all) {
@@ -27,7 +26,11 @@ export async function GET(req: Request) {
     filter.isArchived = { $ne: true };
   }
 
-  const docs = await db.collection("services").find(filter).sort({ order: 1, createdAt: -1 }).toArray();
+  const docs = await db
+    .collection("services")
+    .find(filter)
+    .sort({ order: 1, createdAt: -1 })
+    .toArray();
 
   const items = docs.map((d) => ({
     id: typeof d._id?.toString === "function" ? d._id.toString() : String(d._id),
@@ -42,7 +45,10 @@ export async function GET(req: Request) {
     isArchived: typeof d.isArchived === "boolean" ? d.isArchived : false,
     imageUrl: typeof d.imageUrl === "string" ? d.imageUrl : "",
     order: typeof d.order === "number" && Number.isFinite(d.order) ? d.order : 0,
-    inquiriesCount: typeof d.inquiriesCount === "number" && Number.isFinite(d.inquiriesCount) ? d.inquiriesCount : 0,
+    inquiriesCount:
+      typeof d.inquiriesCount === "number" && Number.isFinite(d.inquiriesCount)
+        ? d.inquiriesCount
+        : 0,
   }));
 
   return noStoreJson({ ok: true, items });
@@ -53,7 +59,9 @@ export async function POST(req: Request) {
   if (deny) return deny as unknown as Response;
 
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
-  if (!isRecord(bodyUnknown)) return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
+  if (!isRecord(bodyUnknown)) {
+    return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
+  }
 
   const name = asNullableString(bodyUnknown.name)?.trim() ?? "";
   const slug = normalizeSlug(asNullableString(bodyUnknown.slug) ?? "");
@@ -68,8 +76,7 @@ export async function POST(req: Request) {
     return noStoreJson({ ok: false, error: "Slug is required" }, { status: 400 });
   }
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const existing = await db.collection("services").findOne({ slug }, { projection: { _id: 1 } });
   if (existing) return noStoreJson({ ok: false, error: "Slug already exists" }, { status: 409 });
@@ -96,7 +103,8 @@ export async function POST(req: Request) {
     }
 
     categoryId = String(foundCategory._id);
-    categorySlug = typeof foundCategory.slug === "string" ? normalizeSlug(foundCategory.slug) : "others";
+    categorySlug =
+      typeof foundCategory.slug === "string" ? normalizeSlug(foundCategory.slug) : "others";
   } else {
     const others = await db.collection("service_categories").findOne(
       { slug: "others" },
@@ -109,7 +117,9 @@ export async function POST(req: Request) {
 
   const last = await db.collection("services").find({}).sort({ order: -1 }).limit(1).toArray();
   const nextOrder =
-    last.length && typeof last[0]?.order === "number" && Number.isFinite(last[0].order) ? last[0].order + 1 : 0;
+    last.length && typeof last[0]?.order === "number" && Number.isFinite(last[0].order)
+      ? last[0].order + 1
+      : 0;
 
   const now = new Date();
 

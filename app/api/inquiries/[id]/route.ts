@@ -1,6 +1,6 @@
-import clientPromise from "@/lib/mongodb";
 import { Db, ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { getDb } from "@/lib/server/db";
 import { asString, isRecord, noStoreJson } from "@/app/api/_lib/common";
 
 export const dynamic = "force-dynamic";
@@ -42,17 +42,19 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (deny) return deny as unknown as Response;
 
   const { id } = await params;
-  if (!ObjectId.isValid(id)) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
+  if (!ObjectId.isValid(id)) {
+    return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
+  }
 
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
   const body = isRecord(bodyUnknown) ? bodyUnknown : {};
 
   const status = asString(body.status).trim();
-  const adminNotes = typeof body.adminNotes === "string" ? body.adminNotes.trim().slice(0, 5000) : null;
+  const adminNotes =
+    typeof body.adminNotes === "string" ? body.adminNotes.trim().slice(0, 5000) : null;
   const nextArchived = typeof body.isArchived === "boolean" ? body.isArchived : null;
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const existing = await db.collection("inquiries").findOne({ _id: new ObjectId(id) });
   if (!existing) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
@@ -60,9 +62,12 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const patch: Record<string, unknown> = { updatedAt: new Date() };
 
   if (status) {
-    if (!ALLOWED.has(status)) return noStoreJson({ ok: false, error: "Invalid status" }, { status: 400 });
+    if (!ALLOWED.has(status)) {
+      return noStoreJson({ ok: false, error: "Invalid status" }, { status: 400 });
+    }
     patch.status = status;
   }
+
   if (adminNotes !== null) patch.adminNotes = adminNotes;
   if (nextArchived !== null) patch.isArchived = nextArchived;
 
@@ -72,7 +77,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const prevArchived = existing.isArchived === true;
 
   if (nextArchived !== null && nextArchived !== prevArchived && hasValidServiceId(serviceId)) {
-    if (nextArchived === true) {
+    if (nextArchived) {
       await decrementServiceInquiriesCount(db, serviceId);
     } else {
       await incrementServiceInquiriesCount(db, serviceId);
@@ -87,13 +92,14 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   if (deny) return deny as unknown as Response;
 
   const { id } = await params;
-  if (!ObjectId.isValid(id)) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
+  if (!ObjectId.isValid(id)) {
+    return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
+  }
 
   const url = new URL(req.url);
   const hard = url.searchParams.get("hard") === "1";
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const inquiry = await db.collection("inquiries").findOne({ _id: new ObjectId(id) });
   if (!inquiry) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });

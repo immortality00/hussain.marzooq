@@ -1,6 +1,6 @@
-import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { getDb } from "@/lib/server/db";
 import {
   asFiniteNumber,
   asNumberOrNull,
@@ -24,8 +24,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
   const body = isRecord(bodyUnknown) ? bodyUnknown : {};
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const existing = await db.collection("services").findOne({ _id: new ObjectId(id) });
   if (!existing) {
@@ -189,8 +188,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   const url = new URL(req.url);
   const hard = url.searchParams.get("hard") === "1";
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   if (!hard) {
     await db.collection("services").updateOne(
@@ -202,7 +200,10 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
 
   const inquiriesCount = await db.collection("inquiries").countDocuments({ serviceId: id });
   if (inquiriesCount > 0) {
-    return noStoreJson({ ok: false, error: "SERVICE_HAS_INQUIRIES", inquiriesCount }, { status: 409 });
+    return noStoreJson(
+      { ok: false, error: "SERVICE_HAS_INQUIRIES", inquiriesCount },
+      { status: 409 }
+    );
   }
 
   await db.collection("services").deleteOne({ _id: new ObjectId(id) });
