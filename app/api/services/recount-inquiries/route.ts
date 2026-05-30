@@ -1,8 +1,8 @@
-import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 import type { AnyBulkWriteOperation, Document } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { isValidObjectIdString, noStoreJson } from "@/app/api/_lib/common";
+import { getDb } from "@/lib/server/db";
 
 export const dynamic = "force-dynamic";
 
@@ -11,8 +11,7 @@ export async function POST() {
   if (deny) return deny as unknown as Response;
 
   try {
-    const client = await clientPromise;
-    const db = client.db("hm_visuals");
+    const db = await getDb();
 
     const servicesCol = db.collection("services");
     const inquiriesCol = db.collection("inquiries");
@@ -40,12 +39,12 @@ export async function POST() {
 
     const ops: AnyBulkWriteOperation<Document>[] = [];
 
-    for (const r of rows) {
-      if (!r || typeof r !== "object") continue;
-      const obj = r as Record<string, unknown>;
+    for (const row of rows) {
+      if (!row || typeof row !== "object") continue;
 
-      const serviceId = typeof obj._id === "string" ? obj._id : "";
-      const count = typeof obj.count === "number" ? obj.count : 0;
+      const record = row as Record<string, unknown>;
+      const serviceId = typeof record._id === "string" ? record._id : "";
+      const count = typeof record.count === "number" ? record.count : 0;
 
       if (!serviceId || !isValidObjectIdString(serviceId)) continue;
 
@@ -66,8 +65,10 @@ export async function POST() {
       groupedInquiryServices: rows.length,
       syncedServices: ops.length,
     });
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Unknown error";
-    return noStoreJson({ ok: false, error: message }, { status: 500 });
+  } catch {
+    return noStoreJson(
+      { ok: false, error: "Failed to recount service inquiries." },
+      { status: 500 }
+    );
   }
 }

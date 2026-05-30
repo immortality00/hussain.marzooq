@@ -1,11 +1,10 @@
-import clientPromise from "@/lib/mongodb";
 import { asNullableString, noStoreJson } from "@/app/api/_lib/common";
+import { getDb } from "@/lib/server/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const doc = await db.collection("site_settings").findOne({ key: "showreel" });
   const value = doc ? asNullableString(doc.value) : null;

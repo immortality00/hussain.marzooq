@@ -1,5 +1,5 @@
 import { cookies } from "next/headers";
-import clientPromise from "@/lib/mongodb";
+import { getDb } from "@/lib/server/db";
 import { verifyGalleryPassword, privateGalleryCookieName } from "@/lib/private-galleries";
 import { asNullableString, isRecord, noStoreJson } from "@/app/api/_lib/common";
 
@@ -31,11 +31,13 @@ export async function POST(req: Request) {
   const password = (asNullableString(body.password) ?? "").trim();
 
   if (!slug || !password) {
-    return noStoreJson({ ok: false, error: "Slug and password are required." }, { status: 400 });
+    return noStoreJson(
+      { ok: false, error: "Slug and password are required." },
+      { status: 400 }
+    );
   }
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const doc = await db.collection("private_galleries").findOne({ slug });
   if (!doc) {

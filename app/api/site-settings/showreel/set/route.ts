@@ -1,6 +1,6 @@
-import clientPromise from "@/lib/mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { asNullableString, isRecord, noStoreJson } from "@/app/api/_lib/common";
+import { getDb } from "@/lib/server/db";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +18,7 @@ export async function POST(req: Request) {
     return noStoreJson({ ok: false, error: "embedUrl is required" }, { status: 400 });
   }
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   await db.collection("site_settings").updateOne(
     { key: "showreel" },

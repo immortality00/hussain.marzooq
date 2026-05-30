@@ -1,5 +1,5 @@
-import clientPromise from "@/lib/mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { getDb } from "@/lib/server/db";
 import {
   asBooleanOrNull,
   asNullableString,
@@ -20,8 +20,7 @@ import {
 export const dynamic = "force-dynamic";
 
 async function ensureUniqueSlug(baseSlug: string, excludeId?: string) {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   let slug = baseSlug;
   let counter = 1;
@@ -43,8 +42,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const oid = parseObjectId(id);
   if (!oid) return noStoreJson({ ok: false, error: "Invalid id." }, { status: 400 });
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const doc = await db.collection("private_galleries").findOne({ _id: oid });
   if (!doc) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
@@ -75,7 +73,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (!oid) return noStoreJson({ ok: false, error: "Invalid id." }, { status: 400 });
 
   const body = (await req.json().catch(() => null)) as unknown;
-  if (!isRecord(body)) return noStoreJson({ ok: false, error: "Invalid body." }, { status: 400 });
+  if (!isRecord(body)) {
+    return noStoreJson({ ok: false, error: "Invalid body." }, { status: 400 });
+  }
 
   const title = (asNullableString(body.title) ?? "").trim().slice(0, 140);
   const slugInput = (asNullableString(body.slug) ?? "").trim();
@@ -104,7 +104,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   const expiresAtUtc = parseClientLocalDateTimeToUtc(expiresAtLocal, timezoneOffsetMinutes);
   if (!isFutureDate(expiresAtUtc)) {
-    return noStoreJson({ ok: false, error: "Expiry date must be in the future." }, { status: 400 });
+    return noStoreJson(
+      { ok: false, error: "Expiry date must be in the future." },
+      { status: 400 }
+    );
   }
 
   const baseSlug = makeGallerySlug(slugInput || title);
@@ -124,14 +127,16 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   if (password) {
     if (password.length < 4) {
-      return noStoreJson({ ok: false, error: "Password must be at least 4 characters." }, { status: 400 });
+      return noStoreJson(
+        { ok: false, error: "Password must be at least 4 characters." },
+        { status: 400 }
+      );
     }
     set.passwordHash = await hashGalleryPassword(password);
     set.accessToken = makeGalleryAccessToken();
   }
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const result = await db.collection("private_galleries").updateOne({ _id: oid }, { $set: set });
   if (!result.matchedCount) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
@@ -147,8 +152,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   const oid = parseObjectId(id);
   if (!oid) return noStoreJson({ ok: false, error: "Invalid id." }, { status: 400 });
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const result = await db.collection("private_galleries").deleteOne({ _id: oid });
   if (!result.deletedCount) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });

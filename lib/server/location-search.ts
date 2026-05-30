@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import clientPromise from "@/lib/mongodb";
+import { getDb } from "@/lib/server/db";
 import {
   normalizeLocationValue,
   resolveFallbackLocationById,
@@ -80,8 +80,7 @@ export async function searchTestimonialLocations(query: string, limit = 8) {
   const fallbackResults = searchFallbackLocations(normalizedQuery, limit);
 
   try {
-    const client = await clientPromise;
-    const db = client.db(process.env.MONGODB_DB_NAME || "hm_visuals");
+    const db = await getDb();
     const collection = db.collection<LocationDocument>(LOCATION_COLLECTION);
 
     const prefixRegex = new RegExp(`^${escapeRegex(normalizedQuery)}`, "i");
@@ -123,8 +122,7 @@ export async function resolveTestimonialLocationById(id: string) {
   if (fallback) return fallback;
 
   try {
-    const client = await clientPromise;
-    const db = client.db(process.env.MONGODB_DB_NAME || "hm_visuals");
+    const db = await getDb();
     const collection = db.collection<LocationDocument>(LOCATION_COLLECTION);
 
     const doc = await collection.findOne({ geonameId: trimmedId });
@@ -146,8 +144,7 @@ export async function resolveTestimonialLocationByLabel(label: string) {
   if (fallback) return fallback;
 
   try {
-    const client = await clientPromise;
-    const db = client.db(process.env.MONGODB_DB_NAME || "hm_visuals");
+    const db = await getDb();
     const collection = db.collection<LocationDocument>(LOCATION_COLLECTION);
 
     const doc = await collection.findOne({ searchNames: normalizedLabel });

@@ -1,23 +1,22 @@
-import clientPromise from "@/lib/mongodb";
 import { redirect } from "next/navigation";
 import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { ensureOthersCategory } from "@/lib/db/ensureSystemCategories";
+import { getDb } from "@/lib/server/db";
 import AdminServicesClient from "./AdminServicesClient";
 import type { Service, ServiceCategory } from "./lib/types";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-function safeNumber(v: unknown, fallback = 0): number {
-  return typeof v === "number" && Number.isFinite(v) ? v : fallback;
+function safeNumber(value: unknown, fallback = 0): number {
+  return typeof value === "number" && Number.isFinite(value) ? value : fallback;
 }
 
 export default async function AdminServicesPage() {
   const ok = await isAdminAuthedServer();
   if (!ok) redirect("/admin?next=/admin/services");
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   await ensureOthersCategory(db);
 
@@ -44,40 +43,45 @@ export default async function AdminServicesPage() {
   ]);
 
   const liveCountMap = new Map<string, number>();
+
   for (const row of inquiryCountRows) {
     if (!row || typeof row !== "object") continue;
-    const r = row as Record<string, unknown>;
-    const serviceId = typeof r._id === "string" ? r._id : "";
-    const count = safeNumber(r.count, 0);
-    if (serviceId) liveCountMap.set(serviceId, count);
+
+    const record = row as Record<string, unknown>;
+    const serviceId = typeof record._id === "string" ? record._id : "";
+    const count = safeNumber(record.count, 0);
+
+    if (serviceId) {
+      liveCountMap.set(serviceId, count);
+    }
   }
 
-  const services: Service[] = servicesDocs.map((d) => {
-    const id = String(d._id);
+  const services: Service[] = servicesDocs.map((doc) => {
+    const id = String(doc._id);
 
     return {
       id,
-      name: typeof d.name === "string" ? d.name : "",
-      slug: typeof d.slug === "string" ? d.slug : "",
-      category: typeof d.category === "string" ? d.category : "others",
-      categoryId: typeof d.categoryId === "string" ? d.categoryId : null,
-      description: typeof d.description === "string" ? d.description : "",
-      startingPrice: typeof d.startingPrice === "number" ? d.startingPrice : null,
-      currency: typeof d.currency === "string" ? d.currency : "AED",
-      imageUrl: typeof d.imageUrl === "string" ? d.imageUrl : "",
-      isActive: typeof d.isActive === "boolean" ? d.isActive : true,
-      isArchived: typeof d.isArchived === "boolean" ? d.isArchived : false,
-      order: typeof d.order === "number" ? d.order : 0,
+      name: typeof doc.name === "string" ? doc.name : "",
+      slug: typeof doc.slug === "string" ? doc.slug : "",
+      category: typeof doc.category === "string" ? doc.category : "others",
+      categoryId: typeof doc.categoryId === "string" ? doc.categoryId : null,
+      description: typeof doc.description === "string" ? doc.description : "",
+      startingPrice: typeof doc.startingPrice === "number" ? doc.startingPrice : null,
+      currency: typeof doc.currency === "string" ? doc.currency : "AED",
+      imageUrl: typeof doc.imageUrl === "string" ? doc.imageUrl : "",
+      isActive: typeof doc.isActive === "boolean" ? doc.isActive : true,
+      isArchived: typeof doc.isArchived === "boolean" ? doc.isArchived : false,
+      order: typeof doc.order === "number" ? doc.order : 0,
       inquiriesCount: liveCountMap.get(id) ?? 0,
     };
   });
 
-  const categories: ServiceCategory[] = categoryDocs.map((d) => ({
-    id: String(d._id),
-    name: typeof d.name === "string" ? d.name : "",
-    slug: typeof d.slug === "string" ? d.slug : "",
-    isActive: typeof d.isActive === "boolean" ? d.isActive : true,
-    order: typeof d.order === "number" ? d.order : 0,
+  const categories: ServiceCategory[] = categoryDocs.map((doc) => ({
+    id: String(doc._id),
+    name: typeof doc.name === "string" ? doc.name : "",
+    slug: typeof doc.slug === "string" ? doc.slug : "",
+    isActive: typeof doc.isActive === "boolean" ? doc.isActive : true,
+    order: typeof doc.order === "number" ? doc.order : 0,
   }));
 
   return <AdminServicesClient initialServices={services} initialCategories={categories} />;

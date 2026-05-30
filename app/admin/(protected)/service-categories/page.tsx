@@ -1,4 +1,4 @@
-import clientPromise from "@/lib/mongodb";
+import { getDb } from "@/lib/server/db";
 import { ensureOthersCategory } from "@/lib/db/ensureSystemCategories";
 import AdminServiceCategoriesClient from "./AdminServiceCategoriesClient";
 
@@ -6,8 +6,7 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function AdminServiceCategoriesPage() {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   await ensureOthersCategory(db);
 
@@ -32,20 +31,22 @@ export default async function AdminServiceCategoriesPage() {
   ]);
 
   const countMap = new Map<string, number>();
-  for (const c of serviceCounts) countMap.set(c._id, c.count);
+  for (const row of serviceCounts) {
+    countMap.set(row._id, row.count);
+  }
 
-  const initial = docs.map((d) => {
-    const id = String(d._id);
-    const slug = typeof d.slug === "string" ? d.slug : "";
+  const initial = docs.map((doc) => {
+    const id = String(doc._id);
+    const slug = typeof doc.slug === "string" ? doc.slug : "";
 
     return {
       id,
-      name: typeof d.name === "string" ? d.name : "",
+      name: typeof doc.name === "string" ? doc.name : "",
       slug,
-      isActive: typeof d.isActive === "boolean" ? d.isActive : true,
-      order: typeof d.order === "number" ? d.order : 0,
+      isActive: typeof doc.isActive === "boolean" ? doc.isActive : true,
+      order: typeof doc.order === "number" ? doc.order : 0,
       servicesCount: countMap.get(id) ?? 0,
-      isSystem: typeof d.isSystem === "boolean" ? d.isSystem : slug === "others",
+      isSystem: typeof doc.isSystem === "boolean" ? doc.isSystem : slug === "others",
     };
   });
 

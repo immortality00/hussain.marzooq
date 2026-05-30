@@ -1,5 +1,5 @@
-import clientPromise from "@/lib/mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { getDb } from "@/lib/server/db";
 import {
   asBooleanOrNull,
   asNullableString,
@@ -19,8 +19,7 @@ import {
 export const dynamic = "force-dynamic";
 
 async function ensureUniqueSlug(baseSlug: string, excludeId?: string) {
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   let slug = baseSlug;
   let counter = 1;
@@ -38,10 +37,13 @@ export async function GET() {
   const deny = await requireAdminOr401();
   if (deny) return deny as unknown as Response;
 
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
-  const docs = await db.collection("private_galleries").find({}).sort({ updatedAt: -1, createdAt: -1 }).toArray();
+  const docs = await db
+    .collection("private_galleries")
+    .find({})
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .toArray();
 
   const items = docs.map((doc) => ({
     id: String(doc._id),
@@ -66,7 +68,9 @@ export async function POST(req: Request) {
   if (deny) return deny as unknown as Response;
 
   const body = (await req.json().catch(() => null)) as unknown;
-  if (!isRecord(body)) return noStoreJson({ ok: false, error: "Invalid body." }, { status: 400 });
+  if (!isRecord(body)) {
+    return noStoreJson({ ok: false, error: "Invalid body." }, { status: 400 });
+  }
 
   const title = (asNullableString(body.title) ?? "").trim().slice(0, 140);
   const slugInput = (asNullableString(body.slug) ?? "").trim();
@@ -82,7 +86,10 @@ export async function POST(req: Request) {
   }
 
   if (!password || password.length < 4) {
-    return noStoreJson({ ok: false, error: "Password must be at least 4 characters." }, { status: 400 });
+    return noStoreJson(
+      { ok: false, error: "Password must be at least 4 characters." },
+      { status: 400 }
+    );
   }
 
   if (mediaIds.length === 0) {
@@ -99,7 +106,10 @@ export async function POST(req: Request) {
 
   const expiresAtUtc = parseClientLocalDateTimeToUtc(expiresAtLocal, timezoneOffsetMinutes);
   if (!isFutureDate(expiresAtUtc)) {
-    return noStoreJson({ ok: false, error: "Expiry date must be in the future." }, { status: 400 });
+    return noStoreJson(
+      { ok: false, error: "Expiry date must be in the future." },
+      { status: 400 }
+    );
   }
 
   const baseSlug = makeGallerySlug(slugInput || title);
@@ -108,8 +118,7 @@ export async function POST(req: Request) {
   const accessToken = makeGalleryAccessToken();
 
   const now = new Date();
-  const client = await clientPromise;
-  const db = client.db("hm_visuals");
+  const db = await getDb();
 
   const result = await db.collection("private_galleries").insertOne({
     title,

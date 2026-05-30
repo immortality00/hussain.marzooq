@@ -1,7 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { useEffect, useMemo, useState } from "react";
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type TestimonialItem = {
   id: string;
@@ -42,7 +57,14 @@ function formatDate(value: string | null) {
 }
 
 function identityLine(item: TestimonialItem) {
-  return [item.about, item.location].filter(Boolean).join(" • ") || "Client";
+  return [item.about, item.location].filter(Boolean).join(" • ");
+}
+
+function withSequentialSortOrder(items: TestimonialItem[]) {
+  return items.map((item, index) => ({
+    ...item,
+    sortOrder: index,
+  }));
 }
 
 function Avatar({ name, profilePhotoUrl }: { name: string; profilePhotoUrl: string | null }) {
@@ -117,6 +139,8 @@ function InspectModal({
   onDelete: (id: string) => void;
   onClose: () => void;
 }) {
+  const metaLine = identityLine(item);
+
   return (
     <div className="fixed inset-0 z-50 bg-black/72 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
@@ -170,7 +194,10 @@ function InspectModal({
                       <StatusPill approved={item.isApproved} />
                     </div>
 
-                    <div className="mt-1 text-sm text-muted-foreground">{identityLine(item)}</div>
+                    {metaLine ? (
+                      <div className="mt-1 text-sm text-muted-foreground">{metaLine}</div>
+                    ) : null}
+
                     <div className="mt-1 text-sm text-muted-foreground">
                       {item.email ?? "No email"}
                     </div>
@@ -193,7 +220,7 @@ function InspectModal({
 
                   <div className="flex justify-between gap-4">
                     <dt className="text-muted-foreground">Sort order</dt>
-                    <dd>{item.sortOrder}</dd>
+                    <dd className="text-right">{item.sortOrder}</dd>
                   </div>
 
                   <div className="flex justify-between gap-4">
@@ -222,6 +249,125 @@ function InspectModal({
   );
 }
 
+function SortableReviewRow({
+  item,
+  draggingDisabled,
+  approving,
+  deleting,
+  onInspect,
+  onApprove,
+  onDelete,
+}: {
+  item: TestimonialItem;
+  draggingDisabled: boolean;
+  approving: boolean;
+  deleting: boolean;
+  onInspect: (item: TestimonialItem) => void;
+  onApprove: (id: string, value: boolean) => void;
+  onDelete: (id: string) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item.id,
+    disabled: draggingDisabled,
+  });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.7 : 1,
+  };
+
+  const metaLine = identityLine(item);
+
+  return (
+    <article
+      ref={setNodeRef}
+      style={style}
+      className="rounded-[1.6rem] bg-background/78 p-4 ring-1 ring-border/45"
+    >
+      <div className="grid gap-4 lg:grid-cols-[auto_1fr_auto] lg:items-start">
+        <button
+          type="button"
+          aria-label="Drag review"
+          title="Drag review"
+          disabled={draggingDisabled}
+          {...attributes}
+          {...listeners}
+          className="flex h-10 w-10 items-center justify-center rounded-xl border border-border/60 text-sm text-muted-foreground hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          ⠿
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onInspect(item)}
+          className="min-w-0 text-left"
+        >
+          <div className="flex gap-4">
+            <Avatar name={item.name} profilePhotoUrl={item.profilePhotoUrl} />
+
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="text-sm font-medium">{item.name}</div>
+                <StatusPill approved={item.isApproved} />
+                <span className="rounded-full border border-border/60 px-2 py-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                  Order {item.sortOrder}
+                </span>
+              </div>
+
+              {metaLine ? <div className="mt-1 text-xs text-muted-foreground">{metaLine}</div> : null}
+
+              <div className="mt-1 text-xs text-muted-foreground">{item.email || "No email"}</div>
+
+              <div className="mt-2 text-sm text-amber-400">{renderStars(item.rating)}</div>
+
+              <div className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">
+                {item.review}
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                <span>
+                  {item.photoUrls.length} photo{item.photoUrls.length === 1 ? "" : "s"}
+                </span>
+                <span>·</span>
+                <span>Submitted {formatDate(item.createdAt)}</span>
+              </div>
+            </div>
+          </div>
+        </button>
+
+        <div className="flex flex-wrap gap-2 lg:justify-end">
+          <button
+            type="button"
+            onClick={() => onInspect(item)}
+            className="rounded-xl border border-border/60 px-3 py-2 text-sm hover:bg-accent"
+          >
+            Inspect
+          </button>
+
+          <button
+            type="button"
+            disabled={approving}
+            onClick={() => onApprove(item.id, !item.isApproved)}
+            className="rounded-xl bg-foreground px-3 py-2 text-sm text-background hover:opacity-90 disabled:opacity-60"
+          >
+            {item.isApproved ? "Unapprove" : "Approve"}
+          </button>
+
+          <button
+            type="button"
+            disabled={deleting}
+            onClick={() => onDelete(item.id)}
+            className="rounded-xl border border-red-500/30 px-3 py-2 text-sm text-red-600 hover:bg-red-500/10 disabled:opacity-60 dark:text-red-300"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}
+
 export default function TestimonialsAdminClient() {
   const [items, setItems] = useState<TestimonialItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -231,6 +377,13 @@ export default function TestimonialsAdminClient() {
   const [active, setActive] = useState<TestimonialItem | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [reordering, setReordering] = useState(false);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 8 },
+    })
+  );
 
   async function load() {
     setLoading(true);
@@ -307,7 +460,7 @@ export default function TestimonialsAdminClient() {
         return;
       }
 
-      setItems((prev) => prev.filter((item) => item.id !== id));
+      setItems((prev) => withSequentialSortOrder(prev.filter((item) => item.id !== id)));
       setBanner({ type: "ok", text: "✅ Review deleted." });
 
       if (active?.id === id) {
@@ -351,11 +504,70 @@ export default function TestimonialsAdminClient() {
     }
   }
 
+  async function persistReorder(nextItems: TestimonialItem[]) {
+    setReordering(true);
+    setBanner(null);
+
+    try {
+      const res = await fetch("/api/testimonials/reorder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: nextItems.map((item, index) => ({
+            id: item.id,
+            sortOrder: index,
+          })),
+        }),
+      });
+
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
+
+      if (!res.ok || !data?.ok) {
+        setBanner({ type: "err", text: data?.error ?? "Reorder failed." });
+        await load();
+        return;
+      }
+
+      setItems(withSequentialSortOrder(nextItems));
+      setActive((prev) => {
+        if (!prev) return prev;
+        const found = nextItems.find((item) => item.id === prev.id);
+        return found ? { ...found, sortOrder: nextItems.findIndex((item) => item.id === prev.id) } : prev;
+      });
+      setBanner({ type: "ok", text: "✅ Review order updated." });
+    } catch {
+      setBanner({ type: "err", text: "Reorder failed." });
+      await load();
+    } finally {
+      setReordering(false);
+    }
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active: activeDrag, over } = event;
+
+    if (!over || activeDrag.id === over.id) return;
+
+    const oldIndex = items.findIndex((item) => item.id === activeDrag.id);
+    const newIndex = items.findIndex((item) => item.id === over.id);
+
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(items, oldIndex, newIndex);
+    const normalized = withSequentialSortOrder(reordered);
+
+    setItems(normalized);
+    await persistReorder(normalized);
+  }
+
   return (
     <main className="mx-auto max-w-7xl px-6 pb-10 pt-4">
       <div className="grid gap-6 lg:grid-cols-[1fr_420px] lg:items-start">
         <div>
           <h1 className="text-4xl font-semibold tracking-[-0.06em]">Testimonials</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Drag reviews to reorder them. Public testimonials follow this order.
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
@@ -428,6 +640,10 @@ export default function TestimonialsAdminClient() {
           />
         </div>
 
+        <div className="mt-3 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+          {reordering ? "Saving new order…" : "Drag from the handle to reorder"}
+        </div>
+
         <div className="mt-5 space-y-3">
           {loading ? (
             <div className="rounded-2xl border border-border/50 p-4 text-sm text-muted-foreground">
@@ -437,85 +653,36 @@ export default function TestimonialsAdminClient() {
             <div className="rounded-2xl border border-border/50 p-4 text-sm text-muted-foreground">
               No reviews match this view.
             </div>
-          ) : (
+          ) : search || status !== "all" ? (
             filtered.map((item) => (
-              <article
+              <SortableReviewRow
                 key={item.id}
-                className="rounded-[1.6rem] bg-background/78 p-4 ring-1 ring-border/45"
-              >
-                <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
-                  <button
-                    type="button"
-                    onClick={() => setActive(item)}
-                    className="min-w-0 text-left"
-                  >
-                    <div className="flex gap-4">
-                      <Avatar name={item.name} profilePhotoUrl={item.profilePhotoUrl} />
-
-                      <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <div className="text-sm font-medium">{item.name}</div>
-                          <StatusPill approved={item.isApproved} />
-                        </div>
-
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {identityLine(item)}
-                        </div>
-
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          {item.email || "No email"}
-                        </div>
-
-                        <div className="mt-2 text-sm text-amber-400">
-                          {renderStars(item.rating)}
-                        </div>
-
-                        <div className="mt-2 line-clamp-3 text-sm leading-6 text-muted-foreground">
-                          {item.review}
-                        </div>
-
-                        <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                          <span>
-                            {item.photoUrls.length} photo
-                            {item.photoUrls.length === 1 ? "" : "s"}
-                          </span>
-                          <span>·</span>
-                          <span>Submitted {formatDate(item.createdAt)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-
-                  <div className="flex min-w-[220px] flex-wrap gap-2 lg:justify-end">
-                    <button
-                      type="button"
-                      onClick={() => setActive(item)}
-                      className="rounded-xl border border-border/60 px-3 py-2 text-sm hover:bg-accent"
-                    >
-                      Inspect
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={updatingId === item.id}
-                      onClick={() => void setApproval(item.id, !item.isApproved)}
-                      className="rounded-xl bg-foreground px-3 py-2 text-sm text-background hover:opacity-90 disabled:opacity-60"
-                    >
-                      {item.isApproved ? "Unapprove" : "Approve"}
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={deletingId === item.id}
-                      onClick={() => void remove(item.id)}
-                      className="rounded-xl border border-red-500/30 px-3 py-2 text-sm text-red-600 hover:bg-red-500/10 disabled:opacity-60 dark:text-red-300"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </article>
+                item={item}
+                draggingDisabled
+                approving={updatingId === item.id || reordering}
+                deleting={deletingId === item.id || reordering}
+                onInspect={setActive}
+                onApprove={(id, value) => void setApproval(id, value)}
+                onDelete={(id) => void remove(id)}
+              />
             ))
+          ) : (
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={items.map((item) => item.id)} strategy={verticalListSortingStrategy}>
+                {items.map((item) => (
+                  <SortableReviewRow
+                    key={item.id}
+                    item={item}
+                    draggingDisabled={reordering}
+                    approving={updatingId === item.id || reordering}
+                    deleting={deletingId === item.id || reordering}
+                    onInspect={setActive}
+                    onApprove={(id, value) => void setApproval(id, value)}
+                    onDelete={(id) => void remove(id)}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
           )}
         </div>
       </section>
