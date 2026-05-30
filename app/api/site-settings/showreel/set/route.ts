@@ -1,6 +1,7 @@
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { asNullableString, isRecord, noStoreJson } from "@/app/api/_lib/common";
 import { getDb } from "@/lib/server/db";
+import { toEmbedUrl } from "@/components/media/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,13 @@ export async function POST(req: Request) {
   const embedUrl = asNullableString(body.embedUrl)?.trim() ?? "";
   if (!embedUrl) {
     return noStoreJson({ ok: false, error: "embedUrl is required" }, { status: 400 });
+  }
+
+  if (!toEmbedUrl(embedUrl)) {
+    return noStoreJson(
+      { ok: false, error: "Enter a valid YouTube or Vimeo URL." },
+      { status: 400 }
+    );
   }
 
   const db = await getDb();

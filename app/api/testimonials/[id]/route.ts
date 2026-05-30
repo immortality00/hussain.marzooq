@@ -29,7 +29,10 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
   }
 
-  return noStoreJson({ ok: true, item: toAdminTestimonialItem(doc as Record<string, unknown>) });
+  return noStoreJson({
+    ok: true,
+    item: toAdminTestimonialItem(doc as Record<string, unknown>),
+  });
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -73,6 +76,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     if (!Number.isFinite(sortOrder)) {
       return noStoreJson({ ok: false, error: "Invalid sort order." }, { status: 400 });
     }
+
     set.sortOrder = Math.round(sortOrder);
   }
 

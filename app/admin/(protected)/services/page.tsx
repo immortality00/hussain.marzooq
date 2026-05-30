@@ -43,7 +43,6 @@ export default async function AdminServicesPage() {
   ]);
 
   const liveCountMap = new Map<string, number>();
-
   for (const row of inquiryCountRows) {
     if (!row || typeof row !== "object") continue;
 

@@ -11,16 +11,6 @@ function getExpiryDate(doc: Record<string, unknown>) {
   return null;
 }
 
-function isSecureRequest(req: Request) {
-  const url = new URL(req.url);
-  if (url.protocol === "https:") return true;
-
-  const forwardedProto = req.headers.get("x-forwarded-proto");
-  if (forwardedProto && forwardedProto.toLowerCase().includes("https")) return true;
-
-  return false;
-}
-
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => null)) as unknown;
   if (!isRecord(body)) {
@@ -63,7 +53,7 @@ export async function POST(req: Request) {
   jar.set(privateGalleryCookieName(String(doc._id)), accessToken, {
     httpOnly: true,
     sameSite: "lax",
-    secure: isSecureRequest(req),
+    secure: process.env.NODE_ENV === "production",
     path: "/",
     expires: expiresAt ?? undefined,
   });
