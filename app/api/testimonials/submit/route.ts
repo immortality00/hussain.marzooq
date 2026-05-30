@@ -187,12 +187,25 @@ export async function POST(req: Request) {
   const db = await getDb();
   const now = new Date();
 
+  const firstExisting = await db
+    .collection("testimonials")
+    .find({}, { projection: { sortOrder: 1 } })
+    .sort({ sortOrder: 1, createdAt: 1 })
+    .limit(1)
+    .toArray();
+
+  const currentSmallestSortOrder =
+    firstExisting.length > 0 && typeof firstExisting[0]?.sortOrder === "number"
+      ? firstExisting[0].sortOrder
+      : 0;
+
+  const nextSortOrder = currentSmallestSortOrder - 1;
+
   await db.collection("testimonials").insertOne({
     name,
     email,
     about: about || null,
-    location:
-      resolvedLocation?.location ?? (locationLabel || null),
+    location: resolvedLocation?.location ?? (locationLabel || null),
     locationId: resolvedLocation?.locationId ?? null,
     locationLabel: resolvedLocation?.locationLabel ?? null,
     locationLat: resolvedLocation?.locationLat ?? null,
@@ -203,7 +216,7 @@ export async function POST(req: Request) {
     profilePhotoUrl,
     photoUrls,
     isApproved: false,
-    sortOrder: 100,
+    sortOrder: nextSortOrder,
     createdAt: now,
     updatedAt: now,
   });

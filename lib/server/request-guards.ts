@@ -28,6 +28,42 @@ async function ensureIndexes() {
   indexesReady = true;
 }
 
+function buildRateLimitId(bucket: string, key: string) {
+  return `rate:${bucket}:${key}`;
+}
+
+export async function getFixedWindowRateLimitStatus(params: {
+  bucket: string;
+  key: string;
+  limit: number;
+}) {
+  await ensureIndexes();
+
+  const { bucket, key, limit } = params;
+  const db = await getDb();
+  const collection = db.collection<GuardDoc>("request_guards");
+  const id = buildRateLimitId(bucket, key);
+  const now = Date.now();
+
+  const doc = await collection.findOne({ _id: id });
+
+  if (!doc || !(doc.resetAt instanceof Date) || doc.resetAt.getTime() <= now) {
+    return {
+      limited: false,
+      count: 0,
+      resetAt: null as string | null,
+    };
+  }
+
+  const count = typeof doc.count === "number" ? doc.count : 0;
+
+  return {
+    limited: count >= limit,
+    count,
+    resetAt: doc.resetAt.toISOString(),
+  };
+}
+
 export async function consumeFixedWindowRateLimit(params: {
   bucket: string;
   key: string;
@@ -43,7 +79,7 @@ export async function consumeFixedWindowRateLimit(params: {
   const now = new Date();
   const nowMs = now.getTime();
   const nextReset = new Date(nowMs + windowMs);
-  const id = `rate:${bucket}:${key}`;
+  const id = buildRateLimitId(bucket, key);
 
   const result = await collection.findOneAndUpdate(
     { _id: id },
@@ -51,10 +87,7 @@ export async function consumeFixedWindowRateLimit(params: {
       {
         $set: {
           expired: {
-            $or: [
-              { $not: ["$resetAt"] },
-              { $lte: ["$resetAt", now] },
-            ],
+            $or: [{ $not: ["$resetAt"] }, { $lte: ["$resetAt", now] }],
           },
         },
       },
@@ -65,11 +98,7 @@ export async function consumeFixedWindowRateLimit(params: {
           bucket,
           key,
           count: {
-            $cond: [
-              "$expired",
-              1,
-              { $add: [{ $ifNull: ["$count", 0] }, 1] },
-            ],
+            $cond: ["$expired", 1, { $add: [{ $ifNull: ["$count", 0] }, 1] }],
           },
           resetAt: {
             $cond: ["$expired", nextReset, "$resetAt"],
@@ -94,10 +123,21 @@ export async function consumeFixedWindowRateLimit(params: {
     result?.resetAt instanceof Date ? result.resetAt.toISOString() : nextReset.toISOString();
 
   return {
-    limited: count > limit,
+    limited: count >= limit,
     count,
     resetAt,
   };
+}
+
+export async function clearFixedWindowRateLimit(params: { bucket: string; key: string }) {
+  await ensureIndexes();
+
+  const { bucket, key } = params;
+  const db = await getDb();
+  const collection = db.collection<GuardDoc>("request_guards");
+  const id = buildRateLimitId(bucket, key);
+
+  await collection.deleteOne({ _id: id });
 }
 
 export async function claimDuplicateWindow(params: {
@@ -117,7 +157,11 @@ export async function claimDuplicateWindow(params: {
 
   const existing = await collection.findOne({ _id: id });
 
-  if (existing && existing.expiresAt instanceof Date && existing.expiresAt.getTime() > now.getTime()) {
+  if (
+    existing &&
+    existing.expiresAt instanceof Date &&
+    existing.expiresAt.getTime() > now.getTime()
+  ) {
     return {
       duplicated: true,
       expiresAt: existing.expiresAt.toISOString(),

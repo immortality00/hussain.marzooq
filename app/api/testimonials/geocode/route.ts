@@ -1,35 +1,24 @@
 import { geocodeLocation } from "@/lib/server/geocoding";
+import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { asNullableString, isRecord, noStoreJson } from "@/app/api/_lib/common";
+import { getClientAddress } from "@/app/api/_lib/public-form-security";
 
 export const dynamic = "force-dynamic";
 
 const GEOCODE_RATE_LIMIT_WINDOW_MS = 60_000;
 const GEOCODE_RATE_LIMIT_MAX = 10;
-const geocodeAttempts = new Map<string, { count: number; resetAt: number }>();
-
-function getClientKey(request: Request) {
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = request.headers.get("x-real-ip")?.trim();
-  return forwardedFor || realIp || "anonymous";
-}
-
-function isRateLimited(key: string) {
-  const now = Date.now();
-  const existing = geocodeAttempts.get(key);
-
-  if (!existing || existing.resetAt <= now) {
-    geocodeAttempts.set(key, { count: 1, resetAt: now + GEOCODE_RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-
-  existing.count += 1;
-  return existing.count > GEOCODE_RATE_LIMIT_MAX;
-}
 
 export async function POST(request: Request) {
-  const clientKey = getClientKey(request);
+  const clientKey = getClientAddress(request);
 
-  if (isRateLimited(clientKey)) {
+  const rateLimit = await consumeFixedWindowRateLimit({
+    bucket: "testimonial-geocode",
+    key: clientKey,
+    limit: GEOCODE_RATE_LIMIT_MAX,
+    windowMs: GEOCODE_RATE_LIMIT_WINDOW_MS,
+  });
+
+  if (rateLimit.limited) {
     return noStoreJson(
       { ok: false, error: "Too many location lookups. Try again later." },
       { status: 429 }
