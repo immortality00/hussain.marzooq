@@ -18,6 +18,10 @@ function normalizeFolderPath(value: string) {
   return value.trim().replace(/^\/+|\/+$/g, "");
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export function isAllowedCloudinaryPublicId(
   publicId: string,
   allowedFolders: readonly string[]
@@ -152,6 +156,40 @@ export async function deleteManagedCloudinaryUrls(
   );
 }
 
+async function deleteFolderViaAdminApi(folder: string) {
+  const cloudName =
+    (process.env.CLOUDINARY_CLOUD_NAME ?? "").trim() ||
+    (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "").trim();
+  const apiKey = (process.env.CLOUDINARY_API_KEY ?? "").trim();
+  const apiSecret = (process.env.CLOUDINARY_API_SECRET ?? "").trim();
+
+  if (!cloudName || !apiKey || !apiSecret) return false;
+
+  const normalizedFolder = normalizeFolderPath(folder);
+  if (!normalizedFolder) return false;
+
+  const url = new URL(
+    `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/folders/${encodeURIComponent(normalizedFolder)}`
+  );
+  url.searchParams.set("skip_backup", "true");
+
+  const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
+
+  try {
+    const response = await fetch(url.toString(), {
+      method: "DELETE",
+      headers: {
+        Authorization: `Basic ${auth}`,
+      },
+      cache: "no-store",
+    });
+
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 export async function deleteManagedEmptyCloudinaryFolders(
   folders: string[],
   allowedFolders: readonly string[]
@@ -168,10 +206,12 @@ export async function deleteManagedEmptyCloudinaryFolders(
   const deepestFirst = safeFolders.sort((a, b) => b.split("/").length - a.split("/").length);
 
   for (const folder of deepestFirst) {
-    try {
-      await cloudinary.api.delete_folder(folder);
-    } catch {
-      // ignore if folder is missing or still not empty
+    let deleted = false;
+
+    for (let attempt = 0; attempt < 4; attempt += 1) {
+      deleted = await deleteFolderViaAdminApi(folder);
+      if (deleted) break;
+      await sleep(350);
     }
   }
 }
