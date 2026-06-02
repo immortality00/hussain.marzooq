@@ -6,6 +6,7 @@ import {
   signCloudinaryParams,
   sanitizeCloudinaryFolder,
 } from "@/lib/server/cloudinary";
+import { CLOUDINARY_ROOT_FOLDER } from "@/lib/cloudinary-folders";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +19,7 @@ export async function POST() {
   }
 
   const timestamp = Math.round(Date.now() / 1000);
-  const folder = sanitizeCloudinaryFolder("hm_visuals");
+  const folder = sanitizeCloudinaryFolder(CLOUDINARY_ROOT_FOLDER);
   const signature = signCloudinaryParams({ timestamp, folder });
   const { cloudName, apiKey } = getCloudinaryPublicConfig();
 

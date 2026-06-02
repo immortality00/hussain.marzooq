@@ -4,6 +4,7 @@ import Image from "next/image";
 import { CldUploadWidget } from "next-cloudinary";
 import type { Uploaded, WidgetResult } from "../lib/types";
 import { getString, isRecord } from "../lib/utils";
+import { CLOUDINARY_MEDIA_FOLDER } from "@/lib/cloudinary-folders";
 
 export default function MediaAssetSection({
   mode,
@@ -48,7 +49,7 @@ export default function MediaAssetSection({
           <div className="flex items-center gap-2">
             <CldUploadWidget
               signatureEndpoint="/api/sign-cloudinary-params"
-              options={{ folder: "hm_visuals/media", multiple: false, resourceType: "auto" }}
+              options={{ folder: CLOUDINARY_MEDIA_FOLDER, multiple: false, resourceType: "auto" }}
               onSuccess={(result: unknown) => {
                 const r = result as WidgetResult;
                 const info = r?.info;

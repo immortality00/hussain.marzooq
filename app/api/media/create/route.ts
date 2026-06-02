@@ -14,6 +14,7 @@ import {
   resolvePeopleSelection,
   sanitizeAppearances,
 } from "@/app/api/_lib/media";
+import { toEmbedUrl } from "@/components/media/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -51,6 +52,21 @@ export async function POST(req: Request) {
     return noStoreJson({ ok: false, error: "Choose at least one category." }, { status: 400 });
   }
 
+  const allowEmbed =
+    categories.includes("videography") &&
+    !categories.includes("photography") &&
+    !categories.includes("nft");
+
+  if (type === "embed" && !allowEmbed) {
+    return noStoreJson(
+      {
+        ok: false,
+        error: "Embed links are allowed only for videography.",
+      },
+      { status: 400 }
+    );
+  }
+
   if (categories.includes("nft") && type === "embed") {
     return noStoreJson(
       { ok: false, error: "NFT items must use an uploaded image or video." },
@@ -59,7 +75,13 @@ export async function POST(req: Request) {
   }
 
   if (type === "embed") {
-    if (!embedUrl) return noStoreJson({ ok: false, error: "embedUrl required" }, { status: 400 });
+    const normalizedEmbedUrl = toEmbedUrl(embedUrl);
+    if (!normalizedEmbedUrl) {
+      return noStoreJson(
+        { ok: false, error: "Use a valid YouTube or Vimeo video URL." },
+        { status: 400 }
+      );
+    }
   } else {
     if (!secureUrl || !isCloudinarySecureUrl(secureUrl)) {
       return noStoreJson({ ok: false, error: "Invalid secureUrl" }, { status: 400 });
@@ -78,6 +100,7 @@ export async function POST(req: Request) {
   const db = await getDb();
   const resolvedPeople = await resolvePeopleSelection(db, { peopleIds });
 
+  const normalizedEmbedUrl = type === "embed" ? toEmbedUrl(embedUrl) : null;
   const now = new Date();
 
   const doc = {
@@ -97,7 +120,7 @@ export async function POST(req: Request) {
     secureUrl: type === "embed" ? null : secureUrl,
     publicId: type === "embed" ? null : publicId,
     resourceType: type === "embed" ? null : resourceType,
-    embedUrl: type === "embed" ? embedUrl : null,
+    embedUrl: type === "embed" ? normalizedEmbedUrl : null,
     order:
       typeof bodyUnknown.order === "number" && Number.isFinite(bodyUnknown.order)
         ? bodyUnknown.order
@@ -106,7 +129,8 @@ export async function POST(req: Request) {
   };
 
   const col = db.collection("media");
-  const keyFilter = type === "embed" ? ({ type: "embed", embedUrl } as const) : ({ publicId } as const);
+  const keyFilter =
+    type === "embed" ? ({ type: "embed", embedUrl: normalizedEmbedUrl } as const) : ({ publicId } as const);
 
   await col.updateOne(
     keyFilter,

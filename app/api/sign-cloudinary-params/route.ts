@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
   const paramsToSign = sanitizeAdminParamsToSign(body.paramsToSign);
   if (!paramsToSign) {
-    return noStoreJson({ error: "Missing paramsToSign" }, { status: 400 });
+    return noStoreJson({ error: "Invalid or missing paramsToSign." }, { status: 400 });
   }
 
   const signature = signCloudinaryParams(paramsToSign);

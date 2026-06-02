@@ -1,7 +1,9 @@
 import { v2 as cloudinary } from "cloudinary";
-
-const DEFAULT_ROOT_FOLDER = "hm_visuals";
-const TESTIMONIALS_FOLDER = `${DEFAULT_ROOT_FOLDER}/testimonials`;
+import {
+  CLOUDINARY_MANAGED_FOLDERS,
+  CLOUDINARY_ROOT_FOLDER,
+  CLOUDINARY_TESTIMONIALS_FOLDER,
+} from "@/lib/cloudinary-folders";
 
 type SignableValue = string | number;
 
@@ -11,13 +13,6 @@ const BLOCKED_SIGN_KEYS = new Set([
   "invalidate",
   "eager_async",
   "eager_notification_url",
-]);
-
-const TESTIMONIAL_ALLOWED_KEYS = new Set([
-  "folder",
-  "timestamp",
-  "upload_preset",
-  "source",
 ]);
 
 function getCloudName() {
@@ -33,6 +28,19 @@ function getApiKey() {
 
 function getApiSecret() {
   return (process.env.CLOUDINARY_API_SECRET ?? "").trim();
+}
+
+function normalizeFolder(value: string) {
+  return value.trim().replace(/\/+$/, "");
+}
+
+function isManagedFolder(folder: string) {
+  const normalized = normalizeFolder(folder);
+
+  return CLOUDINARY_MANAGED_FOLDERS.some(
+    (baseFolder) =>
+      normalized === baseFolder || normalized.startsWith(`${baseFolder}/`)
+  );
 }
 
 export function getCloudinaryPublicConfig() {
@@ -74,16 +82,15 @@ function isStringOrNumber(value: unknown): value is SignableValue {
 }
 
 export function sanitizeCloudinaryFolder(raw: unknown) {
-  if (typeof raw !== "string") return DEFAULT_ROOT_FOLDER;
+  if (typeof raw !== "string") return null;
 
-  const value = raw.trim();
-  if (!value) return DEFAULT_ROOT_FOLDER;
-  if (!value.startsWith(DEFAULT_ROOT_FOLDER)) return DEFAULT_ROOT_FOLDER;
-  if (value.includes("..") || value.includes("\\") || value.includes("//")) {
-    return DEFAULT_ROOT_FOLDER;
-  }
+  const value = normalizeFolder(raw);
+  if (!value) return null;
+  if (!value.startsWith(CLOUDINARY_ROOT_FOLDER)) return null;
+  if (value.includes("..") || value.includes("\\") || value.includes("//")) return null;
+  if (!isManagedFolder(value)) return null;
 
-  return value.endsWith("/") ? value.slice(0, -1) : value;
+  return value;
 }
 
 export function sanitizeAdminParamsToSign(
@@ -99,7 +106,10 @@ export function sanitizeAdminParamsToSign(
     paramsToSign[key] = value;
   }
 
-  paramsToSign.folder = sanitizeCloudinaryFolder(paramsToSign.folder);
+  const folder = sanitizeCloudinaryFolder(paramsToSign.folder);
+  if (!folder) return null;
+
+  paramsToSign.folder = folder;
   return paramsToSign;
 }
 
@@ -109,40 +119,5 @@ export function signCloudinaryParams(paramsToSign: Record<string, SignableValue>
 }
 
 export function getTestimonialsFolder() {
-  return TESTIMONIALS_FOLDER;
-}
-
-export function getTestimonialsUploadPreset() {
-  return (
-    (process.env.CLOUDINARY_UPLOAD_PRESET ?? "").trim() ||
-    (process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET ?? "").trim()
-  );
-}
-
-export function sanitizeTestimonialsParamsToSign(
-  raw: unknown
-): Record<string, SignableValue> | null {
-  if (!raw || typeof raw !== "object") return null;
-
-  const source = raw as Record<string, unknown>;
-  const paramsToSign: Record<string, SignableValue> = {};
-
-  for (const [key, value] of Object.entries(source)) {
-    if (!TESTIMONIAL_ALLOWED_KEYS.has(key)) continue;
-    if (!isStringOrNumber(value)) continue;
-    paramsToSign[key] = value;
-  }
-
-  paramsToSign.folder = TESTIMONIALS_FOLDER;
-
-  const uploadPreset = getTestimonialsUploadPreset();
-  if (uploadPreset) {
-    paramsToSign.upload_preset = uploadPreset;
-  }
-
-  if (typeof paramsToSign.source !== "string" || !paramsToSign.source.trim()) {
-    paramsToSign.source = "uw";
-  }
-
-  return paramsToSign;
+  return CLOUDINARY_TESTIMONIALS_FOLDER;
 }

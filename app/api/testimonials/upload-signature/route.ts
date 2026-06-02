@@ -1,6 +1,7 @@
 import { v2 as cloudinary } from "cloudinary";
 import { isRecord, noStoreJson } from "@/app/api/_lib/common";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
+import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
 
 export const dynamic = "force-dynamic";
 
@@ -10,12 +11,13 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const TESTIMONIALS_FOLDER = "hm_visuals/testimonials";
+const TESTIMONIALS_FOLDER = CLOUDINARY_TESTIMONIALS_FOLDER;
 const MAX_TIMESTAMP_AGE_SECONDS = 10 * 60;
 const SIGNATURE_RATE_LIMIT_WINDOW_MS = 60_000;
 const SIGNATURE_RATE_LIMIT_MAX = 18;
 
 const ALLOWED_SIGN_KEYS = new Set([
+  "folder",
   "timestamp",
   "upload_preset",
   "source",

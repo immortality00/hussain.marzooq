@@ -16,10 +16,11 @@ import {
   isValidEmail,
   isValidFormStartedAt,
 } from "@/app/api/_lib/public-form-security";
+import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
 
 export const dynamic = "force-dynamic";
 
-const TESTIMONIALS_FOLDER = "hm_visuals/testimonials";
+const TESTIMONIALS_FOLDER = CLOUDINARY_TESTIMONIALS_FOLDER;
 const SUBMIT_RATE_LIMIT_WINDOW_MS = 10 * 60_000;
 const SUBMIT_RATE_LIMIT_MAX = 4;
 const MINIMUM_FORM_TIME_MS = 2500;
@@ -157,6 +158,7 @@ export async function POST(req: Request) {
   const locationId = (asNullableString(body.locationId) ?? "").trim().slice(0, 120);
   const locationLabel = (asNullableString(body.locationLabel) ?? "").trim().slice(0, 180);
   const review = (asNullableString(body.review) ?? "").trim().slice(0, 3000);
+  const uploadSessionId = (asNullableString(body.uploadSessionId) ?? "").trim().slice(0, 120);
   const rating = normalizeRating(asNumberOrNull(body.rating));
   const profilePhotoUrl = normalizeOptionalPhotoUrl(asNullableString(body.profilePhotoUrl) ?? "");
   const photoUrls = asStringArray(body.photoUrls, 12)
@@ -201,6 +203,10 @@ export async function POST(req: Request) {
 
   const nextSortOrder = currentSmallestSortOrder - 1;
 
+  const reviewAssetFolder = uploadSessionId
+    ? `${TESTIMONIALS_FOLDER}/${uploadSessionId}`
+    : null;
+
   await db.collection("testimonials").insertOne({
     name,
     email,
@@ -215,6 +221,10 @@ export async function POST(req: Request) {
     rating,
     profilePhotoUrl,
     photoUrls,
+    uploadSessionId: uploadSessionId || null,
+    reviewAssetFolder,
+    reviewProfileFolder: reviewAssetFolder ? `${reviewAssetFolder}/pfp` : null,
+    reviewPhotosFolder: reviewAssetFolder ? `${reviewAssetFolder}/photos` : null,
     isApproved: false,
     sortOrder: nextSortOrder,
     createdAt: now,

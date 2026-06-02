@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { CldUploadWidget } from "next-cloudinary";
+import { CLOUDINARY_SERVICES_FOLDER } from "@/lib/cloudinary-folders";
 import type { Service, ServiceCategory } from "../lib/types";
 
 type WidgetResult = { info?: unknown };
@@ -149,7 +150,7 @@ export default function ServiceEditorModal({
               <div className="flex items-center gap-2">
                 <CldUploadWidget
                   signatureEndpoint="/api/sign-cloudinary-params"
-                  options={{ folder: "hm_visuals/services", multiple: false, resourceType: "image" }}
+                  options={{ folder: CLOUDINARY_SERVICES_FOLDER, multiple: false, resourceType: "image" }}
                   onSuccess={(result: unknown) => {
                     const r = result as WidgetResult;
                     const info = r?.info;

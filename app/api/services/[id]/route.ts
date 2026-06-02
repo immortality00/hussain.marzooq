@@ -9,6 +9,11 @@ import {
   noStoreJson,
   normalizeSlug,
 } from "@/app/api/_lib/common";
+import {
+  deleteManagedCloudinaryAsset,
+  isAllowedCloudinaryUrl,
+} from "@/lib/server/cloudinary-assets";
+import { CLOUDINARY_SERVICES_FOLDER } from "@/lib/cloudinary-folders";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +42,18 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (typeof body.slug === "string") patch.slug = normalizeSlug(body.slug);
   if (typeof body.description === "string") patch.description = body.description.trim();
   if (typeof body.currency === "string") patch.currency = body.currency.trim() || "AED";
-  if (typeof body.imageUrl === "string") patch.imageUrl = body.imageUrl.trim();
+
+  if (typeof body.imageUrl === "string") {
+    const nextImageUrl = body.imageUrl.trim();
+    if (nextImageUrl && !isAllowedCloudinaryUrl(nextImageUrl, [CLOUDINARY_SERVICES_FOLDER])) {
+      return noStoreJson(
+        { ok: false, error: "Service image must be uploaded to the services folder." },
+        { status: 400 }
+      );
+    }
+    patch.imageUrl = nextImageUrl;
+  }
+
   if (typeof body.isActive === "boolean") patch.isActive = body.isActive;
   if (typeof body.isArchived === "boolean") patch.isArchived = body.isArchived;
 
@@ -172,7 +188,19 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     }
   }
 
+  const previousImageUrl = typeof existing.imageUrl === "string" ? existing.imageUrl : "";
+  const nextImageUrl =
+    typeof patch.imageUrl === "string" ? patch.imageUrl : previousImageUrl;
+
   await db.collection("services").updateOne({ _id: new ObjectId(id) }, { $set: patch });
+
+  if (previousImageUrl && previousImageUrl !== nextImageUrl) {
+    await deleteManagedCloudinaryAsset(
+      { url: previousImageUrl },
+      [CLOUDINARY_SERVICES_FOLDER]
+    );
+  }
+
   return noStoreJson({ ok: true });
 }
 
@@ -198,6 +226,11 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
     return noStoreJson({ ok: true, mode: "archived" });
   }
 
+  const service = await db.collection("services").findOne({ _id: new ObjectId(id) });
+  if (!service) {
+    return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  }
+
   const inquiriesCount = await db.collection("inquiries").countDocuments({ serviceId: id });
   if (inquiriesCount > 0) {
     return noStoreJson(
@@ -206,6 +239,16 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
     );
   }
 
+  const imageUrl = typeof service.imageUrl === "string" ? service.imageUrl : "";
+
   await db.collection("services").deleteOne({ _id: new ObjectId(id) });
+
+  if (imageUrl) {
+    await deleteManagedCloudinaryAsset(
+      { url: imageUrl },
+      [CLOUDINARY_SERVICES_FOLDER]
+    );
+  }
+
   return noStoreJson({ ok: true, mode: "deleted" });
 }

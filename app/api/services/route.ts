@@ -8,6 +8,8 @@ import {
   noStoreJson,
   normalizeSlug,
 } from "@/app/api/_lib/common";
+import { isAllowedCloudinaryUrl } from "@/lib/server/cloudinary-assets";
+import { CLOUDINARY_SERVICES_FOLDER } from "@/lib/cloudinary-folders";
 
 export const dynamic = "force-dynamic";
 
@@ -74,6 +76,13 @@ export async function POST(req: Request) {
   if (!name) return noStoreJson({ ok: false, error: "Name is required" }, { status: 400 });
   if (!slug || slug.includes(" ")) {
     return noStoreJson({ ok: false, error: "Slug is required" }, { status: 400 });
+  }
+
+  if (imageUrl && !isAllowedCloudinaryUrl(imageUrl, [CLOUDINARY_SERVICES_FOLDER])) {
+    return noStoreJson(
+      { ok: false, error: "Service image must be uploaded to the services folder." },
+      { status: 400 }
+    );
   }
 
   const db = await getDb();

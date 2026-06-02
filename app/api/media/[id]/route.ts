@@ -16,6 +16,7 @@ import {
   resolvePeopleSelection,
   sanitizeAppearances,
 } from "@/app/api/_lib/media";
+import { toEmbedUrl } from "@/components/media/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -109,6 +110,21 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const incomingPublicId = asNullableString(bodyUnknown.publicId);
   const incomingResourceType = asNullableString(bodyUnknown.resourceType);
 
+  const allowEmbed =
+    categories.includes("videography") &&
+    !categories.includes("photography") &&
+    !categories.includes("nft");
+
+  if (incomingType === "embed" && !allowEmbed) {
+    return noStoreJson(
+      {
+        ok: false,
+        error: "Embed links are allowed only for videography.",
+      },
+      { status: 400 }
+    );
+  }
+
   if (categories.includes("nft") && incomingType === "embed") {
     return noStoreJson(
       { ok: false, error: "NFT items must use an uploaded image or video." },
@@ -142,12 +158,16 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (typeof isPublic === "boolean") set.isPublic = isPublic;
 
   if (incomingType === "embed") {
-    const url = (incomingEmbedUrl ?? "").trim();
-    if (!url.startsWith("https://")) {
-      return noStoreJson({ ok: false, error: "Valid embedUrl required" }, { status: 400 });
+    const normalizedEmbedUrl = toEmbedUrl((incomingEmbedUrl ?? "").trim());
+    if (!normalizedEmbedUrl) {
+      return noStoreJson(
+        { ok: false, error: "Use a valid YouTube or Vimeo video URL." },
+        { status: 400 }
+      );
     }
+
     set.type = "embed";
-    set.embedUrl = url;
+    set.embedUrl = normalizedEmbedUrl;
     set.secureUrl = null;
     set.publicId = null;
     set.resourceType = null;

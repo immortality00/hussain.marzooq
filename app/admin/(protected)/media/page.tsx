@@ -11,6 +11,8 @@ import { useMediaEditorController } from "./lib/useMediaEditorController";
 export default function AdminMediaPage() {
   const { editor, busy, banner, save, remove, startNewUpload } = useMediaEditorController();
 
+  const allowEmbed = editor.primaryCategory === "videography" && !editor.isNft;
+
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -72,7 +74,7 @@ export default function AdminMediaPage() {
           setUploaded={editor.setUploaded}
           embedUrl={editor.embedUrl}
           setEmbedUrl={editor.setEmbedUrl}
-          allowEmbed={!editor.isNft}
+          allowEmbed={allowEmbed}
         />
 
         {editor.isNft ? (

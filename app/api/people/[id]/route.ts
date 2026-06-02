@@ -1,4 +1,3 @@
-import { ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import {
   asBooleanOrNull,
@@ -8,6 +7,11 @@ import {
   parseObjectId,
 } from "@/app/api/_lib/common";
 import { getDb } from "@/lib/server/db";
+import {
+  deleteManagedCloudinaryAsset,
+  isAllowedCloudinaryUrl,
+} from "@/lib/server/cloudinary-assets";
+import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
 
 export const dynamic = "force-dynamic";
 
@@ -81,14 +85,25 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (!name) return noStoreJson({ ok: false, error: "Name is required." }, { status: 400 });
   if (!avatarUrl) return noStoreJson({ ok: false, error: "Avatar is required." }, { status: 400 });
 
+  if (!isAllowedCloudinaryUrl(avatarUrl, [CLOUDINARY_PEOPLE_FOLDER])) {
+    return noStoreJson(
+      { ok: false, error: "Avatar must be uploaded to the people folder." },
+      { status: 400 }
+    );
+  }
+
   const slug = await ensureUniqueSlug(slugify(slugInput || name), id);
 
   const db = await getDb();
 
-  const existing = await db.collection("people_profiles").findOne({ _id: oid }, { projection: { name: 1 } });
+  const existing = await db.collection("people_profiles").findOne(
+    { _id: oid },
+    { projection: { name: 1, avatarUrl: 1 } }
+  );
   if (!existing) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
 
   const previousName = typeof existing.name === "string" ? existing.name : "";
+  const previousAvatarUrl = typeof existing.avatarUrl === "string" ? existing.avatarUrl : "";
 
   const result = await db.collection("people_profiles").updateOne(
     { _id: oid },
@@ -118,6 +133,13 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     );
   }
 
+  if (previousAvatarUrl && previousAvatarUrl !== avatarUrl) {
+    await deleteManagedCloudinaryAsset(
+      { url: previousAvatarUrl },
+      [CLOUDINARY_PEOPLE_FOLDER]
+    );
+  }
+
   return noStoreJson({ ok: true, slug });
 }
 
@@ -130,7 +152,10 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   if (!oid) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
 
   const db = await getDb();
-  const person = await db.collection("people_profiles").findOne({ _id: oid }, { projection: { name: 1 } });
+  const person = await db.collection("people_profiles").findOne(
+    { _id: oid },
+    { projection: { name: 1, avatarUrl: 1 } }
+  );
   if (!person) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
 
   const personName = typeof person.name === "string" ? person.name : "";
@@ -149,8 +174,17 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
     );
   }
 
+  const avatarUrl = typeof person.avatarUrl === "string" ? person.avatarUrl : "";
+
   const result = await db.collection("people_profiles").deleteOne({ _id: oid });
   if (!result.deletedCount) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+
+  if (avatarUrl) {
+    await deleteManagedCloudinaryAsset(
+      { url: avatarUrl },
+      [CLOUDINARY_PEOPLE_FOLDER]
+    );
+  }
 
   return noStoreJson({ ok: true });
 }

@@ -6,6 +6,8 @@ import {
   isRecord,
   noStoreJson,
 } from "@/app/api/_lib/common";
+import { isAllowedCloudinaryUrl } from "@/lib/server/cloudinary-assets";
+import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +74,13 @@ export async function POST(req: Request) {
 
   if (!name) return noStoreJson({ ok: false, error: "Name is required." }, { status: 400 });
   if (!avatarUrl) return noStoreJson({ ok: false, error: "Avatar is required." }, { status: 400 });
+
+  if (!isAllowedCloudinaryUrl(avatarUrl, [CLOUDINARY_PEOPLE_FOLDER])) {
+    return noStoreJson(
+      { ok: false, error: "Avatar must be uploaded to the people folder." },
+      { status: 400 }
+    );
+  }
 
   const slug = await ensureUniqueSlug(slugify(slugInput || name));
 

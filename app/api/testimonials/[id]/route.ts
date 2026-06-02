@@ -8,6 +8,11 @@ import {
   noStoreJson,
   parseObjectId,
 } from "@/app/api/_lib/common";
+import {
+  deleteManagedCloudinaryUrls,
+  deleteManagedEmptyCloudinaryFolders,
+} from "@/lib/server/cloudinary-assets";
+import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
 
 export const dynamic = "force-dynamic";
 
@@ -103,11 +108,39 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   }
 
   const db = await getDb();
+  const doc = await db.collection("testimonials").findOne({ _id: oid });
+
+  if (!doc) {
+    return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
+  }
+
+  const profilePhotoUrl = typeof doc.profilePhotoUrl === "string" ? doc.profilePhotoUrl : "";
+  const photoUrls = Array.isArray(doc.photoUrls)
+    ? doc.photoUrls.filter((value): value is string => typeof value === "string")
+    : [];
+
+  const reviewProfileFolder =
+    typeof doc.reviewProfileFolder === "string" ? doc.reviewProfileFolder : "";
+  const reviewPhotosFolder =
+    typeof doc.reviewPhotosFolder === "string" ? doc.reviewPhotosFolder : "";
+  const reviewAssetFolder =
+    typeof doc.reviewAssetFolder === "string" ? doc.reviewAssetFolder : "";
+
   const result = await db.collection("testimonials").deleteOne({ _id: oid });
 
   if (!result.deletedCount) {
     return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
   }
+
+  await deleteManagedCloudinaryUrls(
+    [profilePhotoUrl, ...photoUrls].filter(Boolean),
+    [CLOUDINARY_TESTIMONIALS_FOLDER]
+  );
+
+  await deleteManagedEmptyCloudinaryFolders(
+    [reviewProfileFolder, reviewPhotosFolder, reviewAssetFolder].filter(Boolean),
+    [CLOUDINARY_TESTIMONIALS_FOLDER]
+  );
 
   return noStoreJson({ ok: true });
 }

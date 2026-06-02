@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { CldUploadWidget } from "next-cloudinary";
+import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
 
 type WidgetResult = { info?: unknown };
 
@@ -48,7 +49,11 @@ export default function PeopleAdminClient() {
     setBanner(null);
     try {
       const res = await fetch("/api/people", { cache: "no-store" });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; items?: PersonItem[]; error?: string };
+      const data = (await res.json().catch(() => null)) as {
+        ok?: boolean;
+        items?: PersonItem[];
+        error?: string;
+      };
       if (!res.ok || !data?.ok || !Array.isArray(data.items)) {
         setBanner({ type: "err", text: data?.error ?? "Failed to load people." });
         return;
@@ -307,7 +312,7 @@ export default function PeopleAdminClient() {
                 <CldUploadWidget
                   signatureEndpoint="/api/sign-cloudinary-params"
                   options={{
-                    folder: "hm_visuals/people",
+                    folder: CLOUDINARY_PEOPLE_FOLDER,
                     multiple: false,
                     resourceType: "image",
                     cropping: true,

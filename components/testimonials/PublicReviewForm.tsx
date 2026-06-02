@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { CldUploadWidget } from "next-cloudinary";
+import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
 
 type WidgetResult = { info?: unknown };
 
@@ -42,6 +43,14 @@ function isLocationOption(value: unknown): value is LocationOption {
     (typeof value.population === "number" || value.population === null) &&
     (value.source === "dataset" || value.source === "fallback")
   );
+}
+
+function createUploadSessionId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `review-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
 function StarPicker({
@@ -263,6 +272,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
   const [submitting, setSubmitting] = useState(false);
   const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [formStartedAt, setFormStartedAt] = useState(Date.now());
+  const [uploadSessionId, setUploadSessionId] = useState(createUploadSessionId());
 
   const selectedLocationPayload = useMemo(
     () =>
@@ -278,9 +288,20 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
     [selectedLocation]
   );
 
+  const profilePhotoFolder = useMemo(
+    () => `${CLOUDINARY_TESTIMONIALS_FOLDER}/${uploadSessionId}/pfp`,
+    [uploadSessionId]
+  );
+
+  const photosFolder = useMemo(
+    () => `${CLOUDINARY_TESTIMONIALS_FOLDER}/${uploadSessionId}/photos`,
+    [uploadSessionId]
+  );
+
   useEffect(() => {
     if (open) {
       setFormStartedAt(Date.now());
+      setUploadSessionId(createUploadSessionId());
       window.dispatchEvent(new Event("hm_modal_open"));
       document.body.style.overflow = "hidden";
     } else {
@@ -305,6 +326,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
     setWebsite("");
     setSubmitting(false);
     setBanner(null);
+    setUploadSessionId(createUploadSessionId());
   }
 
   function addPhoto(url: string) {
@@ -367,6 +389,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
           photoUrls,
           website,
           formStartedAt,
+          uploadSessionId,
         }),
       });
 
@@ -452,7 +475,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                           <CldUploadWidget
                             signatureEndpoint="/api/testimonials/upload-signature"
                             options={{
-                              folder: "hm_visuals/testimonials",
+                              folder: profilePhotoFolder,
                               multiple: false,
                               resourceType: "image",
                               cropping: true,
@@ -559,7 +582,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                         <CldUploadWidget
                           signatureEndpoint="/api/testimonials/upload-signature"
                           options={{
-                            folder: "hm_visuals/testimonials",
+                            folder: photosFolder,
                             multiple: true,
                             maxFiles: 12,
                             resourceType: "image",
