@@ -3,8 +3,8 @@ import { noStoreJson } from "@/app/api/_lib/common";
 import {
   getCloudinaryPublicConfig,
   isCloudinaryConfigured,
-  signCloudinaryParams,
   sanitizeCloudinaryFolder,
+  signCloudinaryParams,
 } from "@/lib/server/cloudinary";
 import { CLOUDINARY_ROOT_FOLDER } from "@/lib/cloudinary-folders";
 
@@ -18,8 +18,16 @@ export async function POST() {
     return noStoreJson({ ok: false, error: "Cloudinary config missing." }, { status: 500 });
   }
 
-  const timestamp = Math.round(Date.now() / 1000);
   const folder = sanitizeCloudinaryFolder(CLOUDINARY_ROOT_FOLDER);
+
+  if (!folder) {
+    return noStoreJson(
+      { ok: false, error: "Cloudinary upload folder is not configured correctly." },
+      { status: 500 },
+    );
+  }
+
+  const timestamp = Math.round(Date.now() / 1000);
   const signature = signCloudinaryParams({ timestamp, folder });
   const { cloudName, apiKey } = getCloudinaryPublicConfig();
 

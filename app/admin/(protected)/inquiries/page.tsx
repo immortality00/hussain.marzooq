@@ -3,7 +3,14 @@
 import { useEffect, useMemo, useState } from "react";
 import InquirySection from "./components/InquirySection";
 import InquiriesToolbar from "./components/InquiriesToolbar";
-import { archiveInquiry, deleteInquiryForever, fetchInquiries, isApiResponse, patchInquiry, restoreInquiry } from "./lib/api";
+import {
+  archiveInquiry,
+  deleteInquiryForever,
+  fetchInquiries,
+  isApiResponse,
+  patchInquiry,
+  restoreInquiry,
+} from "./lib/api";
 import type { Banner, Inquiry } from "./lib/types";
 
 export default function AdminInquiriesPage() {
@@ -17,13 +24,14 @@ export default function AdminInquiriesPage() {
   async function load() {
     setMsg(null);
 
-    const { res, raw } = await fetchInquiries(statusFilter);
+    const { raw } = await fetchInquiries(statusFilter);
 
     if (!isApiResponse(raw) || raw.ok !== true || !Array.isArray(raw.items)) {
       const errText =
         isApiResponse(raw) && raw.ok === false && typeof raw.error === "string"
           ? raw.error
           : "Failed to load inquiries.";
+
       setMsg({ type: "err", text: errText });
       return;
     }
@@ -32,11 +40,13 @@ export default function AdminInquiriesPage() {
 
     setNotesMap((prev) => {
       const next = { ...prev };
+
       for (const it of raw.items) {
         if (next[it.id] === undefined) {
           next[it.id] = it.adminNotes ?? "";
         }
       }
+
       return next;
     });
   }
@@ -51,7 +61,11 @@ export default function AdminInquiriesPage() {
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
-    for (const it of active) m.set(it.status, (m.get(it.status) ?? 0) + 1);
+
+    for (const it of active) {
+      m.set(it.status, (m.get(it.status) ?? 0) + 1);
+    }
+
     return m;
   }, [active]);
 
@@ -66,7 +80,11 @@ export default function AdminInquiriesPage() {
     try {
       await archiveInquiry(id);
       setItems((prev) => prev.map((p) => (p.id === id ? { ...p, isArchived: true } : p)));
-      if (expandedId === id) setExpandedId("");
+
+      if (expandedId === id) {
+        setExpandedId("");
+      }
+
       setMsg({ type: "ok", text: "✅ Archived." });
     } catch (err: unknown) {
       setMsg({ type: "err", text: err instanceof Error ? err.message : "Archive failed." });
@@ -90,7 +108,11 @@ export default function AdminInquiriesPage() {
     try {
       await deleteInquiryForever(id);
       setItems((prev) => prev.filter((p) => p.id !== id));
-      if (expandedId === id) setExpandedId("");
+
+      if (expandedId === id) {
+        setExpandedId("");
+      }
+
       setMsg({ type: "ok", text: "✅ Deleted forever." });
     } catch (err: unknown) {
       setMsg({ type: "err", text: err instanceof Error ? err.message : "Delete failed." });
@@ -113,7 +135,9 @@ export default function AdminInquiriesPage() {
   async function handleSaveNotes(id: string) {
     try {
       const value = notesMap[id] ?? "";
+
       await patchInquiry(id, { adminNotes: value });
+
       setItems((prev) => prev.map((p) => (p.id === id ? { ...p, adminNotes: value } : p)));
       setMsg({ type: "ok", text: "✅ Notes saved." });
     } catch (err: unknown) {
@@ -133,7 +157,9 @@ export default function AdminInquiriesPage() {
       {msg ? (
         <div
           className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
-            msg.type === "ok" ? "border-green-500/30 bg-green-500/10" : "border-red-500/30 bg-red-500/10"
+            msg.type === "ok"
+              ? "border-green-500/30 bg-green-500/10"
+              : "border-red-500/30 bg-red-500/10"
           }`}
         >
           {msg.text}

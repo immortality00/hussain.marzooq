@@ -1,145 +1,56 @@
-import crypto from "crypto";
-import { cookies, headers } from "next/headers";
-import { redirect } from "next/navigation";
-import { isAdminPasswordConfigured, verifyAdminPassword } from "@/lib/auth/admin";
+import type { Metadata } from "next";
+import { HomeCreativeSystem } from "@/components/home/HomeCreativeSystem";
+import { HomeFeaturedWork } from "@/components/home/HomeFeaturedWork";
+import { HomeHero } from "@/components/home/HomeHero";
+import { HomeServicesPreview } from "@/components/home/HomeServicesPreview";
+import { HomeTrustAndShowreel } from "@/components/home/HomeTrustAndShowreel";
+import { StickyCta } from "@/components/site/StickyCta";
 import {
-  clearFixedWindowRateLimit,
-  consumeFixedWindowRateLimit,
-  getFixedWindowRateLimitStatus,
-} from "@/lib/server/request-guards";
+  getPhotographyItems,
+  getShowreelUrl,
+  getVideographyItems,
+} from "@/lib/server/public-media";
+import { getPublicNfts } from "@/lib/server/public-nfts";
+import { getPublicServicesData } from "@/lib/server/public-services";
+import { getPublicTestimonials } from "@/lib/server/testimonials";
 
-type SearchParams = { [key: string]: string | string[] | undefined };
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
 
-const ATTEMPT_WINDOW_MS = 15 * 60 * 1000;
-const MAX_ATTEMPTS = 5;
+export const metadata: Metadata = {
+  title: "HM Visuals — Cinematic Photography, Film & Creative Direction",
+  description:
+    "Premium portfolio of Hussain Marzooq across photography, videography, NFT work, dance, web development, and creative visual direction.",
+};
 
-function hmacHex(value: string, secret: string) {
-  return crypto.createHmac("sha256", secret).update(value).digest("hex");
-}
-
-function getClientAddress(headerList: Awaited<ReturnType<typeof headers>>) {
-  const forwardedFor = headerList.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = headerList.get("x-real-ip")?.trim();
-  return forwardedFor || realIp || "anonymous";
-}
-
-function getSearchParamValue(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
-}
-
-async function login(formData: FormData) {
-  "use server";
-
-  const password = String(formData.get("password") ?? "").trim();
-  const nextPath = String(formData.get("next") ?? "/admin/inquiries");
-  const secret = String(process.env.ADMIN_COOKIE_SECRET ?? "").trim();
-  const headerList = await headers();
-  const clientKey = `${getClientAddress(headerList)}|${headerList.get("user-agent") ?? ""}`;
-
-  if (!isAdminPasswordConfigured() || !secret) {
-    redirect("/admin?error=config");
-  }
-
-  const status = await getFixedWindowRateLimitStatus({
-    bucket: "admin-login",
-    key: clientKey,
-    limit: MAX_ATTEMPTS,
-  });
-
-  if (status.limited) {
-    redirect("/admin?error=locked");
-  }
-
-  if (!verifyAdminPassword(password)) {
-    const afterFailure = await consumeFixedWindowRateLimit({
-      bucket: "admin-login",
-      key: clientKey,
-      limit: MAX_ATTEMPTS,
-      windowMs: ATTEMPT_WINDOW_MS,
-    });
-
-    if (afterFailure.limited) {
-      redirect("/admin?error=locked");
-    }
-
-    redirect("/admin?error=wrong");
-  }
-
-  await clearFixedWindowRateLimit({ bucket: "admin-login", key: clientKey });
-
-  const cookieStore = await cookies();
-  const sig = hmacHex("ok", secret);
-
-  cookieStore.set("hm_admin", "ok", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-
-  cookieStore.set("hm_admin_sig", sig, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-
-  const safeNext = nextPath.startsWith("/") ? nextPath : "/admin/inquiries";
-  redirect(safeNext);
-}
-
-export default async function AdminLoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const sp = await searchParams;
-  const error = getSearchParamValue(sp?.error);
-  const nextValue = getSearchParamValue(sp?.next);
+export default async function HomePage() {
+  const [photos, videos, showreelUrl, nfts, servicesData, testimonials] = await Promise.all([
+    getPhotographyItems(),
+    getVideographyItems(),
+    getShowreelUrl(),
+    getPublicNfts(),
+    getPublicServicesData(),
+    getPublicTestimonials(3),
+  ]);
 
   return (
-    <main className="mx-auto max-w-md px-6 py-16">
-      <h1 className="text-2xl font-semibold">Admin</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Enter your admin password to continue.
-      </p>
-
-      {error === "wrong" ? (
-        <div className="mt-6 rounded-2xl border bg-destructive/10 p-4 text-sm">
-          Wrong password.
-        </div>
-      ) : null}
-
-      {error === "locked" ? (
-        <div className="mt-6 rounded-2xl border bg-destructive/10 p-4 text-sm">
-          Too many failed attempts. Please wait before trying again.
-        </div>
-      ) : null}
-
-      {error === "config" ? (
-        <div className="mt-6 rounded-2xl border bg-destructive/10 p-4 text-sm">
-          Admin is not configured. Check <code>.env.local</code> for <code>ADMIN_PASSWORD_HASH</code>{" "}
-          or <code>ADMIN_PASSWORD</code> and <code>ADMIN_COOKIE_SECRET</code>, then restart the
-          dev server.
-        </div>
-      ) : null}
-
-      <form action={login} className="mt-8 space-y-4">
-        <input
-          type="password"
-          name="password"
-          placeholder="Password"
-          className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-          autoComplete="current-password"
-          required
+    <>
+      <main>
+        <HomeHero photos={photos} videos={videos} />
+        <HomeFeaturedWork photos={photos} videos={videos} />
+        <HomeCreativeSystem nfts={nfts} />
+        <HomeServicesPreview services={servicesData.services.slice(0, 3)} />
+        <HomeTrustAndShowreel
+          testimonial={testimonials.items[0] ?? null}
+          showreelUrl={showreelUrl}
         />
-        <input type="hidden" name="next" value={nextValue} />
-        <button className="w-full rounded-xl bg-foreground px-3 py-2 text-sm text-background hover:opacity-90">
-          Login
-        </button>
-      </form>
-    </main>
+      </main>
+
+      <StickyCta
+        title="Ready to create something strong?"
+        description="Tell me the work you need and I’ll reply with the best direction."
+        buttonLabel="Book"
+      />
+    </>
   );
 }

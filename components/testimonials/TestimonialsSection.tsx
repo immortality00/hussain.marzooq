@@ -41,26 +41,6 @@ function getReviewPoint(item: PublicTestimonial): GeoPoint | null {
   };
 }
 
-function buildGeoPoints(items: PublicTestimonial[]): GeoPoint[] {
-  const map = new Map<string, GeoPoint>();
-
-  for (const item of items) {
-    const point = getReviewPoint(item);
-    if (!point) continue;
-
-    const existing = map.get(point.key);
-
-    if (existing) {
-      existing.count += 1;
-      continue;
-    }
-
-    map.set(point.key, point);
-  }
-
-  return [...map.values()].sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
-}
-
 function getMapEmbedUrl(point: GeoPoint) {
   const lat = point.lat;
   const lon = point.lon;
@@ -81,6 +61,7 @@ function renderStars(rating: number) {
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
   if (parts.length === 0) return "?";
+
   return parts.map((part) => part.charAt(0).toUpperCase()).join("");
 }
 
@@ -161,13 +142,7 @@ function ReviewPhotoStrip({ item }: { item: PublicTestimonial }) {
   );
 }
 
-function TestimonialMap({
-  points,
-  activePoint,
-}: {
-  points: GeoPoint[];
-  activePoint: GeoPoint | null;
-}) {
+function TestimonialMap({ activePoint }: { activePoint: GeoPoint | null }) {
   if (!activePoint) {
     return (
       <section className="overflow-hidden rounded-[1.25rem] border border-border/60 bg-muted/20 p-2 shadow-sm">
@@ -222,8 +197,10 @@ function ReviewModal({
         <div className="flex items-center justify-between gap-4 border-b border-border/60 p-5">
           <div className="flex min-w-0 items-center gap-4">
             <Avatar name={item.name} profilePhotoUrl={item.profilePhotoUrl} size="card" />
+
             <div className="min-w-0">
               <div className="truncate text-lg font-semibold tracking-[-0.03em]">{item.name}</div>
+
               {getIdentityLine(item) ? (
                 <div className="mt-1 truncate text-sm text-muted-foreground">
                   {getIdentityLine(item)}
@@ -327,6 +304,7 @@ function SingleReviewCard({
 
             <div className="min-w-0">
               <div className="truncate text-sm font-medium tracking-[-0.01em]">{item.name}</div>
+
               {getIdentityLine(item) ? (
                 <div className="mt-1 truncate text-xs text-muted-foreground">
                   {getIdentityLine(item)}
@@ -367,22 +345,21 @@ export default function TestimonialsSection({ items }: { items: PublicTestimonia
   const touchStartYRef = useRef<number | null>(null);
 
   const activeItem = items[activeIndex] ?? items[0];
-  const points = useMemo(() => buildGeoPoints(items), [items]);
-  const activePoint = useMemo(
-    () => (activeItem ? getReviewPoint(activeItem) : null),
-    [activeItem]
-  );
+  const activePoint = useMemo(() => (activeItem ? getReviewPoint(activeItem) : null), [activeItem]);
 
   useEffect(() => {
-    if (modalItem) window.dispatchEvent(new Event("hm_modal_open"));
-    else window.dispatchEvent(new Event("hm_modal_close"));
+    if (modalItem) {
+      window.dispatchEvent(new Event("hm_modal_open"));
+    } else {
+      window.dispatchEvent(new Event("hm_modal_close"));
+    }
   }, [modalItem]);
 
   const goToIndex = useCallback(
     (nextIndex: number) => {
       setActiveIndex(Math.max(0, Math.min(items.length - 1, nextIndex)));
     },
-    [items.length]
+    [items.length],
   );
 
   const goNext = useCallback(() => {
@@ -409,8 +386,11 @@ export default function TestimonialsSection({ items }: { items: PublicTestimonia
 
       scrollLockRef.current = true;
 
-      if (movingDown) goNext();
-      else goPrevious();
+      if (movingDown) {
+        goNext();
+      } else {
+        goPrevious();
+      }
 
       window.setTimeout(() => {
         scrollLockRef.current = false;
@@ -434,8 +414,11 @@ export default function TestimonialsSection({ items }: { items: PublicTestimonia
 
     if (Math.abs(difference) < 40) return;
 
-    if (difference > 0) goNext();
-    else goPrevious();
+    if (difference > 0) {
+      goNext();
+    } else {
+      goPrevious();
+    }
   }
 
   if (!activeItem) return null;
@@ -444,7 +427,7 @@ export default function TestimonialsSection({ items }: { items: PublicTestimonia
     <>
       <section className="grid gap-5 lg:grid-cols-[minmax(260px,0.72fr)_minmax(0,1.28fr)] lg:items-start">
         <div className="lg:sticky lg:top-20">
-          <TestimonialMap points={points} activePoint={activePoint} />
+          <TestimonialMap activePoint={activePoint} />
         </div>
 
         <div
