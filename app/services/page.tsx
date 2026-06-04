@@ -1,6 +1,16 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { getPublicServicesData, workLinkForCategory } from "@/lib/server/public-services";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export const metadata: Metadata = {
+  title: "Creative Services | HM Visuals",
+  description:
+    "Book premium photography, filmmaking, creative direction, dancing, web development, and NFT-focused services by HM Visuals.",
+};
 
 export default async function ServicesPage({
   searchParams,

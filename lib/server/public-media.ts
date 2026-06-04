@@ -27,16 +27,9 @@ async function listPublicMedia({
 }
 
 export async function getPhotographyItems(): Promise<PublicMediaItem[]> {
-  const primary = await listPublicMedia({
-    type: "image",
-    category: "photography",
-    limit: 60,
-  });
-
-  if (primary.length) return primary;
-
   return listPublicMedia({
     type: "image",
+    category: "photography",
     limit: 60,
   });
 }

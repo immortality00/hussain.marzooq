@@ -1,6 +1,16 @@
+import type { Metadata } from "next";
 import { StickyCta } from "@/components/site/StickyCta";
 import NftCollection from "@/components/nft/NftCollection";
 import { getPublicNfts } from "@/lib/server/public-nfts";
+
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export const metadata: Metadata = {
+  title: "NFT Collection | HM Visuals",
+  description:
+    "Explore HM Visuals collectible NFT works, edition structures, availability, and marketplace access.",
+};
 
 export default async function NftPage() {
   const items = await getPublicNfts();
