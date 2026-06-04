@@ -13,11 +13,11 @@ import {
 export default function NftCard({
   item,
   onOpen,
-  imagePriority = false,
+  loadImageEagerly = false,
 }: {
   item: PublicNftItem;
   onOpen: (item: PublicNftItem) => void;
-  imagePriority?: boolean;
+  loadImageEagerly?: boolean;
 }) {
   const priceText = getPriceText(item);
   const shownStatus = displayStatus(item);
@@ -55,8 +55,8 @@ export default function NftCard({
                 fill
                 className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
                 sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                loading={imagePriority ? "eager" : "lazy"}
-                fetchPriority={imagePriority ? "high" : undefined}
+                loading={loadImageEagerly ? "eager" : "lazy"}
+                fetchPriority={loadImageEagerly ? "high" : undefined}
               />
             )
           ) : (

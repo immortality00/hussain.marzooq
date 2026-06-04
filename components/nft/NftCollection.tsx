@@ -7,6 +7,8 @@ import NftFilters from "./NftFilters";
 import NftModal from "./NftModal";
 import { displayStatus } from "./lib";
 
+const EAGER_GRID_IMAGE_COUNT = 3;
+
 export default function NftCollection({ items }: { items: PublicNftItem[] }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | "available" | "sold" | "coming-soon">("");
@@ -54,7 +56,7 @@ export default function NftCollection({ items }: { items: PublicNftItem[] }) {
               key={item.id}
               item={item}
               onOpen={setActive}
-              imagePriority={index === 0}
+              loadImageEagerly={index < EAGER_GRID_IMAGE_COUNT}
             />
           ))}
         </section>
