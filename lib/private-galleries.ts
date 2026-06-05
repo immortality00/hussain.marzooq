@@ -1,5 +1,7 @@
 import crypto from "crypto";
 
+export const MIN_PRIVATE_GALLERY_PASSWORD_LENGTH = 8;
+
 export type PrivateGalleryDoc = {
   _id?: unknown;
   title: string;
@@ -22,6 +24,31 @@ function scryptAsync(password: string, salt: Buffer, keylen: number) {
       else resolve(derivedKey as Buffer);
     });
   });
+}
+
+function getPrivateGalleryCookieSecret() {
+  return (
+    (process.env.PRIVATE_GALLERY_COOKIE_SECRET ?? "").trim() ||
+    (process.env.ADMIN_COOKIE_SECRET ?? "").trim()
+  );
+}
+
+function timingSafeStringEqual(a: string, b: string) {
+  const aBuffer = Buffer.from(a);
+  const bBuffer = Buffer.from(b);
+
+  if (aBuffer.length !== bBuffer.length) return false;
+  return crypto.timingSafeEqual(aBuffer, bBuffer);
+}
+
+function signGalleryCookiePayload(galleryId: string, accessToken: string) {
+  const secret = getPrivateGalleryCookieSecret();
+  if (!secret) return null;
+
+  return crypto
+    .createHmac("sha256", secret)
+    .update(`${galleryId}.${accessToken}`)
+    .digest("hex");
 }
 
 export async function hashGalleryPassword(password: string): Promise<string> {
@@ -59,6 +86,54 @@ export function makeGalleryAccessToken() {
 
 export function privateGalleryCookieName(id: string) {
   return `hm_gallery_${id}`;
+}
+
+export function createPrivateGalleryCookieValue(galleryId: string, accessToken: string) {
+  const normalizedGalleryId = galleryId.trim();
+  const normalizedAccessToken = accessToken.trim();
+  if (!normalizedGalleryId || !normalizedAccessToken) return null;
+
+  const signature = signGalleryCookiePayload(normalizedGalleryId, normalizedAccessToken);
+  if (!signature) return null;
+
+  return `v1.${normalizedAccessToken}.${signature}`;
+}
+
+export function verifyPrivateGalleryCookieValue(params: {
+  galleryId: string;
+  accessToken: string;
+  cookieValue: string;
+}) {
+  const galleryId = params.galleryId.trim();
+  const accessToken = params.accessToken.trim();
+  const cookieValue = params.cookieValue.trim();
+
+  if (!galleryId || !accessToken || !cookieValue) return false;
+
+  const [version, tokenFromCookie, signatureFromCookie] = cookieValue.split(".");
+  if (version !== "v1" || tokenFromCookie !== accessToken || !signatureFromCookie) return false;
+
+  const expectedSignature = signGalleryCookiePayload(galleryId, accessToken);
+  if (!expectedSignature) return false;
+
+  return timingSafeStringEqual(signatureFromCookie, expectedSignature);
+}
+
+export function getPrivateGalleryExpiryDate(doc: Record<string, unknown>) {
+  if (doc.expiresAtUtc instanceof Date) return doc.expiresAtUtc;
+  if (doc.expiresAt instanceof Date) return doc.expiresAt;
+  return null;
+}
+
+export function isPrivateGalleryExpired(expiresAt: Date | null | undefined) {
+  return !!expiresAt && expiresAt.getTime() <= Date.now();
+}
+
+export function isPrivateGalleryUnavailable(doc: Record<string, unknown>) {
+  const isActive = typeof doc.isActive === "boolean" ? doc.isActive : true;
+  const expiresAt = getPrivateGalleryExpiryDate(doc);
+
+  return !isActive || isPrivateGalleryExpired(expiresAt);
 }
 
 export function parseClientLocalDateTimeToUtc(

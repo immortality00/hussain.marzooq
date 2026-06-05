@@ -9,6 +9,7 @@ import {
   parseObjectId,
 } from "@/app/api/_lib/common";
 import {
+  MIN_PRIVATE_GALLERY_PASSWORD_LENGTH,
   hashGalleryPassword,
   isFutureDate,
   makeGalleryAccessToken,
@@ -126,12 +127,16 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   };
 
   if (password) {
-    if (password.length < 4) {
+    if (password.length < MIN_PRIVATE_GALLERY_PASSWORD_LENGTH) {
       return noStoreJson(
-        { ok: false, error: "Password must be at least 4 characters." },
+        {
+          ok: false,
+          error: `Password must be at least ${MIN_PRIVATE_GALLERY_PASSWORD_LENGTH} characters.`,
+        },
         { status: 400 }
       );
     }
+
     set.passwordHash = await hashGalleryPassword(password);
     set.accessToken = makeGalleryAccessToken();
   }

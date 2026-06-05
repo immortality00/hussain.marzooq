@@ -2,15 +2,14 @@ import { cookies } from "next/headers";
 import { ObjectId } from "mongodb";
 import { v2 as cloudinary } from "cloudinary";
 import { getDb } from "@/lib/server/db";
-import { privateGalleryCookieName } from "@/lib/private-galleries";
+import {
+  isPrivateGalleryUnavailable,
+  privateGalleryCookieName,
+  verifyPrivateGalleryCookieValue,
+} from "@/lib/private-galleries";
+import { ensureCloudinaryConfigured } from "@/lib/server/cloudinary";
 
 export const dynamic = "force-dynamic";
-
-function getExpiryDate(doc: Record<string, unknown>) {
-  if (doc.expiresAtUtc instanceof Date) return doc.expiresAtUtc;
-  if (doc.expiresAt instanceof Date) return doc.expiresAt;
-  return null;
-}
 
 export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const { slug } = await ctx.params;
@@ -22,17 +21,17 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
     return new Response("Not found", { status: 404 });
   }
 
-  const isActive = typeof gallery.isActive === "boolean" ? gallery.isActive : true;
-  const expiresAt = getExpiryDate(gallery as Record<string, unknown>);
-  if (!isActive || (expiresAt && expiresAt.getTime() <= Date.now())) {
+  if (isPrivateGalleryUnavailable(gallery as Record<string, unknown>)) {
     return new Response("Unavailable", { status: 403 });
   }
 
+  const galleryId = String(gallery._id);
   const accessToken = typeof gallery.accessToken === "string" ? gallery.accessToken : "";
   const jar = await cookies();
-  const cookieValue = jar.get(privateGalleryCookieName(String(gallery._id)))?.value ?? "";
+  const cookieValue = jar.get(privateGalleryCookieName(galleryId))?.value ?? "";
+  const hasAccess = verifyPrivateGalleryCookieValue({ galleryId, accessToken, cookieValue });
 
-  if (!accessToken || !cookieValue || cookieValue !== accessToken) {
+  if (!hasAccess) {
     return new Response("Forbidden", { status: 403 });
   }
 
@@ -62,12 +61,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }
     return new Response("No downloadable assets", { status: 400 });
   }
 
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-    secure: true,
-  });
+  try {
+    ensureCloudinaryConfigured();
+  } catch {
+    return new Response("Cloudinary download is not configured", { status: 500 });
+  }
 
   const archiveUrl = cloudinary.utils.download_zip_url({
     fully_qualified_public_ids: fullyQualifiedPublicIds,

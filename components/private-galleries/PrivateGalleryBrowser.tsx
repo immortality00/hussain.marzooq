@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import type { MediaItem } from "@/components/media/types";
 
+const EAGER_GRID_IMAGE_COUNT = 3;
+
 function toDownloadUrl(url: string) {
   if (url.includes("/upload/")) {
     return url.replace("/upload/", "/upload/fl_attachment/");
@@ -58,7 +60,7 @@ export default function PrivateGalleryBrowser({
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {items.map((item, index) => {
           const secureUrl = item.secureUrl;
-          const isPriorityImage = index === 0;
+          const isPriorityImage = index < EAGER_GRID_IMAGE_COUNT;
 
           return (
             <article
@@ -237,20 +239,12 @@ export default function PrivateGalleryBrowser({
                   {active.secureUrl ? (
                     <button
                       type="button"
-                      onClick={() => {
-                        const downloadUrl = active.secureUrl;
-                        if (!downloadUrl) return;
-                        downloadFile(downloadUrl);
-                      }}
-                      className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
+                      onClick={() => downloadFile(active.secureUrl as string)}
+                      className="w-full rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
                     >
                       Download
                     </button>
-                  ) : (
-                    <div className="rounded-xl border px-4 py-2 text-center text-sm text-muted-foreground">
-                      Download unavailable for this item
-                    </div>
-                  )}
+                  ) : null}
                 </div>
               </div>
             </div>

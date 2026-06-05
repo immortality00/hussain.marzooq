@@ -8,6 +8,7 @@ import {
   noStoreJson,
 } from "@/app/api/_lib/common";
 import {
+  MIN_PRIVATE_GALLERY_PASSWORD_LENGTH,
   hashGalleryPassword,
   isFutureDate,
   makeGalleryAccessToken,
@@ -85,9 +86,12 @@ export async function POST(req: Request) {
     return noStoreJson({ ok: false, error: "Title is required." }, { status: 400 });
   }
 
-  if (!password || password.length < 4) {
+  if (!password || password.length < MIN_PRIVATE_GALLERY_PASSWORD_LENGTH) {
     return noStoreJson(
-      { ok: false, error: "Password must be at least 4 characters." },
+      {
+        ok: false,
+        error: `Password must be at least ${MIN_PRIVATE_GALLERY_PASSWORD_LENGTH} characters.`,
+      },
       { status: 400 }
     );
   }

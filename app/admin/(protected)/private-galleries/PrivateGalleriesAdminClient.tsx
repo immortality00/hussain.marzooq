@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 
+const MIN_PRIVATE_GALLERY_PASSWORD_LENGTH = 8;
+
 type GalleryItem = {
   id: string;
   title: string;
@@ -181,8 +183,19 @@ export default function PrivateGalleriesAdminClient() {
       return;
     }
 
-    if (!editingId && password.trim().length < 4) {
-      setBanner({ type: "err", text: "Password must be at least 4 characters." });
+    if (!editingId && password.trim().length < MIN_PRIVATE_GALLERY_PASSWORD_LENGTH) {
+      setBanner({
+        type: "err",
+        text: `Password must be at least ${MIN_PRIVATE_GALLERY_PASSWORD_LENGTH} characters.`,
+      });
+      return;
+    }
+
+    if (editingId && password.trim() && password.trim().length < MIN_PRIVATE_GALLERY_PASSWORD_LENGTH) {
+      setBanner({
+        type: "err",
+        text: `New password must be at least ${MIN_PRIVATE_GALLERY_PASSWORD_LENGTH} characters.`,
+      });
       return;
     }
 

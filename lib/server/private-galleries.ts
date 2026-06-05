@@ -2,7 +2,12 @@ import { cookies } from "next/headers";
 import { ObjectId } from "mongodb";
 import { sanitizeAppearances } from "@/app/api/_lib/media";
 import type { MediaItem } from "@/components/media/types";
-import { privateGalleryCookieName } from "@/lib/private-galleries";
+import {
+  getPrivateGalleryExpiryDate,
+  isPrivateGalleryUnavailable,
+  privateGalleryCookieName,
+  verifyPrivateGalleryCookieValue,
+} from "@/lib/private-galleries";
 import { getDb } from "@/lib/server/db";
 
 export type PrivateGallerySummary = {
@@ -52,16 +57,6 @@ function toMediaItem(doc: Record<string, unknown>): MediaItem {
           ? doc.createdAt
           : null,
   };
-}
-
-function getExpiryDate(doc: Record<string, unknown>) {
-  if (doc.expiresAtUtc instanceof Date) return doc.expiresAtUtc;
-  if (doc.expiresAt instanceof Date) return doc.expiresAt;
-  return null;
-}
-
-function isExpired(expiresAt: Date | null | undefined) {
-  return !!expiresAt && expiresAt.getTime() <= Date.now();
 }
 
 export async function getPrivateGalleryAdminList(): Promise<PrivateGallerySummary[]> {
@@ -126,19 +121,19 @@ export async function getPrivateGalleryPublicBySlug(
   const id = String(doc._id);
   const title = typeof doc.title === "string" ? doc.title : "";
   const description = typeof doc.description === "string" ? doc.description : null;
-  const expiresAtUtc = getExpiryDate(doc as Record<string, unknown>);
+  const expiresAtUtc = getPrivateGalleryExpiryDate(doc as Record<string, unknown>);
   const expiresAtLocal = typeof doc.expiresAtLocal === "string" ? doc.expiresAtLocal : "";
   const accessToken = typeof doc.accessToken === "string" ? doc.accessToken : "";
-  const isActive = typeof doc.isActive === "boolean" ? doc.isActive : true;
 
-  if (!isActive || isExpired(expiresAtUtc)) {
+  if (isPrivateGalleryUnavailable(doc as Record<string, unknown>)) {
     return { state: "missing" };
   }
 
   const jar = await cookies();
   const cookieValue = jar.get(privateGalleryCookieName(id))?.value ?? "";
+  const hasAccess = verifyPrivateGalleryCookieValue({ galleryId: id, accessToken, cookieValue });
 
-  if (!cookieValue || cookieValue !== accessToken) {
+  if (!hasAccess) {
     return {
       state: "locked",
       id,
@@ -147,6 +142,10 @@ export async function getPrivateGalleryPublicBySlug(
       description,
       expiresAtLocal,
     };
+  }
+
+  if (expiresAtUtc && expiresAtUtc.getTime() <= Date.now()) {
+    return { state: "missing" };
   }
 
   const mediaIds = normalizeStringArray(doc.mediaIds);
