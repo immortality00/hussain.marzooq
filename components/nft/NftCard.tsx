@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import SmartMediaPreview from "@/components/media/SmartMediaPreview";
 import type { PublicNftItem } from "@/lib/server/public-nfts";
 import {
   buildInquiryHref,
@@ -41,27 +41,15 @@ export default function NftCard({
         className="group cursor-pointer"
       >
         <div className="relative h-80 overflow-hidden bg-muted">
-          {item.mediaUrl ? (
-            item.mediaType === "video" ? (
-              <video
-                className="h-full w-full object-contain bg-black"
-                preload="metadata"
-                src={item.mediaUrl}
-              />
-            ) : (
-              <Image
-                src={item.mediaUrl}
-                alt={item.title}
-                fill
-                className="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
-                sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                loading={loadImageEagerly ? "eager" : "lazy"}
-                fetchPriority={loadImageEagerly ? "high" : undefined}
-              />
-            )
-          ) : (
-            <div className="h-full w-full bg-linear-to-br from-muted to-background" />
-          )}
+          <SmartMediaPreview
+            mode={item.mediaUrl ? (item.mediaType === "video" ? "video" : "image") : "empty"}
+            src={item.mediaUrl}
+            title={item.title}
+            fit={item.mediaType === "video" ? "contain" : "cover"}
+            sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+            imagePriority={loadImageEagerly}
+            imageClassName="object-cover transition-transform duration-700 group-hover:scale-[1.03]"
+          />
 
           <div className="absolute inset-0 bg-linear-to-t from-black/78 via-black/12 to-transparent" />
 

@@ -1,27 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { useMemo, useState } from "react";
+import { downloadCloudinaryFile } from "@/components/media/download";
+import SmartMediaPreview from "@/components/media/SmartMediaPreview";
 import type { MediaItem } from "@/components/media/types";
+import { useModalNavbarLock } from "@/components/media/useModalNavbarLock";
 
 const EAGER_GRID_IMAGE_COUNT = 3;
-
-function toDownloadUrl(url: string) {
-  if (url.includes("/upload/")) {
-    return url.replace("/upload/", "/upload/fl_attachment/");
-  }
-  return url;
-}
-
-function downloadFile(url: string) {
-  const link = document.createElement("a");
-  link.href = toDownloadUrl(url);
-  link.target = "_blank";
-  link.rel = "noreferrer";
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-}
 
 export default function PrivateGalleryBrowser({
   items,
@@ -32,10 +18,7 @@ export default function PrivateGalleryBrowser({
 }) {
   const [active, setActive] = useState<MediaItem | null>(null);
 
-  useEffect(() => {
-    if (active) window.dispatchEvent(new Event("hm_modal_open"));
-    else window.dispatchEvent(new Event("hm_modal_close"));
-  }, [active]);
+  useModalNavbarLock(Boolean(active));
 
   const downloadableItems = useMemo(() => items.filter((item) => !!item.secureUrl), [items]);
 
@@ -73,27 +56,14 @@ export default function PrivateGalleryBrowser({
                 className="block w-full text-left"
               >
                 <div className="relative h-80 overflow-hidden bg-muted">
-                  {secureUrl ? (
-                    item.type === "video" ? (
-                      <video
-                        className="h-full w-full object-cover bg-black"
-                        preload="metadata"
-                        src={secureUrl}
-                      />
-                    ) : (
-                      <Image
-                        src={secureUrl}
-                        alt={item.title}
-                        fill
-                        className="object-cover transition-transform duration-700 hover:scale-[1.03]"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                        loading={isPriorityImage ? "eager" : "lazy"}
-                        fetchPriority={isPriorityImage ? "high" : undefined}
-                      />
-                    )
-                  ) : (
-                    <div className="h-full w-full bg-linear-to-br from-muted to-background" />
-                  )}
+                  <SmartMediaPreview
+                    mode={secureUrl ? (item.type === "video" ? "video" : "image") : "empty"}
+                    src={secureUrl}
+                    title={item.title}
+                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                    imagePriority={isPriorityImage}
+                    imageClassName="object-cover transition-transform duration-700 hover:scale-[1.03]"
+                  />
 
                   <div className="absolute inset-0 bg-linear-to-t from-black/72 via-black/10 to-transparent" />
 
@@ -124,7 +94,7 @@ export default function PrivateGalleryBrowser({
                   {secureUrl ? (
                     <button
                       type="button"
-                      onClick={() => downloadFile(secureUrl)}
+                      onClick={() => downloadCloudinaryFile(secureUrl)}
                       className="flex-1 rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
                     >
                       Download
@@ -239,12 +209,16 @@ export default function PrivateGalleryBrowser({
                   {active.secureUrl ? (
                     <button
                       type="button"
-                      onClick={() => downloadFile(active.secureUrl as string)}
-                      className="w-full rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
+                      onClick={() => downloadCloudinaryFile(active.secureUrl as string)}
+                      className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
                     >
                       Download
                     </button>
-                  ) : null}
+                  ) : (
+                    <div className="rounded-xl border px-4 py-2 text-center text-sm text-muted-foreground">
+                      Download unavailable for this item
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

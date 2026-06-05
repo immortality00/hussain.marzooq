@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { PublicNftItem } from "@/lib/server/public-nfts";
+import { useModalNavbarLock } from "@/components/media/useModalNavbarLock";
 import NftCard from "./NftCard";
 import NftFilters from "./NftFilters";
 import NftModal from "./NftModal";
@@ -14,10 +15,7 @@ export default function NftCollection({ items }: { items: PublicNftItem[] }) {
   const [statusFilter, setStatusFilter] = useState<"" | "available" | "sold" | "coming-soon">("");
   const [active, setActive] = useState<PublicNftItem | null>(null);
 
-  useEffect(() => {
-    if (active) window.dispatchEvent(new Event("hm_modal_open"));
-    else window.dispatchEvent(new Event("hm_modal_close"));
-  }, [active]);
+  useModalNavbarLock(Boolean(active));
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
