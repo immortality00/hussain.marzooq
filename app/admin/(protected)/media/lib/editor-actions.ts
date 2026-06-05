@@ -23,7 +23,6 @@ export function buildMediaPayload(args: {
   tags: string[];
   categories: string[];
   peopleIds: string[];
-  peopleNames: string[];
   isPublic: boolean;
   appearances: unknown[];
   embedUrl: string;
@@ -43,6 +42,10 @@ export function buildMediaPayload(args: {
 
   const isNft = args.categories.includes("nft");
 
+  if (args.peopleIds.length > 60) {
+    throw new Error("A media item can link to a maximum of 60 people profiles.");
+  }
+
   if (isNft && args.mode === "embed") {
     throw new Error("NFT items must use an uploaded image or video.");
   }
@@ -59,7 +62,6 @@ export function buildMediaPayload(args: {
     tags: args.tags,
     categories: args.categories,
     peopleIds: args.peopleIds,
-    people: args.peopleNames,
     isPublic: args.isPublic,
     appearances: args.appearances,
     nft: isNft

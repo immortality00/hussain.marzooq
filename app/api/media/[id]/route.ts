@@ -205,10 +205,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 
   const rawPeopleIds = asStringArray(doc.peopleIds);
   const rawPeople = asStringArray(doc.people);
-  const resolvedPeople = await resolvePeopleSelection(db, {
-    peopleIds: rawPeopleIds,
-    people: rawPeople,
-  });
+  const resolvedPeople = await resolvePeopleSelection(db, { peopleIds: rawPeopleIds });
 
   const item = {
     id: String(doc._id),
@@ -262,7 +259,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const tags = asStringArray(bodyUnknown.tags);
   const categories = asStringArray(bodyUnknown.categories);
   const peopleIds = asStringArray(bodyUnknown.peopleIds);
-  const legacyPeople = asStringArray(bodyUnknown.people);
   const isPublic = asBooleanOrNull(bodyUnknown.isPublic);
   const appearances = sanitizeAppearances(bodyUnknown.appearances);
 
@@ -309,7 +305,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (!existingMedia) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
 
   const oldAsset = getStoredMediaAsset(existingMedia);
-  const resolvedPeople = await resolvePeopleSelection(db, { peopleIds, people: legacyPeople });
+  const resolvedPeople = await resolvePeopleSelection(db, { peopleIds });
 
   const set: Record<string, unknown> = {
     title,

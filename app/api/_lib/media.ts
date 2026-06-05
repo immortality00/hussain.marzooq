@@ -70,7 +70,6 @@ export function getMediaLists(v: Record<string, unknown>) {
   return {
     tags: asStringArray(v.tags),
     categories: asStringArray(v.categories),
-    people: asStringArray(v.people),
     peopleIds: asStringArray(v.peopleIds),
   };
 }
@@ -79,7 +78,6 @@ export async function resolvePeopleSelection(
   db: Db,
   input: {
     peopleIds?: string[];
-    people?: string[];
   }
 ): Promise<ResolvedPeopleSelection> {
   const rawIds = Array.isArray(input.peopleIds) ? input.peopleIds : [];
@@ -91,67 +89,30 @@ export async function resolvePeopleSelection(
     )
   ).slice(0, 60);
 
-  if (uniqueIds.length > 0) {
-    const docs = await db
-      .collection("people_profiles")
-      .find(
-        { _id: { $in: uniqueIds.map((value) => new ObjectId(value)) } },
-        { projection: { _id: 1, name: 1 } }
-      )
-      .toArray();
-
-    const nameById = new Map(
-      docs
-        .filter((doc) => typeof doc.name === "string" && doc.name.trim())
-        .map((doc) => [String(doc._id), String(doc.name).trim()])
-    );
-
-    const peopleIds: string[] = [];
-    const people: string[] = [];
-
-    for (const id of uniqueIds) {
-      const name = nameById.get(id);
-      if (!name) continue;
-      peopleIds.push(id);
-      people.push(name);
-    }
-
-    return { peopleIds, people };
-  }
-
-  const rawNames = Array.isArray(input.people) ? input.people : [];
-  const normalizedNames = Array.from(
-    new Set(
-      rawNames
-        .map((value) => value.trim())
-        .filter(Boolean)
-    )
-  ).slice(0, 60);
-
-  if (normalizedNames.length === 0) {
+  if (uniqueIds.length === 0) {
     return { peopleIds: [], people: [] };
   }
 
   const docs = await db
     .collection("people_profiles")
     .find(
-      { name: { $in: normalizedNames } },
+      { _id: { $in: uniqueIds.map((value) => new ObjectId(value)) } },
       { projection: { _id: 1, name: 1 } }
     )
     .toArray();
 
-  const byName = new Map(
+  const nameById = new Map(
     docs
       .filter((doc) => typeof doc.name === "string" && doc.name.trim())
-      .map((doc) => [String(doc.name).trim(), String(doc._id)])
+      .map((doc) => [String(doc._id), String(doc.name).trim()])
   );
 
   const peopleIds: string[] = [];
   const people: string[] = [];
 
-  for (const name of normalizedNames) {
-    const id = byName.get(name);
-    if (!id) continue;
+  for (const id of uniqueIds) {
+    const name = nameById.get(id);
+    if (!name) continue;
     peopleIds.push(id);
     people.push(name);
   }
