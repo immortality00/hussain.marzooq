@@ -1,5 +1,5 @@
-import { ObjectId } from "mongodb";
 import { v2 as cloudinary } from "cloudinary";
+import { ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
@@ -17,12 +17,178 @@ import {
   sanitizeAppearances,
 } from "@/app/api/_lib/media";
 import { toEmbedUrl } from "@/components/media/utils";
+import {
+  CLOUDINARY_MEDIA_FOLDER,
+  getCloudinaryMediaFolderForCategory,
+} from "@/lib/cloudinary-folders";
+import { ensureCloudinaryConfigured } from "@/lib/server/cloudinary";
+import {
+  deleteManagedCloudinaryAsset,
+  isAllowedCloudinaryPublicId,
+  isAllowedCloudinaryUrl,
+  parseCloudinaryAssetFromUrl,
+  type CloudinaryResourceType,
+} from "@/lib/server/cloudinary-assets";
 
 export const dynamic = "force-dynamic";
 
 type PrivateGalleryRecord = {
   mediaIds?: string[];
 };
+
+type StoredMediaAsset = {
+  secureUrl: string | null;
+  publicId: string | null;
+  resourceType: string | null;
+};
+
+type MovedCloudinaryAsset = {
+  secureUrl: string;
+  publicId: string;
+  resourceType: Exclude<CloudinaryResourceType, "raw">;
+};
+
+function getStoredMediaAsset(doc: Record<string, unknown>): StoredMediaAsset {
+  return {
+    secureUrl: typeof doc.secureUrl === "string" ? doc.secureUrl : null,
+    publicId: typeof doc.publicId === "string" ? doc.publicId : null,
+    resourceType: typeof doc.resourceType === "string" ? doc.resourceType : null,
+  };
+}
+
+function getCloudinaryFileName(publicId: string) {
+  const parts = publicId.split("/").filter(Boolean);
+  return parts[parts.length - 1] || `media-${Date.now()}`;
+}
+
+function normalizeResourceType(value: string | null | undefined): Exclude<CloudinaryResourceType, "raw"> {
+  return value === "video" ? "video" : "image";
+}
+
+function assetIsInsideFolder(publicId: string | null | undefined, folder: string) {
+  const normalizedPublicId = (publicId ?? "").trim().replace(/^\/+/, "");
+  return normalizedPublicId.startsWith(`${folder}/`);
+}
+
+function normalizeCloudinaryMediaAsset(input: {
+  secureUrl: string;
+  publicId: string;
+  resourceType: string;
+  targetFolder: string;
+  allowExistingManagedMediaAsset?: boolean;
+}):
+  | {
+      ok: true;
+      secureUrl: string;
+      publicId: string;
+      resourceType: Exclude<CloudinaryResourceType, "raw">;
+      type: "image" | "video";
+      isAlreadyInTargetFolder: boolean;
+    }
+  | { ok: false; error: string } {
+  const secureUrl = input.secureUrl.trim();
+  const publicId = input.publicId.trim().replace(/^\/+/, "");
+  const resourceType = input.resourceType.trim();
+  const allowedFolders = input.allowExistingManagedMediaAsset
+    ? [CLOUDINARY_MEDIA_FOLDER]
+    : [input.targetFolder];
+
+  if (!secureUrl || !publicId || !resourceType) {
+    return { ok: false, error: "Uploaded media asset is incomplete." };
+  }
+
+  const parsed = parseCloudinaryAssetFromUrl(secureUrl);
+  if (!parsed) {
+    return { ok: false, error: "Use a valid Cloudinary media URL." };
+  }
+
+  if (parsed.resourceType === "raw") {
+    return { ok: false, error: "Media uploads must be images or videos." };
+  }
+
+  if (parsed.publicId !== publicId) {
+    return { ok: false, error: "Uploaded media URL does not match the media public ID." };
+  }
+
+  if (resourceType !== "auto" && resourceType !== parsed.resourceType) {
+    return { ok: false, error: "Uploaded media resource type does not match the media URL." };
+  }
+
+  if (!isAllowedCloudinaryUrl(secureUrl, allowedFolders)) {
+    return { ok: false, error: "Uploaded media URL is outside the managed media folder." };
+  }
+
+  if (!isAllowedCloudinaryPublicId(publicId, allowedFolders)) {
+    return { ok: false, error: "Uploaded media public ID is outside the managed media folder." };
+  }
+
+  return {
+    ok: true,
+    secureUrl,
+    publicId,
+    resourceType: parsed.resourceType,
+    type: parsed.resourceType,
+    isAlreadyInTargetFolder: assetIsInsideFolder(publicId, input.targetFolder),
+  };
+}
+
+function assetsPointToSameCloudinaryFile(a: StoredMediaAsset, b: StoredMediaAsset) {
+  return Boolean(a.publicId && b.publicId && a.publicId === b.publicId);
+}
+
+async function deleteStoredMediaAsset(asset: StoredMediaAsset) {
+  await deleteManagedCloudinaryAsset(asset, [CLOUDINARY_MEDIA_FOLDER]);
+}
+
+async function moveStoredMediaAssetToFolder(
+  asset: StoredMediaAsset,
+  targetFolder: string
+): Promise<MovedCloudinaryAsset | null> {
+  const publicId = (asset.publicId ?? "").trim().replace(/^\/+/, "");
+  if (!publicId) return null;
+
+  if (!isAllowedCloudinaryPublicId(publicId, [CLOUDINARY_MEDIA_FOLDER])) return null;
+
+  const resourceType = normalizeResourceType(asset.resourceType);
+  const fileName = getCloudinaryFileName(publicId);
+  const destinationPublicId = `${targetFolder}/${fileName}`;
+
+  if (destinationPublicId === publicId) {
+    const parsed = asset.secureUrl ? parseCloudinaryAssetFromUrl(asset.secureUrl) : null;
+
+    return {
+      secureUrl: asset.secureUrl ?? "",
+      publicId,
+      resourceType: parsed?.resourceType === "video" ? "video" : resourceType,
+    };
+  }
+
+  ensureCloudinaryConfigured();
+
+  const renameResult = (await cloudinary.uploader.rename(publicId, destinationPublicId, {
+    resource_type: resourceType,
+    invalidate: true,
+    overwrite: false,
+  })) as unknown;
+
+  if (!renameResult || typeof renameResult !== "object") return null;
+
+  const result = renameResult as Record<string, unknown>;
+  const movedSecureUrl = typeof result.secure_url === "string" ? result.secure_url : "";
+  const movedPublicId = typeof result.public_id === "string" ? result.public_id : destinationPublicId;
+  const movedResourceType =
+    result.resource_type === "video" || result.resource_type === "image"
+      ? result.resource_type
+      : resourceType;
+
+  if (!movedSecureUrl || !movedPublicId) return null;
+
+  return {
+    secureUrl: movedSecureUrl,
+    publicId: movedPublicId,
+    resourceType: movedResourceType,
+  };
+}
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const deny = await requireAdminOr401();
@@ -104,6 +270,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     return noStoreJson({ ok: false, error: "Choose at least one category." }, { status: 400 });
   }
 
+  const targetFolder = getCloudinaryMediaFolderForCategory(categories[0]);
   const incomingType = asNullableString(bodyUnknown.type);
   const incomingEmbedUrl = asNullableString(bodyUnknown.embedUrl);
   const incomingSecureUrl = asNullableString(bodyUnknown.secureUrl);
@@ -138,6 +305,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }
 
   const db = await getDb();
+  const existingMedia = await db.collection("media").findOne({ _id: oid });
+  if (!existingMedia) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+
+  const oldAsset = getStoredMediaAsset(existingMedia);
   const resolvedPeople = await resolvePeopleSelection(db, { peopleIds, people: legacyPeople });
 
   const set: Record<string, unknown> = {
@@ -157,6 +328,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   if (typeof isPublic === "boolean") set.isPublic = isPublic;
 
+  let replacementAsset: StoredMediaAsset | null = null;
+
   if (incomingType === "embed") {
     const normalizedEmbedUrl = toEmbedUrl((incomingEmbedUrl ?? "").trim());
     if (!normalizedEmbedUrl) {
@@ -173,7 +346,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     set.resourceType = null;
   }
 
-  const hasNewAsset =
+  const hasIncomingAsset =
     typeof incomingSecureUrl === "string" &&
     incomingSecureUrl.length > 0 &&
     typeof incomingPublicId === "string" &&
@@ -181,16 +354,104 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     typeof incomingResourceType === "string" &&
     incomingResourceType.length > 0;
 
-  if (hasNewAsset) {
-    set.secureUrl = incomingSecureUrl;
-    set.publicId = incomingPublicId;
-    set.resourceType = incomingResourceType;
-    set.type = incomingResourceType === "video" ? "video" : "image";
+  if (hasIncomingAsset) {
+    const normalizedAsset = normalizeCloudinaryMediaAsset({
+      secureUrl: incomingSecureUrl,
+      publicId: incomingPublicId,
+      resourceType: incomingResourceType,
+      targetFolder,
+      allowExistingManagedMediaAsset: true,
+    });
+
+    if (!normalizedAsset.ok) {
+      return noStoreJson({ ok: false, error: normalizedAsset.error }, { status: 400 });
+    }
+
+    const incomingAsset: StoredMediaAsset = {
+      secureUrl: normalizedAsset.secureUrl,
+      publicId: normalizedAsset.publicId,
+      resourceType: normalizedAsset.resourceType,
+    };
+
+    const isExistingAsset =
+      oldAsset.publicId && normalizedAsset.publicId === oldAsset.publicId;
+
+    if (isExistingAsset && !normalizedAsset.isAlreadyInTargetFolder) {
+      const movedAsset = await moveStoredMediaAssetToFolder(oldAsset, targetFolder);
+
+      if (!movedAsset) {
+        return noStoreJson(
+          { ok: false, error: "Could not move the media file to the selected category folder." },
+          { status: 500 }
+        );
+      }
+
+      set.secureUrl = movedAsset.secureUrl;
+      set.publicId = movedAsset.publicId;
+      set.resourceType = movedAsset.resourceType;
+      set.type = movedAsset.resourceType;
+      set.embedUrl = null;
+
+      replacementAsset = {
+        secureUrl: movedAsset.secureUrl,
+        publicId: movedAsset.publicId,
+        resourceType: movedAsset.resourceType,
+      };
+    } else {
+      if (!normalizedAsset.isAlreadyInTargetFolder) {
+        return noStoreJson(
+          { ok: false, error: "Uploaded media URL is outside the selected media category folder." },
+          { status: 400 }
+        );
+      }
+
+      set.secureUrl = normalizedAsset.secureUrl;
+      set.publicId = normalizedAsset.publicId;
+      set.resourceType = normalizedAsset.resourceType;
+      set.type = normalizedAsset.type;
+      set.embedUrl = null;
+
+      replacementAsset = incomingAsset;
+    }
+  } else if (
+    incomingType !== "embed" &&
+    oldAsset.publicId &&
+    !assetIsInsideFolder(oldAsset.publicId, targetFolder)
+  ) {
+    const movedAsset = await moveStoredMediaAssetToFolder(oldAsset, targetFolder);
+
+    if (!movedAsset) {
+      return noStoreJson(
+        { ok: false, error: "Could not move the media file to the selected category folder." },
+        { status: 500 }
+      );
+    }
+
+    set.secureUrl = movedAsset.secureUrl;
+    set.publicId = movedAsset.publicId;
+    set.resourceType = movedAsset.resourceType;
+    set.type = movedAsset.resourceType;
     set.embedUrl = null;
+
+    replacementAsset = {
+      secureUrl: movedAsset.secureUrl,
+      publicId: movedAsset.publicId,
+      resourceType: movedAsset.resourceType,
+    };
   }
 
   const result = await db.collection("media").updateOne({ _id: oid }, { $set: set });
   if (!result.matchedCount) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+
+  if (oldAsset.publicId) {
+    const switchedToEmbed = incomingType === "embed";
+    const replacedWithDifferentAsset =
+      replacementAsset !== null && !assetsPointToSameCloudinaryFile(oldAsset, replacementAsset);
+
+    if (switchedToEmbed || replacedWithDifferentAsset) {
+      await deleteStoredMediaAsset(oldAsset);
+    }
+  }
 
   return noStoreJson({ ok: true });
 }
@@ -207,13 +468,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   const media = await db.collection("media").findOne({ _id: oid });
   if (!media) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
 
-  const publicId = typeof media.publicId === "string" ? media.publicId : "";
-  const resourceType =
-    typeof media.resourceType === "string" && media.resourceType
-      ? media.resourceType
-      : typeof media.type === "string" && media.type === "video"
-        ? "video"
-        : "image";
+  const mediaAsset = getStoredMediaAsset(media);
 
   const galleryDocs = await db
     .collection("private_galleries")
@@ -246,27 +501,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   const result = await db.collection("media").deleteOne({ _id: oid });
   if (!result.deletedCount) return noStoreJson({ ok: false, error: "Delete failed" }, { status: 500 });
 
-  if (publicId) {
-    const cloudName = (process.env.CLOUDINARY_CLOUD_NAME ?? "").trim();
-    const apiKey = (process.env.CLOUDINARY_API_KEY ?? "").trim();
-    const apiSecret = (process.env.CLOUDINARY_API_SECRET ?? "").trim();
-
-    if (cloudName && apiKey && apiSecret) {
-      cloudinary.config({
-        cloud_name: cloudName,
-        api_key: apiKey,
-        api_secret: apiSecret,
-        secure: true,
-      });
-
-      try {
-        await cloudinary.uploader.destroy(publicId, {
-          resource_type: resourceType === "video" ? "video" : "image",
-          invalidate: true,
-        });
-      } catch {}
-    }
-  }
+  await deleteStoredMediaAsset(mediaAsset);
 
   return noStoreJson({ ok: true });
 }

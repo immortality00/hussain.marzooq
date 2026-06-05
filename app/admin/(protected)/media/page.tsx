@@ -6,12 +6,14 @@ import MediaAssetSection from "./components/MediaAssetSection";
 import MediaDetailsSection from "./components/MediaDetailsSection";
 import MediaNftSection from "./components/MediaNftSection";
 import MediaPlacementSection from "./components/MediaPlacementSection";
+import { getCloudinaryMediaFolderForCategory } from "@/lib/cloudinary-folders";
 import { useMediaEditorController } from "./lib/useMediaEditorController";
 
 export default function AdminMediaPage() {
   const { editor, busy, banner, save, remove, startNewUpload } = useMediaEditorController();
 
   const allowEmbed = editor.primaryCategory === "videography" && !editor.isNft;
+  const uploadFolder = getCloudinaryMediaFolderForCategory(editor.primaryCategory);
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
@@ -75,6 +77,8 @@ export default function AdminMediaPage() {
           embedUrl={editor.embedUrl}
           setEmbedUrl={editor.setEmbedUrl}
           allowEmbed={allowEmbed}
+          uploadFolder={uploadFolder}
+          canUpload={Boolean(editor.primaryCategory)}
         />
 
         {editor.isNft ? (

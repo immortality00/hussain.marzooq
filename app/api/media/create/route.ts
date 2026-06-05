@@ -9,14 +9,77 @@ import {
 } from "@/app/api/_lib/common";
 import {
   getMediaLists,
-  isCloudinarySecureUrl,
   parseNftMeta,
   resolvePeopleSelection,
   sanitizeAppearances,
 } from "@/app/api/_lib/media";
 import { toEmbedUrl } from "@/components/media/utils";
+import { getCloudinaryMediaFolderForCategory } from "@/lib/cloudinary-folders";
+import {
+  isAllowedCloudinaryPublicId,
+  isAllowedCloudinaryUrl,
+  parseCloudinaryAssetFromUrl,
+  type CloudinaryResourceType,
+} from "@/lib/server/cloudinary-assets";
 
 export const dynamic = "force-dynamic";
+
+function normalizeCloudinaryMediaAsset(input: {
+  secureUrl: string;
+  publicId: string;
+  resourceType: string;
+  categories: string[];
+}):
+  | {
+      ok: true;
+      secureUrl: string;
+      publicId: string;
+      resourceType: Exclude<CloudinaryResourceType, "raw">;
+      type: "image" | "video";
+    }
+  | { ok: false; error: string } {
+  const secureUrl = input.secureUrl.trim();
+  const publicId = input.publicId.trim().replace(/^\/+/, "");
+  const resourceType = input.resourceType.trim();
+  const primaryFolder = getCloudinaryMediaFolderForCategory(input.categories[0]);
+
+  if (!secureUrl || !publicId || !resourceType) {
+    return { ok: false, error: "Uploaded media asset is incomplete." };
+  }
+
+  const parsed = parseCloudinaryAssetFromUrl(secureUrl);
+  if (!parsed) {
+    return { ok: false, error: "Use a valid Cloudinary media URL." };
+  }
+
+  if (parsed.resourceType === "raw") {
+    return { ok: false, error: "Media uploads must be images or videos." };
+  }
+
+  if (parsed.publicId !== publicId) {
+    return { ok: false, error: "Uploaded media URL does not match the media public ID." };
+  }
+
+  if (resourceType !== "auto" && resourceType !== parsed.resourceType) {
+    return { ok: false, error: "Uploaded media resource type does not match the media URL." };
+  }
+
+  if (!isAllowedCloudinaryUrl(secureUrl, [primaryFolder])) {
+    return { ok: false, error: "Uploaded media URL is outside the selected media category folder." };
+  }
+
+  if (!isAllowedCloudinaryPublicId(publicId, [primaryFolder])) {
+    return { ok: false, error: "Uploaded media public ID is outside the selected media category folder." };
+  }
+
+  return {
+    ok: true,
+    secureUrl,
+    publicId,
+    resourceType: parsed.resourceType,
+    type: parsed.resourceType,
+  };
+}
 
 export async function POST(req: Request) {
   const deny = await requireAdminOr401();
@@ -48,6 +111,7 @@ export async function POST(req: Request) {
   const embedUrl = (asNullableString(bodyUnknown.embedUrl) ?? "").trim();
 
   if (!title) return noStoreJson({ ok: false, error: "Title required" }, { status: 400 });
+
   if (categories.length === 0) {
     return noStoreJson({ ok: false, error: "Choose at least one category." }, { status: 400 });
   }
@@ -74,6 +138,15 @@ export async function POST(req: Request) {
     );
   }
 
+  let normalizedAsset:
+    | {
+        secureUrl: string;
+        publicId: string;
+        resourceType: Exclude<CloudinaryResourceType, "raw">;
+        type: "image" | "video";
+      }
+    | null = null;
+
   if (type === "embed") {
     const normalizedEmbedUrl = toEmbedUrl(embedUrl);
     if (!normalizedEmbedUrl) {
@@ -83,13 +156,11 @@ export async function POST(req: Request) {
       );
     }
   } else {
-    if (!secureUrl || !isCloudinarySecureUrl(secureUrl)) {
-      return noStoreJson({ ok: false, error: "Invalid secureUrl" }, { status: 400 });
+    const asset = normalizeCloudinaryMediaAsset({ secureUrl, publicId, resourceType, categories });
+    if (!asset.ok) {
+      return noStoreJson({ ok: false, error: asset.error }, { status: 400 });
     }
-    if (!publicId) return noStoreJson({ ok: false, error: "publicId required" }, { status: 400 });
-    if (resourceType !== "image" && resourceType !== "video" && resourceType !== "auto") {
-      return noStoreJson({ ok: false, error: "Invalid resourceType" }, { status: 400 });
-    }
+    normalizedAsset = asset;
   }
 
   const nftParsed = parseNftMeta(bodyUnknown, categories.includes("nft"));
@@ -104,7 +175,7 @@ export async function POST(req: Request) {
   const now = new Date();
 
   const doc = {
-    type,
+    type: normalizedAsset?.type ?? type,
     title,
     description: description || null,
     location: location || null,
@@ -117,9 +188,9 @@ export async function POST(req: Request) {
     isPublic,
     appearances,
     nft: nftParsed.value,
-    secureUrl: type === "embed" ? null : secureUrl,
-    publicId: type === "embed" ? null : publicId,
-    resourceType: type === "embed" ? null : resourceType,
+    secureUrl: normalizedAsset?.secureUrl ?? null,
+    publicId: normalizedAsset?.publicId ?? null,
+    resourceType: normalizedAsset?.resourceType ?? null,
     embedUrl: type === "embed" ? normalizedEmbedUrl : null,
     order:
       typeof bodyUnknown.order === "number" && Number.isFinite(bodyUnknown.order)
@@ -130,7 +201,9 @@ export async function POST(req: Request) {
 
   const col = db.collection("media");
   const keyFilter =
-    type === "embed" ? ({ type: "embed", embedUrl: normalizedEmbedUrl } as const) : ({ publicId } as const);
+    type === "embed"
+      ? ({ type: "embed", embedUrl: normalizedEmbedUrl } as const)
+      : ({ publicId: normalizedAsset?.publicId } as const);
 
   await col.updateOne(
     keyFilter,

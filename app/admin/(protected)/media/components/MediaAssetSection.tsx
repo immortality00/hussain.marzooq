@@ -4,7 +4,6 @@ import Image from "next/image";
 import { CldUploadWidget } from "next-cloudinary";
 import type { Uploaded, WidgetResult } from "../lib/types";
 import { getString, isRecord } from "../lib/utils";
-import { CLOUDINARY_MEDIA_FOLDER } from "@/lib/cloudinary-folders";
 
 export default function MediaAssetSection({
   mode,
@@ -14,6 +13,8 @@ export default function MediaAssetSection({
   embedUrl,
   setEmbedUrl,
   allowEmbed = true,
+  uploadFolder,
+  canUpload = true,
 }: {
   mode: "upload" | "embed";
   setMode: (value: "upload" | "embed") => void;
@@ -22,6 +23,8 @@ export default function MediaAssetSection({
   embedUrl: string;
   setEmbedUrl: (value: string) => void;
   allowEmbed?: boolean;
+  uploadFolder: string;
+  canUpload?: boolean;
 }) {
   return (
     <section className="rounded-3xl border p-5">
@@ -29,15 +32,20 @@ export default function MediaAssetSection({
         <button
           type="button"
           onClick={() => setMode("upload")}
-          className={`rounded-xl border px-4 py-2 text-sm ${mode === "upload" ? "bg-accent" : "hover:bg-accent"}`}
+          className={`rounded-xl border px-4 py-2 text-sm ${
+            mode === "upload" ? "bg-accent" : "hover:bg-accent"
+          }`}
         >
           Upload file
         </button>
+
         {allowEmbed ? (
           <button
             type="button"
             onClick={() => setMode("embed")}
-            className={`rounded-xl border px-4 py-2 text-sm ${mode === "embed" ? "bg-accent" : "hover:bg-accent"}`}
+            className={`rounded-xl border px-4 py-2 text-sm ${
+              mode === "embed" ? "bg-accent" : "hover:bg-accent"
+            }`}
           >
             Embed URL
           </button>
@@ -48,8 +56,9 @@ export default function MediaAssetSection({
         <div className="mt-4 space-y-3">
           <div className="flex items-center gap-2">
             <CldUploadWidget
+              key={uploadFolder}
               signatureEndpoint="/api/sign-cloudinary-params"
-              options={{ folder: CLOUDINARY_MEDIA_FOLDER, multiple: false, resourceType: "auto" }}
+              options={{ folder: uploadFolder, multiple: false, resourceType: "auto" }}
               onSuccess={(result: unknown) => {
                 const r = result as WidgetResult;
                 const info = r?.info;
@@ -66,8 +75,9 @@ export default function MediaAssetSection({
               {({ open }) => (
                 <button
                   type="button"
+                  disabled={!canUpload}
                   onClick={() => open()}
-                  className="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
+                  className="rounded-xl border px-4 py-2 text-sm hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
                 >
                   Choose file
                 </button>
@@ -103,10 +113,6 @@ export default function MediaAssetSection({
                     />
                   </div>
                 )}
-              </div>
-
-              <div className="mt-3 text-xs font-mono text-muted-foreground break-all">
-                {uploaded.publicId}
               </div>
             </div>
           ) : (
