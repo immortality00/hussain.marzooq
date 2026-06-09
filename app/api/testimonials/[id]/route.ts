@@ -9,12 +9,74 @@ import {
   parseObjectId,
 } from "@/app/api/_lib/common";
 import {
+  deleteManagedCloudinaryResourcesByPrefix,
   deleteManagedCloudinaryUrls,
   deleteManagedEmptyCloudinaryFolders,
 } from "@/lib/server/cloudinary-assets";
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
 
 export const dynamic = "force-dynamic";
+
+function normalizeFolderPath(value: string) {
+  return value.trim().replace(/^\/+|\/+$/g, "");
+}
+
+function isSafeTestimonialSessionFolder(folder: string) {
+  const normalized = normalizeFolderPath(folder);
+
+  return (
+    normalized.length > 0 &&
+    normalized !== CLOUDINARY_TESTIMONIALS_FOLDER &&
+    normalized.startsWith(`${CLOUDINARY_TESTIMONIALS_FOLDER}/`)
+  );
+}
+
+function getStringArray(value: unknown) {
+  return Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+}
+
+function collectTestimonialAssetUrls(doc: Record<string, unknown>) {
+  const profilePhotoUrl = typeof doc.profilePhotoUrl === "string" ? doc.profilePhotoUrl : "";
+  const photoUrls = getStringArray(doc.photoUrls);
+
+  return [profilePhotoUrl, ...photoUrls].filter(Boolean);
+}
+
+function collectTestimonialFolders(doc: Record<string, unknown>) {
+  const reviewAssetFolder =
+    typeof doc.reviewAssetFolder === "string" ? normalizeFolderPath(doc.reviewAssetFolder) : "";
+  const reviewProfileFolder =
+    typeof doc.reviewProfileFolder === "string" ? normalizeFolderPath(doc.reviewProfileFolder) : "";
+  const reviewPhotosFolder =
+    typeof doc.reviewPhotosFolder === "string" ? normalizeFolderPath(doc.reviewPhotosFolder) : "";
+
+  const folders = [reviewProfileFolder, reviewPhotosFolder, reviewAssetFolder].filter(
+    isSafeTestimonialSessionFolder
+  );
+
+  return Array.from(new Set(folders));
+}
+
+async function deleteTestimonialCloudinaryAssets(doc: Record<string, unknown>) {
+  const reviewAssetFolder =
+    typeof doc.reviewAssetFolder === "string" ? normalizeFolderPath(doc.reviewAssetFolder) : "";
+
+  if (isSafeTestimonialSessionFolder(reviewAssetFolder)) {
+    await deleteManagedCloudinaryResourcesByPrefix(reviewAssetFolder, [
+      CLOUDINARY_TESTIMONIALS_FOLDER,
+    ]);
+  }
+
+  await deleteManagedCloudinaryUrls(collectTestimonialAssetUrls(doc), [
+    CLOUDINARY_TESTIMONIALS_FOLDER,
+  ]);
+
+  await deleteManagedEmptyCloudinaryFolders(collectTestimonialFolders(doc), [
+    CLOUDINARY_TESTIMONIALS_FOLDER,
+  ]);
+}
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const deny = await requireAdminOr401();
@@ -114,33 +176,13 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
     return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
   }
 
-  const profilePhotoUrl = typeof doc.profilePhotoUrl === "string" ? doc.profilePhotoUrl : "";
-  const photoUrls = Array.isArray(doc.photoUrls)
-    ? doc.photoUrls.filter((value): value is string => typeof value === "string")
-    : [];
-
-  const reviewProfileFolder =
-    typeof doc.reviewProfileFolder === "string" ? doc.reviewProfileFolder : "";
-  const reviewPhotosFolder =
-    typeof doc.reviewPhotosFolder === "string" ? doc.reviewPhotosFolder : "";
-  const reviewAssetFolder =
-    typeof doc.reviewAssetFolder === "string" ? doc.reviewAssetFolder : "";
-
   const result = await db.collection("testimonials").deleteOne({ _id: oid });
 
   if (!result.deletedCount) {
     return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
   }
 
-  await deleteManagedCloudinaryUrls(
-    [profilePhotoUrl, ...photoUrls].filter(Boolean),
-    [CLOUDINARY_TESTIMONIALS_FOLDER]
-  );
-
-  await deleteManagedEmptyCloudinaryFolders(
-    [reviewProfileFolder, reviewPhotosFolder, reviewAssetFolder].filter(Boolean),
-    [CLOUDINARY_TESTIMONIALS_FOLDER]
-  );
+  await deleteTestimonialCloudinaryAssets(doc as Record<string, unknown>);
 
   return noStoreJson({ ok: true });
 }

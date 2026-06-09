@@ -10,12 +10,20 @@ type ParsedCloudinaryAsset = {
 
 function normalizeAllowedFolders(allowedFolders: readonly string[]) {
   return allowedFolders
-    .map((value) => value.trim().replace(/\/+$/, ""))
+    .map((value) => value.trim().replace(/^\/+|\/+$/g, ""))
     .filter(Boolean);
 }
 
 function normalizeFolderPath(value: string) {
   return value.trim().replace(/^\/+|\/+$/g, "");
+}
+
+function encodeCloudinaryFolderPath(folder: string) {
+  return normalizeFolderPath(folder)
+    .split("/")
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
 }
 
 function sleep(ms: number) {
@@ -36,10 +44,7 @@ export function isAllowedCloudinaryPublicId(
   );
 }
 
-function isAllowedCloudinaryFolder(
-  folder: string,
-  allowedFolders: readonly string[]
-): boolean {
+function isAllowedCloudinaryFolder(folder: string, allowedFolders: readonly string[]): boolean {
   const normalizedFolder = normalizeFolderPath(folder);
   if (!normalizedFolder) return false;
 
@@ -156,6 +161,29 @@ export async function deleteManagedCloudinaryUrls(
   );
 }
 
+export async function deleteManagedCloudinaryResourcesByPrefix(
+  prefix: string,
+  allowedFolders: readonly string[]
+) {
+  const normalizedPrefix = normalizeFolderPath(prefix);
+  if (!normalizedPrefix) return false;
+  if (!isAllowedCloudinaryPublicId(normalizedPrefix, allowedFolders)) return false;
+  if (!isCloudinaryConfigured()) return false;
+
+  ensureCloudinaryConfigured();
+
+  try {
+    await cloudinary.api.delete_resources_by_prefix(normalizedPrefix, {
+      resource_type: "image",
+      invalidate: true,
+    });
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function deleteFolderViaAdminApi(folder: string) {
   const cloudName =
     (process.env.CLOUDINARY_CLOUD_NAME ?? "").trim() ||
@@ -168,8 +196,11 @@ async function deleteFolderViaAdminApi(folder: string) {
   const normalizedFolder = normalizeFolderPath(folder);
   if (!normalizedFolder) return false;
 
+  const encodedFolderPath = encodeCloudinaryFolderPath(normalizedFolder);
+  if (!encodedFolderPath) return false;
+
   const url = new URL(
-    `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/folders/${encodeURIComponent(normalizedFolder)}`
+    `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/folders/${encodedFolderPath}`
   );
   url.searchParams.set("skip_backup", "true");
 
@@ -199,19 +230,15 @@ export async function deleteManagedEmptyCloudinaryFolders(
   ensureCloudinaryConfigured();
 
   const normalized = [...new Set(folders.map(normalizeFolderPath).filter(Boolean))];
-  const safeFolders = normalized.filter((folder) =>
-    isAllowedCloudinaryFolder(folder, allowedFolders)
-  );
+  const safeFolders = normalized.filter((folder) => isAllowedCloudinaryFolder(folder, allowedFolders));
 
   const deepestFirst = safeFolders.sort((a, b) => b.split("/").length - a.split("/").length);
 
   for (const folder of deepestFirst) {
-    let deleted = false;
-
-    for (let attempt = 0; attempt < 4; attempt += 1) {
-      deleted = await deleteFolderViaAdminApi(folder);
+    for (let attempt = 0; attempt < 8; attempt += 1) {
+      const deleted = await deleteFolderViaAdminApi(folder);
       if (deleted) break;
-      await sleep(350);
+      await sleep(500);
     }
   }
 }

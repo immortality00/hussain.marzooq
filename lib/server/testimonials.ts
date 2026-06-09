@@ -29,17 +29,8 @@ function normalizeStringArray(value: unknown): string[] {
     : [];
 }
 
-export async function getPublicTestimonials(limit = 60): Promise<PublicTestimonialsData> {
-  const db = await getDb();
-
-  const docs = await db
-    .collection("testimonials")
-    .find({ isApproved: true })
-    .sort({ sortOrder: 1, updatedAt: -1, createdAt: -1 })
-    .limit(limit)
-    .toArray();
-
-  const items: PublicTestimonial[] = docs.map((doc) => ({
+function toPublicTestimonial(doc: Record<string, unknown>): PublicTestimonial {
+  return {
     id: String(doc._id),
     name: typeof doc.name === "string" ? doc.name : "",
     about: typeof doc.about === "string" ? doc.about : null,
@@ -55,13 +46,40 @@ export async function getPublicTestimonials(limit = 60): Promise<PublicTestimoni
       typeof doc.rating === "number" && doc.rating >= 1 && doc.rating <= 5 ? doc.rating : 5,
     profilePhotoUrl: typeof doc.profilePhotoUrl === "string" ? doc.profilePhotoUrl : null,
     photoUrls: normalizeStringArray(doc.photoUrls),
-  }));
+  };
+}
 
-  const totalReviews = items.length;
+export async function getPublicTestimonials(limit = 60): Promise<PublicTestimonialsData> {
+  const db = await getDb();
+  const testimonials = db.collection("testimonials");
+
+  const [docs, stats] = await Promise.all([
+    testimonials
+      .find({ isApproved: true })
+      .sort({ sortOrder: 1, approvedAt: -1, createdAt: -1 })
+      .limit(limit)
+      .toArray(),
+    testimonials
+      .aggregate<{ totalReviews: number; averageRating: number }>([
+        { $match: { isApproved: true } },
+        {
+          $group: {
+            _id: null,
+            totalReviews: { $sum: 1 },
+            averageRating: { $avg: "$rating" },
+          },
+        },
+      ])
+      .toArray(),
+  ]);
+
+  const totalReviews = stats[0]?.totalReviews ?? 0;
   const averageRating =
-    totalReviews > 0
-      ? Math.round((items.reduce((sum, item) => sum + item.rating, 0) / totalReviews) * 10) / 10
-      : 0;
+    totalReviews > 0 ? Math.round((stats[0]?.averageRating ?? 0) * 10) / 10 : 0;
 
-  return { items, totalReviews, averageRating };
+  return {
+    items: docs.map((doc) => toPublicTestimonial(doc as Record<string, unknown>)),
+    totalReviews,
+    averageRating,
+  };
 }
