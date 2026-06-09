@@ -21,7 +21,7 @@ export default async function PhotographyPage() {
             No photos yet. Upload from Admin → Media.
           </div>
         ) : (
-          <MediaGrid items={items} />
+          <MediaGrid items={items} searchCategory="photography" />
         )}
       </main>
 

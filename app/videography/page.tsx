@@ -59,7 +59,7 @@ export default async function VideographyPage() {
             No videos yet. Upload from Admin → Media.
           </div>
         ) : (
-          <MediaGrid items={videos} mediaMode="video" />
+          <MediaGrid items={videos} mediaMode="video" searchCategory="videography" />
         )}
       </main>
 
