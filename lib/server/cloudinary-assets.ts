@@ -445,6 +445,53 @@ export async function deleteManagedEmptyCloudinaryFolders(
   }
 }
 
+export async function deleteManagedCloudinaryFolderTree(
+  rootFolder: string,
+  allowedFolders: readonly string[]
+) {
+  const normalizedRootFolder = normalizeFolderPath(rootFolder);
+
+  const cleanupResults: CloudinaryCleanupResult[] = [];
+
+  if (!normalizedRootFolder) {
+    return [
+      {
+        ok: false,
+        target: rootFolder,
+        action: "delete-asset",
+        error: "Missing Cloudinary folder.",
+      },
+    ];
+  }
+
+  if (!isAllowedCloudinaryFolder(normalizedRootFolder, allowedFolders)) {
+    return [
+      {
+        ok: false,
+        target: normalizedRootFolder,
+        action: "delete-asset",
+        error: "Cloudinary folder is outside the allowed folders.",
+      },
+    ];
+  }
+
+  const prefixResult = await deleteManagedCloudinaryResourcesByPrefixStrict(
+    normalizedRootFolder,
+    allowedFolders
+  );
+
+  cleanupResults.push(prefixResult);
+
+  const folderDeletionResults = await deleteManagedEmptyCloudinaryFoldersStrict(
+    [`${normalizedRootFolder}/pfp`, `${normalizedRootFolder}/photos`, normalizedRootFolder],
+    allowedFolders
+  );
+
+  cleanupResults.push(...folderDeletionResults);
+
+  return cleanupResults;
+}
+
 export async function deleteManagedEmptyCloudinaryFoldersStrict(
   folders: string[],
   allowedFolders: readonly string[]

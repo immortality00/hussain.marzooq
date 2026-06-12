@@ -44,6 +44,18 @@ function toValidTimestamp(value: unknown) {
   return roundedTimestamp;
 }
 
+function isSafeTestimonialFolder(value: string) {
+  if (!value.startsWith(`${TESTIMONIALS_FOLDER}/`) && value !== TESTIMONIALS_FOLDER) {
+    return false;
+  }
+
+  if (value.includes("..")) {
+    return false;
+  }
+
+  return /^[A-Za-z0-9_\/-]+$/.test(value);
+}
+
 function sanitizeParamsToSign(rawParams: Record<string, unknown>) {
   const paramsToSign: Record<string, string | number> = {
     folder: TESTIMONIALS_FOLDER,
@@ -52,6 +64,15 @@ function sanitizeParamsToSign(rawParams: Record<string, unknown>) {
   for (const [key, value] of Object.entries(rawParams)) {
     if (!ALLOWED_SIGN_KEYS.has(key)) continue;
     if (typeof value !== "string" && typeof value !== "number") continue;
+
+    if (key === "folder") {
+      const folderValue = String(value).trim();
+      if (isSafeTestimonialFolder(folderValue)) {
+        paramsToSign.folder = folderValue;
+      }
+      continue;
+    }
+
     paramsToSign[key] = value;
   }
 

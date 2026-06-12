@@ -10,8 +10,10 @@ import {
   parseObjectId,
 } from "@/app/api/_lib/common";
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
-import { ensureCloudinaryConfigured, isCloudinaryConfigured } from "@/lib/server/cloudinary";
-import { parseCloudinaryAssetFromUrl } from "@/lib/server/cloudinary-assets";
+import {
+  deleteManagedCloudinaryFolderTree,
+  parseCloudinaryAssetFromUrl,
+} from "@/lib/server/cloudinary-assets";
 
 export const dynamic = "force-dynamic";
 
@@ -23,14 +25,6 @@ type CleanupResult = {
 
 function normalizeFolderPath(value: string) {
   return value.trim().replace(/^\/+|\/+$/g, "");
-}
-
-function encodeCloudinaryFolderPath(folder: string) {
-  return normalizeFolderPath(folder)
-    .split("/")
-    .filter(Boolean)
-    .map((segment) => encodeURIComponent(segment))
-    .join("/");
 }
 
 function isSafeTestimonialChildFolder(folder: string) {
@@ -49,21 +43,31 @@ function getStringArray(value: unknown) {
     : [];
 }
 
-function collectTestimonialFolders(doc: Record<string, unknown>) {
-  const reviewAssetFolder =
-    typeof doc.reviewAssetFolder === "string" ? normalizeFolderPath(doc.reviewAssetFolder) : "";
-  const reviewProfileFolder =
-    typeof doc.reviewProfileFolder === "string" ? normalizeFolderPath(doc.reviewProfileFolder) : "";
-  const reviewPhotosFolder =
-    typeof doc.reviewPhotosFolder === "string" ? normalizeFolderPath(doc.reviewPhotosFolder) : "";
-
-  return Array.from(
-    new Set(
-      [reviewProfileFolder, reviewPhotosFolder, reviewAssetFolder].filter(
-        isSafeTestimonialChildFolder
-      )
-    )
-  );
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "string") return error;
+  if (Array.isArray(error)) return error.map(getErrorMessage).join("; ");
+  if (error && typeof error === "object") {
+    const err = error as Record<string, unknown>;
+    if (typeof err.message === "string") return err.message;
+    if (typeof err.error === "string") return err.error;
+    if (err.error && typeof err.error === "object") {
+      const nested = err.error as Record<string, unknown>;
+      if (typeof nested.message === "string") return nested.message;
+      if (typeof nested.error === "string") return nested.error;
+      try {
+        return JSON.stringify(err.error);
+      } catch {
+        return String(err.error);
+      }
+    }
+    try {
+      return JSON.stringify(err);
+    } catch {
+      return "Unknown Cloudinary error.";
+    }
+  }
+  return "Unknown Cloudinary error.";
 }
 
 function collectTestimonialAssetUrls(doc: Record<string, unknown>) {
@@ -81,60 +85,10 @@ function getPublicIdsFromUrls(urls: string[]) {
         .filter((asset): asset is NonNullable<ReturnType<typeof parseCloudinaryAssetFromUrl>> =>
           Boolean(asset)
         )
-        .map((asset) => asset.publicId)
+        .map((asset) => asset.publicId.trim().replace(/^\/+/, ""))
         .filter((publicId) => publicId.startsWith(`${CLOUDINARY_TESTIMONIALS_FOLDER}/`))
     )
   );
-}
-
-function getCloudinaryAdminConfig() {
-  const cloudName =
-    (process.env.CLOUDINARY_CLOUD_NAME ?? "").trim() ||
-    (process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? "").trim();
-
-  const apiKey = (process.env.CLOUDINARY_API_KEY ?? "").trim();
-  const apiSecret = (process.env.CLOUDINARY_API_SECRET ?? "").trim();
-
-  return { cloudName, apiKey, apiSecret };
-}
-
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-  return "Unknown Cloudinary error.";
-}
-
-function sleep(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function deleteAssetsByPrefix(folder: string): Promise<CleanupResult> {
-  const normalizedFolder = normalizeFolderPath(folder);
-
-  if (!isSafeTestimonialChildFolder(normalizedFolder)) {
-    return { ok: true, target: normalizedFolder || folder };
-  }
-
-  if (!isCloudinaryConfigured()) {
-    return { ok: false, target: normalizedFolder, error: "Cloudinary config missing." };
-  }
-
-  ensureCloudinaryConfigured();
-
-  try {
-    await cloudinary.api.delete_resources_by_prefix(normalizedFolder, {
-      resource_type: "image",
-      invalidate: true,
-    });
-
-    return { ok: true, target: normalizedFolder };
-  } catch (error) {
-    return {
-      ok: false,
-      target: normalizedFolder,
-      error: getErrorMessage(error),
-    };
-  }
 }
 
 async function deleteAssetsByPublicIds(publicIds: string[]): Promise<CleanupResult> {
@@ -149,12 +103,6 @@ async function deleteAssetsByPublicIds(publicIds: string[]): Promise<CleanupResu
   if (safePublicIds.length === 0) {
     return { ok: true, target: "testimonial assets" };
   }
-
-  if (!isCloudinaryConfigured()) {
-    return { ok: false, target: "testimonial assets", error: "Cloudinary config missing." };
-  }
-
-  ensureCloudinaryConfigured();
 
   try {
     for (let index = 0; index < safePublicIds.length; index += 100) {
@@ -177,94 +125,34 @@ async function deleteAssetsByPublicIds(publicIds: string[]): Promise<CleanupResu
   }
 }
 
-async function deleteEmptyFolder(folder: string): Promise<CleanupResult> {
-  const normalizedFolder = normalizeFolderPath(folder);
-
-  if (!isSafeTestimonialChildFolder(normalizedFolder)) {
-    return { ok: true, target: normalizedFolder || folder };
-  }
-
-  const { cloudName, apiKey, apiSecret } = getCloudinaryAdminConfig();
-
-  if (!cloudName || !apiKey || !apiSecret) {
-    return { ok: false, target: normalizedFolder, error: "Cloudinary config missing." };
-  }
-
-  const encodedFolderPath = encodeCloudinaryFolderPath(normalizedFolder);
-
-  const url = new URL(
-    `https://api.cloudinary.com/v1_1/${encodeURIComponent(cloudName)}/folders/${encodedFolderPath}`
-  );
-
-  url.searchParams.set("skip_backup", "true");
-
-  const auth = Buffer.from(`${apiKey}:${apiSecret}`).toString("base64");
-
-  try {
-    const response = await fetch(url.toString(), {
-      method: "DELETE",
-      headers: {
-        Authorization: `Basic ${auth}`,
-      },
-      cache: "no-store",
-    });
-
-    if (response.ok || response.status === 404) {
-      return { ok: true, target: normalizedFolder };
-    }
-
-    const responseText = await response.text().catch(() => "");
-
-    return {
-      ok: false,
-      target: normalizedFolder,
-      error: `Cloudinary folder delete failed with ${response.status}${
-        responseText ? `: ${responseText}` : ""
-      }`,
-    };
-  } catch (error) {
-    return {
-      ok: false,
-      target: normalizedFolder,
-      error: getErrorMessage(error),
-    };
-  }
-}
-
 async function cleanupTestimonialCloudinary(doc: Record<string, unknown>) {
-  const folders = collectTestimonialFolders(doc);
+  const reviewAssetFolder =
+    typeof doc.reviewAssetFolder === "string" ? normalizeFolderPath(doc.reviewAssetFolder) : "";
+  const uploadSessionId =
+    typeof doc.uploadSessionId === "string" ? normalizeFolderPath(doc.uploadSessionId) : "";
+  const fallbackRootFolder =
+    reviewAssetFolder || (uploadSessionId ? `${CLOUDINARY_TESTIMONIALS_FOLDER}/${uploadSessionId}` : "");
   const assetUrls = collectTestimonialAssetUrls(doc);
   const publicIds = getPublicIdsFromUrls(assetUrls);
 
-  for (const folder of folders) {
-    const result = await deleteAssetsByPrefix(folder);
-    if (!result.ok) {
-      throw new Error(`Cloudinary asset cleanup failed for ${result.target}: ${result.error}`);
-    }
-  }
-
-  const publicIdResult = await deleteAssetsByPublicIds(publicIds);
-  if (!publicIdResult.ok) {
-    throw new Error(
-      `Cloudinary asset cleanup failed for ${publicIdResult.target}: ${publicIdResult.error}`
+  if (fallbackRootFolder) {
+    const cleanupResults = await deleteManagedCloudinaryFolderTree(
+      fallbackRootFolder,
+      [CLOUDINARY_TESTIMONIALS_FOLDER]
     );
+
+    const failedCleanup = cleanupResults.find((result) => !result.ok);
+    if (failedCleanup) {
+      throw new Error(`Cloudinary cleanup failed for ${failedCleanup.target}: ${failedCleanup.error}`);
+    }
   }
 
-  await sleep(800);
-
-  const deepestFirst = [...folders].sort((a, b) => b.split("/").length - a.split("/").length);
-
-  for (const folder of deepestFirst) {
-    let lastResult: CleanupResult | null = null;
-
-    for (let attempt = 0; attempt < 8; attempt += 1) {
-      lastResult = await deleteEmptyFolder(folder);
-      if (lastResult.ok) break;
-      await sleep(500);
-    }
-
-    if (lastResult && !lastResult.ok) {
-      throw new Error(`Cloudinary folder cleanup failed for ${lastResult.target}: ${lastResult.error}`);
+  if (publicIds.length > 0) {
+    const publicIdResult = await deleteAssetsByPublicIds(publicIds);
+    if (!publicIdResult.ok) {
+      throw new Error(
+        `Cloudinary asset cleanup failed for ${publicIdResult.target}: ${publicIdResult.error}`
+      );
     }
   }
 }

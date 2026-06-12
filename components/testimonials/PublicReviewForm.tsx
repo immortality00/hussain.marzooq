@@ -268,11 +268,13 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
   const [rating, setRating] = useState(0);
   const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
+  const [hasPendingUploads, setHasPendingUploads] = useState(false);
   const [website, setWebsite] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [formStartedAt, setFormStartedAt] = useState(Date.now());
   const [uploadSessionId, setUploadSessionId] = useState(createUploadSessionId());
+  const uploadSessionIdRef = useRef(uploadSessionId);
 
   const selectedLocationPayload = useMemo(
     () =>
@@ -299,20 +301,47 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
   );
 
   useEffect(() => {
-    if (open) {
-      setFormStartedAt(Date.now());
-      setUploadSessionId(createUploadSessionId());
-      window.dispatchEvent(new Event("hm_modal_open"));
-      document.body.style.overflow = "hidden";
-    } else {
-      window.dispatchEvent(new Event("hm_modal_close"));
-      document.body.style.overflow = "";
-    }
+    uploadSessionIdRef.current = uploadSessionId;
+  }, [uploadSessionId]);
 
-    return () => {
-      document.body.style.overflow = "";
+  const hasUploadedFiles = profilePhotoUrl || photoUrls.length > 0 || hasPendingUploads;
+
+  async function cleanupUploadSession(sessionId: string) {
+    if (!sessionId || !hasUploadedFiles) return;
+
+    try {
+      await fetch("/api/testimonials/upload-session/cleanup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uploadSessionId: sessionId }),
+      });
+    } catch {
+      // Best-effort cleanup only.
+    }
+  }
+
+  async function handleClose() {
+    await cleanupUploadSession(uploadSessionIdRef.current);
+    resetForm();
+    setOpen(false);
+  }
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (!hasUploadedFiles) return;
+
+      try {
+        const payload = JSON.stringify({ uploadSessionId: uploadSessionIdRef.current });
+        const blob = new Blob([payload], { type: "application/json" });
+        navigator.sendBeacon("/api/testimonials/upload-session/cleanup", blob);
+      } catch {
+        // Best-effort cleanup only.
+      }
     };
-  }, [open]);
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUploadedFiles]);
 
   function resetForm() {
     setName("");
@@ -323,6 +352,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
     setRating(0);
     setProfilePhotoUrl("");
     setPhotoUrls([]);
+    setHasPendingUploads(false);
     setWebsite("");
     setSubmitting(false);
     setBanner(null);
@@ -430,7 +460,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
       {open ? (
         <div
           className="fixed inset-0 z-[150] flex items-center justify-center bg-black/55 p-3 backdrop-blur-sm sm:p-5"
-          onClick={() => setOpen(false)}
+          onClick={() => void handleClose()}
         >
           <div
             className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] bg-background text-foreground shadow-2xl ring-1 ring-border/70"
@@ -446,7 +476,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
 
               <button
                 type="button"
-                onClick={() => setOpen(false)}
+                onClick={() => void handleClose()}
                 className="rounded-full border border-border/70 px-4 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
               >
                 Close
@@ -487,7 +517,10 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                               if (!isRecord(info)) return;
 
                               const secureUrl = getString(info.secure_url);
-                              if (secureUrl) setProfilePhotoUrl(secureUrl);
+                              if (secureUrl) {
+                                setProfilePhotoUrl(secureUrl);
+                                setHasPendingUploads(true);
+                              }
                             }}
                           >
                             {({ open }) => (
@@ -592,7 +625,10 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                             if (!isRecord(info)) return;
 
                             const secureUrl = getString(info.secure_url);
-                            if (secureUrl) addPhoto(secureUrl);
+                            if (secureUrl) {
+                              addPhoto(secureUrl);
+                              setHasPendingUploads(true);
+                            }
                           }}
                         >
                           {({ open }) => (
