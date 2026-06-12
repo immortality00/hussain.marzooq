@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# large local import/source data
+cities1000.txt
+cities1000.zip
+*.geonames.txt
+*.geonames.zip
