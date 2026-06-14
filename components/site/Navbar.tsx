@@ -6,12 +6,13 @@ import { usePathname } from "next/navigation";
 
 const nav = [
   { href: "/", label: "Home" },
+  { href: "/about", label: "About" },
   { href: "/photography", label: "Photography" },
   { href: "/videography", label: "Videography" },
   { href: "/services", label: "Services" },
   { href: "/nft", label: "NFT" },
-  { href: "/dance", label: "Dance" },
-  { href: "/web-dev", label: "Web Dev" },
+  { href: "/dancing", label: "Dancing" },
+  { href: "/web-development", label: "Web Development" },
   { href: "/people", label: "People" },
   { href: "/testimonials", label: "Testimonials" },
   { href: "/blog", label: "Blog" },
@@ -89,10 +90,7 @@ export function Navbar() {
             })}
           </nav>
 
-          <Link
-            href="/contact"
-            className="rounded-full border px-4 py-2 text-sm hover:bg-accent"
-          >
+          <Link href="/contact" className="rounded-full border px-4 py-2 text-sm hover:bg-accent">
             Book
           </Link>
         </div>
