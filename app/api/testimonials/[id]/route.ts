@@ -27,16 +27,6 @@ function normalizeFolderPath(value: string) {
   return value.trim().replace(/^\/+|\/+$/g, "");
 }
 
-function isSafeTestimonialChildFolder(folder: string) {
-  const normalized = normalizeFolderPath(folder);
-
-  return (
-    normalized.length > 0 &&
-    normalized !== CLOUDINARY_TESTIMONIALS_FOLDER &&
-    normalized.startsWith(`${CLOUDINARY_TESTIMONIALS_FOLDER}/`)
-  );
-}
-
 function getStringArray(value: unknown) {
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0)

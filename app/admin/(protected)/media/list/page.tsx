@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -21,8 +21,9 @@ type MediaItem = {
     price: number | null;
     currency: "ETH" | "SOL" | "XTZ" | "BTC";
     editionType: "1/1" | "limited" | "open";
-    editionsTotal: number;
-    editionsRemaining: number;
+    editionsTotal: number | null;
+    editionsRemaining: number | null;
+    openUntil: string | null;
     status: "available" | "sold" | "coming-soon";
     marketplaceUrl: string | null;
   } | null;
@@ -31,6 +32,15 @@ type MediaItem = {
   embedUrl: string | null;
   createdAt: string | null;
 };
+
+type AdminMediaListResponse = {
+  ok?: boolean;
+  items?: MediaItem[];
+  nextCursor?: string | null;
+  error?: string;
+};
+
+type LoadMode = "replace" | "append";
 
 function getErrorMessage(e: unknown): string {
   if (e instanceof Error) return e.message;
@@ -44,6 +54,46 @@ function statusClasses(status: "available" | "sold" | "coming-soon") {
   return "border-emerald-500/30 bg-emerald-500/12 text-emerald-700 dark:text-emerald-300";
 }
 
+function buildAdminMediaUrl({
+  query,
+  category,
+  type,
+  visibility,
+  cursor,
+}: {
+  query: string;
+  category: string;
+  type: string;
+  visibility: string;
+  cursor?: string | null;
+}) {
+  const params = new URLSearchParams();
+  params.set("limit", "60");
+
+  const cleanQuery = query.trim();
+  const cleanCategory = category.trim();
+  const cleanType = type.trim();
+  const cleanVisibility = visibility.trim();
+
+  if (cleanQuery) params.set("q", cleanQuery);
+  if (cleanCategory) params.set("category", cleanCategory);
+  if (cleanType) params.set("type", cleanType);
+  if (cleanVisibility) params.set("visibility", cleanVisibility);
+  if (cursor) params.set("cursor", cursor);
+
+  return `/api/media/admin-list?${params.toString()}`;
+}
+
+function formatNftQuantity(item: NonNullable<MediaItem["nft"]>) {
+  if (item.editionType === "open") {
+    return item.openUntil ? `Open until ${item.openUntil.replace("T", " ")}` : "Open edition";
+  }
+
+  const total = item.editionsTotal ?? "—";
+  const remaining = item.editionsRemaining ?? "—";
+  return `${remaining}/${total} remaining`;
+}
+
 export default function AdminMediaListPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,6 +101,8 @@ export default function AdminMediaListPage() {
 
   const [items, setItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   const [query, setQuery] = useState("");
@@ -58,23 +110,56 @@ export default function AdminMediaListPage() {
   const [typeFilter, setTypeFilter] = useState("");
   const [visibilityFilter, setVisibilityFilter] = useState("");
 
-  async function load() {
-    setBanner(null);
-    setLoading(true);
-    try {
-      const res = await fetch("/api/media/admin-list?limit=120", { cache: "no-store" });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; items?: MediaItem[]; error?: string };
-      if (!res.ok || !data?.ok || !Array.isArray(data.items)) {
-        setBanner({ type: "err", text: data?.error ?? "Failed to load media." });
-        return;
+  const activeFilterLabel = useMemo(() => {
+    const parts = [
+      query.trim() ? `search “${query.trim()}”` : "",
+      categoryFilter ? `category ${categoryFilter}` : "",
+      typeFilter ? `type ${typeFilter}` : "",
+      visibilityFilter ? visibilityFilter : "",
+    ].filter(Boolean);
+
+    return parts.length ? parts.join(" • ") : "all media";
+  }, [categoryFilter, query, typeFilter, visibilityFilter]);
+
+  const load = useCallback(
+    async (mode: LoadMode = "replace", cursor?: string | null) => {
+      setBanner(null);
+      if (mode === "append") setLoadingMore(true);
+      else setLoading(true);
+
+      try {
+        const res = await fetch(
+          buildAdminMediaUrl({
+            query,
+            category: categoryFilter,
+            type: typeFilter,
+            visibility: visibilityFilter,
+            cursor,
+          }),
+          { cache: "no-store" }
+        );
+        const data = (await res.json().catch(() => null)) as AdminMediaListResponse | null;
+        if (!res.ok || !data?.ok || !Array.isArray(data.items)) {
+          setBanner({ type: "err", text: data?.error ?? "Failed to load media." });
+          return;
+        }
+
+        setItems((prev) => {
+          if (mode === "replace") return data.items ?? [];
+          const seen = new Set(prev.map((item) => item.id));
+          const fresh = (data.items ?? []).filter((item) => !seen.has(item.id));
+          return [...prev, ...fresh];
+        });
+        setNextCursor(data.nextCursor ?? null);
+      } catch (e: unknown) {
+        setBanner({ type: "err", text: `Failed to load: ${getErrorMessage(e)}` });
+      } finally {
+        setLoading(false);
+        setLoadingMore(false);
       }
-      setItems(data.items);
-    } catch (e: unknown) {
-      setBanner({ type: "err", text: `Failed to load: ${getErrorMessage(e)}` });
-    } finally {
-      setLoading(false);
-    }
-  }
+    },
+    [categoryFilter, query, typeFilter, visibilityFilter]
+  );
 
   async function del(id: string) {
     const ok = confirm("Delete this media forever? This cannot be undone.");
@@ -96,49 +181,35 @@ export default function AdminMediaListPage() {
   }
 
   useEffect(() => {
-    void load();
-  }, []);
+    void load("replace");
+  }, [load]);
 
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-
-    return items.filter((m) => {
-      const matchesQuery = q
-        ? `${m.title} ${m.description ?? ""} ${m.location ?? ""} ${m.event ?? ""} ${m.tags.join(" ")} ${m.people.join(" ")}`
-            .toLowerCase()
-            .includes(q)
-        : true;
-
-      const matchesCategory = categoryFilter ? m.categories.includes(categoryFilter) : true;
-      const matchesType = typeFilter ? m.type === typeFilter : true;
-      const matchesVisibility =
-        visibilityFilter === ""
-          ? true
-          : visibilityFilter === "public"
-            ? m.isPublic
-            : !m.isPublic;
-
-      return matchesQuery && matchesCategory && matchesType && matchesVisibility;
-    });
-  }, [items, query, categoryFilter, typeFilter, visibilityFilter]);
+  function resetFilters() {
+    setQuery("");
+    setCategoryFilter("");
+    setTypeFilter("");
+    setVisibilityFilter("");
+  }
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Media</h1>
-          <p className="mt-2 text-sm text-muted-foreground">Filter, edit, or delete existing media items.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Filter, edit, or delete existing media items across the full media library.
+          </p>
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href="/admin/media" className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors">
+          <Link href="/admin/media" className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent">
             Upload new
           </Link>
           <button
             type="button"
-            onClick={() => void load()}
+            onClick={() => void load("replace")}
             disabled={loading}
-            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:opacity-60"
+            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:opacity-60"
           >
             Refresh
           </button>
@@ -148,7 +219,7 @@ export default function AdminMediaListPage() {
       {banner ? (
         <div
           className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
-            banner.type === "ok" ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"
+            banner.type === "ok" ? "border-green-500/30 bg-green-500/10" : "border-red-500/30 bg-red-500/10"
           }`}
         >
           {banner.text}
@@ -156,7 +227,13 @@ export default function AdminMediaListPage() {
       ) : null}
 
       <section className="mt-6 rounded-2xl border p-4">
-        <div className="grid gap-3 md:grid-cols-4">
+        <form
+          className="grid gap-3 md:grid-cols-4"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void load("replace");
+          }}
+        >
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -199,14 +276,39 @@ export default function AdminMediaListPage() {
               <option value="private">Private</option>
             </select>
           </div>
-        </div>
+
+          <div className="flex flex-wrap gap-2 md:col-span-4">
+            <button
+              type="submit"
+              disabled={loading}
+              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:opacity-60"
+            >
+              {loading ? "Loading…" : "Apply filters"}
+            </button>
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+            >
+              Clear filters
+            </button>
+          </div>
+        </form>
       </section>
 
+      <div className="mt-4 text-xs text-muted-foreground">
+        Showing {items.length} result{items.length === 1 ? "" : "s"} for {activeFilterLabel}.
+      </div>
+
       <div className="mt-8 space-y-4">
-        {filtered.length === 0 ? (
+        {loading && items.length === 0 ? (
+          <div className="rounded-2xl border p-6 text-sm text-muted-foreground">Loading media…</div>
+        ) : null}
+
+        {!loading && items.length === 0 ? (
           <div className="rounded-2xl border p-6 text-sm text-muted-foreground">No media match these filters.</div>
         ) : (
-          filtered.map((m) => (
+          items.map((m) => (
             <div key={m.id} className="rounded-2xl border p-5">
               <div className="grid gap-4 md:grid-cols-[240px_1fr]">
                 <div className="overflow-hidden rounded-2xl border bg-muted">
@@ -271,12 +373,12 @@ export default function AdminMediaListPage() {
                   {m.nft ? (
                     <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
                       <span className="rounded-full border px-2 py-0.5">{m.nft.editionType}</span>
-                      <span className="rounded-full border px-2 py-0.5">
-                        Total: {m.nft.editionsTotal}
-                      </span>
-                      <span className="rounded-full border px-2 py-0.5">
-                        Remaining: {m.nft.editionsRemaining}
-                      </span>
+                      <span className="rounded-full border px-2 py-0.5">{formatNftQuantity(m.nft)}</span>
+                      {m.nft.price !== null ? (
+                        <span className="rounded-full border px-2 py-0.5">
+                          {m.nft.price} {m.nft.currency}
+                        </span>
+                      ) : null}
                     </div>
                   ) : null}
 
@@ -290,13 +392,26 @@ export default function AdminMediaListPage() {
                     </div>
                   ) : null}
 
-                  <div className="mt-3 text-xs text-muted-foreground font-mono">ID: {m.id}</div>
+                  <div className="mt-3 text-xs font-mono text-muted-foreground">ID: {m.id}</div>
                 </div>
               </div>
             </div>
           ))
         )}
       </div>
+
+      {nextCursor ? (
+        <div className="mt-8 flex justify-center">
+          <button
+            type="button"
+            onClick={() => void load("append", nextCursor)}
+            disabled={loadingMore}
+            className="rounded-full border px-5 py-2 text-sm transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-60"
+          >
+            {loadingMore ? "Loading…" : "Load more"}
+          </button>
+        </div>
+      ) : null}
     </main>
   );
 }

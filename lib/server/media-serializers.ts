@@ -1,5 +1,5 @@
-import { asNullableString, asStringArray, isRecord } from "@/app/api/_lib/common";
-import { sanitizeAppearances } from "@/app/api/_lib/media";
+import { asNullableString, asNumberOrNull, asStringArray, isRecord } from "@/app/api/_lib/common";
+import { sanitizeAppearances, type NftMeta } from "@/app/api/_lib/media";
 
 export type PublicAppearance = {
   kind: "featured" | "exhibited";
@@ -35,6 +35,7 @@ export type AdminMediaListItem = {
   id: string;
   type: string;
   title: string;
+  description: string | null;
   secureUrl: string | null;
   embedUrl: string | null;
   categories: string[];
@@ -43,6 +44,10 @@ export type AdminMediaListItem = {
   peopleIds: string[];
   people: string[];
   event: string | null;
+  year: number | null;
+  nft: NftMeta | null;
+  isPublic: boolean;
+  createdAt: string | null;
 };
 
 export function buildPublicMediaQuery({
@@ -71,6 +76,42 @@ function getAssetRecord(doc: Record<string, unknown>) {
   return isRecord(doc.asset) ? doc.asset : {};
 }
 
+function serializeDate(value: unknown): string | null {
+  if (value instanceof Date) return value.toISOString();
+  if (!value) return null;
+
+  const date = new Date(value as string | number | Date);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function getNftMeta(doc: Record<string, unknown>): NftMeta | null {
+  const nft = isRecord(doc.nft) ? doc.nft : null;
+  if (!nft) return null;
+
+  const currency = asNullableString(nft.currency);
+  const editionType = asNullableString(nft.editionType);
+  const status = asNullableString(nft.status);
+
+  if (
+    !(currency === "ETH" || currency === "SOL" || currency === "XTZ" || currency === "BTC") ||
+    !(editionType === "1/1" || editionType === "limited" || editionType === "open") ||
+    !(status === "available" || status === "sold" || status === "coming-soon")
+  ) {
+    return null;
+  }
+
+  return {
+    price: asNumberOrNull(nft.price),
+    currency,
+    editionType,
+    editionsTotal: asNumberOrNull(nft.editionsTotal),
+    editionsRemaining: asNumberOrNull(nft.editionsRemaining),
+    openUntil: asNullableString(nft.openUntil),
+    status,
+    marketplaceUrl: asNullableString(nft.marketplaceUrl),
+  };
+}
+
 export function toPublicMediaItem(doc: Record<string, unknown>): PublicMediaItem {
   const asset = getAssetRecord(doc);
 
@@ -97,27 +138,34 @@ export function toPublicMediaItem(doc: Record<string, unknown>): PublicMediaItem
     secureUrl: secureUrl ?? null,
     publicId: publicId ?? null,
     embedUrl: embedUrl ?? null,
-    createdAt:
-      doc.createdAt instanceof Date
-        ? doc.createdAt.toISOString()
-        : doc.createdAt
-          ? new Date(doc.createdAt as string | number | Date).toISOString()
-          : null,
+    createdAt: serializeDate(doc.createdAt),
   };
 }
 
 export function toAdminMediaListItem(doc: Record<string, unknown>): AdminMediaListItem {
+  const asset = getAssetRecord(doc);
+  const secureUrl =
+    asNullableString(doc.secureUrl) ??
+    asNullableString(asset.secureUrl) ??
+    asNullableString((asset as Record<string, unknown>).secure_url);
+  const embedUrl = asNullableString(doc.embedUrl) ?? asNullableString(asset.embedUrl);
+
   return {
     id: String(doc._id),
-    type: typeof doc.type === "string" ? doc.type : "image",
-    title: typeof doc.title === "string" ? doc.title : "",
-    secureUrl: typeof doc.secureUrl === "string" ? doc.secureUrl : null,
-    embedUrl: typeof doc.embedUrl === "string" ? doc.embedUrl : null,
+    type: asNullableString(doc.type) ?? "image",
+    title: asNullableString(doc.title) ?? "",
+    description: asNullableString(doc.description),
+    secureUrl: secureUrl ?? null,
+    embedUrl: embedUrl ?? null,
     categories: asStringArray(doc.categories),
     tags: asStringArray(doc.tags),
-    location: typeof doc.location === "string" ? doc.location : null,
+    location: asNullableString(doc.location),
     peopleIds: asStringArray(doc.peopleIds),
     people: asStringArray(doc.people),
-    event: typeof doc.event === "string" ? doc.event : null,
+    event: asNullableString(doc.event),
+    year: typeof doc.year === "number" ? doc.year : null,
+    nft: getNftMeta(doc),
+    isPublic: doc.isPublic !== false,
+    createdAt: serializeDate(doc.createdAt),
   };
 }
