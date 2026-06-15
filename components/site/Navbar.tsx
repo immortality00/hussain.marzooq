@@ -7,14 +7,14 @@ import { usePathname } from "next/navigation";
 const nav = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
-  { href: "/photography", label: "Photography" },
-  { href: "/videography", label: "Videography" },
+  { href: "/photography", label: "Photo" },
+  { href: "/videography", label: "Video" },
   { href: "/services", label: "Services" },
   { href: "/nft", label: "NFT" },
-  { href: "/dancing", label: "Dancing" },
-  { href: "/web-development", label: "Web Development" },
+  { href: "/dancing", label: "Dance" },
+  { href: "/web-development", label: "Web Dev" },
   { href: "/people", label: "People" },
-  { href: "/testimonials", label: "Testimonials" },
+  { href: "/testimonials", label: "Reviews" },
   { href: "/blog", label: "Blog" },
 ];
 
@@ -55,14 +55,16 @@ export function Navbar() {
     >
       <div className="section-shell">
         <div className="flex min-h-16 items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex shrink-0 items-center gap-3">
             <span className="inline-flex h-9 w-9 items-center justify-center rounded-full border text-xs tracking-[0.18em] text-muted-foreground">
               HM
             </span>
-            <span className="text-sm font-semibold tracking-[0.14em]">HM VISUALS</span>
+            <span className="hidden text-sm font-semibold tracking-[0.14em] sm:inline">
+              HM VISUALS
+            </span>
           </Link>
 
-          <nav className="hidden items-center gap-5 xl:flex">
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-3 xl:flex">
             {nav.map((item) => {
               const isActive =
                 item.href === "/"
@@ -74,7 +76,7 @@ export function Navbar() {
                   key={item.href}
                   href={item.href}
                   className={[
-                    "relative px-1 py-1.5 text-sm transition-colors",
+                    "group relative whitespace-nowrap px-1.5 py-1.5 text-[13px] transition-colors",
                     isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                   ].join(" ")}
                 >
@@ -90,7 +92,10 @@ export function Navbar() {
             })}
           </nav>
 
-          <Link href="/contact" className="rounded-full border px-4 py-2 text-sm hover:bg-accent">
+          <Link
+            href="/contact"
+            className="shrink-0 rounded-full border px-4 py-2 text-sm transition-colors hover:bg-accent"
+          >
             Book
           </Link>
         </div>

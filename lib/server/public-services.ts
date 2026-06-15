@@ -41,10 +41,10 @@ export function workLinkForCategory(categorySlug: string): { href: string; label
   if (c.includes("video") || c.includes("film") || c.includes("reel")) {
     return { href: "/videography", label: "See videos" };
   }
-  if (c.includes("dance")) return { href: "/dance", label: "See dance" };
+  if (c.includes("dance")) return { href: "/dancing", label: "See dancing" };
   if (c.includes("nft")) return { href: "/nft", label: "See NFTs" };
   if (c.includes("web") || c.includes("dev") || c.includes("code")) {
-    return { href: "/web-dev", label: "See web work" };
+    return { href: "/web-development", label: "See web work" };
   }
 
   return { href: "/photography", label: "See my work" };

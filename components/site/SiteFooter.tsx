@@ -9,8 +9,8 @@ const primaryLinks = [
 
 const secondaryLinks = [
   { href: "/nft", label: "NFT" },
-  { href: "/dance", label: "Dance" },
-  { href: "/web-dev", label: "Web Dev" },
+  { href: "/dancing", label: "Dancing" },
+  { href: "/web-development", label: "Web Development" },
   { href: "/people", label: "People" },
   { href: "/blog", label: "Blog" },
 ];

@@ -24,12 +24,12 @@ export function HomeCreativeSystem({ nfts }: { nfts: PublicNftItem[] }) {
             NFT / Web3
           </Link>
 
-          <Link href="/dance" className="rounded-2xl border bg-background/60 p-4 hover:bg-accent">
-            Dance
+          <Link href="/dancing" className="rounded-2xl border bg-background/60 p-4 hover:bg-accent">
+            Dancing
           </Link>
 
           <Link
-            href="/web-dev"
+            href="/web-development"
             className="rounded-2xl border bg-background/60 p-4 hover:bg-accent"
           >
             Web Development
