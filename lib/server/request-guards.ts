@@ -12,24 +12,13 @@ type GuardDoc = {
   updatedAt: Date;
 };
 
-let indexesReady = false;
-
-async function ensureIndexes() {
-  if (indexesReady) return;
-
-  const db = await getDb();
-  const collection = db.collection<GuardDoc>("request_guards");
-
-  await collection.createIndexes([
-    { key: { expiresAt: 1 }, expireAfterSeconds: 0 },
-    { key: { bucket: 1, type: 1, updatedAt: -1 } },
-  ]);
-
-  indexesReady = true;
-}
-
 function buildRateLimitId(bucket: string, key: string) {
   return `rate:${bucket}:${key}`;
+}
+
+async function getRequestGuardsCollection() {
+  const db = await getDb();
+  return db.collection<GuardDoc>("request_guards");
 }
 
 export async function getFixedWindowRateLimitStatus(params: {
@@ -37,11 +26,8 @@ export async function getFixedWindowRateLimitStatus(params: {
   key: string;
   limit: number;
 }) {
-  await ensureIndexes();
-
   const { bucket, key, limit } = params;
-  const db = await getDb();
-  const collection = db.collection<GuardDoc>("request_guards");
+  const collection = await getRequestGuardsCollection();
   const id = buildRateLimitId(bucket, key);
   const now = Date.now();
 
@@ -70,11 +56,8 @@ export async function consumeFixedWindowRateLimit(params: {
   limit: number;
   windowMs: number;
 }) {
-  await ensureIndexes();
-
   const { bucket, key, limit, windowMs } = params;
-  const db = await getDb();
-  const collection = db.collection<GuardDoc>("request_guards");
+  const collection = await getRequestGuardsCollection();
 
   const now = new Date();
   const nowMs = now.getTime();
@@ -130,11 +113,8 @@ export async function consumeFixedWindowRateLimit(params: {
 }
 
 export async function clearFixedWindowRateLimit(params: { bucket: string; key: string }) {
-  await ensureIndexes();
-
   const { bucket, key } = params;
-  const db = await getDb();
-  const collection = db.collection<GuardDoc>("request_guards");
+  const collection = await getRequestGuardsCollection();
   const id = buildRateLimitId(bucket, key);
 
   await collection.deleteOne({ _id: id });
@@ -145,11 +125,8 @@ export async function claimDuplicateWindow(params: {
   key: string;
   windowMs: number;
 }) {
-  await ensureIndexes();
-
   const { bucket, key, windowMs } = params;
-  const db = await getDb();
-  const collection = db.collection<GuardDoc>("request_guards");
+  const collection = await getRequestGuardsCollection();
 
   const now = new Date();
   const expiresAt = new Date(now.getTime() + windowMs);

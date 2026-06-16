@@ -48,7 +48,7 @@ export default async function VideographyPage() {
               />
             ) : (
               <div className="flex h-full w-full items-center justify-center text-sm text-white/70">
-                No showreel set yet — set it in Admin → Showreel
+                The showreel is being prepared.
               </div>
             )}
           </div>
@@ -56,7 +56,7 @@ export default async function VideographyPage() {
 
         {videos.length === 0 ? (
           <div className="mt-10 rounded-2xl border p-6 text-sm text-muted-foreground">
-            No videos yet. Upload from Admin → Media.
+            A new video selection is being prepared. Please check back soon.
           </div>
         ) : (
           <MediaGrid items={videos} mediaMode="video" searchCategory="videography" />

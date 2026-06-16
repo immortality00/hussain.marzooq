@@ -1,261 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import Image from "next/image";
-import { CldUploadWidget } from "next-cloudinary";
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
-
-type WidgetResult = { info?: unknown };
-
-type LocationOption = {
-  id: string;
-  label: string;
-  lat: number;
-  lon: number;
-  countryCode: string | null;
-  population: number | null;
-  source: "dataset" | "fallback";
-};
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function getString(value: unknown) {
-  return typeof value === "string" ? value : "";
-}
-
-function isValidEmail(value: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
-}
-
-function isLocationOption(value: unknown): value is LocationOption {
-  if (!isRecord(value)) return false;
-
-  return (
-    typeof value.id === "string" &&
-    typeof value.label === "string" &&
-    typeof value.lat === "number" &&
-    Number.isFinite(value.lat) &&
-    typeof value.lon === "number" &&
-    Number.isFinite(value.lon) &&
-    (typeof value.countryCode === "string" || value.countryCode === null) &&
-    (typeof value.population === "number" || value.population === null) &&
-    (value.source === "dataset" || value.source === "fallback")
-  );
-}
-
-function createUploadSessionId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-
-  return `review-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}
-
-function StarPicker({
-  rating,
-  setRating,
-}: {
-  rating: number;
-  setRating: (value: number) => void;
-}) {
-  return (
-    <div className="flex flex-wrap gap-1.5">
-      {[1, 2, 3, 4, 5].map((value) => (
-        <button
-          key={value}
-          type="button"
-          onClick={() => setRating(value)}
-          className={`text-3xl transition-transform hover:scale-110 ${
-            value <= rating ? "text-amber-500" : "text-muted-foreground/30"
-          }`}
-          aria-label={`Set ${value} star rating`}
-        >
-          ★
-        </button>
-      ))}
-    </div>
-  );
-}
-
-function PreviewImage({ src, alt, className }: { src: string; alt: string; className: string }) {
-  return <Image src={src} alt={alt} fill unoptimized className={className} sizes="220px" />;
-}
-
-function LocationSearch({
-  selectedLocation,
-  onSelect,
-  onClear,
-}: {
-  selectedLocation: LocationOption | null;
-  onSelect: (location: LocationOption) => void;
-  onClear: () => void;
-}) {
-  const [query, setQuery] = useState(selectedLocation?.label ?? "");
-  const [items, setItems] = useState<LocationOption[]>([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const debounceRef = useRef<number | null>(null);
-  const abortRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    if (selectedLocation) setQuery(selectedLocation.label);
-  }, [selectedLocation]);
-
-  useEffect(() => {
-    if (debounceRef.current) window.clearTimeout(debounceRef.current);
-    abortRef.current?.abort();
-
-    const trimmedQuery = query.trim();
-
-    if (selectedLocation && trimmedQuery === selectedLocation.label) {
-      setItems([]);
-      setIsOpen(false);
-      setMessage(null);
-      setIsSearching(false);
-      return;
-    }
-
-    if (trimmedQuery.length < 2) {
-      setItems([]);
-      setIsOpen(false);
-      setMessage(null);
-      setIsSearching(false);
-      return;
-    }
-
-    debounceRef.current = window.setTimeout(async () => {
-      const controller = new AbortController();
-      abortRef.current = controller;
-      setIsSearching(true);
-      setMessage(null);
-
-      try {
-        const res = await fetch(
-          `/api/testimonials/location-search?q=${encodeURIComponent(trimmedQuery)}`,
-          {
-            method: "GET",
-            cache: "no-store",
-            signal: controller.signal,
-          }
-        );
-
-        const data = (await res.json().catch(() => null)) as {
-          ok?: boolean;
-          items?: unknown[];
-          error?: string;
-        } | null;
-
-        if (!res.ok || !data?.ok) {
-          setItems([]);
-          setIsOpen(false);
-          setMessage(data?.error ?? "Location search failed.");
-          return;
-        }
-
-        const nextItems = Array.isArray(data.items)
-          ? data.items.filter(isLocationOption).slice(0, 8)
-          : [];
-
-        setItems(nextItems);
-        setIsOpen(nextItems.length > 0);
-        setMessage(nextItems.length === 0 ? "No matching locations found." : null);
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setItems([]);
-        setIsOpen(false);
-        setMessage("Location search failed.");
-      } finally {
-        setIsSearching(false);
-      }
-    }, 220);
-
-    return () => {
-      if (debounceRef.current) window.clearTimeout(debounceRef.current);
-      abortRef.current?.abort();
-    };
-  }, [query, selectedLocation]);
-
-  function chooseLocation(location: LocationOption) {
-    onSelect(location);
-    setQuery(location.label);
-    setItems([]);
-    setIsOpen(false);
-    setMessage(null);
-  }
-
-  function clearLocation() {
-    onClear();
-    setQuery("");
-    setItems([]);
-    setIsOpen(false);
-    setMessage(null);
-  }
-
-  return (
-    <div className="space-y-2">
-      <label className="text-sm font-medium">Location</label>
-
-      <div className="relative">
-        <input
-          value={query}
-          onChange={(event) => {
-            if (selectedLocation) onClear();
-            setQuery(event.target.value);
-          }}
-          onFocus={() => {
-            if (items.length > 0) setIsOpen(true);
-          }}
-          className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 pr-24 text-sm outline-none focus:ring-2 focus:ring-ring"
-          placeholder="Type city or country..."
-          autoComplete="off"
-        />
-
-        <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1">
-          {isSearching ? (
-            <span className="px-2 text-xs text-muted-foreground">Searching</span>
-          ) : null}
-
-          {selectedLocation ? (
-            <button
-              type="button"
-              onClick={clearLocation}
-              className="rounded-lg border border-border/70 bg-background px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
-            >
-              Clear
-            </button>
-          ) : null}
-        </div>
-
-        {isOpen ? (
-          <div className="absolute left-0 right-0 top-[calc(100%+0.35rem)] z-30 max-h-64 overflow-y-auto rounded-xl border border-border/70 bg-background p-1 shadow-xl">
-            {items.map((item) => (
-              <button
-                key={`${item.source}-${item.id}`}
-                type="button"
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => chooseLocation(item)}
-                className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-muted"
-              >
-                <span className="block font-medium">{item.label}</span>
-                <span className="mt-0.5 block text-xs text-muted-foreground">
-                  {item.countryCode ? item.countryCode : "Location"}
-                  {typeof item.population === "number" && item.population > 0
-                    ? ` • population ${item.population.toLocaleString()}`
-                    : ""}
-                </span>
-              </button>
-            ))}
-          </div>
-        ) : null}
-      </div>
-
-      {message ? <p className="text-xs leading-5 text-muted-foreground">{message}</p> : null}
-    </div>
-  );
-}
+import { LocationSearch } from "./review-form/LocationSearch";
+import { ProfilePhotoField } from "./review-form/ProfilePhotoField";
+import { ReviewPhotosField } from "./review-form/ReviewPhotosField";
+import { StarPicker } from "./review-form/StarPicker";
+import type { BannerState, LocationOption } from "./review-form/types";
+import { createUploadSessionId, isValidEmail } from "./review-form/utils";
+import { useModalVisibilityEvents } from "./review-form/useModalVisibilityEvents";
 
 export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?: boolean }) {
   const [open, setOpen] = useState(false);
@@ -271,10 +24,12 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
   const [hasPendingUploads, setHasPendingUploads] = useState(false);
   const [website, setWebsite] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [banner, setBanner] = useState<BannerState>(null);
   const [formStartedAt, setFormStartedAt] = useState(Date.now());
   const [uploadSessionId, setUploadSessionId] = useState(createUploadSessionId());
   const uploadSessionIdRef = useRef(uploadSessionId);
+
+  useModalVisibilityEvents(open);
 
   const selectedLocationPayload = useMemo(
     () =>
@@ -304,7 +59,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
     uploadSessionIdRef.current = uploadSessionId;
   }, [uploadSessionId]);
 
-  const hasUploadedFiles = profilePhotoUrl || photoUrls.length > 0 || hasPendingUploads;
+  const hasUploadedFiles = Boolean(profilePhotoUrl || photoUrls.length > 0 || hasPendingUploads);
 
   async function cleanupUploadSession(sessionId: string) {
     if (!sessionId || !hasUploadedFiles) return;
@@ -356,7 +111,13 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
     setWebsite("");
     setSubmitting(false);
     setBanner(null);
+    setFormStartedAt(Date.now());
     setUploadSessionId(createUploadSessionId());
+  }
+
+  function handleProfilePhotoUploaded(url: string) {
+    setProfilePhotoUrl(url);
+    setHasPendingUploads(true);
   }
 
   function addPhoto(url: string) {
@@ -364,6 +125,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
       if (prev.includes(url)) return prev;
       return [...prev, url].slice(0, 12);
     });
+    setHasPendingUploads(true);
   }
 
   function removePhoto(url: string) {
@@ -498,53 +260,11 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                 <div className="space-y-5">
                   <div className="rounded-[1.5rem] border border-border/60 bg-muted/20 p-4">
                     <div className="flex items-start gap-4">
-                      <div className="shrink-0">
-                        <div className="text-sm font-medium">Profile photo</div>
-
-                        <div className="mt-3">
-                          <CldUploadWidget
-                            signatureEndpoint="/api/testimonials/upload-signature"
-                            options={{
-                              folder: profilePhotoFolder,
-                              multiple: false,
-                              resourceType: "image",
-                              cropping: true,
-                              croppingAspectRatio: 1,
-                              showSkipCropButton: false,
-                            }}
-                            onSuccess={(result: unknown) => {
-                              const info = (result as WidgetResult)?.info;
-                              if (!isRecord(info)) return;
-
-                              const secureUrl = getString(info.secure_url);
-                              if (secureUrl) {
-                                setProfilePhotoUrl(secureUrl);
-                                setHasPendingUploads(true);
-                              }
-                            }}
-                          >
-                            {({ open }) => (
-                              <button
-                                type="button"
-                                onClick={() => open()}
-                                className="rounded-full border border-border/70 bg-background px-4 py-2 text-sm transition-colors hover:bg-muted"
-                              >
-                                Upload
-                              </button>
-                            )}
-                          </CldUploadWidget>
-                        </div>
-
-                        <div className="relative mt-4 h-24 w-24 overflow-hidden rounded-full bg-background ring-1 ring-border/70">
-                          {profilePhotoUrl ? (
-                            <PreviewImage
-                              src={profilePhotoUrl}
-                              alt="Profile photo"
-                              className="object-cover"
-                            />
-                          ) : null}
-                        </div>
-                      </div>
+                      <ProfilePhotoField
+                        folder={profilePhotoFolder}
+                        profilePhotoUrl={profilePhotoUrl}
+                        onUploaded={handleProfilePhotoUploaded}
+                      />
 
                       <div className="min-w-0 flex-1 space-y-4">
                         <div className="space-y-2">
@@ -607,81 +327,13 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                 </div>
 
                 <div className="space-y-5">
-                  <div className="rounded-[1.5rem] border border-border/60 bg-muted/20 p-4">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <label className="text-sm font-medium">Photos</label>
-
-                      <div className="flex flex-wrap gap-2">
-                        <CldUploadWidget
-                          signatureEndpoint="/api/testimonials/upload-signature"
-                          options={{
-                            folder: photosFolder,
-                            multiple: true,
-                            maxFiles: 12,
-                            resourceType: "image",
-                          }}
-                          onSuccess={(result: unknown) => {
-                            const info = (result as WidgetResult)?.info;
-                            if (!isRecord(info)) return;
-
-                            const secureUrl = getString(info.secure_url);
-                            if (secureUrl) {
-                              addPhoto(secureUrl);
-                              setHasPendingUploads(true);
-                            }
-                          }}
-                        >
-                          {({ open }) => (
-                            <button
-                              type="button"
-                              onClick={() => open()}
-                              className="rounded-full border border-border/70 bg-background px-4 py-2 text-sm transition-colors hover:bg-muted"
-                            >
-                              Upload photos
-                            </button>
-                          )}
-                        </CldUploadWidget>
-
-                        {photoUrls.length > 0 ? (
-                          <button
-                            type="button"
-                            onClick={() => setPhotoUrls([])}
-                            className="rounded-full border border-border/70 bg-background px-4 py-2 text-sm transition-colors hover:bg-muted"
-                          >
-                            Clear
-                          </button>
-                        ) : null}
-                      </div>
-                    </div>
-
-                    {photoUrls.length > 0 ? (
-                      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                        {photoUrls.map((url) => (
-                          <div key={url} className="space-y-2">
-                            <div className="relative aspect-[4/5] overflow-hidden rounded-[0.95rem] bg-background ring-1 ring-border/60">
-                              <PreviewImage
-                                src={url}
-                                alt="Review upload"
-                                className="object-cover"
-                              />
-                            </div>
-
-                            <button
-                              type="button"
-                              onClick={() => removePhoto(url)}
-                              className="w-full rounded-lg border border-border/70 bg-background px-3 py-1.5 text-xs hover:bg-muted"
-                            >
-                              Remove
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="mt-4 rounded-[1.25rem] border border-dashed border-border/70 bg-background p-5 text-sm text-muted-foreground">
-                        Add optional photos from the work or the experience.
-                      </div>
-                    )}
-                  </div>
+                  <ReviewPhotosField
+                    folder={photosFolder}
+                    photoUrls={photoUrls}
+                    onUploaded={addPhoto}
+                    onClear={() => setPhotoUrls([])}
+                    onRemove={removePhoto}
+                  />
 
                   {banner ? (
                     <div

@@ -7,14 +7,14 @@ import { usePathname } from "next/navigation";
 const nav = [
   { href: "/", label: "Home" },
   { href: "/about", label: "About" },
-  { href: "/photography", label: "Photo" },
-  { href: "/videography", label: "Video" },
+  { href: "/photography", label: "Photography" },
+  { href: "/videography", label: "Videography" },
   { href: "/services", label: "Services" },
   { href: "/nft", label: "NFT" },
-  { href: "/dancing", label: "Dance" },
-  { href: "/web-development", label: "Web Dev" },
+  { href: "/dancing", label: "Dancing" },
+  { href: "/web-development", label: "Web Development" },
   { href: "/people", label: "People" },
-  { href: "/testimonials", label: "Reviews" },
+  { href: "/testimonials", label: "Testimonials" },
   { href: "/blog", label: "Blog" },
 ];
 
@@ -64,7 +64,7 @@ export function Navbar() {
             </span>
           </Link>
 
-          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-3 xl:flex">
+          <nav className="hidden min-w-0 flex-1 items-center justify-center gap-2 xl:flex">
             {nav.map((item) => {
               const isActive =
                 item.href === "/"
@@ -76,7 +76,7 @@ export function Navbar() {
                   key={item.href}
                   href={item.href}
                   className={[
-                    "group relative whitespace-nowrap px-1.5 py-1.5 text-[13px] transition-colors",
+                    "group relative whitespace-nowrap px-1.5 py-1.5 text-[12px] transition-colors 2xl:text-[13px]",
                     isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                   ].join(" ")}
                 >

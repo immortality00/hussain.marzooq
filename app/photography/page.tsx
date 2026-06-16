@@ -18,7 +18,7 @@ export default async function PhotographyPage() {
 
         {items.length === 0 ? (
           <div className="mt-10 rounded-2xl border p-6 text-sm text-muted-foreground">
-            No photos yet. Upload from Admin → Media.
+            A new photography selection is being prepared. Please check back soon.
           </div>
         ) : (
           <MediaGrid items={items} searchCategory="photography" />
