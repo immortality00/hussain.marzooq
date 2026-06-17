@@ -61,37 +61,15 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const clientAddress = getClientAddress(req);
-
-  const rateLimit = await consumeFixedWindowRateLimit({
-    bucket: "public-inquiries",
-    key: clientAddress,
-    limit: INQUIRIES_RATE_LIMIT_MAX,
-    windowMs: INQUIRIES_RATE_LIMIT_WINDOW_MS,
-  });
-
-  if (rateLimit.limited) {
-    return noStoreJson(
-      { ok: false, error: "Too many submissions. Try again later." },
-      { status: 429 }
-    );
-  }
-
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
+
   if (!isRecord(bodyUnknown)) {
-    return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
+    return noStoreJson({ ok: false, error: "Name is required" }, { status: 400 });
   }
 
   const honeypot = (asNullableString(bodyUnknown.website) ?? "").trim();
   if (honeypot) {
     return noStoreJson({ ok: true });
-  }
-
-  if (!isValidFormStartedAt(bodyUnknown.formStartedAt, MINIMUM_FORM_TIME_MS)) {
-    return noStoreJson(
-      { ok: false, error: "Submission was too fast. Please try again." },
-      { status: 400 }
-    );
   }
 
   const name = (asNullableString(bodyUnknown.name) ?? "").trim().slice(0, 120);
@@ -128,6 +106,29 @@ export async function POST(req: Request) {
       return noStoreJson({ ok: false, error: "Invalid serviceId" }, { status: 400 });
     }
     serviceId = rawServiceId;
+  }
+
+  if (!isValidFormStartedAt(bodyUnknown.formStartedAt, MINIMUM_FORM_TIME_MS)) {
+    return noStoreJson(
+      { ok: false, error: "Submission was too fast. Please try again." },
+      { status: 400 }
+    );
+  }
+
+  const clientAddress = getClientAddress(req);
+
+  const rateLimit = await consumeFixedWindowRateLimit({
+    bucket: "public-inquiries",
+    key: clientAddress,
+    limit: INQUIRIES_RATE_LIMIT_MAX,
+    windowMs: INQUIRIES_RATE_LIMIT_WINDOW_MS,
+  });
+
+  if (rateLimit.limited) {
+    return noStoreJson(
+      { ok: false, error: "Too many submissions. Try again later." },
+      { status: 429 }
+    );
   }
 
   const duplicateKey = [

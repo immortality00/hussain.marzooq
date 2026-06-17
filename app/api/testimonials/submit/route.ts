@@ -120,37 +120,14 @@ function normalizeResolvedLocation(value: unknown): NormalizedResolvedLocation |
 }
 
 export async function POST(req: Request) {
-  const clientKey = getClientAddress(req);
-
-  const rateLimit = await consumeFixedWindowRateLimit({
-    bucket: "public-testimonials-submit",
-    key: clientKey,
-    limit: SUBMIT_RATE_LIMIT_MAX,
-    windowMs: SUBMIT_RATE_LIMIT_WINDOW_MS,
-  });
-
-  if (rateLimit.limited) {
-    return noStoreJson(
-      { ok: false, error: "Too many submissions. Try again later." },
-      { status: 429 }
-    );
-  }
-
   const body = (await req.json().catch(() => null)) as unknown;
 
   if (!isRecord(body)) {
-    return noStoreJson({ ok: false, error: "Invalid body." }, { status: 400 });
+    return noStoreJson({ ok: false, error: "Name is required." }, { status: 400 });
   }
 
   const honeypot = (asNullableString(body.website) ?? "").trim();
   if (honeypot) return noStoreJson({ ok: true });
-
-  if (!isValidFormStartedAt(body.formStartedAt, MINIMUM_FORM_TIME_MS)) {
-    return noStoreJson(
-      { ok: false, error: "Submission was too fast. Please try again." },
-      { status: 400 }
-    );
-  }
 
   const name = (asNullableString(body.name) ?? "").trim().slice(0, 120);
   const email = (asNullableString(body.email) ?? "").trim().toLowerCase().slice(0, 200);
@@ -172,6 +149,29 @@ export async function POST(req: Request) {
   }
   if (!review) return noStoreJson({ ok: false, error: "Review is required." }, { status: 400 });
   if (!rating) return noStoreJson({ ok: false, error: "Star rating is required." }, { status: 400 });
+
+  if (!isValidFormStartedAt(body.formStartedAt, MINIMUM_FORM_TIME_MS)) {
+    return noStoreJson(
+      { ok: false, error: "Submission was too fast. Please try again." },
+      { status: 400 }
+    );
+  }
+
+  const clientKey = getClientAddress(req);
+
+  const rateLimit = await consumeFixedWindowRateLimit({
+    bucket: "public-testimonials-submit",
+    key: clientKey,
+    limit: SUBMIT_RATE_LIMIT_MAX,
+    windowMs: SUBMIT_RATE_LIMIT_WINDOW_MS,
+  });
+
+  if (rateLimit.limited) {
+    return noStoreJson(
+      { ok: false, error: "Too many submissions. Try again later." },
+      { status: 429 }
+    );
+  }
 
   let resolvedLocation: NormalizedResolvedLocation | null = null;
 
