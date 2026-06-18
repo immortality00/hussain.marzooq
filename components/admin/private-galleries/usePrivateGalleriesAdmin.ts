@@ -1,17 +1,16 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useAdminSearch } from "@/components/admin/shared/useAdminSearch";
 import type { BannerState, GalleryItem } from "./types";
 import { buildGalleryUrl, MIN_PRIVATE_GALLERY_PASSWORD_LENGTH } from "./helpers";
 
 export function usePrivateGalleriesAdmin() {
-  const gallerySearch = useAdminSearch();
   const [view, setView] = useState<"list" | "form">("list");
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [banner, setBanner] = useState<BannerState | null>(null);
   const [editingId, setEditingId] = useState("");
+  const [gallerySearch, setGallerySearch] = useState("");
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
@@ -209,13 +208,13 @@ export function usePrivateGalleriesAdmin() {
   }
 
   const filteredItems = useMemo(() => {
-    const q = gallerySearch.activeSearch.trim().toLowerCase();
+    const q = gallerySearch.trim().toLowerCase();
     if (!q) return items;
 
     return items.filter((item) =>
       `${item.title} ${item.slug} ${item.description ?? ""}`.toLowerCase().includes(q)
     );
-  }, [gallerySearch.activeSearch, items]);
+  }, [gallerySearch, items]);
 
   return {
     view,
@@ -223,8 +222,7 @@ export function usePrivateGalleriesAdmin() {
     loading,
     banner,
     editingId,
-    gallerySearchValue: gallerySearch.draftSearch,
-    hasGallerySearch: gallerySearch.hasActiveSearch,
+    gallerySearchValue: gallerySearch,
     title,
     slug,
     description,
@@ -232,9 +230,8 @@ export function usePrivateGalleriesAdmin() {
     isActive,
     expiresAtLocal,
     selectedMediaIds,
-    setGallerySearchValue: gallerySearch.setDraftSearch,
-    submitGallerySearch: () => gallerySearch.submitSearch(),
-    clearGallerySearch: () => gallerySearch.clearSearch(),
+    setGallerySearchValue: setGallerySearch,
+    clearGallerySearch: () => setGallerySearch(""),
     setTitle,
     setSlug,
     setDescription,

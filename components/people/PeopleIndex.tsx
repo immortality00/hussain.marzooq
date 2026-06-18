@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { SearchInput } from "@/components/search/SearchInput";
 import type { PublicPersonIndexItem } from "@/lib/server/public-people";
 
 export default function PeopleIndex({ items }: { items: PublicPersonIndexItem[] }) {
@@ -20,18 +21,12 @@ export default function PeopleIndex({ items }: { items: PublicPersonIndexItem[] 
 
   return (
     <div className="mt-10 space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search people..."
-          className="w-full rounded-2xl border bg-background px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-ring sm:max-w-md"
-        />
-
-        <div className="text-xs text-muted-foreground">
-          {filtered.length} result{filtered.length === 1 ? "" : "s"}
-        </div>
-      </div>
+      <SearchInput
+        value={query}
+        onValueChange={setQuery}
+        placeholder="Search people..."
+        resultText={`${filtered.length} result${filtered.length === 1 ? "" : "s"}`}
+      />
 
       {filtered.length === 0 ? (
         <div className="rounded-[2rem] border p-8 text-sm text-muted-foreground">
@@ -57,7 +52,9 @@ export default function PeopleIndex({ items }: { items: PublicPersonIndexItem[] 
                 <h2 className="mt-3 text-lg font-semibold tracking-tight">{item.name}</h2>
 
                 {item.bio ? (
-                  <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">{item.bio}</p>
+                  <p className="mt-2 line-clamp-2 text-xs leading-5 text-muted-foreground">
+                    {item.bio}
+                  </p>
                 ) : null}
 
                 <div className="mt-4 flex w-full gap-2">
@@ -79,7 +76,7 @@ export default function PeopleIndex({ items }: { items: PublicPersonIndexItem[] 
                 <div className="mt-4 w-full">
                   <Link
                     href={`/people/${item.slug}`}
-                    className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+                    className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
                   >
                     Open profile
                   </Link>

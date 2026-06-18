@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminSearchBar } from "@/components/admin/shared/AdminSearchBar";
+import { SearchInput } from "@/components/search/SearchInput";
 import { PrivateGalleryMediaCard } from "./PrivateGalleryMediaCard";
 import { usePrivateGalleryMediaPicker } from "./usePrivateGalleryMediaPicker";
 
@@ -25,13 +25,14 @@ export function PrivateGalleryMediaPicker({
           </div>
         </div>
 
-        <AdminSearchBar
+        <SearchInput
           value={picker.searchValue}
-          placeholder="Search title, tags, location, people, event..."
-          showClear={picker.hasSearch}
-          onChange={picker.setSearchValue}
-          onSubmit={picker.submitSearch}
+          onValueChange={picker.setSearchValue}
           onClear={picker.clearSearch}
+          placeholder="Search title, tags, location, people, event..."
+          wrapperClassName="flex w-full flex-wrap gap-2 md:w-auto"
+          inputClassName="min-w-0 flex-1 rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring md:w-80"
+          clearButtonClassName="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
         />
       </div>
 

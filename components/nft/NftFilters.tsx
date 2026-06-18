@@ -1,3 +1,7 @@
+"use client";
+
+import { SearchInput } from "@/components/search/SearchInput";
+
 type StatusFilter = "" | "available" | "sold" | "coming-soon";
 
 export default function NftFilters({
@@ -13,11 +17,11 @@ export default function NftFilters({
 }) {
   return (
     <section className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      <input
+      <SearchInput
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onValueChange={setQuery}
         placeholder="Search title or tags..."
-        className="w-full rounded-2xl border bg-background px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-ring sm:max-w-md"
+        wrapperClassName="contents"
       />
 
       <div className="flex flex-wrap gap-2">

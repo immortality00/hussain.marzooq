@@ -1,20 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useAdminSearch } from "@/components/admin/shared/useAdminSearch";
 import type { MediaItem } from "./types";
 import { buildMediaQuery, mergeMediaItems, type MediaListResponse } from "./media-picker-utils";
 
+const SEARCH_DEBOUNCE_MS = 250;
+
 export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
-  const search = useAdminSearch();
   const [items, setItems] = useState<MediaItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<MediaItem[]>([]);
+  const [searchValue, setSearchValue] = useState("");
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestIdRef = useRef(0);
 
+  const activeSearch = searchValue.trim();
   const selectedIdSet = useMemo(() => new Set(selectedMediaIds), [selectedMediaIds]);
 
   const selectedMedia = useMemo(() => {
@@ -28,9 +30,11 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
   }, [items, selectedItems, selectedMediaIds]);
 
   const selectedMediaListItems = useMemo(() => {
+    if (activeSearch.length > 0) return [];
+
     const currentPageIds = new Set(items.map((item) => item.id));
     return selectedMedia.filter((item) => !currentPageIds.has(item.id));
-  }, [items, selectedMedia]);
+  }, [activeSearch, items, selectedMedia]);
 
   const loadMedia = useCallback(
     async ({ q, cursor, append }: { q: string; cursor?: string | null; append: boolean }) => {
@@ -67,8 +71,12 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
   );
 
   useEffect(() => {
-    void loadMedia({ q: "", append: false });
-  }, [loadMedia]);
+    const timer = window.setTimeout(() => {
+      void loadMedia({ q: activeSearch, append: false });
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [activeSearch, loadMedia]);
 
   useEffect(() => {
     const missingIds = selectedMediaIds.filter(
@@ -99,35 +107,26 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
     };
   }, [items, selectedItems, selectedMediaIds]);
 
-  function submitSearch() {
-    search.submitSearch((q) => {
-      void loadMedia({ q, append: false });
-    });
-  }
-
   function clearSearch() {
-    search.clearSearch(() => {
-      void loadMedia({ q: "", append: false });
-    });
+    setSearchValue("");
   }
 
   function loadMore() {
     if (!nextCursor) return;
-    void loadMedia({ q: search.activeSearch, cursor: nextCursor, append: true });
+    void loadMedia({ q: activeSearch, cursor: nextCursor, append: true });
   }
 
   return {
     items,
     selectedIdSet,
     selectedMediaListItems,
-    searchValue: search.draftSearch,
-    hasSearch: search.hasActiveSearch,
+    searchValue,
+    hasSearch: activeSearch.length > 0,
     nextCursor,
     loading,
     loadingMore,
     error,
-    setSearchValue: search.setDraftSearch,
-    submitSearch,
+    setSearchValue,
     clearSearch,
     loadMore,
   };

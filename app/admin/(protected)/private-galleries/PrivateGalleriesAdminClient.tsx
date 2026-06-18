@@ -54,9 +54,7 @@ export default function PrivateGalleriesAdminClient() {
           items={admin.items}
           loading={admin.loading}
           searchValue={admin.gallerySearchValue}
-          showClearSearch={admin.hasGallerySearch}
           onSearchChange={admin.setGallerySearchValue}
-          onSearchSubmit={admin.submitGallerySearch}
           onSearchClear={admin.clearGallerySearch}
           onCopyLink={(slug) => void admin.copyLink(slug)}
           onEdit={(id) => void admin.openEdit(id)}

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { SearchInput } from "@/components/search/SearchInput";
 import { MEDIA_CATEGORIES } from "../lib/utils";
 
 type MediaItem = {
@@ -41,6 +42,8 @@ type AdminMediaListResponse = {
 };
 
 type LoadMode = "replace" | "append";
+
+const SEARCH_DEBOUNCE_MS = 250;
 
 function getErrorMessage(e: unknown): string {
   if (e instanceof Error) return e.message;
@@ -161,6 +164,14 @@ export default function AdminMediaListPage() {
     [categoryFilter, query, typeFilter, visibilityFilter]
   );
 
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void load("replace");
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => window.clearTimeout(timer);
+  }, [load]);
+
   async function del(id: string) {
     const ok = confirm("Delete this media forever? This cannot be undone.");
     if (!ok) return;
@@ -179,10 +190,6 @@ export default function AdminMediaListPage() {
       setBanner({ type: "err", text: `Delete error: ${getErrorMessage(e)}` });
     }
   }
-
-  useEffect(() => {
-    void load("replace");
-  }, [load]);
 
   function resetFilters() {
     setQuery("");
@@ -227,18 +234,14 @@ export default function AdminMediaListPage() {
       ) : null}
 
       <section className="mt-6 rounded-2xl border p-4">
-        <form
-          className="grid gap-3 md:grid-cols-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            void load("replace");
-          }}
-        >
-          <input
+        <div className="grid gap-3 md:grid-cols-4">
+          <SearchInput
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onValueChange={setQuery}
             placeholder="Search title, tags, people..."
-            className="rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring md:col-span-2"
+            wrapperClassName="md:col-span-2"
+            inputClassName="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            clearButtonClassName="mt-2 rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
           />
 
           <select
@@ -279,13 +282,6 @@ export default function AdminMediaListPage() {
 
           <div className="flex flex-wrap gap-2 md:col-span-4">
             <button
-              type="submit"
-              disabled={loading}
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:opacity-60"
-            >
-              {loading ? "Loading…" : "Apply filters"}
-            </button>
-            <button
               type="button"
               onClick={resetFilters}
               className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
@@ -293,7 +289,7 @@ export default function AdminMediaListPage() {
               Clear filters
             </button>
           </div>
-        </form>
+        </div>
       </section>
 
       <div className="mt-4 text-xs text-muted-foreground">

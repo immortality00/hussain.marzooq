@@ -1,6 +1,6 @@
 "use client";
 
-import { AdminSearchBar } from "@/components/admin/shared/AdminSearchBar";
+import { SearchInput } from "@/components/search/SearchInput";
 import type { GalleryItem } from "./types";
 import { getGalleryStatus } from "./helpers";
 
@@ -8,9 +8,7 @@ type GalleryListProps = {
   items: GalleryItem[];
   loading: boolean;
   searchValue: string;
-  showClearSearch: boolean;
   onSearchChange: (value: string) => void;
-  onSearchSubmit: () => void;
   onSearchClear: () => void;
   onCopyLink: (slug: string) => void;
   onEdit: (id: string) => void;
@@ -21,9 +19,7 @@ export function GalleryList({
   items,
   loading,
   searchValue,
-  showClearSearch,
   onSearchChange,
-  onSearchSubmit,
   onSearchClear,
   onCopyLink,
   onEdit,
@@ -34,15 +30,14 @@ export function GalleryList({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm font-medium">Galleries</div>
 
-        <AdminSearchBar
+        <SearchInput
           value={searchValue}
-          placeholder="Search galleries..."
-          showClear={showClearSearch}
-          onChange={onSearchChange}
-          onSubmit={onSearchSubmit}
+          onValueChange={onSearchChange}
           onClear={onSearchClear}
-          className="flex w-full flex-wrap gap-2 md:w-auto"
+          placeholder="Search galleries..."
+          wrapperClassName="flex w-full flex-wrap gap-2 md:w-auto"
           inputClassName="w-full max-w-xs rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          clearButtonClassName="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
         />
       </div>
 
