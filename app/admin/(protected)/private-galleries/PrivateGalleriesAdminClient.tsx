@@ -1,32 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
+import { PrivateGalleryMediaPicker } from "@/components/admin/private-galleries/PrivateGalleryMediaPicker";
+import type { GalleryItem } from "@/components/admin/private-galleries/types";
 
 const MIN_PRIVATE_GALLERY_PASSWORD_LENGTH = 8;
-
-type GalleryItem = {
-  id: string;
-  title: string;
-  slug: string;
-  description: string | null;
-  mediaIds: string[];
-  isActive: boolean;
-  expiresAtLocal: string;
-};
-
-type MediaItem = {
-  id: string;
-  type: string;
-  title: string;
-  secureUrl: string | null;
-  embedUrl: string | null;
-  categories: string[];
-  tags: string[];
-  location: string | null;
-  people: string[];
-  event: string | null;
-};
 
 function parseLocalDateTime(value: string) {
   if (!value) return null;
@@ -66,13 +44,11 @@ function buildGalleryUrl(slug: string) {
 export default function PrivateGalleriesAdminClient() {
   const [view, setView] = useState<"list" | "form">("list");
   const [items, setItems] = useState<GalleryItem[]>([]);
-  const [media, setMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
 
   const [editingId, setEditingId] = useState("");
   const [search, setSearch] = useState("");
-  const [mediaSearch, setMediaSearch] = useState("");
 
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -82,38 +58,24 @@ export default function PrivateGalleriesAdminClient() {
   const [expiresAtLocal, setExpiresAtLocal] = useState("");
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
 
-  async function load() {
+  async function loadGalleries() {
     setLoading(true);
     setBanner(null);
-    try {
-      const [galleryRes, mediaRes] = await Promise.all([
-        fetch("/api/private-galleries", { cache: "no-store" }),
-        fetch("/api/media/admin-list?limit=120", { cache: "no-store" }),
-      ]);
 
-      const galleryData = (await galleryRes.json().catch(() => null)) as {
+    try {
+      const res = await fetch("/api/private-galleries", { cache: "no-store" });
+      const data = (await res.json().catch(() => null)) as {
         ok?: boolean;
         items?: GalleryItem[];
         error?: string;
-      };
-      const mediaData = (await mediaRes.json().catch(() => null)) as {
-        ok?: boolean;
-        items?: MediaItem[];
-        error?: string;
-      };
+      } | null;
 
-      if (!galleryRes.ok || !galleryData?.ok || !Array.isArray(galleryData.items)) {
-        setBanner({ type: "err", text: galleryData?.error ?? "Failed to load galleries." });
+      if (!res.ok || !data?.ok || !Array.isArray(data.items)) {
+        setBanner({ type: "err", text: data?.error ?? "Failed to load galleries." });
         return;
       }
 
-      if (!mediaRes.ok || !mediaData?.ok || !Array.isArray(mediaData.items)) {
-        setBanner({ type: "err", text: mediaData?.error ?? "Failed to load media." });
-        return;
-      }
-
-      setItems(galleryData.items);
-      setMedia(mediaData.items);
+      setItems(data.items);
     } catch {
       setBanner({ type: "err", text: "Failed to load private galleries." });
     } finally {
@@ -122,7 +84,7 @@ export default function PrivateGalleriesAdminClient() {
   }
 
   useEffect(() => {
-    void load();
+    void loadGalleries();
   }, []);
 
   function resetForm() {
@@ -143,13 +105,16 @@ export default function PrivateGalleriesAdminClient() {
 
   async function openEdit(id: string) {
     setBanner(null);
+
     try {
-      const res = await fetch(`/api/private-galleries/${encodeURIComponent(id)}`, { cache: "no-store" });
+      const res = await fetch(`/api/private-galleries/${encodeURIComponent(id)}`, {
+        cache: "no-store",
+      });
       const data = (await res.json().catch(() => null)) as {
         ok?: boolean;
         item?: GalleryItem;
         error?: string;
-      };
+      } | null;
 
       if (!res.ok || !data?.ok || !data.item) {
         setBanner({ type: "err", text: data?.error ?? "Failed to load gallery." });
@@ -211,7 +176,9 @@ export default function PrivateGalleriesAdminClient() {
 
     try {
       const res = await fetch(
-        editingId ? `/api/private-galleries/${encodeURIComponent(editingId)}` : "/api/private-galleries",
+        editingId
+          ? `/api/private-galleries/${encodeURIComponent(editingId)}`
+          : "/api/private-galleries",
         {
           method: editingId ? "PATCH" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -228,14 +195,14 @@ export default function PrivateGalleriesAdminClient() {
         }
       );
 
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
       if (!res.ok || !data?.ok) {
         setBanner({ type: "err", text: data?.error ?? "Save failed." });
         return;
       }
 
       setBanner({ type: "ok", text: editingId ? "✅ Gallery updated." : "✅ Gallery created." });
-      await load();
+      await loadGalleries();
       backToList();
     } catch {
       setBanner({ type: "err", text: "Save failed." });
@@ -248,8 +215,10 @@ export default function PrivateGalleriesAdminClient() {
 
     setBanner(null);
     try {
-      const res = await fetch(`/api/private-galleries/${encodeURIComponent(id)}`, { method: "DELETE" });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
+      const res = await fetch(`/api/private-galleries/${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
       if (!res.ok || !data?.ok) {
         setBanner({ type: "err", text: data?.error ?? "Delete failed." });
         return;
@@ -289,25 +258,6 @@ export default function PrivateGalleriesAdminClient() {
     );
   }, [items, search]);
 
-  const filteredMedia = useMemo(() => {
-    const q = mediaSearch.trim().toLowerCase();
-    if (!q) return media;
-
-    return media.filter((item) =>
-      [
-        item.title,
-        item.location ?? "",
-        item.event ?? "",
-        item.tags.join(" "),
-        item.people.join(" "),
-        item.categories.join(" "),
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(q)
-    );
-  }, [media, mediaSearch]);
-
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -322,7 +272,7 @@ export default function PrivateGalleriesAdminClient() {
           <button
             type="button"
             onClick={openNew}
-            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
           >
             New gallery
           </button>
@@ -330,7 +280,7 @@ export default function PrivateGalleriesAdminClient() {
           <button
             type="button"
             onClick={backToList}
-            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
           >
             Back to list
           </button>
@@ -355,7 +305,7 @@ export default function PrivateGalleriesAdminClient() {
             <div className="text-sm font-medium">Galleries</div>
             <input
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(event) => setSearch(event.target.value)}
               placeholder="Search galleries..."
               className="w-full max-w-xs rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             />
@@ -435,7 +385,7 @@ export default function PrivateGalleriesAdminClient() {
                 <label className="text-sm font-medium">Title</label>
                 <input
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(event) => setTitle(event.target.value)}
                   className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
@@ -444,7 +394,7 @@ export default function PrivateGalleriesAdminClient() {
                 <label className="text-sm font-medium">Slug</label>
                 <input
                   value={slug}
-                  onChange={(e) => setSlug(e.target.value)}
+                  onChange={(event) => setSlug(event.target.value)}
                   className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                   placeholder="Optional"
                 />
@@ -454,7 +404,7 @@ export default function PrivateGalleriesAdminClient() {
                 <label className="text-sm font-medium">Description</label>
                 <textarea
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
+                  onChange={(event) => setDescription(event.target.value)}
                   className="min-h-28 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
@@ -465,7 +415,7 @@ export default function PrivateGalleriesAdminClient() {
                 </label>
                 <input
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(event) => setPassword(event.target.value)}
                   type="password"
                   className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                 />
@@ -476,7 +426,7 @@ export default function PrivateGalleriesAdminClient() {
                 <input
                   type="datetime-local"
                   value={expiresAtLocal}
-                  onChange={(e) => setExpiresAtLocal(e.target.value)}
+                  onChange={(event) => setExpiresAtLocal(event.target.value)}
                   className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
@@ -485,64 +435,17 @@ export default function PrivateGalleriesAdminClient() {
                 <input
                   type="checkbox"
                   checked={isActive}
-                  onChange={(e) => setIsActive(e.target.checked)}
+                  onChange={(event) => setIsActive(event.target.checked)}
                 />
                 Active
               </label>
             </div>
           </section>
 
-          <section className="rounded-[2rem] border p-5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="text-sm font-medium">Select media</div>
-              <input
-                value={mediaSearch}
-                onChange={(e) => setMediaSearch(e.target.value)}
-                placeholder="Search title, tags, location, people, event..."
-                className="w-full max-w-sm rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-              />
-            </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredMedia.map((item) => {
-                const selected = selectedMediaIds.includes(item.id);
-
-                return (
-                  <button
-                    key={item.id}
-                    type="button"
-                    onClick={() => toggleMedia(item.id)}
-                    className={`overflow-hidden rounded-[1.5rem] border text-left transition-colors ${
-                      selected ? "border-foreground bg-accent/30" : "hover:bg-accent/20"
-                    }`}
-                  >
-                    <div className="relative aspect-[4/3] bg-muted">
-                      {item.secureUrl ? (
-                        item.type === "video" ? (
-                          <video className="h-full w-full object-cover" src={item.secureUrl} muted playsInline />
-                        ) : (
-                          <Image src={item.secureUrl} alt={item.title} fill className="object-cover" sizes="240px" />
-                        )
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-                          No preview
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="space-y-1 p-3">
-                      <div className="line-clamp-1 text-sm font-medium">{item.title}</div>
-                      <div className="line-clamp-2 text-xs text-muted-foreground">
-                        {[item.location, item.event, item.tags.join(", "), item.people.join(", ")]
-                          .filter(Boolean)
-                          .join(" • ")}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
+          <PrivateGalleryMediaPicker
+            selectedMediaIds={selectedMediaIds}
+            onToggleMedia={toggleMedia}
+          />
 
           <div className="flex flex-wrap gap-2">
             <button

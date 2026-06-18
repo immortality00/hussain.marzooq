@@ -13,15 +13,16 @@ type Cursor = {
 
 const DEFAULT_LIMIT = 60;
 const MAX_LIMIT = 120;
+const MAX_ID_LOOKUP_LIMIT = 300;
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function parseLimit(value: string | null) {
+function parseLimit(value: string | null, maxLimit = MAX_LIMIT) {
   const parsed = Number(value ?? DEFAULT_LIMIT);
   if (!Number.isFinite(parsed)) return DEFAULT_LIMIT;
-  return Math.min(Math.max(Math.floor(parsed), 1), MAX_LIMIT);
+  return Math.min(Math.max(Math.floor(parsed), 1), maxLimit);
 }
 
 function parseCursor(value: string | null): Cursor | null {
@@ -41,6 +42,18 @@ function parseCursor(value: string | null): Cursor | null {
   } catch {
     return null;
   }
+}
+
+function parseIds(value: string | null) {
+  if (!value) return [];
+
+  const ids = value
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => ObjectId.isValid(item))
+    .slice(0, MAX_ID_LOOKUP_LIMIT);
+
+  return Array.from(new Set(ids)).map((id) => new ObjectId(id));
 }
 
 function makeCursor(item: { createdAt: string | null; id: string }) {
@@ -71,6 +84,9 @@ function buildCursorCondition(cursor: Cursor | null) {
 }
 
 function buildQuery(url: URL) {
+  const ids = parseIds(url.searchParams.get("ids"));
+  if (ids.length > 0) return { query: { _id: { $in: ids } }, idsMode: true };
+
   const conditions: Record<string, unknown>[] = [];
   const q = (url.searchParams.get("q") ?? "").trim().slice(0, 120);
   const category = (url.searchParams.get("category") ?? "").trim().slice(0, 80);
@@ -100,7 +116,7 @@ function buildQuery(url: URL) {
   const cursorCondition = buildCursorCondition(cursor);
   if (cursorCondition) conditions.push(cursorCondition);
 
-  return conditions.length > 0 ? { $and: conditions } : {};
+  return { query: conditions.length > 0 ? { $and: conditions } : {}, idsMode: false };
 }
 
 export async function GET(req: Request) {
@@ -108,8 +124,10 @@ export async function GET(req: Request) {
   if (deny) return deny as unknown as Response;
 
   const url = new URL(req.url);
-  const limit = parseLimit(url.searchParams.get("limit"));
-  const query = buildQuery(url);
+  const { query, idsMode } = buildQuery(url);
+  const limit = idsMode
+    ? parseLimit(url.searchParams.get("limit"), MAX_ID_LOOKUP_LIMIT)
+    : parseLimit(url.searchParams.get("limit"));
 
   const db = await getDb();
 
@@ -117,10 +135,10 @@ export async function GET(req: Request) {
     .collection("media")
     .find(query)
     .sort({ createdAt: -1, _id: -1 })
-    .limit(limit + 1)
+    .limit(idsMode ? limit : limit + 1)
     .toArray();
 
-  const hasMore = docs.length > limit;
+  const hasMore = !idsMode && docs.length > limit;
   const pageDocs = hasMore ? docs.slice(0, limit) : docs;
   const items = pageDocs.map((doc) => toAdminMediaListItem(doc as Record<string, unknown>));
   const nextCursor = hasMore && items.length > 0 ? makeCursor(items[items.length - 1]) : null;
