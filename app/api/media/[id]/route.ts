@@ -1,5 +1,4 @@
 import { v2 as cloudinary } from "cloudinary";
-import { ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
@@ -23,6 +22,10 @@ import {
 } from "@/lib/cloudinary-folders";
 import { ensureCloudinaryConfigured } from "@/lib/server/cloudinary";
 import {
+  findPrivateGalleriesUsingMedia,
+  formatPrivateGalleryMediaDeleteBlocker,
+} from "@/lib/server/private-gallery-admin";
+import {
   deleteManagedCloudinaryAsset,
   isAllowedCloudinaryPublicId,
   isAllowedCloudinaryUrl,
@@ -31,10 +34,6 @@ import {
 } from "@/lib/server/cloudinary-assets";
 
 export const dynamic = "force-dynamic";
-
-type PrivateGalleryRecord = {
-  mediaIds?: string[];
-};
 
 type StoredMediaAsset = {
   secureUrl: string | null;
@@ -465,32 +464,15 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   if (!media) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
 
   const mediaAsset = getStoredMediaAsset(media);
-
-  const galleryDocs = await db
-    .collection("private_galleries")
-    .find({ mediaIds: String(oid) })
-    .project({ _id: 1, mediaIds: 1 })
-    .toArray();
+  const galleryDocs = await findPrivateGalleriesUsingMedia(db, String(oid));
 
   if (galleryDocs.length > 0) {
-    await Promise.all(
-      galleryDocs.map((galleryDoc) => {
-        const currentMediaIds = Array.isArray((galleryDoc as PrivateGalleryRecord).mediaIds)
-          ? ((galleryDoc as PrivateGalleryRecord).mediaIds ?? []).filter(
-              (value): value is string => typeof value === "string"
-            )
-          : [];
-
-        return db.collection("private_galleries").updateOne(
-          { _id: galleryDoc._id as ObjectId },
-          {
-            $set: {
-              mediaIds: currentMediaIds.filter((value) => value !== String(oid)),
-              updatedAt: new Date(),
-            },
-          }
-        );
-      })
+    return noStoreJson(
+      {
+        ok: false,
+        error: formatPrivateGalleryMediaDeleteBlocker(galleryDocs),
+      },
+      { status: 409 }
     );
   }
 

@@ -13,27 +13,16 @@ import {
   hashGalleryPassword,
   isFutureDate,
   makeGalleryAccessToken,
-  makeGallerySlug,
   normalizeLocalDateTimeString,
   parseClientLocalDateTimeToUtc,
 } from "@/lib/private-galleries";
+import {
+  ensureUniquePrivateGallerySlug,
+  serializePrivateGalleryAdminItem,
+  validatePrivateGalleryMediaIds,
+} from "@/lib/server/private-gallery-admin";
 
 export const dynamic = "force-dynamic";
-
-async function ensureUniqueSlug(baseSlug: string, excludeId?: string) {
-  const db = await getDb();
-
-  let slug = baseSlug;
-  let counter = 1;
-
-  while (true) {
-    const found = await db.collection("private_galleries").findOne({ slug });
-    if (!found) return slug;
-    if (excludeId && String(found._id) === excludeId) return slug;
-    counter += 1;
-    slug = `${baseSlug}-${counter}`;
-  }
-}
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const deny = await requireAdminOr401();
@@ -44,25 +33,10 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   if (!oid) return noStoreJson({ ok: false, error: "Invalid id." }, { status: 400 });
 
   const db = await getDb();
-
   const doc = await db.collection("private_galleries").findOne({ _id: oid });
   if (!doc) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
 
-  return noStoreJson({
-    ok: true,
-    item: {
-      id: String(doc._id),
-      title: typeof doc.title === "string" ? doc.title : "",
-      slug: typeof doc.slug === "string" ? doc.slug : "",
-      description: typeof doc.description === "string" ? doc.description : null,
-      mediaIds: asStringArray(doc.mediaIds),
-      isActive: typeof doc.isActive === "boolean" ? doc.isActive : true,
-      expiresAtLocal:
-        typeof doc.expiresAtLocal === "string"
-          ? normalizeLocalDateTimeString(doc.expiresAtLocal)
-          : "",
-    },
-  });
+  return noStoreJson({ ok: true, item: serializePrivateGalleryAdminItem(doc) });
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -82,17 +56,13 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const slugInput = (asNullableString(body.slug) ?? "").trim();
   const description = (asNullableString(body.description) ?? "").trim().slice(0, 2000);
   const password = (asNullableString(body.password) ?? "").trim();
-  const mediaIds = asStringArray(body.mediaIds, 300);
+  const rawMediaIds = asStringArray(body.mediaIds, 300);
   const isActive = asBooleanOrNull(body.isActive) ?? true;
   const expiresAtLocal = normalizeLocalDateTimeString(asNullableString(body.expiresAtLocal) ?? "");
   const timezoneOffsetMinutes = Number(body.timezoneOffsetMinutes);
 
   if (!title) {
     return noStoreJson({ ok: false, error: "Title is required." }, { status: 400 });
-  }
-
-  if (mediaIds.length === 0) {
-    return noStoreJson({ ok: false, error: "Select at least one media item." }, { status: 400 });
   }
 
   if (!expiresAtLocal) {
@@ -111,14 +81,22 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     );
   }
 
-  const baseSlug = makeGallerySlug(slugInput || title);
-  const slug = await ensureUniqueSlug(baseSlug, id);
+  const db = await getDb();
+  const existing = await db.collection("private_galleries").findOne({ _id: oid });
+  if (!existing) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
+
+  const validatedMedia = await validatePrivateGalleryMediaIds(db, rawMediaIds);
+  if (!validatedMedia.ok) {
+    return noStoreJson({ ok: false, error: validatedMedia.error }, { status: 400 });
+  }
+
+  const slug = await ensureUniquePrivateGallerySlug(db, { title, slugInput, excludeId: id });
 
   const set: Record<string, unknown> = {
     title,
     slug,
     description: description || null,
-    mediaIds,
+    mediaIds: validatedMedia.mediaIds,
     isActive,
     expiresAtUtc,
     expiresAt: expiresAtUtc,
@@ -141,8 +119,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     set.accessToken = makeGalleryAccessToken();
   }
 
-  const db = await getDb();
-
   const result = await db.collection("private_galleries").updateOne({ _id: oid }, { $set: set });
   if (!result.matchedCount) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
 
@@ -158,7 +134,6 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   if (!oid) return noStoreJson({ ok: false, error: "Invalid id." }, { status: 400 });
 
   const db = await getDb();
-
   const result = await db.collection("private_galleries").deleteOne({ _id: oid });
   if (!result.deletedCount) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
 

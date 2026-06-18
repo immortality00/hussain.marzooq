@@ -12,27 +12,16 @@ import {
   hashGalleryPassword,
   isFutureDate,
   makeGalleryAccessToken,
-  makeGallerySlug,
   normalizeLocalDateTimeString,
   parseClientLocalDateTimeToUtc,
 } from "@/lib/private-galleries";
+import {
+  ensureUniquePrivateGallerySlug,
+  serializePrivateGalleryAdminItem,
+  validatePrivateGalleryMediaIds,
+} from "@/lib/server/private-gallery-admin";
 
 export const dynamic = "force-dynamic";
-
-async function ensureUniqueSlug(baseSlug: string, excludeId?: string) {
-  const db = await getDb();
-
-  let slug = baseSlug;
-  let counter = 1;
-
-  while (true) {
-    const found = await db.collection("private_galleries").findOne({ slug });
-    if (!found) return slug;
-    if (excludeId && String(found._id) === excludeId) return slug;
-    counter += 1;
-    slug = `${baseSlug}-${counter}`;
-  }
-}
 
 export async function GET() {
   const deny = await requireAdminOr401();
@@ -46,22 +35,7 @@ export async function GET() {
     .sort({ updatedAt: -1, createdAt: -1 })
     .toArray();
 
-  const items = docs.map((doc) => ({
-    id: String(doc._id),
-    title: typeof doc.title === "string" ? doc.title : "",
-    slug: typeof doc.slug === "string" ? doc.slug : "",
-    description: typeof doc.description === "string" ? doc.description : null,
-    mediaIds: asStringArray(doc.mediaIds),
-    isActive: typeof doc.isActive === "boolean" ? doc.isActive : true,
-    expiresAtLocal:
-      typeof doc.expiresAtLocal === "string"
-        ? normalizeLocalDateTimeString(doc.expiresAtLocal)
-        : "",
-    createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : null,
-    updatedAt: doc.updatedAt instanceof Date ? doc.updatedAt.toISOString() : null,
-  }));
-
-  return noStoreJson({ ok: true, items });
+  return noStoreJson({ ok: true, items: docs.map(serializePrivateGalleryAdminItem) });
 }
 
 export async function POST(req: Request) {
@@ -77,7 +51,7 @@ export async function POST(req: Request) {
   const slugInput = (asNullableString(body.slug) ?? "").trim();
   const description = (asNullableString(body.description) ?? "").trim().slice(0, 2000);
   const password = (asNullableString(body.password) ?? "").trim();
-  const mediaIds = asStringArray(body.mediaIds, 300);
+  const rawMediaIds = asStringArray(body.mediaIds, 300);
   const isActive = asBooleanOrNull(body.isActive) ?? true;
   const expiresAtLocal = normalizeLocalDateTimeString(asNullableString(body.expiresAtLocal) ?? "");
   const timezoneOffsetMinutes = Number(body.timezoneOffsetMinutes);
@@ -96,10 +70,6 @@ export async function POST(req: Request) {
     );
   }
 
-  if (mediaIds.length === 0) {
-    return noStoreJson({ ok: false, error: "Select at least one media item." }, { status: 400 });
-  }
-
   if (!expiresAtLocal) {
     return noStoreJson({ ok: false, error: "Expiry date is required." }, { status: 400 });
   }
@@ -116,13 +86,16 @@ export async function POST(req: Request) {
     );
   }
 
-  const baseSlug = makeGallerySlug(slugInput || title);
-  const slug = await ensureUniqueSlug(baseSlug);
+  const db = await getDb();
+  const validatedMedia = await validatePrivateGalleryMediaIds(db, rawMediaIds);
+  if (!validatedMedia.ok) {
+    return noStoreJson({ ok: false, error: validatedMedia.error }, { status: 400 });
+  }
+
+  const slug = await ensureUniquePrivateGallerySlug(db, { title, slugInput });
   const passwordHash = await hashGalleryPassword(password);
   const accessToken = makeGalleryAccessToken();
-
   const now = new Date();
-  const db = await getDb();
 
   const result = await db.collection("private_galleries").insertOne({
     title,
@@ -130,7 +103,7 @@ export async function POST(req: Request) {
     description: description || null,
     passwordHash,
     accessToken,
-    mediaIds,
+    mediaIds: validatedMedia.mediaIds,
     isActive,
     expiresAtUtc,
     expiresAt: expiresAtUtc,

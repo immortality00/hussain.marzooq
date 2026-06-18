@@ -6,6 +6,8 @@ export type GalleryItem = {
   mediaIds: string[];
   isActive: boolean;
   expiresAtLocal: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 };
 
 export type MediaItem = {
@@ -20,4 +22,9 @@ export type MediaItem = {
   people: string[];
   event: string | null;
   createdAt?: string | null;
+};
+
+export type BannerState = {
+  type: "ok" | "err";
+  text: string;
 };
