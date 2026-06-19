@@ -4,6 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import {
+  AdminActionFeedback,
+  type AdminActionFeedbackState,
+} from "@/components/admin/action-feedback/AdminActionFeedback";
 import { SearchInput } from "@/components/search/SearchInput";
 import { MEDIA_CATEGORIES } from "../lib/utils";
 
@@ -52,8 +56,14 @@ function getErrorMessage(e: unknown): string {
 }
 
 function statusClasses(status: "available" | "sold" | "coming-soon") {
-  if (status === "sold") return "border-rose-500/30 bg-rose-500/12 text-rose-700 dark:text-rose-300";
-  if (status === "coming-soon") return "border-amber-500/30 bg-amber-500/12 text-amber-700 dark:text-amber-300";
+  if (status === "sold") {
+    return "border-rose-500/30 bg-rose-500/12 text-rose-700 dark:text-rose-300";
+  }
+
+  if (status === "coming-soon") {
+    return "border-amber-500/30 bg-amber-500/12 text-amber-700 dark:text-amber-300";
+  }
+
   return "border-emerald-500/30 bg-emerald-500/12 text-emerald-700 dark:text-emerald-300";
 }
 
@@ -105,8 +115,9 @@ export default function AdminMediaListPage() {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [banner, setBanner] = useState<AdminActionFeedbackState>(null);
 
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState(initialCategory);
@@ -173,10 +184,14 @@ export default function AdminMediaListPage() {
   }, [load]);
 
   async function del(id: string) {
+    if (deletingId) return;
+
     const ok = confirm("Delete this media forever? This cannot be undone.");
     if (!ok) return;
 
-    setBanner(null);
+    setDeletingId(id);
+    setBanner({ type: "info", text: "Deleting media and cleaning Cloudinary asset…" });
+
     try {
       const res = await fetch(`/api/media/${encodeURIComponent(id)}`, { method: "DELETE" });
       const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
@@ -184,10 +199,13 @@ export default function AdminMediaListPage() {
         setBanner({ type: "err", text: data?.error ?? "Delete failed." });
         return;
       }
+
       setItems((prev) => prev.filter((x) => x.id !== id));
-      setBanner({ type: "ok", text: "✅ Deleted." });
+      setBanner({ type: "ok", text: "✅ Media deleted." });
     } catch (e: unknown) {
       setBanner({ type: "err", text: `Delete error: ${getErrorMessage(e)}` });
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -209,29 +227,24 @@ export default function AdminMediaListPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Link href="/admin/media" className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent">
+          <Link
+            href="/admin/media"
+            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+          >
             Upload new
           </Link>
           <button
             type="button"
             onClick={() => void load("replace")}
-            disabled={loading}
-            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:opacity-60"
+            disabled={loading || Boolean(deletingId)}
+            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
           >
             Refresh
           </button>
         </div>
       </div>
 
-      {banner ? (
-        <div
-          className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
-            banner.type === "ok" ? "border-green-500/30 bg-green-500/10" : "border-red-500/30 bg-red-500/10"
-          }`}
-        >
-          {banner.text}
-        </div>
-      ) : null}
+      <AdminActionFeedback feedback={banner} />
 
       <section className="mt-6 rounded-2xl border p-4">
         <div className="grid gap-3 md:grid-cols-4">
@@ -284,7 +297,8 @@ export default function AdminMediaListPage() {
             <button
               type="button"
               onClick={resetFilters}
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+              disabled={Boolean(deletingId)}
+              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
             >
               Clear filters
             </button>
@@ -302,97 +316,119 @@ export default function AdminMediaListPage() {
         ) : null}
 
         {!loading && items.length === 0 ? (
-          <div className="rounded-2xl border p-6 text-sm text-muted-foreground">No media match these filters.</div>
+          <div className="rounded-2xl border p-6 text-sm text-muted-foreground">
+            No media match these filters.
+          </div>
         ) : (
-          items.map((m) => (
-            <div key={m.id} className="rounded-2xl border p-5">
-              <div className="grid gap-4 md:grid-cols-[240px_1fr]">
-                <div className="overflow-hidden rounded-2xl border bg-muted">
-                  {m.secureUrl ? (
-                    m.type === "video" ? (
-                      <video className="h-full w-full" controls preload="metadata" src={m.secureUrl} />
+          items.map((m) => {
+            const deleting = deletingId === m.id;
+            const actionDisabled = Boolean(deletingId);
+
+            return (
+              <div key={m.id} className="rounded-2xl border p-5">
+                <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+                  <div className="overflow-hidden rounded-2xl border bg-muted">
+                    {m.secureUrl ? (
+                      m.type === "video" ? (
+                        <video className="h-full w-full" controls preload="metadata" src={m.secureUrl} />
+                      ) : (
+                        <div className="relative aspect-4/3">
+                          <Image src={m.secureUrl} alt={m.title} fill className="object-cover" sizes="240px" />
+                        </div>
+                      )
                     ) : (
-                      <div className="relative aspect-4/3">
-                        <Image src={m.secureUrl} alt={m.title} fill className="object-cover" sizes="240px" />
+                      <div className="flex h-45 items-center justify-center text-xs text-muted-foreground">
+                        No preview
                       </div>
-                    )
-                  ) : (
-                    <div className="flex h-45 items-center justify-center text-xs text-muted-foreground">
-                      No preview
-                    </div>
-                  )}
-                </div>
-
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <div className="truncate text-lg font-semibold">{m.title}</div>
-                      <div className="mt-1 text-xs text-muted-foreground">
-                        {m.type} • {m.isPublic ? "Public" : "Private"}
-                        {m.year ? ` • ${m.year}` : ""}
-                        {m.location ? ` • ${m.location}` : ""}
-                        {m.event ? ` • ${m.event}` : ""}
-                      </div>
-                    </div>
-
-                    <div className="flex shrink-0 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => router.push(`/admin/media?edit=${encodeURIComponent(m.id)}`)}
-                        className="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void del(m.id)}
-                        className="rounded-xl border px-4 py-2 text-sm hover:bg-red-500/10"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    )}
                   </div>
 
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {m.categories.slice(0, 10).map((c) => (
-                      <span key={`${m.id}-${c}`} className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-                        {c}
-                      </span>
-                    ))}
-                    {m.nft ? (
-                      <span className={`rounded-full border px-2 py-0.5 text-xs ${statusClasses(m.nft.status)}`}>
-                        {m.nft.status}
-                      </span>
-                    ) : null}
-                  </div>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <div className="truncate text-lg font-semibold">{m.title}</div>
+                          {deleting ? (
+                            <span className="inline-flex rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[11px] uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
+                              Processing
+                            </span>
+                          ) : null}
+                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          {m.type} • {m.isPublic ? "Public" : "Private"}
+                          {m.year ? ` • ${m.year}` : ""}
+                          {m.location ? ` • ${m.location}` : ""}
+                          {m.event ? ` • ${m.event}` : ""}
+                        </div>
+                      </div>
 
-                  {m.nft ? (
-                    <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      <span className="rounded-full border px-2 py-0.5">{m.nft.editionType}</span>
-                      <span className="rounded-full border px-2 py-0.5">{formatNftQuantity(m.nft)}</span>
-                      {m.nft.price !== null ? (
-                        <span className="rounded-full border px-2 py-0.5">
-                          {m.nft.price} {m.nft.currency}
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          type="button"
+                          disabled={actionDisabled}
+                          onClick={() => router.push(`/admin/media?edit=${encodeURIComponent(m.id)}`)}
+                          className="rounded-xl border px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          disabled={actionDisabled}
+                          onClick={() => void del(m.id)}
+                          className="rounded-xl border px-4 py-2 text-sm hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {deleting ? "Deleting…" : "Delete"}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {m.categories.slice(0, 10).map((c) => (
+                        <span
+                          key={`${m.id}-${c}`}
+                          className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground"
+                        >
+                          {c}
+                        </span>
+                      ))}
+                      {m.nft ? (
+                        <span className={`rounded-full border px-2 py-0.5 text-xs ${statusClasses(m.nft.status)}`}>
+                          {m.nft.status}
                         </span>
                       ) : null}
                     </div>
-                  ) : null}
 
-                  {m.tags?.length ? (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {m.tags.slice(0, 14).map((t) => (
-                        <span key={`${m.id}-${t}`} className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-                          {t}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
+                    {m.nft ? (
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                        <span className="rounded-full border px-2 py-0.5">{m.nft.editionType}</span>
+                        <span className="rounded-full border px-2 py-0.5">{formatNftQuantity(m.nft)}</span>
+                        {m.nft.price !== null ? (
+                          <span className="rounded-full border px-2 py-0.5">
+                            {m.nft.price} {m.nft.currency}
+                          </span>
+                        ) : null}
+                      </div>
+                    ) : null}
 
-                  <div className="mt-3 text-xs font-mono text-muted-foreground">ID: {m.id}</div>
+                    {m.tags?.length ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {m.tags.slice(0, 14).map((t) => (
+                          <span
+                            key={`${m.id}-${t}`}
+                            className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground"
+                          >
+                            {t}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+
+                    <div className="mt-3 text-xs font-mono text-muted-foreground">ID: {m.id}</div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -401,7 +437,7 @@ export default function AdminMediaListPage() {
           <button
             type="button"
             onClick={() => void load("append", nextCursor)}
-            disabled={loadingMore}
+            disabled={loadingMore || Boolean(deletingId)}
             className="rounded-full border px-5 py-2 text-sm transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-60"
           >
             {loadingMore ? "Loading…" : "Load more"}

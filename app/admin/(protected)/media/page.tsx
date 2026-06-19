@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import MediaAppearancesSection from "./components/MediaAppearancesSection";
 import MediaAssetSection from "./components/MediaAssetSection";
 import MediaDetailsSection from "./components/MediaDetailsSection";
@@ -10,7 +11,8 @@ import { getCloudinaryMediaFolderForCategory } from "@/lib/cloudinary-folders";
 import { useMediaEditorController } from "./lib/useMediaEditorController";
 
 export default function AdminMediaPage() {
-  const { editor, busy, banner, save, remove, startNewUpload } = useMediaEditorController();
+  const { editor, busy, busyAction, banner, save, remove, startNewUpload } =
+    useMediaEditorController();
 
   const allowEmbed = editor.primaryCategory === "videography" && !editor.isNft;
   const uploadFolder = getCloudinaryMediaFolderForCategory(editor.primaryCategory);
@@ -39,7 +41,8 @@ export default function AdminMediaPage() {
             <button
               type="button"
               onClick={startNewUpload}
-              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+              disabled={busy}
+              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-60"
             >
               New upload
             </button>
@@ -47,17 +50,7 @@ export default function AdminMediaPage() {
         </div>
       </div>
 
-      {banner ? (
-        <div
-          className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
-            banner.type === "ok"
-              ? "bg-green-500/10 border-green-500/30"
-              : "bg-red-500/10 border-red-500/30"
-          }`}
-        >
-          {banner.text}
-        </div>
-      ) : null}
+      <AdminActionFeedback feedback={banner} />
 
       <div className="mt-8 space-y-6">
         <MediaPlacementSection
@@ -133,9 +126,15 @@ export default function AdminMediaPage() {
               type="button"
               disabled={busy}
               onClick={() => void save()}
-              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:opacity-60"
+              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {editor.editingId ? "Update" : "Save"}
+              {busyAction === "save"
+                ? editor.editingId
+                  ? "Updating…"
+                  : "Creating…"
+                : editor.editingId
+                  ? "Update"
+                  : "Save"}
             </button>
 
             {editor.editingId ? (
@@ -143,9 +142,9 @@ export default function AdminMediaPage() {
                 type="button"
                 disabled={busy}
                 onClick={() => void remove()}
-                className="rounded-xl border px-4 py-2 text-sm hover:bg-red-500/10 disabled:opacity-60"
+                className="rounded-xl border px-4 py-2 text-sm hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Delete
+                {busyAction === "delete" ? "Deleting…" : "Delete"}
               </button>
             ) : null}
           </div>

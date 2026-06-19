@@ -14,72 +14,13 @@ import {
   sanitizeAppearances,
 } from "@/app/api/_lib/media";
 import { toEmbedUrl } from "@/components/media/utils";
-import { getCloudinaryMediaFolderForCategory } from "@/lib/cloudinary-folders";
 import {
-  isAllowedCloudinaryPublicId,
-  isAllowedCloudinaryUrl,
-  parseCloudinaryAssetFromUrl,
-  type CloudinaryResourceType,
-} from "@/lib/server/cloudinary-assets";
+  getPrimaryMediaFolder,
+  normalizeUploadedMediaAsset,
+  type NormalizedCloudinaryMediaAsset,
+} from "@/lib/server/media-asset-management";
 
 export const dynamic = "force-dynamic";
-
-function normalizeCloudinaryMediaAsset(input: {
-  secureUrl: string;
-  publicId: string;
-  resourceType: string;
-  categories: string[];
-}):
-  | {
-      ok: true;
-      secureUrl: string;
-      publicId: string;
-      resourceType: Exclude<CloudinaryResourceType, "raw">;
-      type: "image" | "video";
-    }
-  | { ok: false; error: string } {
-  const secureUrl = input.secureUrl.trim();
-  const publicId = input.publicId.trim().replace(/^\/+/, "");
-  const resourceType = input.resourceType.trim();
-  const primaryFolder = getCloudinaryMediaFolderForCategory(input.categories[0]);
-
-  if (!secureUrl || !publicId || !resourceType) {
-    return { ok: false, error: "Uploaded media asset is incomplete." };
-  }
-
-  const parsed = parseCloudinaryAssetFromUrl(secureUrl);
-  if (!parsed) {
-    return { ok: false, error: "Use a valid Cloudinary media URL." };
-  }
-
-  if (parsed.resourceType === "raw") {
-    return { ok: false, error: "Media uploads must be images or videos." };
-  }
-
-  if (parsed.publicId !== publicId) {
-    return { ok: false, error: "Uploaded media URL does not match the media public ID." };
-  }
-
-  if (resourceType !== "auto" && resourceType !== parsed.resourceType) {
-    return { ok: false, error: "Uploaded media resource type does not match the media URL." };
-  }
-
-  if (!isAllowedCloudinaryUrl(secureUrl, [primaryFolder])) {
-    return { ok: false, error: "Uploaded media URL is outside the selected media category folder." };
-  }
-
-  if (!isAllowedCloudinaryPublicId(publicId, [primaryFolder])) {
-    return { ok: false, error: "Uploaded media public ID is outside the selected media category folder." };
-  }
-
-  return {
-    ok: true,
-    secureUrl,
-    publicId,
-    resourceType: parsed.resourceType,
-    type: parsed.resourceType,
-  };
-}
 
 export async function POST(req: Request) {
   const deny = await requireAdminOr401();
@@ -138,17 +79,11 @@ export async function POST(req: Request) {
     );
   }
 
-  let normalizedAsset:
-    | {
-        secureUrl: string;
-        publicId: string;
-        resourceType: Exclude<CloudinaryResourceType, "raw">;
-        type: "image" | "video";
-      }
-    | null = null;
+  let normalizedAsset: NormalizedCloudinaryMediaAsset | null = null;
+  let normalizedEmbedUrl: string | null = null;
 
   if (type === "embed") {
-    const normalizedEmbedUrl = toEmbedUrl(embedUrl);
+    normalizedEmbedUrl = toEmbedUrl(embedUrl);
     if (!normalizedEmbedUrl) {
       return noStoreJson(
         { ok: false, error: "Use a valid YouTube or Vimeo video URL." },
@@ -156,11 +91,18 @@ export async function POST(req: Request) {
       );
     }
   } else {
-    const asset = normalizeCloudinaryMediaAsset({ secureUrl, publicId, resourceType, categories });
-    if (!asset.ok) {
-      return noStoreJson({ ok: false, error: asset.error }, { status: 400 });
+    const normalized = normalizeUploadedMediaAsset({
+      secureUrl,
+      publicId,
+      resourceType,
+      targetFolder: getPrimaryMediaFolder(categories),
+    });
+
+    if (!normalized.ok) {
+      return noStoreJson({ ok: false, error: normalized.error }, { status: 400 });
     }
-    normalizedAsset = asset;
+
+    normalizedAsset = normalized.asset;
   }
 
   const nftParsed = parseNftMeta(bodyUnknown, categories.includes("nft"));
@@ -170,8 +112,6 @@ export async function POST(req: Request) {
 
   const db = await getDb();
   const resolvedPeople = await resolvePeopleSelection(db, { peopleIds });
-
-  const normalizedEmbedUrl = type === "embed" ? toEmbedUrl(embedUrl) : null;
   const now = new Date();
 
   const doc = {

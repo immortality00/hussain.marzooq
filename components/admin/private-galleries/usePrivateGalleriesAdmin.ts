@@ -10,6 +10,8 @@ export function usePrivateGalleriesAdmin() {
   const [loading, setLoading] = useState(false);
   const [banner, setBanner] = useState<BannerState | null>(null);
   const [editingId, setEditingId] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [gallerySearch, setGallerySearch] = useState("");
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -18,6 +20,8 @@ export function usePrivateGalleriesAdmin() {
   const [isActive, setIsActive] = useState(true);
   const [expiresAtLocal, setExpiresAtLocal] = useState("");
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
+
+  const actionBusy = saving || Boolean(deletingId);
 
   async function loadGalleries() {
     setLoading(true);
@@ -60,11 +64,14 @@ export function usePrivateGalleriesAdmin() {
   }
 
   function openNew() {
+    if (actionBusy) return;
     resetForm();
     setView("form");
   }
 
   async function openEdit(id: string) {
+    if (actionBusy) return;
+
     setBanner(null);
 
     try {
@@ -97,6 +104,7 @@ export function usePrivateGalleriesAdmin() {
   }
 
   function backToList() {
+    if (actionBusy) return;
     resetForm();
     setView("list");
   }
@@ -123,6 +131,8 @@ export function usePrivateGalleriesAdmin() {
   }
 
   async function save() {
+    if (saving) return;
+
     setBanner(null);
 
     const validationError = validateForm();
@@ -130,6 +140,12 @@ export function usePrivateGalleriesAdmin() {
       setBanner({ type: "err", text: validationError });
       return;
     }
+
+    setSaving(true);
+    setBanner({
+      type: "info",
+      text: editingId ? "Updating private gallery…" : "Creating private gallery…",
+    });
 
     try {
       const res = await fetch(
@@ -163,14 +179,19 @@ export function usePrivateGalleriesAdmin() {
       backToList();
     } catch {
       setBanner({ type: "err", text: "Save failed." });
+    } finally {
+      setSaving(false);
     }
   }
 
   async function remove(id: string) {
+    if (deletingId) return;
+
     const ok = confirm("Delete this private gallery?");
     if (!ok) return;
 
-    setBanner(null);
+    setDeletingId(id);
+    setBanner({ type: "info", text: "Deleting private gallery…" });
 
     try {
       const res = await fetch(`/api/private-galleries/${encodeURIComponent(id)}`, {
@@ -189,6 +210,8 @@ export function usePrivateGalleriesAdmin() {
       if (editingId === id) backToList();
     } catch {
       setBanner({ type: "err", text: "Delete failed." });
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -222,6 +245,9 @@ export function usePrivateGalleriesAdmin() {
     loading,
     banner,
     editingId,
+    saving,
+    deletingId,
+    actionBusy,
     gallerySearchValue: gallerySearch,
     title,
     slug,

@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { GalleryFormFields } from "@/components/admin/private-galleries/GalleryFormFields";
 import { GalleryList } from "@/components/admin/private-galleries/GalleryList";
 import { PrivateGalleryMediaPicker } from "@/components/admin/private-galleries/PrivateGalleryMediaPicker";
@@ -22,7 +23,8 @@ export default function PrivateGalleriesAdminClient() {
           <button
             type="button"
             onClick={admin.openNew}
-            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+            disabled={admin.actionBusy}
+            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
           >
             New gallery
           </button>
@@ -30,30 +32,22 @@ export default function PrivateGalleriesAdminClient() {
           <button
             type="button"
             onClick={admin.backToList}
-            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+            disabled={admin.actionBusy}
+            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
           >
             Back to list
           </button>
         )}
       </div>
 
-      {admin.banner ? (
-        <div
-          className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
-            admin.banner.type === "ok"
-              ? "border-green-500/30 bg-green-500/10"
-              : "border-red-500/30 bg-red-500/10"
-          }`}
-        >
-          {admin.banner.text}
-        </div>
-      ) : null}
+      <AdminActionFeedback feedback={admin.banner} />
 
       {admin.view === "list" ? (
         <GalleryList
           items={admin.items}
           loading={admin.loading}
           searchValue={admin.gallerySearchValue}
+          deletingId={admin.deletingId}
           onSearchChange={admin.setGallerySearchValue}
           onSearchClear={admin.clearGallerySearch}
           onCopyLink={(slug) => void admin.copyLink(slug)}
@@ -87,15 +81,23 @@ export default function PrivateGalleriesAdminClient() {
             <button
               type="button"
               onClick={() => void admin.save()}
-              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90"
+              disabled={admin.saving}
+              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {admin.editingId ? "Update gallery" : "Create gallery"}
+              {admin.saving
+                ? admin.editingId
+                  ? "Updating gallery…"
+                  : "Creating gallery…"
+                : admin.editingId
+                  ? "Update gallery"
+                  : "Create gallery"}
             </button>
 
             <button
               type="button"
               onClick={admin.backToList}
-              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
+              disabled={admin.actionBusy}
+              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
             >
               Cancel
             </button>

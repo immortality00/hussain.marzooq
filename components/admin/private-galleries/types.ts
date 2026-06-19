@@ -25,6 +25,6 @@ export type MediaItem = {
 };
 
 export type BannerState = {
-  type: "ok" | "err";
+  type: "ok" | "err" | "info";
   text: string;
 };

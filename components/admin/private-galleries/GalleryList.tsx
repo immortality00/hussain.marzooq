@@ -8,6 +8,7 @@ type GalleryListProps = {
   items: GalleryItem[];
   loading: boolean;
   searchValue: string;
+  deletingId: string | null;
   onSearchChange: (value: string) => void;
   onSearchClear: () => void;
   onCopyLink: (slug: string) => void;
@@ -19,6 +20,7 @@ export function GalleryList({
   items,
   loading,
   searchValue,
+  deletingId,
   onSearchChange,
   onSearchClear,
   onCopyLink,
@@ -51,6 +53,8 @@ export function GalleryList({
         ) : (
           items.map((item) => {
             const status = getGalleryStatus(item);
+            const deleting = deletingId === item.id;
+            const actionDisabled = Boolean(deletingId);
 
             return (
               <article key={item.id} className="rounded-[2rem] border p-4">
@@ -63,6 +67,11 @@ export function GalleryList({
                       >
                         {status.label}
                       </span>
+                      {deleting ? (
+                        <span className="inline-flex rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[11px] uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
+                          Processing
+                        </span>
+                      ) : null}
                     </div>
 
                     <div className="mt-1 text-xs text-muted-foreground">
@@ -78,26 +87,29 @@ export function GalleryList({
                   <div className="flex flex-wrap gap-2">
                     <button
                       type="button"
+                      disabled={actionDisabled}
                       onClick={() => onCopyLink(item.slug)}
-                      className="rounded-xl border px-3 py-2 text-sm hover:bg-accent"
+                      className="rounded-xl border px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Copy link
                     </button>
 
                     <button
                       type="button"
+                      disabled={actionDisabled}
                       onClick={() => onEdit(item.id)}
-                      className="rounded-xl border px-3 py-2 text-sm hover:bg-accent"
+                      className="rounded-xl border px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
                     >
                       Edit
                     </button>
 
                     <button
                       type="button"
+                      disabled={actionDisabled}
                       onClick={() => onDelete(item.id)}
-                      className="rounded-xl border px-3 py-2 text-sm hover:bg-red-500/10"
+                      className="rounded-xl border px-3 py-2 text-sm hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Delete
+                      {deleting ? "Deleting…" : "Delete"}
                     </button>
                   </div>
                 </div>

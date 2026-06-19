@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import type { AdminActionFeedbackState } from "@/components/admin/action-feedback/AdminActionFeedback";
 import {
   deleteMediaItem,
   fetchMediaItem,
@@ -19,6 +20,8 @@ const allowedCategories: MediaCategory[] = [
   "art",
 ];
 
+type BusyAction = "load" | "save" | "delete" | null;
+
 export function useMediaEditorController() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -27,9 +30,10 @@ export function useMediaEditorController() {
   const prefillCategory = (searchParams.get("category") ?? "").trim() as MediaCategory;
 
   const editor = useMediaEditorState();
-  const [busy, setBusy] = useState(false);
-  const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [busyAction, setBusyAction] = useState<BusyAction>(null);
+  const [banner, setBanner] = useState<AdminActionFeedbackState>(null);
 
+  const busy = busyAction !== null;
   const setPrimaryCategoryRef = useRef(editor.setPrimaryCategory);
   const loadIntoStateRef = useRef(editor.loadIntoState);
 
@@ -56,7 +60,8 @@ export function useMediaEditorController() {
 
     async function run() {
       setBanner(null);
-      setBusy(true);
+      setBusyAction("load");
+
       try {
         const item: MediaItem = await fetchMediaItem(editId);
         if (!cancelled) {
@@ -70,7 +75,7 @@ export function useMediaEditorController() {
           });
         }
       } finally {
-        if (!cancelled) setBusy(false);
+        if (!cancelled) setBusyAction(null);
       }
     }
 
@@ -82,6 +87,8 @@ export function useMediaEditorController() {
   }, [editId]);
 
   async function save() {
+    if (busyAction === "save") return;
+
     setBanner(null);
 
     if (!editor.title.trim()) {
@@ -94,7 +101,14 @@ export function useMediaEditorController() {
       return;
     }
 
-    setBusy(true);
+    const isEditing = Boolean(editor.editingId);
+
+    setBusyAction("save");
+    setBanner({
+      type: "info",
+      text: isEditing ? "Updating media…" : "Creating media…",
+    });
+
     try {
       const { payloadBase, payloadWithAsset } = buildMediaPayload({
         editingId: editor.editingId,
@@ -128,10 +142,10 @@ export function useMediaEditorController() {
       });
 
       if (result.mode === "created") {
-        setBanner({ type: "ok", text: "✅ Media saved successfully." });
+        setBanner({ type: "ok", text: "✅ Media created successfully." });
         editor.resetFields(true, () => setBanner(null));
       } else {
-        setBanner({ type: "ok", text: "✅ Updated successfully." });
+        setBanner({ type: "ok", text: "✅ Media updated successfully." });
         const reloaded = await fetchMediaItem(editor.editingId);
         editor.loadIntoState(reloaded);
         router.refresh();
@@ -142,21 +156,22 @@ export function useMediaEditorController() {
         text: e instanceof Error ? e.message : "Save failed.",
       });
     } finally {
-      setBusy(false);
+      setBusyAction(null);
     }
   }
 
   async function remove() {
-    if (!editor.editingId) return;
+    if (!editor.editingId || busyAction === "delete") return;
 
     const ok = confirm("Delete this media forever? This cannot be undone.");
     if (!ok) return;
 
-    setBusy(true);
-    setBanner(null);
+    setBusyAction("delete");
+    setBanner({ type: "info", text: "Deleting media and cleaning Cloudinary asset…" });
+
     try {
       await deleteMediaItem(editor.editingId);
-      setBanner({ type: "ok", text: "✅ Deleted." });
+      setBanner({ type: "ok", text: "✅ Media deleted." });
       editor.resetFields(true, () => setBanner(null));
       router.push("/admin/media/list");
     } catch (e: unknown) {
@@ -165,11 +180,12 @@ export function useMediaEditorController() {
         text: e instanceof Error ? e.message : "Delete failed.",
       });
     } finally {
-      setBusy(false);
+      setBusyAction(null);
     }
   }
 
   function startNewUpload() {
+    if (busy) return;
     editor.resetFields(false, () => setBanner(null));
     router.push("/admin/media");
   }
@@ -179,6 +195,7 @@ export function useMediaEditorController() {
     prefillCategory,
     editor,
     busy,
+    busyAction,
     banner,
     setBanner,
     save,
