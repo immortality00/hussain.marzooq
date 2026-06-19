@@ -6,6 +6,8 @@ import { buildMediaQuery, mergeMediaItems, type MediaListResponse } from "./medi
 
 const SEARCH_DEBOUNCE_MS = 250;
 
+type PickerMode = "browse" | "search";
+
 export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<MediaItem[]>([]);
@@ -17,10 +19,13 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
   const requestIdRef = useRef(0);
 
   const activeSearch = searchValue.trim();
+  const mode: PickerMode = activeSearch ? "search" : "browse";
+
   const selectedIdSet = useMemo(() => new Set(selectedMediaIds), [selectedMediaIds]);
 
   const selectedMedia = useMemo(() => {
     const byId = new Map<string, MediaItem>();
+
     for (const item of selectedItems) byId.set(item.id, item);
     for (const item of items) byId.set(item.id, item);
 
@@ -29,12 +34,12 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
       .filter((item): item is MediaItem => Boolean(item));
   }, [items, selectedItems, selectedMediaIds]);
 
-  const selectedMediaListItems = useMemo(() => {
-    if (activeSearch.length > 0) return [];
+  const selectedMediaShelfItems = useMemo(() => {
+    if (mode !== "browse") return [];
 
-    const currentPageIds = new Set(items.map((item) => item.id));
-    return selectedMedia.filter((item) => !currentPageIds.has(item.id));
-  }, [activeSearch, items, selectedMedia]);
+    const visibleIds = new Set(items.map((item) => item.id));
+    return selectedMedia.filter((item) => !visibleIds.has(item.id));
+  }, [items, mode, selectedMedia]);
 
   const loadMedia = useCallback(
     async ({ q, cursor, append }: { q: string; cursor?: string | null; append: boolean }) => {
@@ -119,9 +124,10 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
   return {
     items,
     selectedIdSet,
-    selectedMediaListItems,
+    selectedMediaShelfItems,
     searchValue,
-    hasSearch: activeSearch.length > 0,
+    mode,
+    hasSearch: mode === "search",
     nextCursor,
     loading,
     loadingMore,

@@ -42,13 +42,13 @@ export function PrivateGalleryMediaPicker({
         </div>
       ) : null}
 
-      {picker.selectedMediaListItems.length > 0 ? (
+      {picker.selectedMediaShelfItems.length > 0 ? (
         <div className="mt-5 space-y-3">
           <div className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
-            Selected media outside current results
+            Selected media outside current page
           </div>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {picker.selectedMediaListItems.map((item) => (
+            {picker.selectedMediaShelfItems.map((item) => (
               <PrivateGalleryMediaCard
                 key={item.id}
                 item={item}
