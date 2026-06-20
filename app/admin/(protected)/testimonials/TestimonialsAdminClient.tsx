@@ -2,6 +2,11 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
+import {
+  AdminActionFeedback,
+  AdminProcessingPill,
+  type AdminActionFeedbackState,
+} from "@/components/admin/action-feedback/AdminActionFeedback";
 
 type TestimonialItem = {
   id: string;
@@ -19,8 +24,6 @@ type TestimonialItem = {
   updatedAt: string | null;
 };
 
-type Banner = { type: "ok" | "err" | "info"; text: string } | null;
-
 function getInitials(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
   if (parts.length === 0) return "?";
@@ -33,8 +36,10 @@ function renderStars(rating: number) {
 
 function formatDate(value: string | null) {
   if (!value) return "Unknown date";
+
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "Unknown date";
+
   return new Intl.DateTimeFormat("en", {
     dateStyle: "medium",
     timeStyle: "short",
@@ -85,7 +90,10 @@ function ReviewPhotos({ item }: { item: TestimonialItem }) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
       {item.photoUrls.map((url, index) => (
-        <div key={url} className="relative aspect-[4/5] overflow-hidden rounded-[1.1rem] bg-muted/50">
+        <div
+          key={url}
+          className="relative aspect-[4/5] overflow-hidden rounded-[1.1rem] bg-muted/50"
+        >
           <Image
             src={url}
             alt={`${item.name} submitted photo ${index + 1}`}
@@ -96,14 +104,6 @@ function ReviewPhotos({ item }: { item: TestimonialItem }) {
         </div>
       ))}
     </div>
-  );
-}
-
-function ProcessingPill() {
-  return (
-    <span className="inline-flex rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-[11px] font-medium uppercase tracking-[0.16em] text-sky-700 dark:text-sky-300">
-      Processing
-    </span>
   );
 }
 
@@ -123,6 +123,7 @@ function InspectModal({
   onClose: () => void;
 }) {
   const metaLine = identityLine(item);
+  const actionBusy = updating || deleting;
 
   return (
     <div className="fixed inset-0 z-50 bg-black/72 p-4 backdrop-blur-sm" onClick={onClose}>
@@ -134,37 +135,41 @@ function InspectModal({
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-2xl font-semibold tracking-[-0.04em]">{item.name}</h2>
-              {deleting ? <ProcessingPill /> : null}
+              {actionBusy ? (
+                <AdminProcessingPill text={deleting ? "Deleting" : "Processing"} />
+              ) : null}
             </div>
-            <div className="mt-1 text-sm text-muted-foreground">Submitted {formatDate(item.createdAt)}</div>
+            <div className="mt-1 text-sm text-muted-foreground">
+              Submitted {formatDate(item.createdAt)}
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             {item.isApproved ? (
               <button
                 type="button"
-                disabled={updating || deleting}
+                disabled={actionBusy}
                 onClick={() => onSetApproval(item.id, false)}
-                className="rounded-xl border border-amber-500/30 px-4 py-2 text-sm text-amber-700 hover:bg-amber-500/10 disabled:opacity-60 dark:text-amber-300"
+                className="rounded-xl border border-amber-500/30 px-4 py-2 text-sm text-amber-700 hover:bg-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:text-amber-300"
               >
-                Unapprove
+                {updating ? "Unapproving…" : "Unapprove"}
               </button>
             ) : (
               <button
                 type="button"
-                disabled={updating || deleting}
+                disabled={actionBusy}
                 onClick={() => onSetApproval(item.id, true)}
-                className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:opacity-60"
+                className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Approve
+                {updating ? "Approving…" : "Approve"}
               </button>
             )}
 
             <button
               type="button"
-              disabled={deleting}
+              disabled={actionBusy}
               onClick={() => onDelete(item.id)}
-              className="rounded-xl border border-red-500/30 px-4 py-2 text-sm text-red-600 hover:bg-red-500/10 disabled:opacity-60 dark:text-red-300"
+              className="rounded-xl border border-red-500/30 px-4 py-2 text-sm text-red-600 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-300"
             >
               {deleting ? "Deleting…" : "Delete"}
             </button>
@@ -172,8 +177,8 @@ function InspectModal({
             <button
               type="button"
               onClick={onClose}
-              disabled={deleting}
-              className="rounded-xl border border-border/60 px-4 py-2 text-sm hover:bg-accent disabled:opacity-60"
+              disabled={actionBusy}
+              className="rounded-xl border border-border/60 px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
             >
               Close
             </button>
@@ -193,9 +198,13 @@ function InspectModal({
                       <StatusPill approved={item.isApproved} />
                     </div>
 
-                    {metaLine ? <div className="mt-1 text-sm text-muted-foreground">{metaLine}</div> : null}
+                    {metaLine ? (
+                      <div className="mt-1 text-sm text-muted-foreground">{metaLine}</div>
+                    ) : null}
 
-                    <div className="mt-1 text-sm text-muted-foreground">{item.email ?? "No email"}</div>
+                    <div className="mt-1 text-sm text-muted-foreground">
+                      {item.email ?? "No email"}
+                    </div>
                     <div className="mt-3 text-xl text-amber-400">{renderStars(item.rating)}</div>
                   </div>
                 </div>
@@ -255,11 +264,12 @@ function ReviewRow({
   onDelete: (id: string) => void;
 }) {
   const metaLine = identityLine(item);
+  const actionBusy = updating || deleting;
 
   return (
     <article
       className={`rounded-[1.6rem] bg-background/78 p-4 ring-1 ring-border/45 transition-opacity ${
-        deleting ? "pointer-events-none opacity-60" : ""
+        actionBusy ? "pointer-events-none opacity-60" : ""
       }`}
     >
       <div className="grid gap-4 lg:grid-cols-[1fr_auto] lg:items-start">
@@ -271,7 +281,9 @@ function ReviewRow({
               <div className="flex flex-wrap items-center gap-2">
                 <div className="text-sm font-medium">{item.name}</div>
                 <StatusPill approved={item.isApproved} />
-                {deleting ? <ProcessingPill /> : null}
+                {actionBusy ? (
+                  <AdminProcessingPill text={deleting ? "Deleting" : "Processing"} />
+                ) : null}
               </div>
 
               {metaLine ? <div className="mt-1 text-xs text-muted-foreground">{metaLine}</div> : null}
@@ -298,8 +310,8 @@ function ReviewRow({
           <button
             type="button"
             onClick={() => onInspect(item)}
-            disabled={deleting}
-            className="rounded-xl border border-border/60 px-3 py-2 text-sm hover:bg-accent disabled:opacity-60"
+            disabled={actionBusy}
+            className="rounded-xl border border-border/60 px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
           >
             Inspect
           </button>
@@ -307,28 +319,28 @@ function ReviewRow({
           {item.isApproved ? (
             <button
               type="button"
-              disabled={updating || deleting}
+              disabled={actionBusy}
               onClick={() => onSetApproval(item.id, false)}
-              className="rounded-xl border border-amber-500/30 px-3 py-2 text-sm text-amber-700 hover:bg-amber-500/10 disabled:opacity-60 dark:text-amber-300"
+              className="rounded-xl border border-amber-500/30 px-3 py-2 text-sm text-amber-700 hover:bg-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:text-amber-300"
             >
-              Unapprove
+              {updating ? "Unapproving…" : "Unapprove"}
             </button>
           ) : (
             <button
               type="button"
-              disabled={updating || deleting}
+              disabled={actionBusy}
               onClick={() => onSetApproval(item.id, true)}
-              className="rounded-xl bg-foreground px-3 py-2 text-sm text-background hover:opacity-90 disabled:opacity-60"
+              className="rounded-xl bg-foreground px-3 py-2 text-sm text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              Approve
+              {updating ? "Approving…" : "Approve"}
             </button>
           )}
 
           <button
             type="button"
-            disabled={deleting}
+            disabled={actionBusy}
             onClick={() => onDelete(item.id)}
-            className="rounded-xl border border-red-500/30 px-3 py-2 text-sm text-red-600 hover:bg-red-500/10 disabled:opacity-60 dark:text-red-300"
+            className="rounded-xl border border-red-500/30 px-3 py-2 text-sm text-red-600 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-300"
           >
             {deleting ? "Deleting…" : "Delete"}
           </button>
@@ -341,12 +353,14 @@ function ReviewRow({
 export default function TestimonialsAdminClient() {
   const [items, setItems] = useState<TestimonialItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [banner, setBanner] = useState<Banner>(null);
+  const [banner, setBanner] = useState<AdminActionFeedbackState>(null);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | "pending" | "approved">("all");
   const [active, setActive] = useState<TestimonialItem | null>(null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const actionBusy = Boolean(updatingId || deletingId);
 
   async function load() {
     setLoading(true);
@@ -406,6 +420,8 @@ export default function TestimonialsAdminClient() {
   }
 
   async function remove(id: string) {
+    if (actionBusy) return;
+
     const ok = confirm("Delete this submitted review permanently?");
     if (!ok) return;
 
@@ -435,8 +451,13 @@ export default function TestimonialsAdminClient() {
   }
 
   async function setApproval(id: string, value: boolean) {
-    setBanner(null);
+    if (actionBusy) return;
+
     setUpdatingId(id);
+    setBanner({
+      type: "info",
+      text: value ? "Approving review…" : "Moving review back to pending…",
+    });
 
     try {
       const res = await fetch(`/api/testimonials/${encodeURIComponent(id)}`, {
@@ -456,7 +477,7 @@ export default function TestimonialsAdminClient() {
 
       setBanner({
         type: "ok",
-        text: value ? "✅ Review approved." : "Review moved back to pending.",
+        text: value ? "✅ Review approved." : "✅ Review moved back to pending.",
       });
     } catch {
       setBanner({ type: "err", text: "Update failed." });
@@ -498,19 +519,7 @@ export default function TestimonialsAdminClient() {
         </div>
       </div>
 
-      {banner ? (
-        <div
-          className={`mt-5 rounded-2xl px-4 py-3 text-sm ring-1 ${
-            banner.type === "ok"
-              ? "bg-green-500/10 text-foreground ring-green-500/20"
-              : banner.type === "info"
-                ? "bg-sky-500/10 text-foreground ring-sky-500/20"
-                : "bg-red-500/10 text-foreground ring-red-500/20"
-          }`}
-        >
-          {banner.text}
-        </div>
-      ) : null}
+      <AdminActionFeedback feedback={banner} className="mt-5" />
 
       <section className="mt-6 rounded-[2rem] border border-border/50 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -519,8 +528,9 @@ export default function TestimonialsAdminClient() {
               <button
                 key={value}
                 type="button"
+                disabled={actionBusy}
                 onClick={() => setStatus(value)}
-                className={`rounded-full border px-4 py-2 text-sm capitalize ${
+                className={`rounded-full border px-4 py-2 text-sm capitalize disabled:cursor-not-allowed disabled:opacity-60 ${
                   status === value
                     ? "border-foreground bg-foreground text-background"
                     : "border-border/60 hover:bg-accent"
@@ -533,9 +543,10 @@ export default function TestimonialsAdminClient() {
 
           <input
             value={search}
+            disabled={actionBusy}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search by name, email, review, location..."
-            className="w-full max-w-sm rounded-xl border border-border/60 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className="w-full max-w-sm rounded-xl border border-border/60 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
           />
         </div>
 
@@ -569,7 +580,9 @@ export default function TestimonialsAdminClient() {
           deleting={deletingId === active.id}
           onSetApproval={(id, value) => void setApproval(id, value)}
           onDelete={(id) => void remove(id)}
-          onClose={() => setActive(null)}
+          onClose={() => {
+            if (!actionBusy) setActive(null);
+          }}
         />
       ) : null}
     </main>

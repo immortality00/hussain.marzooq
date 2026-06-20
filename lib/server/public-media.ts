@@ -19,7 +19,7 @@ async function listPublicMedia({
   const docs = await db
     .collection("media")
     .find(buildPublicMediaQuery({ type, category }))
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1, _id: -1 })
     .limit(limit)
     .toArray();
 
@@ -44,9 +44,25 @@ export async function getVideographyItems(): Promise<PublicMediaItem[]> {
   return all.filter((item) => item.type === "video" || item.type === "embed");
 }
 
-export async function getShowreelUrl(): Promise<string | null> {
+export async function getShowreelItem(): Promise<PublicMediaItem | null> {
   const db = await getDb();
 
-  const doc = await db.collection("site_settings").findOne({ key: "showreel" });
-  return doc && typeof doc.value === "string" ? doc.value : null;
+  const doc = await db
+    .collection("media")
+    .find({
+      $and: [
+        buildPublicMediaQuery({ type: "all", category: "showreel" }),
+        { type: { $in: ["video", "embed"] } },
+      ],
+    })
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(1)
+    .next();
+
+  return doc ? toPublicMediaItem(doc as Record<string, unknown>) : null;
+}
+
+export async function getShowreelUrl(): Promise<string | null> {
+  const item = await getShowreelItem();
+  return item?.embedUrl ?? item?.secureUrl ?? null;
 }

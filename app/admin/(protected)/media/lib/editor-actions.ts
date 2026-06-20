@@ -3,7 +3,11 @@ import { validateEmbed } from "./utils";
 
 export async function fetchMediaItem(id: string): Promise<MediaItem> {
   const res = await fetch(`/api/media/${encodeURIComponent(id)}`, { cache: "no-store" });
-  const data = (await res.json().catch(() => null)) as { ok?: boolean; item?: MediaItem; error?: string };
+  const data = (await res.json().catch(() => null)) as {
+    ok?: boolean;
+    item?: MediaItem;
+    error?: string;
+  };
 
   if (!res.ok || !data?.ok || !data.item) {
     throw new Error(data?.error ?? "Failed to load media.");
@@ -41,6 +45,7 @@ export function buildMediaPayload(args: {
   }
 
   const isNft = args.categories.includes("nft");
+  const isShowreel = args.categories.includes("showreel");
 
   if (args.peopleIds.length > 60) {
     throw new Error("A media item can link to a maximum of 60 people profiles.");
@@ -48,6 +53,10 @@ export function buildMediaPayload(args: {
 
   if (isNft && args.mode === "embed") {
     throw new Error("NFT items must use an uploaded image or video.");
+  }
+
+  if (isShowreel && args.mode === "upload" && args.uploaded?.resourceType !== "video") {
+    throw new Error("Showreel uploads must be video files.");
   }
 
   const yearNum = args.year.trim() ? Number(args.year.trim()) : null;
@@ -69,9 +78,12 @@ export function buildMediaPayload(args: {
           price: args.nftPrice.trim() === "" ? null : Number(args.nftPrice),
           currency: args.nftCurrency,
           editionType: args.nftEditionType,
-          editionsTotal: args.nftEditionsTotal.trim() === "" ? null : Number(args.nftEditionsTotal),
+          editionsTotal:
+            args.nftEditionsTotal.trim() === "" ? null : Number(args.nftEditionsTotal),
           editionsRemaining:
-            args.nftEditionsRemaining.trim() === "" ? null : Number(args.nftEditionsRemaining),
+            args.nftEditionsRemaining.trim() === ""
+              ? null
+              : Number(args.nftEditionsRemaining),
           openUntil: args.nftOpenUntil.trim() || null,
           status: args.nftStatus,
           marketplaceUrl: args.nftMarketplaceUrl.trim() || null,
@@ -85,6 +97,7 @@ export function buildMediaPayload(args: {
     if (!validateEmbed(args.embedUrl)) {
       throw new Error("Please paste a valid YouTube/Vimeo URL (https://...).");
     }
+
     payloadWithAsset = { ...payloadBase, type: "embed", embedUrl: args.embedUrl.trim() };
   } else {
     if (args.uploaded) {
@@ -114,10 +127,17 @@ export async function saveMediaItem(args: {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(args.payloadWithAsset),
     });
-    const data = (await res.json().catch(() => null)) as { ok?: boolean; id?: string; error?: string };
+
+    const data = (await res.json().catch(() => null)) as {
+      ok?: boolean;
+      id?: string;
+      error?: string;
+    };
+
     if (!res.ok || !data?.ok) {
       throw new Error(data?.error ?? "Save failed.");
     }
+
     return { mode: "created" as const, id: data.id ?? null };
   }
 
@@ -128,7 +148,9 @@ export async function saveMediaItem(args: {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updateBody),
   });
+
   const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
+
   if (!res.ok || !data?.ok) {
     throw new Error(data?.error ?? "Update failed.");
   }
@@ -138,7 +160,9 @@ export async function saveMediaItem(args: {
 
 export async function deleteMediaItem(id: string) {
   const res = await fetch(`/api/media/${encodeURIComponent(id)}`, { method: "DELETE" });
+
   const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
+
   if (!res.ok || !data?.ok) {
     throw new Error(data?.error ?? "Delete failed.");
   }

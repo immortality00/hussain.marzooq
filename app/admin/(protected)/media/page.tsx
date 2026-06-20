@@ -14,7 +14,10 @@ export default function AdminMediaPage() {
   const { editor, busy, busyAction, banner, save, remove, startNewUpload } =
     useMediaEditorController();
 
-  const allowEmbed = editor.primaryCategory === "videography" && !editor.isNft;
+  const allowEmbed =
+    (editor.primaryCategory === "videography" || editor.primaryCategory === "showreel") &&
+    !editor.isNft;
+
   const uploadFolder = getCloudinaryMediaFolderForCategory(editor.primaryCategory);
 
   return (
@@ -32,7 +35,7 @@ export default function AdminMediaPage() {
         <div className="flex gap-2">
           <Link
             href="/admin/media/list"
-            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
           >
             View list
           </Link>
@@ -42,7 +45,7 @@ export default function AdminMediaPage() {
               type="button"
               onClick={startNewUpload}
               disabled={busy}
-              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
             >
               New upload
             </button>

@@ -114,16 +114,17 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const incomingPublicId = asNullableString(bodyUnknown.publicId);
   const incomingResourceType = asNullableString(bodyUnknown.resourceType);
 
+  const isShowreel = categories.includes("showreel");
+  const isVideoPlacement = categories.includes("videography") || isShowreel;
+
   const allowEmbed =
-    categories.includes("videography") &&
-    !categories.includes("photography") &&
-    !categories.includes("nft");
+    isVideoPlacement && !categories.includes("photography") && !categories.includes("nft");
 
   if (incomingType === "embed" && !allowEmbed) {
     return noStoreJson(
       {
         ok: false,
-        error: "Embed links are allowed only for videography.",
+        error: "Embed links are allowed only for videography or showreel.",
       },
       { status: 400 }
     );
@@ -191,6 +192,19 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     typeof incomingResourceType === "string" &&
     incomingResourceType.length > 0;
 
+  if (
+    isShowreel &&
+    incomingType !== "embed" &&
+    !hasIncomingAsset &&
+    oldAsset.publicId &&
+    oldAsset.resourceType !== "video"
+  ) {
+    return noStoreJson(
+      { ok: false, error: "Showreel uploads must be video files." },
+      { status: 400 }
+    );
+  }
+
   if (hasIncomingAsset) {
     const normalizedAsset = normalizeUploadedMediaAsset({
       secureUrl: incomingSecureUrl,
@@ -202,6 +216,13 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
     if (!normalizedAsset.ok) {
       return noStoreJson({ ok: false, error: normalizedAsset.error }, { status: 400 });
+    }
+
+    if (isShowreel && normalizedAsset.asset.type !== "video") {
+      return noStoreJson(
+        { ok: false, error: "Showreel uploads must be video files." },
+        { status: 400 }
+      );
     }
 
     const incomingAsset: StoredMediaAsset = {

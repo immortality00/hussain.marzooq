@@ -8,7 +8,6 @@ export const revalidate = 0;
 const nav = [
   { href: "/admin/inquiries", label: "Inquiries" },
   { href: "/admin/media/list", label: "Media" },
-  { href: "/admin/showreel", label: "Showreel" },
   { href: "/admin/people", label: "People" },
   { href: "/admin/services", label: "Services" },
   { href: "/admin/service-categories", label: "Service Categories" },
@@ -34,16 +33,18 @@ export default async function AdminProtectedLayout({
             <div className="text-xl font-semibold">Admin</div>
             <div className="text-xs text-muted-foreground">HM Visuals</div>
           </div>
+
           <div className="flex items-center gap-3">
             <Link
               href="/"
-              className="rounded-xl border px-3 py-2 text-sm hover:bg-accent/40 transition-colors"
+              className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent/40"
             >
               View site
             </Link>
+
             <Link
               href="/admin/logout"
-              className="rounded-xl border px-3 py-2 text-sm hover:bg-accent/40 transition-colors"
+              className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent/40"
             >
               Logout
             </Link>
@@ -55,12 +56,13 @@ export default async function AdminProtectedLayout({
             <div className="px-2 pb-2 text-xs font-medium text-muted-foreground">
               Navigation
             </div>
+
             <div className="space-y-2">
               {nav.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="block rounded-xl border px-3 py-2 text-sm hover:bg-accent/40 transition-colors"
+                  className="block rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent/40"
                 >
                   {item.label}
                 </Link>

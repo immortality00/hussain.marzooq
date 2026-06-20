@@ -57,16 +57,17 @@ export async function POST(req: Request) {
     return noStoreJson({ ok: false, error: "Choose at least one category." }, { status: 400 });
   }
 
+  const isShowreel = categories.includes("showreel");
+  const isVideoPlacement = categories.includes("videography") || isShowreel;
+
   const allowEmbed =
-    categories.includes("videography") &&
-    !categories.includes("photography") &&
-    !categories.includes("nft");
+    isVideoPlacement && !categories.includes("photography") && !categories.includes("nft");
 
   if (type === "embed" && !allowEmbed) {
     return noStoreJson(
       {
         ok: false,
-        error: "Embed links are allowed only for videography.",
+        error: "Embed links are allowed only for videography or showreel.",
       },
       { status: 400 }
     );
@@ -103,6 +104,13 @@ export async function POST(req: Request) {
     }
 
     normalizedAsset = normalized.asset;
+
+    if (isShowreel && normalizedAsset.type !== "video") {
+      return noStoreJson(
+        { ok: false, error: "Showreel uploads must be video files." },
+        { status: 400 }
+      );
+    }
   }
 
   const nftParsed = parseNftMeta(bodyUnknown, categories.includes("nft"));
