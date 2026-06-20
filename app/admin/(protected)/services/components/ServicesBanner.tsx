@@ -1,5 +1,6 @@
 "use client";
 
+import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import type { Banner } from "../lib/ui";
 
 export default function ServicesBanner({
@@ -13,26 +14,18 @@ export default function ServicesBanner({
 }) {
   return (
     <div ref={containerRef} className="sticky top-3 z-40">
-      {banner ? (
-        <div
-          className={`rounded-2xl border px-4 py-3 text-sm shadow-sm backdrop-blur ${
-            banner.type === "ok"
-              ? "bg-green-500/10 border-green-500/30"
-              : "bg-red-500/10 border-red-500/30"
-          }`}
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>{banner.text}</div>
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg border px-2 py-1 text-xs hover:bg-accent/40"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      ) : null}
+      <div className="relative">
+        <AdminActionFeedback feedback={banner} className="mt-0 shadow-sm backdrop-blur" />
+        {banner ? (
+          <button
+            type="button"
+            onClick={onClose}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg border px-2 py-1 text-xs hover:bg-accent/40"
+          >
+            Close
+          </button>
+        ) : null}
+      </div>
     </div>
   );
 }

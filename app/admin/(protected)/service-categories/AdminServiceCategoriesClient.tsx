@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
+import { AdminActionFeedback, type AdminActionFeedbackState } from "@/components/admin/action-feedback/AdminActionFeedback";
 import CategoriesTable from "./components/CategoriesTable";
 import CategoriesToolbar from "./components/CategoriesToolbar";
 import CategoryFormCard from "./components/CategoryFormCard";
@@ -16,8 +17,10 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
   const [slug, setSlug] = useState("");
   const [creating, setCreating] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [feedback, setFeedback] = useState<AdminActionFeedbackState>(null);
   const [mounted, setMounted] = useState(false);
+
+  const actionBusy = creating || savingOrder;
 
   useEffect(() => {
     setMounted(true);
@@ -26,77 +29,110 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
   const ordered = useMemo(() => [...items].sort((a, b) => a.order - b.order), [items]);
 
   async function refresh() {
-    setMsg("");
+    setFeedback(null);
+
     try {
       const next = await fetchCategories();
       setItems(next);
     } catch (e: unknown) {
-      setMsg(getErrorMessage(e));
+      setFeedback({ type: "err", text: getErrorMessage(e) });
     }
   }
 
   async function createCategory() {
-    setMsg("");
+    if (actionBusy) return;
+
+    setFeedback(null);
     const n = name.trim();
     const s = (slug.trim() || slugify(n)).trim();
 
-    if (!n) return setMsg("Name is required.");
-    if (!s) return setMsg("Slug is required.");
+    if (!n) {
+      setFeedback({ type: "err", text: "Name is required." });
+      return;
+    }
+
+    if (!s) {
+      setFeedback({ type: "err", text: "Slug is required." });
+      return;
+    }
 
     setCreating(true);
+    setFeedback({ type: "info", text: "Creating category…" });
+
     try {
       await createCategoryRequest(n, s);
       setName("");
       setSlug("");
       await refresh();
-      setMsg("✅ Created.");
+      setFeedback({ type: "ok", text: "✅ Category created." });
     } catch (e: unknown) {
-      setMsg(getErrorMessage(e));
+      setFeedback({ type: "err", text: getErrorMessage(e) });
     } finally {
       setCreating(false);
     }
   }
 
   async function editCategory(id: string, patch: CategoryPatch) {
-    setMsg("");
+    if (actionBusy) return;
+
+    setFeedback({ type: "info", text: "Updating category…" });
+
     try {
       await patchCategory(id, patch);
       setItems((prev) => prev.map((c) => (c.id === id ? ({ ...c, ...patch } as Category) : c)));
+      setFeedback({ type: "ok", text: "✅ Category updated." });
     } catch (e: unknown) {
-      setMsg(getErrorMessage(e));
+      setFeedback({ type: "err", text: getErrorMessage(e) });
     }
   }
 
   async function toggleCategory(id: string, value: boolean) {
-    setMsg("");
+    if (actionBusy) return;
+
+    setFeedback({ type: "info", text: value ? "Activating category…" : "Deactivating category and linked services…" });
+
     try {
       await patchCategory(id, { isActive: value });
       setItems((prev) => prev.map((c) => (c.id === id ? ({ ...c, isActive: value } as Category) : c)));
       await refresh();
+      setFeedback({ type: "ok", text: value ? "✅ Category activated." : "✅ Category deactivated." });
     } catch (e: unknown) {
-      setMsg(getErrorMessage(e));
+      setFeedback({ type: "err", text: getErrorMessage(e) });
     }
   }
 
   async function deleteCategory(cat: Category) {
-    setMsg("");
+    if (actionBusy) return;
 
-    if (cat.isSystem) return setMsg("This is a system category and cannot be deleted.");
-    if (cat.servicesCount > 0) return setMsg(`Cannot delete: ${cat.servicesCount} services exist under it.`);
+    setFeedback(null);
+
+    if (cat.isSystem) {
+      setFeedback({ type: "err", text: "This is a system category and cannot be deleted." });
+      return;
+    }
+
+    if (cat.servicesCount > 0) {
+      setFeedback({ type: "err", text: `Cannot delete: ${cat.servicesCount} services exist under it.` });
+      return;
+    }
 
     const ok = confirm(`Delete category "${cat.name}" forever?\n\nThis cannot be undone.`);
     if (!ok) return;
 
+    setFeedback({ type: "info", text: `Deleting category "${cat.name}"…` });
+
     try {
       await deleteCategoryRequest(cat.id);
       setItems((prev) => prev.filter((c) => c.id !== cat.id));
-      setMsg("✅ Deleted.");
+      setFeedback({ type: "ok", text: "✅ Category deleted." });
     } catch (e: unknown) {
-      setMsg(getErrorMessage(e));
+      setFeedback({ type: "err", text: getErrorMessage(e) });
     }
   }
 
   function onDragEnd(e: DragEndEvent) {
+    if (actionBusy) return;
+
     const { active, over } = e;
     if (!over) return;
     if (active.id === over.id) return;
@@ -110,14 +146,17 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
   }
 
   async function saveOrder() {
-    setMsg("");
+    if (actionBusy) return;
+
     setSavingOrder(true);
+    setFeedback({ type: "info", text: "Saving category order…" });
+
     try {
       await Promise.all(ordered.map((c, idx) => patchCategory(c.id, { order: idx })));
-      setMsg("✅ Order saved.");
       await refresh();
+      setFeedback({ type: "ok", text: "✅ Order saved." });
     } catch (e: unknown) {
-      setMsg(getErrorMessage(e));
+      setFeedback({ type: "err", text: getErrorMessage(e) });
     } finally {
       setSavingOrder(false);
     }
@@ -126,6 +165,8 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
   return (
     <div>
       <CategoriesToolbar savingOrder={savingOrder} onSaveOrder={saveOrder} />
+
+      <AdminActionFeedback feedback={feedback} />
 
       <CategoryFormCard
         name={name}
@@ -137,7 +178,7 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
         setSlug={setSlug}
         onCreate={createCategory}
         creating={creating}
-        msg={msg}
+        msg=""
       />
 
       <CategoriesTable
@@ -152,8 +193,9 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
       <div className="mt-6">
         <button
           type="button"
+          disabled={actionBusy}
           onClick={() => void refresh()}
-          className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+          className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
         >
           Refresh
         </button>

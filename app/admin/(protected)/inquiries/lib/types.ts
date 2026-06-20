@@ -20,4 +20,4 @@ export type ApiInquiriesResponse =
   | { ok: true; items: Inquiry[] }
   | { ok: false; error?: string };
 
-export type Banner = { type: "ok" | "err"; text: string } | null;
+export type Banner = { type: "ok" | "err" | "info"; text: string } | null;

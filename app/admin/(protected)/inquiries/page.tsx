@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import InquirySection from "./components/InquirySection";
 import InquiriesToolbar from "./components/InquiriesToolbar";
 import {
@@ -20,6 +21,7 @@ export default function AdminInquiriesPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showArchivedSection, setShowArchivedSection] = useState(false);
   const [notesMap, setNotesMap] = useState<Record<string, string>>({});
+  const [actionBusy, setActionBusy] = useState(false);
 
   async function load() {
     setMsg(null);
@@ -74,8 +76,13 @@ export default function AdminInquiriesPage() {
   }
 
   async function handleArchive(id: string) {
+    if (actionBusy) return;
+
     const ok = confirm("Archive this inquiry?");
     if (!ok) return;
+
+    setActionBusy(true);
+    setMsg({ type: "info", text: "Archiving inquiry…" });
 
     try {
       await archiveInquiry(id);
@@ -88,22 +95,36 @@ export default function AdminInquiriesPage() {
       setMsg({ type: "ok", text: "✅ Archived." });
     } catch (err: unknown) {
       setMsg({ type: "err", text: err instanceof Error ? err.message : "Archive failed." });
+    } finally {
+      setActionBusy(false);
     }
   }
 
   async function handleRestore(id: string) {
+    if (actionBusy) return;
+
+    setActionBusy(true);
+    setMsg({ type: "info", text: "Restoring inquiry…" });
+
     try {
       await restoreInquiry(id);
       setItems((prev) => prev.map((p) => (p.id === id ? { ...p, isArchived: false } : p)));
       setMsg({ type: "ok", text: "✅ Restored." });
     } catch (err: unknown) {
       setMsg({ type: "err", text: err instanceof Error ? err.message : "Restore failed." });
+    } finally {
+      setActionBusy(false);
     }
   }
 
   async function handleDeleteForever(id: string) {
+    if (actionBusy) return;
+
     const ok = confirm("Delete forever? This cannot be undone.");
     if (!ok) return;
+
+    setActionBusy(true);
+    setMsg({ type: "info", text: "Deleting inquiry forever…" });
 
     try {
       await deleteInquiryForever(id);
@@ -116,10 +137,17 @@ export default function AdminInquiriesPage() {
       setMsg({ type: "ok", text: "✅ Deleted forever." });
     } catch (err: unknown) {
       setMsg({ type: "err", text: err instanceof Error ? err.message : "Delete failed." });
+    } finally {
+      setActionBusy(false);
     }
   }
 
   async function handleStatusChange(id: string, status: string) {
+    if (actionBusy) return;
+
+    setActionBusy(true);
+    setMsg({ type: "info", text: "Updating inquiry status…" });
+
     try {
       await patchInquiry(id, { status });
       setItems((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
@@ -129,10 +157,17 @@ export default function AdminInquiriesPage() {
         type: "err",
         text: err instanceof Error ? err.message : "Status update failed.",
       });
+    } finally {
+      setActionBusy(false);
     }
   }
 
   async function handleSaveNotes(id: string) {
+    if (actionBusy) return;
+
+    setActionBusy(true);
+    setMsg({ type: "info", text: "Saving inquiry notes…" });
+
     try {
       const value = notesMap[id] ?? "";
 
@@ -142,6 +177,8 @@ export default function AdminInquiriesPage() {
       setMsg({ type: "ok", text: "✅ Notes saved." });
     } catch (err: unknown) {
       setMsg({ type: "err", text: err instanceof Error ? err.message : "Save notes failed." });
+    } finally {
+      setActionBusy(false);
     }
   }
 
@@ -154,17 +191,7 @@ export default function AdminInquiriesPage() {
         onRefresh={load}
       />
 
-      {msg ? (
-        <div
-          className={`mt-4 rounded-xl border px-4 py-3 text-sm ${
-            msg.type === "ok"
-              ? "border-green-500/30 bg-green-500/10"
-              : "border-red-500/30 bg-red-500/10"
-          }`}
-        >
-          {msg.text}
-        </div>
-      ) : null}
+      <AdminActionFeedback feedback={msg} className="mt-4" />
 
       <InquirySection
         title="Active"
@@ -172,6 +199,7 @@ export default function AdminInquiriesPage() {
         archivedMode={false}
         expandedId={expandedId}
         setExpandedId={(id) => {
+          if (actionBusy) return;
           setExpandedId(id);
           setMsg(null);
         }}
@@ -187,7 +215,8 @@ export default function AdminInquiriesPage() {
       <div className="mt-6">
         <button
           type="button"
-          className="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
+          disabled={actionBusy}
+          className="rounded-xl border px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
           onClick={() => setShowArchivedSection((p) => !p)}
         >
           {showArchivedSection ? "Hide Archived" : `Show Archived (${archived.length})`}
@@ -201,6 +230,7 @@ export default function AdminInquiriesPage() {
           archivedMode={true}
           expandedId={expandedId}
           setExpandedId={(id) => {
+            if (actionBusy) return;
             setExpandedId(id);
             setMsg(null);
           }}

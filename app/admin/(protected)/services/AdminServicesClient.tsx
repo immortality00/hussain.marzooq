@@ -61,7 +61,7 @@ export default function AdminServicesClient({
     }
   }
 
-  function showBanner(type: "ok" | "err", text: string) {
+  function showBanner(type: "ok" | "err" | "info", text: string) {
     clearBannerTimer();
     setBanner({ type, text });
 
@@ -69,8 +69,10 @@ export default function AdminServicesClient({
       bannerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 0);
 
-    const ms = type === "ok" ? 4000 : 7000;
-    bannerTimerRef.current = window.setTimeout(() => setBanner(null), ms);
+    if (type !== "info") {
+      const ms = type === "ok" ? 4000 : 7000;
+      bannerTimerRef.current = window.setTimeout(() => setBanner(null), ms);
+    }
   }
 
   useEffect(() => {
@@ -98,6 +100,8 @@ export default function AdminServicesClient({
   );
 
   function onDragEnd(event: DragEndEvent) {
+    if (busy) return;
+
     const { active: a, over } = event;
     if (!over) return;
     if (a.id === over.id) return;
@@ -114,7 +118,11 @@ export default function AdminServicesClient({
   }
 
   async function handleSaveOrder() {
+    if (busy) return;
+
     setBusy(true);
+    showBanner("info", "Saving service order…");
+
     try {
       await saveOrder(active);
       showBanner("ok", "✅ Order saved.");
@@ -126,7 +134,11 @@ export default function AdminServicesClient({
   }
 
   async function handleSyncInquiryCounts() {
+    if (busy) return;
+
     setBusy(true);
+    showBanner("info", "Syncing inquiry counts…");
+
     try {
       await syncInquiryCounts();
       router.refresh();
@@ -139,12 +151,16 @@ export default function AdminServicesClient({
   }
 
   async function handleArchive(svc: Service) {
+    if (busy) return;
+
     const ok = confirm(
       `Delete "${svc.name}"?\n\nThis will ARCHIVE it (hidden from public).\nYou can restore later.`
     );
     if (!ok) return;
 
     setBusy(true);
+    showBanner("info", `Archiving "${svc.name}"…`);
+
     try {
       await archiveService(svc.id);
       setServices((prev) => prev.map((p) => (p.id === svc.id ? { ...p, isArchived: true, isActive: false } : p)));
@@ -157,7 +173,11 @@ export default function AdminServicesClient({
   }
 
   async function handleRestore(svc: Service) {
+    if (busy) return;
+
     setBusy(true);
+    showBanner("info", `Restoring "${svc.name}"…`);
+
     try {
       await patchService(svc.id, { isArchived: false });
       setServices((prev) => prev.map((p) => (p.id === svc.id ? { ...p, isArchived: false } : p)));
@@ -170,6 +190,8 @@ export default function AdminServicesClient({
   }
 
   async function handleDeleteForever(svc: Service) {
+    if (busy) return;
+
     if (svc.inquiriesCount > 0) {
       showBanner("err", "❌ Cannot delete forever: this service has inquiries. Keep it archived.");
       return;
@@ -179,6 +201,8 @@ export default function AdminServicesClient({
     if (!ok) return;
 
     setBusy(true);
+    showBanner("info", `Deleting "${svc.name}" forever…`);
+
     try {
       await deleteServiceForever(svc.id);
       setServices((prev) => prev.filter((p) => p.id !== svc.id));
@@ -191,9 +215,13 @@ export default function AdminServicesClient({
   }
 
   async function handleToggleActive(svc: Service) {
+    if (busy) return;
+
     setBusy(true);
+    const next = !svc.isActive;
+    showBanner("info", next ? `Activating "${svc.name}"…` : `Deactivating "${svc.name}"…`);
+
     try {
-      const next = !svc.isActive;
       await patchService(svc.id, { isActive: next });
       setServices((prev) => prev.map((p) => (p.id === svc.id ? { ...p, isActive: next } : p)));
       showBanner("ok", next ? `✅ Activated "${svc.name}".` : `✅ Deactivated "${svc.name}".`);
@@ -216,7 +244,11 @@ export default function AdminServicesClient({
   }
 
   async function handleCreateSave(patch: Partial<Service>) {
+    if (busy) return;
+
     setBusy(true);
+    showBanner("info", "Creating service…");
+
     try {
       const raw = await createService(patch);
       if (!isCreateServiceResponse(raw) || raw.ok !== true) throw new Error("Create failed");
@@ -257,9 +289,11 @@ export default function AdminServicesClient({
   }
 
   async function handleEditSave(patch: Partial<Service>) {
-    if (!editing) return;
+    if (!editing || busy) return;
 
     setBusy(true);
+    showBanner("info", `Updating "${editing.name}"…`);
+
     try {
       await patchService(editing.id, patch);
 
@@ -301,7 +335,9 @@ export default function AdminServicesClient({
       <ServicesToolbar
         busy={busy}
         onSyncInquiryCounts={handleSyncInquiryCounts}
-        onCreate={() => setCreating(true)}
+        onCreate={() => {
+          if (!busy) setCreating(true);
+        }}
         onSaveOrder={handleSaveOrder}
       />
 
@@ -309,7 +345,14 @@ export default function AdminServicesClient({
       <div className="mt-3 space-y-3">
         {!mounted ? (
           active.map((s) => (
-            <ServiceStaticRow key={s.id} service={s} onEdit={setEditing} onArchive={(x) => void handleArchive(x)} />
+            <ServiceStaticRow
+              key={s.id}
+              service={s}
+              onEdit={(service) => {
+                if (!busy) setEditing(service);
+              }}
+              onArchive={(x) => void handleArchive(x)}
+            />
           ))
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
@@ -318,7 +361,9 @@ export default function AdminServicesClient({
                 <SortableServiceItem
                   key={s.id}
                   service={s}
-                  onEdit={(x) => setEditing(x)}
+                  onEdit={(x) => {
+                    if (!busy) setEditing(x);
+                  }}
                   onToggleActive={(x) => void handleToggleActive(x)}
                   onDeleteForever={(x) => void handleArchive(x)}
                 />
@@ -334,7 +379,9 @@ export default function AdminServicesClient({
         busy={busy}
         primaryActionLabel="Activate"
         onPrimaryAction={handleToggleActive}
-        onEdit={setEditing}
+        onEdit={(service) => {
+          if (!busy) setEditing(service);
+        }}
         onSecondaryAction={handleArchive}
         secondaryActionLabel="Delete"
         secondaryDanger={true}
@@ -347,7 +394,9 @@ export default function AdminServicesClient({
         busy={busy}
         primaryActionLabel="Restore"
         onPrimaryAction={handleRestore}
-        onEdit={setEditing}
+        onEdit={(service) => {
+          if (!busy) setEditing(service);
+        }}
         onSecondaryAction={handleDeleteForever}
         secondaryActionLabel="Delete forever"
         secondaryDanger={true}
@@ -358,7 +407,9 @@ export default function AdminServicesClient({
         open={creating}
         initial={null}
         categories={categories}
-        onClose={() => setCreating(false)}
+        onClose={() => {
+          if (!busy) setCreating(false);
+        }}
         onSave={handleCreateSave}
       />
 
@@ -366,7 +417,9 @@ export default function AdminServicesClient({
         open={!!editing}
         initial={editing}
         categories={categories}
-        onClose={() => setEditing(null)}
+        onClose={() => {
+          if (!busy) setEditing(null);
+        }}
         onSave={handleEditSave}
       />
     </main>

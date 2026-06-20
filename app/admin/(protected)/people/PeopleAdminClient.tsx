@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { CldUploadWidget } from "next-cloudinary";
+import { AdminActionFeedback, type AdminActionFeedbackState } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
 
 type WidgetResult = { info?: unknown };
@@ -32,7 +33,8 @@ export default function PeopleAdminClient() {
   const [items, setItems] = useState<PersonItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [banner, setBanner] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [deletingId, setDeletingId] = useState("");
+  const [banner, setBanner] = useState<AdminActionFeedbackState>(null);
 
   const [mode, setMode] = useState<"list" | "form">(createPrefill ? "form" : "list");
   const [editingId, setEditingId] = useState("");
@@ -43,6 +45,8 @@ export default function PeopleAdminClient() {
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [isPublic, setIsPublic] = useState(true);
+
+  const actionBusy = saving || Boolean(deletingId);
 
   async function load() {
     setLoading(true);
@@ -95,11 +99,13 @@ export default function PeopleAdminClient() {
   }
 
   function openCreate() {
+    if (actionBusy) return;
     resetForm();
     setMode("form");
   }
 
   function openEdit(item: PersonItem) {
+    if (actionBusy) return;
     setEditingId(item.id);
     setName(item.name);
     setSlug(item.slug);
@@ -110,11 +116,14 @@ export default function PeopleAdminClient() {
   }
 
   function backToList() {
+    if (actionBusy) return;
     resetForm();
     setMode("list");
   }
 
   async function save() {
+    if (saving) return;
+
     setBanner(null);
 
     if (!name.trim()) {
@@ -128,6 +137,8 @@ export default function PeopleAdminClient() {
     }
 
     setSaving(true);
+    setBanner({ type: "info", text: editingId ? "Updating person profile…" : "Creating person profile…" });
+
     const payload = {
       name: name.trim(),
       slug: slug.trim(),
@@ -146,13 +157,13 @@ export default function PeopleAdminClient() {
       const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
       if (!res.ok || !data?.ok) {
         setBanner({ type: "err", text: data?.error ?? "Save failed." });
-        setSaving(false);
         return;
       }
 
       setBanner({ type: "ok", text: editingId ? "✅ Person updated." : "✅ Person created." });
       await load();
-      backToList();
+      resetForm();
+      setMode("list");
     } catch {
       setBanner({ type: "err", text: "Save failed." });
     } finally {
@@ -161,10 +172,14 @@ export default function PeopleAdminClient() {
   }
 
   async function remove(id: string) {
+    if (deletingId) return;
+
     const ok = confirm("Delete this person profile?");
     if (!ok) return;
 
-    setBanner(null);
+    setDeletingId(id);
+    setBanner({ type: "info", text: "Deleting person profile…" });
+
     try {
       const res = await fetch(`/api/people/${encodeURIComponent(id)}`, { method: "DELETE" });
       const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
@@ -177,10 +192,13 @@ export default function PeopleAdminClient() {
       setBanner({ type: "ok", text: "✅ Person deleted." });
 
       if (editingId === id) {
-        backToList();
+        resetForm();
+        setMode("list");
       }
     } catch {
       setBanner({ type: "err", text: "Delete failed." });
+    } finally {
+      setDeletingId("");
     }
   }
 
@@ -197,31 +215,25 @@ export default function PeopleAdminClient() {
         {mode === "list" ? (
           <button
             type="button"
+            disabled={actionBusy}
             onClick={openCreate}
-            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           >
             New profile
           </button>
         ) : (
           <button
             type="button"
+            disabled={actionBusy}
             onClick={backToList}
-            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-60"
           >
             Back to list
           </button>
         )}
       </div>
 
-      {banner ? (
-        <div
-          className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
-            banner.type === "ok" ? "border-green-500/30 bg-green-500/10" : "border-red-500/30 bg-red-500/10"
-          }`}
-        >
-          {banner.text}
-        </div>
-      ) : null}
+      <AdminActionFeedback feedback={banner} />
 
       {mode === "list" ? (
         <section className="mt-8 rounded-[2rem] border p-5">
@@ -261,17 +273,19 @@ export default function PeopleAdminClient() {
                     <div className="flex gap-2">
                       <button
                         type="button"
+                        disabled={actionBusy}
                         onClick={() => openEdit(item)}
-                        className="rounded-xl border px-3 py-2 text-sm hover:bg-accent"
+                        className="rounded-xl border px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         Edit
                       </button>
                       <button
                         type="button"
+                        disabled={actionBusy}
                         onClick={() => void remove(item.id)}
-                        className="rounded-xl border px-3 py-2 text-sm hover:bg-red-500/10"
+                        className="rounded-xl border px-3 py-2 text-sm hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        Delete
+                        {deletingId === item.id ? "Deleting…" : "Delete"}
                       </button>
                     </div>
                   </div>
@@ -289,8 +303,9 @@ export default function PeopleAdminClient() {
               <label className="text-sm font-medium">Name</label>
               <input
                 value={name}
+                disabled={actionBusy}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
                 placeholder="Person name"
               />
             </div>
@@ -299,8 +314,9 @@ export default function PeopleAdminClient() {
               <label className="text-sm font-medium">Slug</label>
               <input
                 value={slug}
+                disabled={actionBusy}
                 onChange={(e) => setSlug(e.target.value)}
-                className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
                 placeholder="Optional"
               />
             </div>
@@ -311,16 +327,10 @@ export default function PeopleAdminClient() {
               <div className="flex flex-wrap gap-2">
                 <CldUploadWidget
                   signatureEndpoint="/api/sign-cloudinary-params"
-                  options={{
-                    folder: CLOUDINARY_PEOPLE_FOLDER,
-                    multiple: false,
-                    resourceType: "image",
-                    cropping: true,
-                    croppingAspectRatio: 1,
-                    showSkipCropButton: false,
-                  }}
+                  options={{ folder: CLOUDINARY_PEOPLE_FOLDER, multiple: false, resourceType: "image" }}
                   onSuccess={(result: unknown) => {
-                    const info = (result as WidgetResult)?.info;
+                    const r = result as WidgetResult;
+                    const info = r?.info;
                     if (!isRecord(info)) return;
                     const secureUrl = getString(info.secure_url);
                     if (secureUrl) setAvatarUrl(secureUrl);
@@ -329,49 +339,59 @@ export default function PeopleAdminClient() {
                   {({ open }) => (
                     <button
                       type="button"
+                      disabled={actionBusy}
                       onClick={() => open()}
-                      className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+                      className="rounded-xl border px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      Upload & crop avatar
+                      Upload avatar
                     </button>
                   )}
                 </CldUploadWidget>
 
                 <button
                   type="button"
+                  disabled={actionBusy}
                   onClick={() => setAvatarUrl("")}
-                  className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
+                  className="rounded-xl border px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Clear
                 </button>
               </div>
 
+              <input
+                value={avatarUrl}
+                disabled={actionBusy}
+                onChange={(e) => setAvatarUrl(e.target.value)}
+                className="w-full rounded-xl border bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                placeholder="Avatar URL"
+              />
+
               {avatarUrl ? (
-                <div className="flex justify-center pt-2">
-                  <div className="relative h-28 w-28 overflow-hidden rounded-full border bg-muted">
-                    <Image src={avatarUrl} alt="Avatar preview" fill className="object-cover" sizes="112px" />
-                  </div>
+                <div className="relative h-24 w-24 overflow-hidden rounded-full border bg-muted">
+                  <Image src={avatarUrl} alt="Avatar preview" fill className="object-cover" sizes="96px" />
                 </div>
-              ) : (
-                <div className="rounded-2xl border p-4 text-sm text-muted-foreground">
-                  No avatar uploaded yet.
-                </div>
-              )}
+              ) : null}
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium">Bio</label>
               <textarea
                 value={bio}
+                disabled={actionBusy}
                 onChange={(e) => setBio(e.target.value)}
-                className="min-h-32 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                placeholder="Optional"
+                className="h-32 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                placeholder="Short public bio"
               />
             </div>
 
             <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
-              Public
+              <input
+                type="checkbox"
+                checked={isPublic}
+                disabled={actionBusy}
+                onChange={(e) => setIsPublic(e.target.checked)}
+              />
+              Public profile
             </label>
 
             <div className="flex flex-wrap gap-2">
@@ -379,15 +399,16 @@ export default function PeopleAdminClient() {
                 type="button"
                 disabled={saving}
                 onClick={() => void save()}
-                className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:opacity-60"
+                className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {saving ? "Saving..." : editingId ? "Update" : "Create"}
+                {saving ? (editingId ? "Updating…" : "Creating…") : editingId ? "Update" : "Create"}
               </button>
 
               <button
                 type="button"
+                disabled={actionBusy}
                 onClick={backToList}
-                className="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
+                className="rounded-xl border px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Cancel
               </button>
