@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { MediaGrid } from "@/components/media/MediaGrid";
+import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPublicPersonBySlug } from "@/lib/server/public-people";
 
@@ -32,7 +33,9 @@ export default async function PersonDetailPage({
                   sizes="144px"
                   priority
                 />
-              ) : null}
+              ) : (
+                <div className="h-full w-full bg-[radial-gradient(circle_at_35%_20%,rgba(255,255,255,0.55),transparent_26%),linear-gradient(135deg,var(--muted),var(--background))]" />
+              )}
             </div>
           </div>
 
@@ -45,14 +48,33 @@ export default async function PersonDetailPage({
           ) : null}
         </section>
 
-        {person.mediaItems.length === 0 ? (
-          <div className="mt-12 rounded-[2rem] border p-8 text-sm text-muted-foreground">
-            No public work linked to this profile yet.
-          </div>
-        ) : (
+        {person.mediaItems.length > 0 ? (
           <div className="mt-12">
             <MediaGrid items={person.mediaItems} />
           </div>
+        ) : (
+          <PortfolioFallbackPanel
+            title={`A focused visual profile for ${person.name}.`}
+            text="Portraits, collaborations, and related work can be explored through the main photography and video sections."
+            items={[
+              {
+                title: "Photography",
+                text: "Portraits, fashion, weddings, events, and cinematic still work.",
+              },
+              {
+                title: "Videography",
+                text: "Movement, performance, events, and visual stories in motion.",
+              },
+              {
+                title: "Booking",
+                text: "Start a related shoot, collaboration, or people-focused project.",
+              },
+            ]}
+            links={[
+              { href: "/photography", label: "Photography" },
+              { href: "/contact?category=photography", label: "Book", primary: true },
+            ]}
+          />
         )}
       </main>
 

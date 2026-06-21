@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import PublicReviewForm from "@/components/testimonials/PublicReviewForm";
 import TestimonialsSection from "@/components/testimonials/TestimonialsSection";
+import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { getPublicTestimonials } from "@/lib/server/testimonials";
 
 export const dynamic = "force-dynamic";
@@ -29,11 +30,7 @@ export default async function TestimonialsPage() {
               <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-px bg-border/60 lg:block" />
 
               <div className="max-w-3xl">
-                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">
-                  Reviews
-                </p>
-
-                <h1 className="mt-4 text-balance text-3xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-4xl lg:text-5xl">
+                <h1 className="text-balance text-3xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-4xl lg:text-5xl">
                   What people say about me
                 </h1>
 
@@ -90,12 +87,31 @@ export default async function TestimonialsPage() {
         </div>
 
         <div className="mt-7 sm:mt-8">
-          {data.items.length === 0 ? (
-            <div className="rounded-[1.5rem] border border-border/60 bg-muted/20 p-8 text-sm text-muted-foreground">
-              No approved public reviews yet.
-            </div>
-          ) : (
+          {data.items.length > 0 ? (
             <TestimonialsSection items={data.items} />
+          ) : (
+            <PortfolioFallbackPanel
+              title="Client trust is built through clear direction and strong delivery."
+              text="Photography, film, dance, and creative work shaped around the people and moments in front of the camera."
+              items={[
+                {
+                  title: "Portraits",
+                  text: "People-focused work with atmosphere, confidence, and emotional clarity.",
+                },
+                {
+                  title: "Events",
+                  text: "Coverage built around timing, story, movement, and a strong final selection.",
+                },
+                {
+                  title: "Creative work",
+                  text: "Collaborations with artists, performers, brands, and personal projects.",
+                },
+              ]}
+              links={[
+                { href: "/photography", label: "View work" },
+                { href: "/contact", label: "Book", primary: true },
+              ]}
+            />
           )}
         </div>
       </section>

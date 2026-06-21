@@ -23,10 +23,6 @@ export default async function AdminNftsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">NFTs</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            NFT items are managed through the unified media system. Use the category-first media
-            editor and filter the media list by NFT.
-          </p>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -34,7 +30,7 @@ export default async function AdminNftsPage() {
             href="/admin/media?category=nft"
             className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90"
           >
-            Create NFT item
+            Create NFT
           </Link>
           <Link
             href="/admin/media/list?category=nft"
@@ -48,7 +44,7 @@ export default async function AdminNftsPage() {
       <section className="mt-8 grid gap-4 md:grid-cols-3">
         <div className="rounded-[2rem] border p-5">
           <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            Total items
+            Total
           </div>
           <div className="mt-3 text-3xl font-semibold tracking-tight">{total}</div>
         </div>

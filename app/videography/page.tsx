@@ -1,4 +1,5 @@
 import { MediaGrid } from "@/components/media/MediaGrid";
+import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
 import { toEmbedUrl } from "@/components/media/utils";
 import { getShowreelItem, getVideographyItems } from "@/lib/server/public-media";
@@ -16,10 +17,12 @@ export default async function VideographyPage() {
   return (
     <>
       <main className="mx-auto max-w-6xl px-4 py-16">
-        <h1 className="text-4xl font-semibold tracking-tight">Videography</h1>
-        <p className="mt-3 max-w-2xl text-muted-foreground">
-          Cinematic films, events, dance, fashion, weddings, and visual stories.
-        </p>
+        <section className="max-w-3xl">
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Videography</h1>
+          <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
+            Cinematic films, dance, events, fashion, weddings, and movement-led visual stories.
+          </p>
+        </section>
 
         {showreel?.type === "video" && showreel.secureUrl ? (
           <section
@@ -56,7 +59,30 @@ export default async function VideographyPage() {
 
         {videos.length > 0 ? (
           <MediaGrid items={videos} mediaMode="video" searchCategory="videography" />
-        ) : null}
+        ) : (
+          <PortfolioFallbackPanel
+            title="Films, events, dance, and moving-image work with rhythm."
+            text="Video direction shaped around atmosphere, pacing, movement, and cinematic clarity."
+            items={[
+              {
+                title: "Dance & movement",
+                text: "Body language, timing, rhythm, and physical energy translated through the camera.",
+              },
+              {
+                title: "Events & festivals",
+                text: "Coverage built around atmosphere, pacing, people, and the emotion of the moment.",
+              },
+              {
+                title: "Fashion & weddings",
+                text: "Moving-image stories with elegance, texture, and strong visual direction.",
+              },
+            ]}
+            links={[
+              { href: "/services", label: "View services" },
+              { href: "/contact?category=videography", label: "Book video", primary: true },
+            ]}
+          />
+        )}
       </main>
 
       <StickyCta />

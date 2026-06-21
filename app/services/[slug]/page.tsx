@@ -56,9 +56,11 @@ export default async function ServiceDetailPage({
             ) : null}
           </div>
 
-          <p className="max-w-xl whitespace-pre-wrap text-base leading-7 text-muted-foreground">
-            {description || "Service details will appear here once added from the admin dashboard."}
-          </p>
+          {description ? (
+            <p className="max-w-xl whitespace-pre-wrap text-base leading-7 text-muted-foreground">
+              {description}
+            </p>
+          ) : null}
 
           <div className="flex flex-wrap gap-3 pt-2">
             <Link
@@ -77,22 +79,18 @@ export default async function ServiceDetailPage({
           </div>
         </div>
 
-        <div>
+        <div className="overflow-hidden rounded-[2rem] border bg-muted">
           {imageUrl ? (
-            <div className="overflow-hidden rounded-[2rem] border bg-muted">
-              <Image
-                src={imageUrl}
-                alt={name}
-                width={1600}
-                height={1100}
-                className="h-auto w-full object-cover"
-                priority
-              />
-            </div>
+            <Image
+              src={imageUrl}
+              alt={name}
+              width={1600}
+              height={1100}
+              className="h-auto w-full object-cover"
+              priority
+            />
           ) : (
-            <div className="flex min-h-[420px] items-center justify-center rounded-[2rem] border bg-muted/40 text-sm text-muted-foreground">
-              No service image yet.
-            </div>
+            <div className="min-h-[420px] bg-[radial-gradient(circle_at_28%_20%,rgba(255,255,255,0.56),transparent_26%),linear-gradient(135deg,var(--muted),var(--background))]" />
           )}
         </div>
       </section>

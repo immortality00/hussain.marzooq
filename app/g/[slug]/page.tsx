@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import GalleryPasswordForm from "./GalleryPasswordForm";
 import { getPrivateGalleryPublicBySlug } from "@/lib/server/private-galleries";
 import PrivateGalleryBrowser from "@/components/private-galleries/PrivateGalleryBrowser";
+import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -39,17 +40,28 @@ export default async function PrivateGalleryPage({
         ) : null}
       </section>
 
-      {gallery.mediaItems.length === 0 ? (
-        <div className="mt-10 rounded-[2rem] border p-8 text-sm text-muted-foreground">
-          This gallery has no media yet.
-        </div>
-      ) : (
+      {gallery.mediaItems.length > 0 ? (
         <PrivateGalleryBrowser items={gallery.mediaItems} gallerySlug={gallery.slug} />
+      ) : (
+        <PortfolioFallbackPanel
+          title="Private gallery"
+          text="A clean, password-protected space for selected visual work."
+          items={[
+            {
+              title: "Selection",
+              text: "A focused private viewing experience for photography and video.",
+            },
+            {
+              title: "Delivery",
+              text: "A simple gallery structure designed for reviewing selected work.",
+            },
+            {
+              title: "Access",
+              text: "Protected by a private link and password.",
+            },
+          ]}
+        />
       )}
-
-      <div className="mt-10 rounded-[2rem] border p-5 text-sm text-muted-foreground">
-        Downloads are available for uploaded assets in this gallery.
-      </div>
     </main>
   );
 }

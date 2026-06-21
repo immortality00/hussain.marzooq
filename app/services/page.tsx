@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
+import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { getPublicServicesData, workLinkForCategory } from "@/lib/server/public-services";
 
 export const dynamic = "force-dynamic";
@@ -31,8 +32,12 @@ export default async function ServicesPage({
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
-      <header className="max-w-2xl">
+      <header className="max-w-3xl">
         <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Services</h1>
+        <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
+          Photography, film, dance, creative direction, web systems, and digital work shaped around
+          the tone of the project.
+        </p>
       </header>
 
       <div className="mt-8 flex flex-wrap gap-2">
@@ -53,13 +58,29 @@ export default async function ServicesPage({
         })}
       </div>
 
-      <section className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {services.length === 0 ? (
-          <div className="rounded-3xl border p-8 text-sm text-muted-foreground">
-            No services found for this category yet.
-          </div>
-        ) : (
-          services.map((s, index) => {
+      {services.length === 0 ? (
+        <PortfolioFallbackPanel
+          title="Creative services shaped around visual direction and clean delivery."
+          text="Every project starts with the right format, mood, and production approach."
+          items={[
+            {
+              title: "Photography",
+              text: "Portraits, fashion, weddings, events, and image-led creative direction.",
+            },
+            {
+              title: "Film",
+              text: "Dance, events, fashion, weddings, festivals, and cinematic stories.",
+            },
+            {
+              title: "Digital",
+              text: "Web systems, NFT presentation, portfolio structure, and custom creative tools.",
+            },
+          ]}
+          links={[{ href: "/contact", label: "Start a project", primary: true }]}
+        />
+      ) : (
+        <section className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {services.map((s, index) => {
             const img = s.imageUrl.trim();
             const hasPrice = typeof s.startingPrice === "number" && Number.isFinite(s.startingPrice);
             const workLink = workLinkForCategory(s.category);
@@ -83,10 +104,10 @@ export default async function ServicesPage({
                         fetchPriority={imagePriority ? "high" : undefined}
                       />
                     ) : (
-                      <div className="h-full w-full bg-linear-to-br from-muted to-background" />
+                      <div className="h-full w-full bg-[radial-gradient(circle_at_28%_20%,rgba(255,255,255,0.55),transparent_26%),linear-gradient(135deg,var(--muted),var(--background))]" />
                     )}
 
-                    <div className="absolute inset-0 bg-linear-to-t from-black/65 via-black/15 to-transparent" />
+                    <div className="absolute inset-0 bg-linear-to-t from-black/68 via-black/14 to-transparent" />
 
                     <div className="absolute left-4 top-4 inline-flex rounded-full border border-white/20 bg-black/35 px-3 py-1 text-[11px] tracking-[0.14em] text-white backdrop-blur">
                       {s.category.toUpperCase()}
@@ -107,13 +128,9 @@ export default async function ServicesPage({
                 </Link>
 
                 <div className="p-5">
-                  {s.description ? (
-                    <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">{s.description}</p>
-                  ) : (
-                    <p className="text-sm leading-6 text-muted-foreground">
-                      Premium creative execution tailored to the tone and direction of your project.
-                    </p>
-                  )}
+                  <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
+                    {s.description || "Creative execution tailored to the tone and direction of your project."}
+                  </p>
 
                   <div className="mt-6 flex flex-wrap gap-2">
                     <Link
@@ -140,9 +157,9 @@ export default async function ServicesPage({
                 </div>
               </article>
             );
-          })
-        )}
-      </section>
+          })}
+        </section>
+      )}
     </main>
   );
 }

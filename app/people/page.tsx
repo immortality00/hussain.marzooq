@@ -1,4 +1,5 @@
 import PeopleIndex from "@/components/people/PeopleIndex";
+import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPublicPeople } from "@/lib/server/public-people";
 
@@ -15,16 +16,35 @@ export default async function PeoplePage() {
           <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">People</h1>
 
           <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
-            Featured people connected to public work across the portfolio.
+            Portraits, collaborators, artists, dancers, clients, and people connected to the visual work.
           </p>
         </section>
 
-        {items.length === 0 ? (
-          <div className="mt-10 rounded-[2rem] border p-8 text-sm text-muted-foreground">
-            No public people profiles yet.
-          </div>
-        ) : (
+        {items.length > 0 ? (
           <PeopleIndex items={items} />
+        ) : (
+          <PortfolioFallbackPanel
+            title="People-focused work built around presence and character."
+            text="Portraits, movement, fashion, and collaborations with a clear visual identity."
+            items={[
+              {
+                title: "Portrait presence",
+                text: "Images built around expression, posture, atmosphere, and strong personal direction.",
+              },
+              {
+                title: "Movement",
+                text: "Dance and performance work shaped through rhythm, timing, and physical language.",
+              },
+              {
+                title: "Creative collaboration",
+                text: "Artists, clients, performers, and brands framed through a cinematic point of view.",
+              },
+            ]}
+            links={[
+              { href: "/photography", label: "View photography" },
+              { href: "/contact?category=photography", label: "Book a shoot", primary: true },
+            ]}
+          />
         )}
       </main>
 

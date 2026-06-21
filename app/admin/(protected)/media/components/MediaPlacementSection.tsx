@@ -21,13 +21,8 @@ export default function MediaPlacementSection({
   const secondary = categories.filter((c) => c !== primaryCategory);
 
   return (
-    <section className="rounded-3xl border p-5 space-y-5">
-      <div>
-        <div className="text-sm font-medium">Category</div>
-        <div className="mt-1 text-xs text-muted-foreground">
-          Choose the primary placement first. The form adapts to that category.
-        </div>
-      </div>
+    <section className="space-y-5 rounded-3xl border p-5">
+      <div className="text-sm font-medium">Category</div>
 
       <div className="grid gap-3 sm:grid-cols-2">
         {MEDIA_CATEGORIES.map((c) => {
@@ -46,7 +41,6 @@ export default function MediaPlacementSection({
               ].join(" ")}
             >
               <div className="font-medium">{c.label}</div>
-              <div className="text-xs text-muted-foreground">{c.hint}</div>
             </button>
           );
         })}

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { PublicTestimonial } from "@/lib/server/testimonials";
+import { toEmbedUrl } from "@/components/media/utils";
 
 export function HomeTrustAndShowreel({
   testimonial,
@@ -8,19 +9,20 @@ export function HomeTrustAndShowreel({
   testimonial: PublicTestimonial | null;
   showreelUrl: string | null;
 }) {
+  const showreelEmbed = showreelUrl ? toEmbedUrl(showreelUrl) : null;
+  const showreelVideo = showreelUrl && !showreelEmbed ? showreelUrl : null;
+
   return (
     <section className="section-shell grid gap-5 pb-28 pt-8 sm:pb-32 lg:grid-cols-2">
       <div className="premium-panel p-6 sm:p-8">
-        <div className="eyebrow">Trust</div>
-
-        <h2 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">
-          Real feedback, approved and presented as part of the visual story.
+        <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+          Trust built through clear direction and strong final delivery.
         </h2>
 
-        <p className="mt-5 text-lg leading-8 text-muted-foreground">
+        <p className="mt-6 text-lg leading-8 text-muted-foreground">
           {testimonial
             ? `“${testimonial.review}”`
-            : "Photography, film, and creative direction built around clear communication, trust, and a strong final result."}
+            : "Photography, film, movement, and creative direction shaped with care from the first conversation to the final selection."}
         </p>
 
         <Link
@@ -31,25 +33,42 @@ export function HomeTrustAndShowreel({
         </Link>
       </div>
 
-      <div className="premium-panel p-6 sm:p-8">
-        <div className="eyebrow">Showreel</div>
+      <div className="overflow-hidden rounded-[2rem] border bg-muted shadow-sm">
+        <div className="aspect-video bg-black">
+          {showreelEmbed ? (
+            <iframe
+              className="h-full w-full"
+              src={showreelEmbed}
+              title="Showreel"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              loading="lazy"
+            />
+          ) : showreelVideo ? (
+            <video
+              className="h-full w-full"
+              controls
+              playsInline
+              preload="metadata"
+              src={showreelVideo}
+            />
+          ) : (
+            <div className="h-full w-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent_26%),linear-gradient(135deg,#050505,#1f1f24)]" />
+          )}
+        </div>
 
-        <h2 className="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl">
-          Film and motion as a first-class part of the portfolio.
-        </h2>
+        <div className="p-6 sm:p-8">
+          <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            Film, rhythm, and movement in one visual language.
+          </h2>
 
-        <p className="mt-5 text-sm leading-7 text-muted-foreground sm:text-base">
-          {showreelUrl
-            ? "Cinematic movement, events, fashion, and visual rhythm shaped into a focused video experience."
-            : "Video work shaped around movement, atmosphere, rhythm, and strong visual direction."}
-        </p>
-
-        <Link
-          href="/videography#showreel"
-          className="mt-7 inline-flex rounded-full border px-5 py-3 text-sm hover:bg-accent"
-        >
-          Watch videos
-        </Link>
+          <Link
+            href="/videography#showreel"
+            className="mt-7 inline-flex rounded-full border px-5 py-3 text-sm hover:bg-accent"
+          >
+            Watch videos
+          </Link>
+        </div>
       </div>
     </section>
   );

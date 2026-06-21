@@ -1,11 +1,11 @@
 import type { MediaCategory } from "./types";
 
-export const MEDIA_CATEGORIES: Array<{ key: MediaCategory; label: string; hint: string }> = [
-  { key: "photography", label: "Photography", hint: "Shows on /photography" },
-  { key: "videography", label: "Videography", hint: "Shows on /videography/videos" },
-  { key: "showreel", label: "Showreel", hint: "Used on videography showreel" },
-  { key: "nft", label: "NFT", hint: "Shows on NFT page" },
-  { key: "art", label: "Art", hint: "Shows on Art page" },
+export const MEDIA_CATEGORIES: Array<{ key: MediaCategory; label: string }> = [
+  { key: "photography", label: "Photography" },
+  { key: "videography", label: "Videography" },
+  { key: "showreel", label: "Showreel" },
+  { key: "nft", label: "NFT" },
+  { key: "art", label: "Art" },
 ];
 
 export function isRecord(v: unknown): v is Record<string, unknown> {
