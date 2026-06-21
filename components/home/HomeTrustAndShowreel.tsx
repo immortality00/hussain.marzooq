@@ -20,7 +20,7 @@ export function HomeTrustAndShowreel({
         <p className="mt-5 text-lg leading-8 text-muted-foreground">
           {testimonial
             ? `“${testimonial.review}”`
-            : "Testimonials are being curated. New public reviews will appear after approval."}
+            : "Photography, film, and creative direction built around clear communication, trust, and a strong final result."}
         </p>
 
         <Link
@@ -40,8 +40,8 @@ export function HomeTrustAndShowreel({
 
         <p className="mt-5 text-sm leading-7 text-muted-foreground sm:text-base">
           {showreelUrl
-            ? "The current showreel is connected and ready as the entry point into video work."
-            : "The video page is prepared for a showreel-led presentation once the final reel is selected."}
+            ? "Cinematic movement, events, fashion, and visual rhythm shaped into a focused video experience."
+            : "Video work shaped around movement, atmosphere, rhythm, and strong visual direction."}
         </p>
 
         <Link

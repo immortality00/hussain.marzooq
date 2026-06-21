@@ -37,21 +37,23 @@ export default function WebDevelopmentPage() {
               DIGITAL BUILDS
             </div>
 
-            <h1 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">Web Development</h1>
+            <h1 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
+              Web Development
+            </h1>
 
             <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-              Design-led front-end work, custom portfolio systems, admin flows, and digital presentation
-              tools connected to the same creative direction as the visual work.
+              Design-led front-end work, custom portfolio systems, admin flows, and digital
+              presentation tools connected to the same creative direction as the visual work.
             </p>
           </div>
 
           <div className="rounded-[2rem] border bg-background/60 p-6 shadow-sm backdrop-blur">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Positioning
+              Creative technology
             </div>
             <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              This is not a separate generic developer profile. It is part of the HM Visuals system:
-              visual design, content structure, client experience, and technical execution working together.
+              Visual design, content structure, client experience, and technical execution working
+              together inside one focused digital system.
             </p>
           </div>
         </section>
@@ -77,8 +79,8 @@ export default function WebDevelopmentPage() {
               Interfaces with structure, not just surface.
             </h2>
             <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              The work focuses on systems that make creative content easier to present, manage, search,
-              connect, and deliver with a premium public experience.
+              The work focuses on systems that make creative content easier to present, manage,
+              search, connect, and deliver with a premium public experience.
             </p>
           </div>
 
@@ -107,8 +109,8 @@ export default function WebDevelopmentPage() {
                 Build a visual system that feels as strong as the work it holds.
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-background/70">
-                Create a portfolio, interface, admin system, or digital presentation layer with clear
-                structure and high-end visual direction.
+                Create a portfolio, interface, admin system, or digital presentation layer with
+                clear structure and high-end visual direction.
               </p>
             </div>
 

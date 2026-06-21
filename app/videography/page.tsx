@@ -21,9 +21,12 @@ export default async function VideographyPage() {
           Cinematic films, events, dance, fashion, weddings, and visual stories.
         </p>
 
-        <section id="showreel" className="mt-10 overflow-hidden rounded-3xl border bg-muted scroll-mt-24">
-          <div className="aspect-video w-full bg-black">
-            {showreel?.type === "video" && showreel.secureUrl ? (
+        {showreel?.type === "video" && showreel.secureUrl ? (
+          <section
+            id="showreel"
+            className="mt-10 overflow-hidden rounded-3xl border bg-muted scroll-mt-24"
+          >
+            <div className="aspect-video w-full bg-black">
               <video
                 className="h-full w-full"
                 controls
@@ -31,7 +34,14 @@ export default async function VideographyPage() {
                 preload="metadata"
                 src={showreel.secureUrl}
               />
-            ) : showreelEmbed ? (
+            </div>
+          </section>
+        ) : showreelEmbed ? (
+          <section
+            id="showreel"
+            className="mt-10 overflow-hidden rounded-3xl border bg-muted scroll-mt-24"
+          >
+            <div className="aspect-video w-full bg-black">
               <iframe
                 className="h-full w-full"
                 src={showreelEmbed}
@@ -40,21 +50,13 @@ export default async function VideographyPage() {
                 allowFullScreen
                 loading="lazy"
               />
-            ) : (
-              <div className="flex h-full w-full items-center justify-center text-sm text-white/70">
-                The showreel is being prepared.
-              </div>
-            )}
-          </div>
-        </section>
+            </div>
+          </section>
+        ) : null}
 
-        {videos.length === 0 ? (
-          <div className="mt-10 rounded-2xl border p-6 text-sm text-muted-foreground">
-            A new video selection is being prepared. Please check back soon.
-          </div>
-        ) : (
+        {videos.length > 0 ? (
           <MediaGrid items={videos} mediaMode="video" searchCategory="videography" />
-        )}
+        ) : null}
       </main>
 
       <StickyCta />

@@ -4,11 +4,13 @@ import { StickyCta } from "@/components/site/StickyCta";
 const pillars = [
   {
     title: "Portraits",
-    description: "Thoughtful portrait direction, cinematic framing, and visual storytelling around people.",
+    description:
+      "Thoughtful portrait direction, cinematic framing, and visual storytelling around people.",
   },
   {
     title: "Fashion",
-    description: "Editorial styling, movement, mood, and image construction for strong visual identity.",
+    description:
+      "Editorial styling, movement, mood, and image construction for strong visual identity.",
   },
   {
     title: "Weddings",
@@ -16,7 +18,7 @@ const pillars = [
   },
   {
     title: "Film",
-    description: "Cinematic shooting, visual pacing, and the craft behind stronger moving-image work.",
+    description: "Cinematic shooting, visual pacing, and stronger moving-image work.",
   },
 ];
 
@@ -33,18 +35,18 @@ export default function BlogPage() {
             <h1 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">Blog</h1>
 
             <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-              A space for visual essays, creative process, and long-form writing around photography, film,
+              Visual essays, creative process, and long-form writing around photography, film,
               movement, and image-making.
             </p>
           </div>
 
           <div className="rounded-[2rem] border bg-background/60 p-6">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Direction
+              Editorial direction
             </div>
             <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              This section will become the editorial layer of the portfolio: stronger context, better SEO,
-              and a clearer point of view behind the work.
+              A focused space for stories behind the work, creative decisions, locations, movement,
+              atmosphere, and visual identity.
             </p>
           </div>
         </section>
@@ -58,42 +60,30 @@ export default function BlogPage() {
           ))}
         </section>
 
-        <section className="mt-12 grid gap-6 lg:grid-cols-[1fr_1fr]">
-          <div className="rounded-[2rem] border bg-background/60 p-6">
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              What will appear here
-            </div>
-            <ul className="mt-4 space-y-3 text-sm leading-6 text-muted-foreground">
-              <li>Creative breakdowns and behind-the-scenes thinking</li>
-              <li>Location, styling, and visual direction notes</li>
-              <li>Articles that support service discovery and public search visibility</li>
-            </ul>
+        <section className="mt-12 rounded-[2rem] border bg-background/60 p-6">
+          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+            Explore the work
           </div>
 
-          <div className="rounded-[2rem] border bg-background/60 p-6">
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              In the meantime
-            </div>
-            <div className="mt-4 flex flex-wrap gap-3">
-              <Link
-                href="/photography"
-                className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
-              >
-                Explore photography
-              </Link>
-              <Link
-                href="/videography"
-                className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors"
-              >
-                Explore videography
-              </Link>
-              <Link
-                href="/contact"
-                className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
-              >
-                Book
-              </Link>
-            </div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <Link
+              href="/photography"
+              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+            >
+              Photography
+            </Link>
+            <Link
+              href="/videography"
+              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+            >
+              Videography
+            </Link>
+            <Link
+              href="/contact"
+              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
+            >
+              Book
+            </Link>
           </div>
         </section>
       </main>

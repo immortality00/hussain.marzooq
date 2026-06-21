@@ -34,14 +34,17 @@ export function HomeServicesPreview({ services }: { services: PublicServiceItem[
               <h3 className="mt-4 text-lg font-semibold tracking-tight">{service.name}</h3>
 
               <p className="mt-3 line-clamp-4 text-sm leading-6 text-muted-foreground">
-                {service.description || "A premium creative service shaped around your project."}
+                {service.description || "Premium creative direction shaped around the project."}
               </p>
             </Link>
           ))
         ) : (
-          <div className="rounded-[2rem] border bg-background/60 p-6 text-sm leading-6 text-muted-foreground md:col-span-3">
-            Services are being curated into a sharper public presentation.
-          </div>
+          <Link
+            href="/services"
+            className="rounded-[2rem] border bg-background/60 p-6 text-sm leading-6 text-muted-foreground hover:bg-accent md:col-span-3"
+          >
+            Explore photography, film, dance, web, NFT, and creative direction services.
+          </Link>
         )}
       </div>
     </section>
