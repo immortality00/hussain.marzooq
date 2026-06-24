@@ -3,8 +3,7 @@ import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPhotographyItems } from "@/lib/server/public-media";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 300;
 
 export default async function PhotographyPage() {
   const items = await getPhotographyItems();
@@ -13,9 +12,12 @@ export default async function PhotographyPage() {
     <>
       <main className="mx-auto max-w-6xl px-4 py-16">
         <section className="max-w-3xl">
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Photography</h1>
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+            Photography
+          </h1>
           <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
-            Cinematic portraits, fashion, weddings, events, and emotional visual stories.
+            Cinematic portraits, fashion, weddings, events, and emotional visual
+            stories.
           </p>
         </section>
 
@@ -41,7 +43,11 @@ export default async function PhotographyPage() {
             ]}
             links={[
               { href: "/services", label: "View services" },
-              { href: "/contact?category=photography", label: "Book photography", primary: true },
+              {
+                href: "/contact?category=photography",
+                label: "Book photography",
+                primary: true,
+              },
             ]}
           />
         )}

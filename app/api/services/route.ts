@@ -1,4 +1,5 @@
 import { ObjectId } from "mongodb";
+import { revalidatePath } from "next/cache";
 import { isAdminAuthedServer, requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
@@ -148,6 +149,9 @@ export async function POST(req: Request) {
     createdAt: now,
     updatedAt: now,
   });
+
+  revalidatePath("/services", "layout");
+  revalidatePath("/");
 
   return noStoreJson({ ok: true, id: r.insertedId.toString() });
 }

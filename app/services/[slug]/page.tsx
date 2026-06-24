@@ -4,8 +4,7 @@ import { notFound } from "next/navigation";
 import { getDb } from "@/lib/server/db";
 import { workLinkForCategory } from "@/lib/server/public-services";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 300;
 
 export default async function ServiceDetailPage({
   params,
@@ -23,11 +22,13 @@ export default async function ServiceDetailPage({
   if (!doc) notFound();
 
   const name = typeof doc.name === "string" ? doc.name : "";
-  const description = typeof doc.description === "string" ? doc.description : "";
+  const description =
+    typeof doc.description === "string" ? doc.description : "";
   const imageUrl = typeof doc.imageUrl === "string" ? doc.imageUrl : "";
   const category = typeof doc.category === "string" ? doc.category : "others";
   const currency = typeof doc.currency === "string" ? doc.currency : "AED";
-  const startingPrice = typeof doc.startingPrice === "number" ? doc.startingPrice : null;
+  const startingPrice =
+    typeof doc.startingPrice === "number" ? doc.startingPrice : null;
 
   const workLink = workLinkForCategory(category);
 
@@ -47,7 +48,9 @@ export default async function ServiceDetailPage({
           </div>
 
           <div className="space-y-3">
-            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">{name}</h1>
+            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+              {name}
+            </h1>
 
             {startingPrice !== null ? (
               <div className="inline-flex rounded-full border px-4 py-2 text-sm text-muted-foreground">

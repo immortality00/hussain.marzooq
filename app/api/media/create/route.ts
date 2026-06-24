@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
@@ -163,5 +164,12 @@ export async function POST(req: Request) {
   const id = found?._id ? String(found._id) : null;
 
   if (!id) return noStoreJson({ ok: false, error: "Save failed" }, { status: 500 });
+
+  revalidatePath("/");
+  revalidatePath("/photography");
+  revalidatePath("/videography");
+  revalidatePath("/nft");
+  revalidatePath("/people", "layout");
+
   return noStoreJson({ ok: true, id });
 }

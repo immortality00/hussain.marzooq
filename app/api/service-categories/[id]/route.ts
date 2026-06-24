@@ -1,4 +1,5 @@
 import { ObjectId } from "mongodb";
+import { revalidatePath } from "next/cache";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
@@ -95,6 +96,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   await db.collection("services").updateMany({ categoryId: id }, { $set: servicePatch });
 
+  revalidatePath("/services", "layout");
+  revalidatePath("/");
+
   return noStoreJson({ ok: true });
 }
 
@@ -133,6 +137,8 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   }
 
   await db.collection("service_categories").deleteOne({ _id: new ObjectId(id) });
+
+  revalidatePath("/services", "layout");
 
   return noStoreJson({ ok: true });
 }

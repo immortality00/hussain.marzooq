@@ -4,8 +4,7 @@ import TestimonialsSection from "@/components/testimonials/TestimonialsSection";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { getPublicTestimonials } from "@/lib/server/testimonials";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "Testimonials | HM Visuals",
@@ -15,7 +14,9 @@ export const metadata: Metadata = {
 
 function renderStars(value: number) {
   const rounded = Math.round(value);
-  return Array.from({ length: 5 }, (_, index) => (index < rounded ? "★" : "☆")).join("");
+  return Array.from({ length: 5 }, (_, index) =>
+    index < rounded ? "★" : "☆",
+  ).join("");
 }
 
 export default async function TestimonialsPage() {
@@ -35,7 +36,8 @@ export default async function TestimonialsPage() {
                 </h1>
 
                 <p className="mt-5 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-                  Real feedback from shoots, films, events, classes, and creative collaborations.
+                  Real feedback from shoots, films, events, classes, and
+                  creative collaborations.
                 </p>
               </div>
 

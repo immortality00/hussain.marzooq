@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
@@ -88,6 +89,8 @@ export async function POST(req: Request) {
     createdAt: now,
     updatedAt: now,
   });
+
+  revalidatePath("/services", "layout");
 
   return noStoreJson({ ok: true, id: r.insertedId.toString() }, { status: 201 });
 }

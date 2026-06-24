@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { isRecord, noStoreJson, parseObjectId } from "@/app/api/_lib/common";
@@ -49,15 +50,13 @@ export async function POST(req: Request) {
     normalized.map((item) =>
       db.collection("testimonials").updateOne(
         { _id: item.oid! },
-        {
-          $set: {
-            sortOrder: item.sortOrder,
-            updatedAt: now,
-          },
-        }
+        { $set: { sortOrder: item.sortOrder, updatedAt: now } }
       )
     )
   );
+
+  revalidatePath("/testimonials");
+  revalidatePath("/");
 
   return noStoreJson({ ok: true });
 }
