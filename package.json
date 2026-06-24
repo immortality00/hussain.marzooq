@@ -25,6 +25,7 @@
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-globe.gl": "^2.38.0",
+    "resend": "^6.14.0",
     "tailwind-merge": "^3.4.0",
     "three": "^0.184.0"
   },
