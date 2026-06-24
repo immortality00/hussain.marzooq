@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
+import { revalidatePath } from "next/cache";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { toAdminTestimonialItem } from "@/lib/server/testimonial-serializers";
@@ -224,6 +225,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
   }
 
+  revalidatePath("/testimonials");
+  revalidatePath("/");
+
   return noStoreJson({ ok: true });
 }
 
@@ -262,6 +266,9 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   if (!result.deletedCount) {
     return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
   }
+
+  revalidatePath("/testimonials");
+  revalidatePath("/");
 
   return noStoreJson({ ok: true });
 }

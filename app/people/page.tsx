@@ -3,8 +3,7 @@ import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPublicPeople } from "@/lib/server/public-people";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 300;
 
 export default async function PeoplePage() {
   const items = await getPublicPeople();
@@ -13,10 +12,13 @@ export default async function PeoplePage() {
     <>
       <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
         <section className="max-w-3xl">
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">People</h1>
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+            People
+          </h1>
 
           <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
-            Portraits, collaborators, artists, dancers, clients, and people connected to the visual work.
+            Portraits, collaborators, artists, dancers, clients, and people
+            connected to the visual work.
           </p>
         </section>
 
@@ -42,7 +44,11 @@ export default async function PeoplePage() {
             ]}
             links={[
               { href: "/photography", label: "View photography" },
-              { href: "/contact?category=photography", label: "Book a shoot", primary: true },
+              {
+                href: "/contact?category=photography",
+                label: "Book a shoot",
+                primary: true,
+              },
             ]}
           />
         )}

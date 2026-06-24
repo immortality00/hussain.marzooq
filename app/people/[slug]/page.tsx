@@ -5,8 +5,7 @@ import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPublicPersonBySlug } from "@/lib/server/public-people";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 300;
 
 export default async function PersonDetailPage({
   params,
@@ -39,7 +38,9 @@ export default async function PersonDetailPage({
             </div>
           </div>
 
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl">{person.name}</h1>
+          <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl">
+            {person.name}
+          </h1>
 
           {person.bio ? (
             <div className="mt-5 whitespace-pre-wrap text-sm leading-7 text-muted-foreground sm:text-base">
@@ -72,7 +73,11 @@ export default async function PersonDetailPage({
             ]}
             links={[
               { href: "/photography", label: "Photography" },
-              { href: "/contact?category=photography", label: "Book", primary: true },
+              {
+                href: "/contact?category=photography",
+                label: "Book",
+                primary: true,
+              },
             ]}
           />
         )}

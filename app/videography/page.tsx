@@ -2,25 +2,33 @@ import { MediaGrid } from "@/components/media/MediaGrid";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
 import { toEmbedUrl } from "@/components/media/utils";
-import { getShowreelItem, getVideographyItems } from "@/lib/server/public-media";
+import {
+  getShowreelItem,
+  getVideographyItems,
+} from "@/lib/server/public-media";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 300;
 
 export default async function VideographyPage() {
-  const [showreel, videos] = await Promise.all([getShowreelItem(), getVideographyItems()]);
+  const [showreel, videos] = await Promise.all([
+    getShowreelItem(),
+    getVideographyItems(),
+  ]);
   const showreelEmbed =
     showreel?.type === "embed" && showreel.embedUrl
-      ? toEmbedUrl(showreel.embedUrl) ?? showreel.embedUrl
+      ? (toEmbedUrl(showreel.embedUrl) ?? showreel.embedUrl)
       : null;
 
   return (
     <>
       <main className="mx-auto max-w-6xl px-4 py-16">
         <section className="max-w-3xl">
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Videography</h1>
+          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+            Videography
+          </h1>
           <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
-            Cinematic films, dance, events, fashion, weddings, and movement-led visual stories.
+            Cinematic films, dance, events, fashion, weddings, and movement-led
+            visual stories.
           </p>
         </section>
 
@@ -58,7 +66,11 @@ export default async function VideographyPage() {
         ) : null}
 
         {videos.length > 0 ? (
-          <MediaGrid items={videos} mediaMode="video" searchCategory="videography" />
+          <MediaGrid
+            items={videos}
+            mediaMode="video"
+            searchCategory="videography"
+          />
         ) : (
           <PortfolioFallbackPanel
             title="Films, events, dance, and moving-image work with rhythm."
@@ -79,7 +91,11 @@ export default async function VideographyPage() {
             ]}
             links={[
               { href: "/services", label: "View services" },
-              { href: "/contact?category=videography", label: "Book video", primary: true },
+              {
+                href: "/contact?category=videography",
+                label: "Book video",
+                primary: true,
+              },
             ]}
           />
         )}

@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
@@ -312,6 +313,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     }
   }
 
+  revalidatePath("/");
+  revalidatePath("/photography");
+  revalidatePath("/videography");
+  revalidatePath("/nft");
+  revalidatePath("/people", "layout");
+
   return noStoreJson({ ok: true });
 }
 
@@ -346,6 +353,12 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   }
 
   await deleteStoredMediaAsset(mediaAsset);
+
+  revalidatePath("/");
+  revalidatePath("/photography");
+  revalidatePath("/videography");
+  revalidatePath("/nft");
+  revalidatePath("/people", "layout");
 
   return noStoreJson({ ok: true });
 }

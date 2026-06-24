@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
@@ -85,6 +86,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const existing = await db.collection("private_galleries").findOne({ _id: oid });
   if (!existing) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
 
+  const previousSlug = typeof existing.slug === "string" ? existing.slug : null;
+
   const validatedMedia = await validatePrivateGalleryMediaIds(db, rawMediaIds);
   if (!validatedMedia.ok) {
     return noStoreJson({ ok: false, error: validatedMedia.error }, { status: 400 });
@@ -122,6 +125,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const result = await db.collection("private_galleries").updateOne({ _id: oid }, { $set: set });
   if (!result.matchedCount) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
 
+  revalidatePath(`/g/${slug}`);
+  if (previousSlug && previousSlug !== slug) revalidatePath(`/g/${previousSlug}`);
+
   return noStoreJson({ ok: true, slug });
 }
 
@@ -134,8 +140,19 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   if (!oid) return noStoreJson({ ok: false, error: "Invalid id." }, { status: 400 });
 
   const db = await getDb();
+
+  const existing = await db.collection("private_galleries").findOne(
+    { _id: oid },
+    { projection: { slug: 1 } }
+  );
+  if (!existing) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
+
+  const slug = typeof existing.slug === "string" ? existing.slug : null;
+
   const result = await db.collection("private_galleries").deleteOne({ _id: oid });
   if (!result.deletedCount) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
+
+  if (slug) revalidatePath(`/g/${slug}`);
 
   return noStoreJson({ ok: true });
 }

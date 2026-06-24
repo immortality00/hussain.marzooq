@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
-import { getPublicServicesData, workLinkForCategory } from "@/lib/server/public-services";
+import {
+  getPublicServicesData,
+  workLinkForCategory,
+} from "@/lib/server/public-services";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: "Creative Services | HM Visuals",
@@ -19,24 +21,32 @@ export default async function ServicesPage({
   searchParams: Promise<{ category?: string }>;
 }) {
   const sp = await searchParams;
-  const selectedCategory = typeof sp.category === "string" ? sp.category : "all";
+  const selectedCategory =
+    typeof sp.category === "string" ? sp.category : "all";
 
   const { services: servicesAll, categories } = await getPublicServicesData();
 
   const services =
     selectedCategory === "all"
       ? servicesAll
-      : servicesAll.filter((s) => s.category.toLowerCase() === selectedCategory.toLowerCase());
+      : servicesAll.filter(
+          (s) => s.category.toLowerCase() === selectedCategory.toLowerCase(),
+        );
 
-  const tabs = [{ slug: "all", name: "All" }, ...categories.map((c) => ({ slug: c.slug, name: c.name }))];
+  const tabs = [
+    { slug: "all", name: "All" },
+    ...categories.map((c) => ({ slug: c.slug, name: c.name })),
+  ];
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
       <header className="max-w-3xl">
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">Services</h1>
+        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
+          Services
+        </h1>
         <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
-          Photography, film, dance, creative direction, web systems, and digital work shaped around
-          the tone of the project.
+          Photography, film, dance, creative direction, web systems, and digital
+          work shaped around the tone of the project.
         </p>
       </header>
 
@@ -46,7 +56,11 @@ export default async function ServicesPage({
           return (
             <Link
               key={t.slug}
-              href={t.slug === "all" ? "/services" : `/services?category=${encodeURIComponent(t.slug)}`}
+              href={
+                t.slug === "all"
+                  ? "/services"
+                  : `/services?category=${encodeURIComponent(t.slug)}`
+              }
               className={[
                 "rounded-full border px-4 py-2 text-xs transition-colors",
                 active ? "bg-foreground text-background" : "hover:bg-accent",
@@ -76,13 +90,17 @@ export default async function ServicesPage({
               text: "Web systems, NFT presentation, portfolio structure, and custom creative tools.",
             },
           ]}
-          links={[{ href: "/contact", label: "Start a project", primary: true }]}
+          links={[
+            { href: "/contact", label: "Start a project", primary: true },
+          ]}
         />
       ) : (
         <section className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {services.map((s, index) => {
             const img = s.imageUrl.trim();
-            const hasPrice = typeof s.startingPrice === "number" && Number.isFinite(s.startingPrice);
+            const hasPrice =
+              typeof s.startingPrice === "number" &&
+              Number.isFinite(s.startingPrice);
             const workLink = workLinkForCategory(s.category);
             const imagePriority = index === 0;
 
@@ -91,7 +109,10 @@ export default async function ServicesPage({
                 key={s.id}
                 className="group overflow-hidden rounded-[2rem] border bg-background transition-transform duration-300 hover:-translate-y-[2px]"
               >
-                <Link href={`/services/${encodeURIComponent(s.slug)}`} className="block">
+                <Link
+                  href={`/services/${encodeURIComponent(s.slug)}`}
+                  className="block"
+                >
                   <div className="relative h-72 overflow-hidden bg-muted">
                     {img ? (
                       <Image
@@ -129,7 +150,8 @@ export default async function ServicesPage({
 
                 <div className="p-5">
                   <p className="line-clamp-3 text-sm leading-6 text-muted-foreground">
-                    {s.description || "Creative execution tailored to the tone and direction of your project."}
+                    {s.description ||
+                      "Creative execution tailored to the tone and direction of your project."}
                   </p>
 
                   <div className="mt-6 flex flex-wrap gap-2">

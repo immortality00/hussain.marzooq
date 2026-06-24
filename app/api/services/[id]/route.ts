@@ -1,4 +1,5 @@
 import { ObjectId } from "mongodb";
+import { revalidatePath } from "next/cache";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
@@ -201,6 +202,14 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     );
   }
 
+  const oldSlug = typeof existing.slug === "string" ? existing.slug : null;
+  const newSlug = typeof patch.slug === "string" ? patch.slug : oldSlug;
+
+  revalidatePath("/services", "layout");
+  revalidatePath("/");
+  if (oldSlug) revalidatePath(`/services/${oldSlug}`);
+  if (newSlug && newSlug !== oldSlug) revalidatePath(`/services/${newSlug}`);
+
   return noStoreJson({ ok: true });
 }
 
@@ -218,17 +227,24 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
 
   const db = await getDb();
 
+  const service = await db.collection("services").findOne({ _id: new ObjectId(id) });
+  if (!service) {
+    return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  }
+
+  const serviceSlug = typeof service.slug === "string" ? service.slug : null;
+
   if (!hard) {
     await db.collection("services").updateOne(
       { _id: new ObjectId(id) },
       { $set: { isArchived: true, isActive: false, updatedAt: new Date() } }
     );
-    return noStoreJson({ ok: true, mode: "archived" });
-  }
 
-  const service = await db.collection("services").findOne({ _id: new ObjectId(id) });
-  if (!service) {
-    return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+    revalidatePath("/services", "layout");
+    revalidatePath("/");
+    if (serviceSlug) revalidatePath(`/services/${serviceSlug}`);
+
+    return noStoreJson({ ok: true, mode: "archived" });
   }
 
   const inquiriesCount = await db.collection("inquiries").countDocuments({ serviceId: id });
@@ -249,6 +265,10 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
       [CLOUDINARY_SERVICES_FOLDER]
     );
   }
+
+  revalidatePath("/services", "layout");
+  revalidatePath("/");
+  if (serviceSlug) revalidatePath(`/services/${serviceSlug}`);
 
   return noStoreJson({ ok: true, mode: "deleted" });
 }

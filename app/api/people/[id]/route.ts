@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import {
   asBooleanOrNull,
@@ -98,11 +99,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   const existing = await db.collection("people_profiles").findOne(
     { _id: oid },
-    { projection: { name: 1, avatarUrl: 1 } }
+    { projection: { name: 1, slug: 1, avatarUrl: 1 } }
   );
   if (!existing) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
 
   const previousName = typeof existing.name === "string" ? existing.name : "";
+  const previousSlug = typeof existing.slug === "string" ? existing.slug : null;
   const previousAvatarUrl = typeof existing.avatarUrl === "string" ? existing.avatarUrl : "";
 
   const result = await db.collection("people_profiles").updateOne(
@@ -140,6 +142,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     );
   }
 
+  revalidatePath("/people", "layout");
+  if (previousSlug && previousSlug !== slug) revalidatePath(`/people/${previousSlug}`);
+
   return noStoreJson({ ok: true, slug });
 }
 
@@ -154,11 +159,12 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   const db = await getDb();
   const person = await db.collection("people_profiles").findOne(
     { _id: oid },
-    { projection: { name: 1, avatarUrl: 1 } }
+    { projection: { name: 1, slug: 1, avatarUrl: 1 } }
   );
   if (!person) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
 
   const personName = typeof person.name === "string" ? person.name : "";
+  const personSlug = typeof person.slug === "string" ? person.slug : null;
 
   const linkedMedia = await db.collection("media").findOne({
     $or: [{ peopleIds: id }, ...(personName ? [{ people: personName }] : [])],
@@ -185,6 +191,9 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
       [CLOUDINARY_PEOPLE_FOLDER]
     );
   }
+
+  revalidatePath("/people", "layout");
+  if (personSlug) revalidatePath(`/people/${personSlug}`);
 
   return noStoreJson({ ok: true });
 }

@@ -14,8 +14,7 @@ import { getPublicNfts } from "@/lib/server/public-nfts";
 import { getPublicServicesData } from "@/lib/server/public-services";
 import { getPublicTestimonials } from "@/lib/server/testimonials";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const revalidate = 300;
 
 export const metadata: Metadata = {
   title: "HM Visuals — Cinematic Photography, Film & Creative Direction",
@@ -24,14 +23,15 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [photos, videos, showreelUrl, nfts, servicesData, testimonials] = await Promise.all([
-    getPhotographyItems(),
-    getVideographyItems(),
-    getShowreelUrl(),
-    getPublicNfts(),
-    getPublicServicesData(),
-    getPublicTestimonials(3),
-  ]);
+  const [photos, videos, showreelUrl, nfts, servicesData, testimonials] =
+    await Promise.all([
+      getPhotographyItems(),
+      getVideographyItems(),
+      getShowreelUrl(),
+      getPublicNfts(),
+      getPublicServicesData(),
+      getPublicTestimonials(3),
+    ]);
 
   return (
     <>
@@ -48,7 +48,7 @@ export default async function HomePage() {
 
       <StickyCta
         title="Ready to create something strong?"
-        description="Tell me the work you need and I’ll reply with the best direction."
+        description="Tell me the work you need and I'll reply with the best direction."
         buttonLabel="Book"
       />
     </>
