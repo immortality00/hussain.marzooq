@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/server/db";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
+import { sendTestimonialNotification } from "@/lib/server/email";
 import {
   resolveTestimonialLocationById,
   resolveTestimonialLocationByLabel,
@@ -230,6 +231,8 @@ export async function POST(req: Request) {
     createdAt: now,
     updatedAt: now,
   });
+
+  sendTestimonialNotification({ name, email, review, rating, about: about || null }).catch(() => {});
 
   return noStoreJson({ ok: true });
 }

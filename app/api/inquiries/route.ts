@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { claimDuplicateWindow, consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
+import { sendInquiryNotification } from "@/lib/server/email";
 import {
   asNullableString,
   isRecord,
@@ -212,6 +213,8 @@ export async function POST(req: Request) {
       }
     );
   }
+
+  sendInquiryNotification({ name, email, message, serviceName, category }).catch(() => {});
 
   return noStoreJson({ ok: true, id: String(insertResult.insertedId) });
 }
