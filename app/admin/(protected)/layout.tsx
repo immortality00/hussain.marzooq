@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { isAdminAuthedServer } from "@/lib/auth/admin";
+import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -35,6 +36,8 @@ export default async function AdminProtectedLayout({
           </div>
 
           <div className="flex items-center gap-3">
+            <AdminThemeToggle />
+
             <Link
               href="/"
               className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent/40"
