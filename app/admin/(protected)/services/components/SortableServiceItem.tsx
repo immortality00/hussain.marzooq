@@ -1,17 +1,19 @@
 "use client";
 
-import Image from "next/image";
+import SmartImage from "@/components/shared/SmartImage";
 import { CSS } from "@dnd-kit/utilities";
 import { useSortable } from "@dnd-kit/sortable";
 import type { Service } from "../lib/types";
 
 export default function SortableServiceItem({
   service,
+  index,
   onEdit,
   onToggleActive,
   onDeleteForever,
 }: {
   service: Service;
+  index: number;
   onEdit: (s: Service) => void;
   onToggleActive: (s: Service) => void;
   onDeleteForever: (s: Service) => void;
@@ -45,15 +47,14 @@ export default function SortableServiceItem({
 
       <div className="h-14 w-20 overflow-hidden rounded-xl border bg-muted">
         {service.imageUrl ? (
-          <Image
+          <SmartImage
             src={service.imageUrl}
             alt={service.name}
             width={320}
             height={224}
             className="h-full w-full object-cover"
             sizes="80px"
-            loading="eager"
-            fetchPriority="high"
+            priority={index === 0}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">

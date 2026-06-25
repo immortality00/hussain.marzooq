@@ -1,4 +1,4 @@
-import Image from "next/image";
+import SmartImage from "@/components/shared/SmartImage";
 import { notFound } from "next/navigation";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
@@ -24,7 +24,7 @@ export default async function PersonDetailPage({
           <div className="flex justify-center">
             <div className="relative h-28 w-28 overflow-hidden rounded-full border bg-muted sm:h-36 sm:w-36">
               {person.avatarUrl ? (
-                <Image
+                <SmartImage
                   src={person.avatarUrl}
                   alt={person.name}
                   fill

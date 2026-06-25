@@ -357,10 +357,11 @@ export default function AdminServicesClient({
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
             <SortableContext items={active.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-              {active.map((s) => (
+              {active.map((s, i) => (
                 <SortableServiceItem
                   key={s.id}
                   service={s}
+                  index={i}
                   onEdit={(x) => {
                     if (!busy) setEditing(x);
                   }}
