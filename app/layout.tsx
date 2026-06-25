@@ -4,6 +4,7 @@ import { GeistMono } from "geist/font/mono";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { AppShell } from "@/components/site/AppShell";
+import { CustomCursor } from "@/components/site/CustomCursor";
 
 export const metadata: Metadata = {
   title: "HM Visuals",
@@ -25,6 +26,7 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          <CustomCursor />
           <AppShell>{children}</AppShell>
         </ThemeProvider>
       </body>
