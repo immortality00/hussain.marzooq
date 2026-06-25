@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import { useTheme } from "next-themes";
+import { Sun, Moon } from "lucide-react";
 
 const nav = [
   { href: "/", label: "Home" },
@@ -22,6 +24,19 @@ export function Navbar() {
   const [hiddenByModal, setHiddenByModal] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  function toggleTheme() {
+    setTheme(resolvedTheme === "dark" ? "light" : "dark");
+  }
+
+  const themeIcon = mounted ? (
+    resolvedTheme === "dark" ? <Sun size={15} /> : <Moon size={15} />
+  ) : (
+    <span className="inline-block h-[15px] w-[15px]" />
+  );
 
   useEffect(() => {
     function onOpen() {
@@ -101,8 +116,17 @@ export function Navbar() {
               })}
             </nav>
 
-            {/* Right side: Book button + hamburger */}
+            {/* Right side: theme toggle + Book button + hamburger */}
             <div className="flex shrink-0 items-center gap-3">
+              <button
+                type="button"
+                aria-label="Toggle theme"
+                onClick={toggleTheme}
+                className="flex h-9 w-9 items-center justify-center rounded-full border text-muted-foreground transition-colors hover:text-foreground"
+              >
+                {themeIcon}
+              </button>
+
               <Link
                 href="/contact"
                 className="rounded-full border px-4 py-2 text-sm transition-colors hover:bg-accent"
@@ -163,14 +187,24 @@ export function Navbar() {
           <span className="text-sm font-semibold tracking-[0.14em]">
             HM VISUALS
           </span>
-          <button
-            type="button"
-            aria-label="Close menu"
-            onClick={() => setMobileOpen(false)}
-            className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground"
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              aria-label="Toggle theme"
+              onClick={toggleTheme}
+              className="flex h-9 w-9 items-center justify-center rounded-full border text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {themeIcon}
+            </button>
+            <button
+              type="button"
+              aria-label="Close menu"
+              onClick={() => setMobileOpen(false)}
+              className="flex h-9 w-9 items-center justify-center text-muted-foreground hover:text-foreground"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-4 py-6">

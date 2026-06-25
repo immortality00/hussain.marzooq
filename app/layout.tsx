@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { AppShell } from "@/components/site/AppShell";
 
@@ -20,9 +21,12 @@ export default function RootLayout({
       lang="en"
       data-scroll-behavior="smooth"
       className={`${GeistSans.variable} ${GeistMono.variable}`}
+      suppressHydrationWarning
     >
       <body>
-        <AppShell>{children}</AppShell>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+          <AppShell>{children}</AppShell>
+        </ThemeProvider>
       </body>
     </html>
   );
