@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import SmartImage from "@/components/shared/SmartImage";
 import { useMemo, useState } from "react";
 import { downloadCloudinaryFile } from "@/components/media/download";
 import SmartMediaPreview from "@/components/media/SmartMediaPreview";
@@ -148,7 +148,7 @@ export default function PrivateGalleryBrowser({
                       />
                     ) : (
                       <div className="relative h-full w-full">
-                        <Image
+                        <SmartImage
                           src={active.secureUrl}
                           alt={active.title}
                           fill

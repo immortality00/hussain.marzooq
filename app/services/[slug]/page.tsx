@@ -1,5 +1,5 @@
 import Link from "next/link";
-import Image from "next/image";
+import SmartImage from "@/components/shared/SmartImage";
 import { notFound } from "next/navigation";
 import { getDb } from "@/lib/server/db";
 import { workLinkForCategory } from "@/lib/server/public-services";
@@ -84,7 +84,7 @@ export default async function ServiceDetailPage({
 
         <div className="overflow-hidden rounded-[2rem] border bg-muted">
           {imageUrl ? (
-            <Image
+            <SmartImage
               src={imageUrl}
               alt={name}
               width={1600}

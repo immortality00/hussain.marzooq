@@ -1,4 +1,4 @@
-import Image from "next/image";
+import SmartImage from "@/components/shared/SmartImage";
 import Link from "next/link";
 import type { PublicNftItem } from "@/lib/server/public-nfts";
 import {
@@ -55,7 +55,7 @@ export default function NftModal({
                   />
                 ) : (
                   <div className="relative h-full w-full">
-                    <Image
+                    <SmartImage
                       src={item.mediaUrl}
                       alt={item.title}
                       fill

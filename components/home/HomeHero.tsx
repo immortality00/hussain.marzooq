@@ -1,4 +1,4 @@
-import Image from "next/image";
+import SmartImage from "@/components/shared/SmartImage";
 import Link from "next/link";
 import type { PublicMediaItem } from "@/lib/server/media-serializers";
 
@@ -47,7 +47,7 @@ export function HomeHero({
 
         <div className="relative min-h-[34rem] overflow-hidden rounded-[2.75rem] border bg-muted shadow-sm">
           {heroImage?.secureUrl ? (
-            <Image
+            <SmartImage
               src={heroImage.secureUrl}
               alt={heroImage.title || "HM Visuals work"}
               fill

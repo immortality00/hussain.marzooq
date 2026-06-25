@@ -1,6 +1,6 @@
 "use client";
 
-import Image from "next/image";
+import SmartImage from "@/components/shared/SmartImage";
 import MediaDetailsSections from "./MediaDetailsSections";
 import type { MediaItem } from "./types";
 import { toEmbedUrl } from "./utils";
@@ -42,7 +42,7 @@ function MediaSurface({ active }: { active: MediaItem }) {
       <div className="h-full w-full overflow-hidden rounded-2xl border bg-black/5">
         <div className="relative h-full min-h-0">
           <div className="relative h-full w-full">
-            <Image
+            <SmartImage
               src={active.secureUrl}
               alt={active.title}
               fill

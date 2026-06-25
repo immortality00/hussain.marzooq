@@ -65,6 +65,7 @@ export default function SmartMediaPreview({
           `${fit === "contain" ? "object-contain" : "object-cover"} transition-transform duration-700 hover:scale-[1.03]`
         }
         sizes={sizes}
+        priority={imagePriority}
         loading={imagePriority ? "eager" : "lazy"}
         fetchPriority={imagePriority ? "high" : undefined}
       />
