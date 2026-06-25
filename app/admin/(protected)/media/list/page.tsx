@@ -320,7 +320,7 @@ export default function AdminMediaListPage() {
             No media match these filters.
           </div>
         ) : (
-          items.map((m) => {
+          items.map((m, idx) => {
             const deleting = deletingId === m.id;
             const actionDisabled = Boolean(deletingId);
 
@@ -333,7 +333,7 @@ export default function AdminMediaListPage() {
                         <video className="h-full w-full" controls preload="metadata" src={m.secureUrl} />
                       ) : (
                         <div className="relative aspect-4/3">
-                          <Image src={m.secureUrl} alt={m.title} fill className="object-cover" sizes="240px" />
+                          <Image src={m.secureUrl} alt={m.title} fill className="object-cover" sizes="240px" priority={idx === 0} loading={idx === 0 ? "eager" : "lazy"} />
                         </div>
                       )
                     ) : (
