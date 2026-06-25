@@ -259,4 +259,9 @@
   .premium-copy {
     @apply text-sm leading-6 text-muted-foreground sm:text-base;
   }
+
+  /* Custom cursor ring expansion */
+  .cursor-ring.is-expanded .cursor-ring-inner {
+    @apply h-16 w-16;
+  }
 }
