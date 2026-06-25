@@ -16,6 +16,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="page-shell min-h-screen">
       <div className="page-vignette" />
       <div className="site-grid-bg absolute inset-0" />
+      <div className="grain-overlay" />
       <Navbar />
       <div className="relative z-10">{children}</div>
       <SiteFooter />
