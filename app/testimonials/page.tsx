@@ -3,6 +3,7 @@ import PublicReviewForm from "@/components/testimonials/PublicReviewForm";
 import TestimonialsSection from "@/components/testimonials/TestimonialsSection";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { getPublicTestimonials } from "@/lib/server/testimonials";
+import { AnimatedText } from "@/components/shared/AnimatedText";
 
 export const revalidate = 300;
 
@@ -32,7 +33,7 @@ export default async function TestimonialsPage() {
 
               <div className="max-w-3xl">
                 <h1 className="text-balance text-3xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-4xl lg:text-5xl">
-                  What people say about me
+                  <AnimatedText>What people say about me</AnimatedText>
                 </h1>
 
                 <p className="mt-5 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">

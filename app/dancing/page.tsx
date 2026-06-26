@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
+import { AnimatedText } from "@/components/shared/AnimatedText";
 
 const sections = [
   {
@@ -33,7 +34,7 @@ export default function DancingPage() {
               MOVEMENT
             </div>
 
-            <h1 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">Dancing</h1>
+            <h1 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl"><AnimatedText>Dancing</AnimatedText></h1>
 
             <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
               Performance, teaching, and visual work shaped around rhythm, motion, presence, and the way

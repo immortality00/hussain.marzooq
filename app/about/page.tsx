@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
+import { AnimatedText } from "@/components/shared/AnimatedText";
 
 const disciplines = [
   {
@@ -38,7 +39,7 @@ export default function AboutPage() {
             </div>
 
             <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
-              Cinematic visual work across photography, film, movement, and digital experience.
+              <AnimatedText>Cinematic visual work across photography, film, movement, and digital experience.</AnimatedText>
             </h1>
 
             <p className="mt-5 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">

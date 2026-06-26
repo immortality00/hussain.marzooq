@@ -1,5 +1,6 @@
 import { ContactForm } from "@/components/contact/ContactForm";
 import { getActiveServicesForContact } from "@/lib/server/public-services";
+import { AnimatedText } from "@/components/shared/AnimatedText";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ export default async function ContactPage({
     <main className="mx-auto max-w-4xl px-4 py-16">
       <section className="rounded-[2.25rem] border bg-background/70 p-6 shadow-sm backdrop-blur sm:p-8">
         <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-          Contact / Booking
+          <AnimatedText>Contact / Booking</AnimatedText>
         </h1>
         <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
           Tell me what you want to create and I&apos;ll reply with the best

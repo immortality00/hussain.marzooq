@@ -3,6 +3,7 @@ import GalleryPasswordForm from "./GalleryPasswordForm";
 import { getPrivateGalleryPublicBySlug } from "@/lib/server/private-galleries";
 import PrivateGalleryBrowser from "@/components/private-galleries/PrivateGalleryBrowser";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
+import { AnimatedText } from "@/components/shared/AnimatedText";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -32,7 +33,7 @@ export default async function PrivateGalleryPage({
   return (
     <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
       <section className="max-w-3xl">
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">{gallery.title}</h1>
+        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl"><AnimatedText>{gallery.title}</AnimatedText></h1>
         {gallery.description ? (
           <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
             {gallery.description}

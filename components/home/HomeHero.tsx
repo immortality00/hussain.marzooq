@@ -1,4 +1,5 @@
 import SmartImage from "@/components/shared/SmartImage";
+import { AnimatedText } from "@/components/shared/AnimatedText";
 import Link from "next/link";
 import type { PublicMediaItem } from "@/lib/server/media-serializers";
 
@@ -20,7 +21,7 @@ export function HomeHero({
       <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
         <div>
           <h1 className="max-w-5xl text-balance text-5xl font-semibold leading-[0.92] tracking-[-0.08em] sm:text-6xl lg:text-7xl">
-            Cinematic visual direction for people, movement, fashion, weddings, and digital culture.
+            <AnimatedText>Cinematic visual direction for people, movement, fashion, weddings, and digital culture.</AnimatedText>
           </h1>
 
           <p className="mt-7 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">

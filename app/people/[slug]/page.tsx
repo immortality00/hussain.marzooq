@@ -4,6 +4,7 @@ import { MediaGrid } from "@/components/media/MediaGrid";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPublicPersonBySlug } from "@/lib/server/public-people";
+import { AnimatedText } from "@/components/shared/AnimatedText";
 
 export const revalidate = 300;
 
@@ -39,7 +40,7 @@ export default async function PersonDetailPage({
           </div>
 
           <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl">
-            {person.name}
+            <AnimatedText>{person.name}</AnimatedText>
           </h1>
 
           {person.bio ? (

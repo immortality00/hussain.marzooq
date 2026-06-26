@@ -6,6 +6,7 @@ import {
   getShowreelItem,
   getVideographyItems,
 } from "@/lib/server/public-media";
+import { AnimatedText } from "@/components/shared/AnimatedText";
 
 export const revalidate = 300;
 
@@ -24,7 +25,7 @@ export default async function VideographyPage() {
       <main className="mx-auto max-w-6xl px-4 py-16">
         <section className="max-w-3xl">
           <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            Videography
+            <AnimatedText>Videography</AnimatedText>
           </h1>
           <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
             Cinematic films, dance, events, fashion, weddings, and movement-led
