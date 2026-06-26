@@ -19,7 +19,9 @@ function makeBokehTexture(): THREE.Texture {
   grad.addColorStop(1, "rgba(255,235,170,0)");
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, size, size);
-  return new THREE.CanvasTexture(canvas);
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.flipY = false;
+  return tex;
 }
 
 export function HeroBokeh() {
