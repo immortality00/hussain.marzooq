@@ -27,7 +27,7 @@ to open a new session. You touch three gates per session, nothing else.
 
 ---
 
-### Session 7 — Homepage hero redesign — `pending`
+### Session 7 — Homepage hero redesign — `in-progress`
 
 Full redesign of the homepage hero. Current state: static two-column
 layout. Target: full-viewport dark hero with a Three.js 3D element,

@@ -6,11 +6,13 @@ import NextImage, { type ImageProps } from "next/image";
  * This prevents the LCP warning that fires when priority is set without loading="eager".
  */
 export default function SmartImage({ priority, loading, ...props }: ImageProps) {
+  const eager = priority === true;
   return (
     <NextImage
       {...props}
-      priority={priority}
-      loading={priority ? "eager" : (loading ?? "lazy")}
+      priority={eager}
+      loading={eager ? "eager" : (loading ?? "lazy")}
+      fetchPriority={eager ? "high" : "auto"}
     />
   );
 }

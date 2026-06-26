@@ -1,5 +1,6 @@
 import SmartImage from "@/components/shared/SmartImage";
 import { AnimatedText } from "@/components/shared/AnimatedText";
+import { HeroBokeh } from "@/components/home/HeroBokeh";
 import Link from "next/link";
 import type { PublicMediaItem } from "@/lib/server/media-serializers";
 
@@ -17,56 +18,57 @@ export function HomeHero({
   const heroImage = firstImage(photos) ?? firstImage(videos);
 
   return (
-    <section className="section-shell py-12 sm:py-16 lg:py-20">
-      <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
-        <div>
-          <h1 className="max-w-5xl text-balance text-5xl font-semibold leading-[0.92] tracking-[-0.08em] sm:text-6xl lg:text-7xl">
-            <AnimatedText>Cinematic visual direction for people, movement, fashion, weddings, and digital culture.</AnimatedText>
-          </h1>
+    <section className="relative h-svh min-h-[600px] overflow-hidden bg-[#1a1814]">
+      {/* Background image */}
+      {heroImage?.secureUrl && (
+        <SmartImage
+          src={heroImage.secureUrl}
+          alt={heroImage.title || "HM Visuals"}
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover object-center z-0"
+        />
+      )}
 
-          <p className="mt-7 max-w-2xl text-base leading-7 text-muted-foreground sm:text-lg">
-            Photography, film, dance, NFT work, and creative web systems shaped with atmosphere,
-            precision, and a high-end visual language.
-          </p>
+      {/* Cinematic dark overlay — heavy at bottom, light at top */}
+      <div
+        className="absolute inset-0 z-10"
+        style={{
+          background:
+            "linear-gradient(to top, rgba(10,8,6,0.92) 0%, rgba(10,8,6,0.55) 45%, rgba(10,8,6,0.18) 100%)",
+        }}
+      />
 
-          <div className="mt-9 flex flex-wrap gap-3">
-            <Link
-              href="/photography"
-              className="rounded-full bg-foreground px-5 py-3 text-sm text-background hover:opacity-90"
-            >
-              See the work
-            </Link>
+      {/* Three.js bokeh particle field */}
+      <HeroBokeh />
 
-            <Link
-              href="/contact"
-              className="rounded-full border px-5 py-3 text-sm hover:bg-accent"
-            >
-              Book
-            </Link>
-          </div>
-        </div>
+      {/* Content — lower-third cinematic placement */}
+      <div className="absolute inset-0 z-30 flex flex-col justify-end px-8 pb-16 sm:px-14 sm:pb-20 lg:px-20 lg:pb-24">
+        <h1 className="max-w-5xl text-5xl font-semibold leading-[0.9] tracking-[-0.07em] text-white sm:text-6xl lg:text-[5.5rem]">
+          <AnimatedText delay={0.15}>
+            Cinematic visual direction for people, movement, fashion, weddings, and digital culture.
+          </AnimatedText>
+        </h1>
 
-        <div className="relative min-h-[34rem] overflow-hidden rounded-[2.75rem] border bg-muted shadow-sm">
-          {heroImage?.secureUrl ? (
-            <SmartImage
-              src={heroImage.secureUrl}
-              alt={heroImage.title || "HM Visuals work"}
-              fill
-              priority
-              sizes="(max-width: 1024px) 100vw, 45vw"
-              className="object-cover"
-            />
-          ) : (
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_28%_20%,rgba(255,255,255,0.68),transparent_26%),radial-gradient(circle_at_76%_78%,rgba(255,255,255,0.34),transparent_24%),linear-gradient(135deg,var(--muted),var(--background))]" />
-          )}
+        <p className="mt-6 max-w-xl text-base leading-7 text-white/55 sm:text-lg">
+          Photography, film, dance, NFT work, and creative web systems shaped
+          with atmosphere, precision, and a high-end visual language.
+        </p>
 
-          <div className="absolute inset-0 bg-linear-to-t from-black/76 via-black/12 to-transparent" />
-
-          <div className="absolute bottom-0 p-6 text-white sm:p-8">
-            <p className="max-w-sm text-3xl font-semibold leading-[1.02] tracking-[-0.04em]">
-              Emotion, rhythm, and atmosphere built into every frame.
-            </p>
-          </div>
+        <div className="mt-9 flex flex-wrap gap-3">
+          <Link
+            href="/photography"
+            className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition-opacity hover:opacity-85"
+          >
+            See the work
+          </Link>
+          <Link
+            href="/contact"
+            className="rounded-full border border-white/30 px-6 py-3 text-sm text-white transition-colors hover:bg-white/10"
+          >
+            Book
+          </Link>
         </div>
       </div>
     </section>
