@@ -6,6 +6,7 @@ import {
   getPublicServicesData,
   workLinkForCategory,
 } from "@/lib/server/public-services";
+import { AnimatedText } from "@/components/shared/AnimatedText";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,7 @@ export default async function ServicesPage({
     <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
       <header className="max-w-3xl">
         <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-          Services
+          <AnimatedText>Services</AnimatedText>
         </h1>
         <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
           Photography, film, dance, creative direction, web systems, and digital

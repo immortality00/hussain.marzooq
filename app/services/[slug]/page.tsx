@@ -3,6 +3,7 @@ import SmartImage from "@/components/shared/SmartImage";
 import { notFound } from "next/navigation";
 import { getDb } from "@/lib/server/db";
 import { workLinkForCategory } from "@/lib/server/public-services";
+import { AnimatedText } from "@/components/shared/AnimatedText";
 
 export const revalidate = 300;
 
@@ -49,7 +50,7 @@ export default async function ServiceDetailPage({
 
           <div className="space-y-3">
             <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-              {name}
+              <AnimatedText>{name}</AnimatedText>
             </h1>
 
             {startingPrice !== null ? (

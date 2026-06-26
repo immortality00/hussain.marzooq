@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
+import { AnimatedText } from "@/components/shared/AnimatedText";
 
 const capabilities = [
   {
@@ -38,7 +39,7 @@ export default function WebDevelopmentPage() {
             </div>
 
             <h1 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
-              Web Development
+              <AnimatedText>Web Development</AnimatedText>
             </h1>
 
             <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">

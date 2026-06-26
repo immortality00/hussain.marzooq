@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
+import { AnimatedText } from "@/components/shared/AnimatedText";
 
 const pillars = [
   {
@@ -32,7 +33,7 @@ export default function BlogPage() {
               JOURNAL
             </div>
 
-            <h1 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">Blog</h1>
+            <h1 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl"><AnimatedText>Blog</AnimatedText></h1>
 
             <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
               Visual essays, creative process, and long-form writing around photography, film,

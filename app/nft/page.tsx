@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { StickyCta } from "@/components/site/StickyCta";
 import NftCollection from "@/components/nft/NftCollection";
 import { getPublicNfts } from "@/lib/server/public-nfts";
+import { AnimatedText } from "@/components/shared/AnimatedText";
 
 export const revalidate = 300;
 
@@ -19,7 +20,7 @@ export default async function NftPage() {
       <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
         <section className="max-w-3xl">
           <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            NFT
+            <AnimatedText>NFT</AnimatedText>
           </h1>
 
           <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
