@@ -1,21 +1,39 @@
 import Link from "next/link";
+import { getAllPageSettings } from "@/lib/server/page-settings";
 
-const primaryLinks = [
-  { href: "/photography", label: "Photography" },
-  { href: "/videography", label: "Videography" },
+const ALWAYS_ON_PRIMARY = [
   { href: "/services", label: "Services" },
   { href: "/contact", label: "Contact" },
 ];
 
-const secondaryLinks = [
-  { href: "/nft", label: "NFT" },
-  { href: "/dancing", label: "Dancing" },
-  { href: "/web-development", label: "Web Development" },
+const ALWAYS_ON_SECONDARY = [
   { href: "/people", label: "People" },
   { href: "/blog", label: "Blog" },
 ];
 
-export function SiteFooter() {
+const DISCIPLINE_PRIMARY = [
+  { href: "/photography", label: "Photography", slug: "photography" },
+  { href: "/videography", label: "Videography", slug: "videography" },
+];
+
+const DISCIPLINE_SECONDARY = [
+  { href: "/nft", label: "NFT", slug: "nft" },
+  { href: "/dancing", label: "Dancing", slug: "dancing" },
+  { href: "/web-development", label: "Web Development", slug: "web-development" },
+];
+
+export async function SiteFooter() {
+  const pageSettings = await getAllPageSettings();
+  const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
+
+  const primaryLinks = [
+    ...DISCIPLINE_PRIMARY.filter((d) => activeSet.has(d.slug)),
+    ...ALWAYS_ON_PRIMARY,
+  ];
+  const secondaryLinks = [
+    ...DISCIPLINE_SECONDARY.filter((d) => activeSet.has(d.slug)),
+    ...ALWAYS_ON_SECONDARY,
+  ];
   return (
     <footer className="border-t bg-background/70 backdrop-blur">
       <div className="section-shell py-12">

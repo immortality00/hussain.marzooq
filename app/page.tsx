@@ -13,6 +13,7 @@ import {
 import { getPublicNfts } from "@/lib/server/public-nfts";
 import { getPublicServicesData } from "@/lib/server/public-services";
 import { getPublicTestimonials } from "@/lib/server/testimonials";
+import { getAllPageSettings } from "@/lib/server/page-settings";
 
 export const revalidate = 300;
 
@@ -23,7 +24,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [photos, videos, showreelUrl, nfts, servicesData, testimonials] =
+  const [photos, videos, showreelUrl, nfts, servicesData, testimonials, pageSettings] =
     await Promise.all([
       getPhotographyItems(),
       getVideographyItems(),
@@ -31,18 +32,22 @@ export default async function HomePage() {
       getPublicNfts(),
       getPublicServicesData(),
       getPublicTestimonials(3),
+      getAllPageSettings(),
     ]);
+
+  const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
   return (
     <>
       <main>
-        <HomeHero photos={photos} videos={videos} />
-        <HomeFeaturedWork photos={photos} videos={videos} />
-        <HomeCreativeSystem nfts={nfts} />
-        <HomeServicesPreview services={servicesData.services.slice(0, 3)} />
+        <HomeHero photos={photos} videos={videos} activeSet={activeSet} />
+        <HomeFeaturedWork photos={photos} videos={videos} activeSet={activeSet} />
+        <HomeCreativeSystem nfts={nfts} activeSet={activeSet} />
+        <HomeServicesPreview services={servicesData.services.slice(0, 3)} activeSet={activeSet} />
         <HomeTrustAndShowreel
           testimonial={testimonials.items[0] ?? null}
           showreelUrl={showreelUrl}
+          activeSet={activeSet}
         />
       </main>
 

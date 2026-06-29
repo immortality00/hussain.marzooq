@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getDb } from "@/lib/server/db";
 import { workLinkForCategory } from "@/lib/server/public-services";
 import { AnimatedText } from "@/components/shared/AnimatedText";
+import { getAllPageSettings } from "@/lib/server/page-settings";
 
 export const revalidate = 300;
 
@@ -32,6 +33,9 @@ export default async function ServiceDetailPage({
     typeof doc.startingPrice === "number" ? doc.startingPrice : null;
 
   const workLink = workLinkForCategory(category);
+  const pageSettings = await getAllPageSettings();
+  const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
+  const workLinkActive = activeSet.has(workLink.href.replace("/", ""));
 
   return (
     <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
@@ -74,12 +78,14 @@ export default async function ServiceDetailPage({
               Book this service
             </Link>
 
-            <Link
-              href={workLink.href}
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
-            >
-              {workLink.label}
-            </Link>
+            {workLinkActive && (
+              <Link
+                href={workLink.href}
+                className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+              >
+                {workLink.label}
+              </Link>
+            )}
           </div>
         </div>
 

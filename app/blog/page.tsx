@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
 import { AnimatedText } from "@/components/shared/AnimatedText";
+import { getAllPageSettings } from "@/lib/server/page-settings";
 
 const pillars = [
   {
@@ -23,7 +24,10 @@ const pillars = [
   },
 ];
 
-export default function BlogPage() {
+export default async function BlogPage() {
+  const pageSettings = await getAllPageSettings();
+  const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
+
   return (
     <>
       <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
@@ -67,18 +71,22 @@ export default function BlogPage() {
           </div>
 
           <div className="mt-4 flex flex-wrap gap-3">
-            <Link
-              href="/photography"
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
-            >
-              Photography
-            </Link>
-            <Link
-              href="/videography"
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
-            >
-              Videography
-            </Link>
+            {activeSet.has("photography") && (
+              <Link
+                href="/photography"
+                className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+              >
+                Photography
+              </Link>
+            )}
+            {activeSet.has("videography") && (
+              <Link
+                href="/videography"
+                className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+              >
+                Videography
+              </Link>
+            )}
             <Link
               href="/contact"
               className="rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"

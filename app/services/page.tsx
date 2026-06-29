@@ -7,6 +7,7 @@ import {
   workLinkForCategory,
 } from "@/lib/server/public-services";
 import { AnimatedText } from "@/components/shared/AnimatedText";
+import { getAllPageSettings } from "@/lib/server/page-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -25,12 +26,21 @@ export default async function ServicesPage({
   const selectedCategory =
     typeof sp.category === "string" ? sp.category : "all";
 
-  const { services: servicesAll, categories } = await getPublicServicesData();
+  const [{ services: servicesAll, categories }, pageSettings] = await Promise.all([
+    getPublicServicesData(),
+    getAllPageSettings(),
+  ]);
+  const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
+
+  const activeServices = servicesAll.filter((s) => {
+    const discipline = workLinkForCategory(s.category).href.replace("/", "");
+    return activeSet.has(discipline) || !["photography", "videography", "nft", "dancing", "web-development"].includes(discipline);
+  });
 
   const services =
     selectedCategory === "all"
-      ? servicesAll
-      : servicesAll.filter(
+      ? activeServices
+      : activeServices.filter(
           (s) => s.category.toLowerCase() === selectedCategory.toLowerCase(),
         );
 
@@ -171,12 +181,14 @@ export default async function ServicesPage({
                       Book
                     </Link>
 
-                    <Link
-                      href={workLink.href}
-                      className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
-                    >
-                      {workLink.label}
-                    </Link>
+                    {activeSet.has(workLink.href.replace("/", "")) && (
+                      <Link
+                        href={workLink.href}
+                        className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+                      >
+                        {workLink.label}
+                      </Link>
+                    )}
                   </div>
                 </div>
               </article>

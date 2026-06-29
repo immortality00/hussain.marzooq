@@ -1,6 +1,8 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { getPageSettings, getAllPageSettings } from "@/lib/server/page-settings";
 
 const sections = [
   {
@@ -24,7 +26,13 @@ const directions = [
   "Creative collaborations where motion becomes the visual language.",
 ];
 
-export default function DancingPage() {
+export default async function DancingPage() {
+  const [{ isActive }, allSettings] = await Promise.all([
+    getPageSettings("dancing"),
+    getAllPageSettings(),
+  ]);
+  if (!isActive) redirect("/");
+  const activeSet = new Set(allSettings.filter((p) => p.isActive).map((p) => p.slug));
   return (
     <>
       <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
@@ -103,12 +111,14 @@ export default function DancingPage() {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Link
-                href="/videography"
-                className="rounded-xl border border-background/30 px-4 py-2 text-sm transition-colors hover:bg-background/10"
-              >
-                View video work
-              </Link>
+              {activeSet.has("videography") && (
+                <Link
+                  href="/videography"
+                  className="rounded-xl border border-background/30 px-4 py-2 text-sm transition-colors hover:bg-background/10"
+                >
+                  View video work
+                </Link>
+              )}
               <Link
                 href="/contact?category=dance"
                 className="rounded-xl bg-background px-4 py-2 text-sm text-foreground transition-opacity hover:opacity-90"

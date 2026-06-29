@@ -8,14 +8,20 @@ function firstImage(items: PublicMediaItem[]) {
   return items.find((item) => item.secureUrl) ?? null;
 }
 
+const DISCIPLINE_ORDER = ["photography", "videography", "nft", "dancing", "web-development"];
+
 export function HomeHero({
   photos,
   videos,
+  activeSet,
 }: {
   photos: PublicMediaItem[];
   videos: PublicMediaItem[];
+  activeSet: Set<string>;
 }) {
   const heroImage = firstImage(photos) ?? firstImage(videos);
+  const firstActiveSlug = DISCIPLINE_ORDER.find((s) => activeSet.has(s));
+  const workHref = firstActiveSlug ? `/${firstActiveSlug}` : null;
 
   return (
     <section className="relative h-svh min-h-[600px] overflow-hidden bg-[#1a1814]">
@@ -57,12 +63,14 @@ export function HomeHero({
         </p>
 
         <div className="mt-9 flex flex-wrap gap-3">
-          <Link
-            href="/photography"
-            className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition-opacity hover:opacity-85"
-          >
-            See the work
-          </Link>
+          {workHref && (
+            <Link
+              href={workHref}
+              className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition-opacity hover:opacity-85"
+            >
+              See the work
+            </Link>
+          )}
           <Link
             href="/contact"
             className="rounded-full border border-white/30 px-6 py-3 text-sm text-white transition-colors hover:bg-white/10"

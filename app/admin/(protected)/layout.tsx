@@ -16,6 +16,7 @@ const nav = [
   { href: "/admin/testimonials", label: "Testimonials" },
   { href: "/admin/private-galleries", label: "Private Galleries" },
   { href: "/admin/removal-requests", label: "Removal Requests" },
+  { href: "/admin/pages", label: "Pages" },
 ];
 
 export default async function AdminProtectedLayout({

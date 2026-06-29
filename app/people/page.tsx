@@ -3,11 +3,16 @@ import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPublicPeople } from "@/lib/server/public-people";
 import { AnimatedText } from "@/components/shared/AnimatedText";
+import { getAllPageSettings } from "@/lib/server/page-settings";
 
 export const revalidate = 300;
 
 export default async function PeoplePage() {
-  const items = await getPublicPeople();
+  const [items, pageSettings] = await Promise.all([
+    getPublicPeople(),
+    getAllPageSettings(),
+  ]);
+  const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
   return (
     <>
@@ -44,12 +49,8 @@ export default async function PeoplePage() {
               },
             ]}
             links={[
-              { href: "/photography", label: "View photography" },
-              {
-                href: "/contact?category=photography",
-                label: "Book a shoot",
-                primary: true,
-              },
+              ...(activeSet.has("photography") ? [{ href: "/photography", label: "View photography" }] : []),
+              { href: "/contact?category=photography", label: "Book a shoot", primary: true },
             ]}
           />
         )}
