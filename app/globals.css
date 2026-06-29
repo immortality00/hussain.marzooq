@@ -159,16 +159,9 @@
     @apply border-border outline-ring/50;
   }
 
-  html {
-    scroll-behavior: smooth;
-  }
-
   body {
     @apply bg-background text-foreground antialiased;
     min-height: 100vh;
-    background-image:
-      radial-gradient(circle at top left, rgba(120, 120, 150, 0.08), transparent 28%),
-      radial-gradient(circle at bottom right, rgba(120, 120, 150, 0.06), transparent 24%);
   }
 
   ::selection {
@@ -209,15 +202,6 @@
     box-shadow: var(--shadow-elevated);
   }
 
-  .site-grid-bg {
-    background-image:
-      linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
-      linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.4), transparent 85%);
-    pointer-events: none;
-  }
-
   .eyebrow {
     @apply inline-flex rounded-full border px-3 py-1 text-[11px] tracking-[0.18em] text-muted-foreground;
   }
@@ -228,16 +212,6 @@
 
   .page-shell {
     @apply relative overflow-x-clip;
-  }
-
-  .page-vignette {
-    pointer-events: none;
-    position: absolute;
-    inset: 0;
-    background:
-      radial-gradient(circle at top center, rgba(255, 255, 255, 0.5), transparent 32%),
-      radial-gradient(circle at bottom center, rgba(0, 0, 0, 0.04), transparent 40%);
-    opacity: 0.6;
   }
 
   .premium-card {

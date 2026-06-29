@@ -50,7 +50,7 @@ export function HomeCreativeSystem({ nfts }: { nfts: PublicNftItem[] }) {
             className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
           />
         ) : (
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(255,255,255,0.55),transparent_30%),linear-gradient(135deg,var(--muted),var(--background))]" />
+          <div className="absolute inset-0 bg-muted" />
         )}
 
         <div className="absolute inset-0 bg-linear-to-t from-black/82 via-black/25 to-transparent" />
