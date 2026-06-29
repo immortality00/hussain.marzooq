@@ -92,8 +92,8 @@ export function HeroBokeh() {
 
     // Resize
     function resize() {
-      const w = canvas.clientWidth;
-      const h = canvas.clientHeight;
+      const w = canvas!.clientWidth;
+      const h = canvas!.clientHeight;
       if (!w || !h) return;
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
