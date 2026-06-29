@@ -75,7 +75,7 @@ export default function NftModal({
 
           <div className="min-h-0 overflow-hidden">
             <div className="flex h-full min-h-0 flex-col">
-              <div className="min-h-0 flex-1 overflow-y-auto p-5">
+              <div className="min-h-0 flex-1 overflow-y-auto p-5" data-lenis-prevent>
                 <div className="space-y-5">
                   <div className="flex flex-wrap gap-2">
                     <span className={`inline-flex rounded-full px-3 py-1 text-xs ${statusClasses(shownStatus)}`}>

@@ -218,7 +218,7 @@ function ReviewModal({
           </button>
         </div>
 
-        <div className="max-h-[82vh] overflow-y-auto p-5 sm:p-7">
+        <div className="max-h-[82vh] overflow-y-auto p-5 sm:p-7" data-lenis-prevent>
           <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr]">
             <div className="space-y-6">
               <div className="text-xl text-amber-500">{renderStars(item.rating)}</div>

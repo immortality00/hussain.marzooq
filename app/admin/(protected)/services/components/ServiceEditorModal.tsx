@@ -90,7 +90,7 @@ export default function ServiceEditorModal({
           </button>
         </div>
 
-        <div className="max-h-[70vh] overflow-y-auto p-5">
+        <div className="max-h-[70vh] overflow-y-auto p-5" data-lenis-prevent>
           <div className="grid grid-cols-2 gap-4">
             <label className="text-sm">
               <div className="mb-1 text-muted-foreground">Name</div>

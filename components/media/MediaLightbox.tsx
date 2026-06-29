@@ -91,7 +91,7 @@ export default function MediaLightbox({
             <MediaSurface active={active} />
           </div>
 
-          <div className="min-h-0 overflow-y-auto p-5">
+          <div className="min-h-0 overflow-y-auto p-5" data-lenis-prevent>
             <MediaDetailsSections active={active} />
           </div>
         </div>
