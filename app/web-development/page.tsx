@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
-import { AnimatedText } from "@/components/shared/AnimatedText";
+import { PageHeader } from "@/components/shared/PageHeader";
 
 const capabilities = [
   {
@@ -33,20 +33,11 @@ export default function WebDevelopmentPage() {
     <>
       <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
         <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
-          <div>
-            <div className="inline-flex rounded-full border px-3 py-1 text-[11px] tracking-[0.16em] text-muted-foreground">
-              DIGITAL BUILDS
-            </div>
-
-            <h1 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
-              <AnimatedText>Web Development</AnimatedText>
-            </h1>
-
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-              Design-led front-end work, custom portfolio systems, admin flows, and digital
-              presentation tools connected to the same creative direction as the visual work.
-            </p>
-          </div>
+          <PageHeader
+            eyebrow="DIGITAL BUILDS"
+            title="Web Development"
+            description="Design-led front-end work, custom portfolio systems, admin flows, and digital presentation tools connected to the same creative direction as the visual work."
+          />
 
           <div className="rounded-[2rem] border bg-background/60 p-6 shadow-sm backdrop-blur">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">

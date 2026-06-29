@@ -18,7 +18,7 @@ to open a new session.
 
 ## Phase 0 — Foundation (must complete before any design session)
 
-### Session F1 — Remove violations + initialize Lenis — `in-progress`
+### Session F1 — Remove violations + initialize Lenis — `done`
 Remove all design violations before any design work begins.
 
 Tasks in this session (all in one commit):
@@ -31,7 +31,7 @@ Read all listed files before making any change. Report every connected file befo
 
 ---
 
-### Session F2 — Code refactoring: extract reusable components — `pending`
+### Session F2 — Code refactoring: extract reusable components — `done`
 The most important session for long-term code quality. Every session after this will touch smaller files.
 
 Extract these patterns that are currently duplicated across 5+ files:
