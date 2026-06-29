@@ -5,15 +5,17 @@ import { toEmbedUrl } from "@/components/media/utils";
 export function HomeTrustAndShowreel({
   testimonial,
   showreelUrl,
+  activeSet,
 }: {
   testimonial: PublicTestimonial | null;
   showreelUrl: string | null;
+  activeSet: Set<string>;
 }) {
   const showreelEmbed = showreelUrl ? toEmbedUrl(showreelUrl) : null;
   const showreelVideo = showreelUrl && !showreelEmbed ? showreelUrl : null;
 
   return (
-    <section className="section-shell grid gap-5 pb-28 pt-8 sm:pb-32 lg:grid-cols-2">
+    <section className={`section-shell grid gap-5 pb-28 pt-8 sm:pb-32 ${activeSet.has("videography") ? "lg:grid-cols-2" : ""}`}>
       <div className="premium-panel p-6 sm:p-8">
         <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
           Trust built through clear direction and strong final delivery.
@@ -33,6 +35,7 @@ export function HomeTrustAndShowreel({
         </Link>
       </div>
 
+      {activeSet.has("videography") && (
       <div className="overflow-hidden rounded-[2rem] border bg-muted shadow-sm">
         <div className="aspect-video bg-black">
           {showreelEmbed ? (
@@ -70,6 +73,7 @@ export function HomeTrustAndShowreel({
           </Link>
         </div>
       </div>
+      )}
     </section>
   );
 }

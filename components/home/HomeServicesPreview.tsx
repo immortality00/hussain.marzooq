@@ -2,15 +2,40 @@ import Link from "next/link";
 import type { PublicServiceItem } from "@/lib/server/public-services";
 
 const serviceDirections = [
-  "Photography",
-  "Videography",
-  "Dance",
-  "Creative Direction",
-  "NFT / Web3",
-  "Web Development",
+  { label: "Photography", slug: "photography" },
+  { label: "Videography", slug: "videography" },
+  { label: "Dance", slug: "dancing" },
+  { label: "Creative Direction", slug: null },
+  { label: "NFT / Web3", slug: "nft" },
+  { label: "Web Development", slug: "web-development" },
 ];
 
-export function HomeServicesPreview({ services }: { services: PublicServiceItem[] }) {
+function disciplineSlugForCategory(category: string): string | null {
+  const c = category.trim().toLowerCase();
+  if (c.includes("photo")) return "photography";
+  if (c.includes("video") || c.includes("film") || c.includes("reel")) return "videography";
+  if (c.includes("dance")) return "dancing";
+  if (c.includes("nft")) return "nft";
+  if (c.includes("web") || c.includes("dev") || c.includes("code")) return "web-development";
+  return null;
+}
+
+export function HomeServicesPreview({
+  services,
+  activeSet,
+}: {
+  services: PublicServiceItem[];
+  activeSet: Set<string>;
+}) {
+  const filteredServices = services.filter((s) => {
+    const discipline = disciplineSlugForCategory(s.category);
+    return discipline === null || activeSet.has(discipline);
+  });
+
+  const filteredDirections = serviceDirections.filter(
+    (d) => d.slug === null || activeSet.has(d.slug),
+  );
+
   return (
     <section className="section-shell grid gap-5 py-8 lg:grid-cols-[0.85fr_1.15fr]">
       <div className="premium-panel p-6 sm:p-8">
@@ -27,8 +52,8 @@ export function HomeServicesPreview({ services }: { services: PublicServiceItem[
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        {services.length
-          ? services.map((service) => (
+        {filteredServices.length
+          ? filteredServices.map((service) => (
               <Link
                 key={service.id}
                 href={`/services/${encodeURIComponent(service.slug)}`}
@@ -45,13 +70,13 @@ export function HomeServicesPreview({ services }: { services: PublicServiceItem[
                 </p>
               </Link>
             ))
-          : serviceDirections.map((item) => (
+          : filteredDirections.map((item) => (
               <Link
-                key={item}
+                key={item.label}
                 href="/services"
                 className="rounded-[2rem] border bg-background/60 p-5 text-sm font-medium hover:bg-accent"
               >
-                {item}
+                {item.label}
               </Link>
             ))}
       </div>

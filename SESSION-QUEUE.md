@@ -64,7 +64,7 @@ Read each file completely before splitting. Verify imports after each split. Adm
 
 ## Phase 1 — Navigation & global systems
 
-### Session N1 — Minimal nav + Work overlay — `in-progress`
+### Session N1 — Minimal nav + Work overlay — `done`
 Replace the current 11-item Navbar with the new 3-item minimal nav.
 
 New nav structure: **Work · About · Book**
@@ -81,7 +81,7 @@ Read: components/site/Navbar.tsx, components/site/AppShell.tsx, globals.css, eve
 
 ---
 
-### Session N2 — Page activity toggle system — `pending`
+### Session N2 — Page activity toggle system — `in-progress`
 Build a system to activate/deactivate public discipline pages from the admin.
 
 Backend:

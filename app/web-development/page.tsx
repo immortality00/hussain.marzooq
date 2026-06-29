@@ -1,6 +1,8 @@
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { getPageSettings } from "@/lib/server/page-settings";
 
 const capabilities = [
   {
@@ -28,7 +30,9 @@ const principles = [
   "Public presentation should feel intentional, cinematic, and premium.",
 ];
 
-export default function WebDevelopmentPage() {
+export default async function WebDevelopmentPage() {
+  const { isActive } = await getPageSettings("web-development");
+  if (!isActive) redirect("/");
   return (
     <>
       <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">

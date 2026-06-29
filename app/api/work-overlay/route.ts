@@ -1,6 +1,7 @@
 import { noStoreJson } from "@/app/api/_lib/common";
 import { getDb } from "@/lib/server/db";
 import { buildPublicMediaQuery } from "@/lib/server/media-serializers";
+import { getAllPageSettings } from "@/lib/server/page-settings";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +16,11 @@ const DISCIPLINES = [
 export async function GET() {
   const db = await getDb();
 
+  const pageSettings = await getAllPageSettings();
+  const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
+
   const cards = await Promise.all(
-    DISCIPLINES.map(async ({ slug, label, href, category }) => {
+    DISCIPLINES.filter(({ slug }) => activeSet.has(slug)).map(async ({ slug, label, href, category }) => {
       let imageUrl: string | null = null;
 
       if (category) {

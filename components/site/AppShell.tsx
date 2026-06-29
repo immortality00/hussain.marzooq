@@ -4,7 +4,6 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 import { Navbar } from "@/components/site/Navbar";
-import { SiteFooter } from "@/components/site/SiteFooter";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -30,7 +29,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="grain-overlay" />
       <Navbar />
       <div className="relative z-10">{children}</div>
-      <SiteFooter />
     </div>
   );
 }

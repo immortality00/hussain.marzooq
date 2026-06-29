@@ -1,13 +1,17 @@
+import { redirect } from "next/navigation";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPhotographyItems } from "@/lib/server/public-media";
+import { getPageSettings } from "@/lib/server/page-settings";
 import { PageHeader } from "@/components/shared/PageHeader";
-
 
 export const revalidate = 300;
 
 export default async function PhotographyPage() {
+  const { isActive } = await getPageSettings("photography");
+  if (!isActive) redirect("/");
+
   const items = await getPhotographyItems();
 
   return (

@@ -5,6 +5,7 @@ import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPublicPersonBySlug } from "@/lib/server/public-people";
 import { AnimatedText } from "@/components/shared/AnimatedText";
+import { getAllPageSettings } from "@/lib/server/page-settings";
 
 export const revalidate = 300;
 
@@ -14,9 +15,13 @@ export default async function PersonDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const person = await getPublicPersonBySlug(slug);
+  const [person, pageSettings] = await Promise.all([
+    getPublicPersonBySlug(slug),
+    getAllPageSettings(),
+  ]);
 
   if (!person) notFound();
+  const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
   return (
     <>
@@ -73,12 +78,8 @@ export default async function PersonDetailPage({
               },
             ]}
             links={[
-              { href: "/photography", label: "Photography" },
-              {
-                href: "/contact?category=photography",
-                label: "Book",
-                primary: true,
-              },
+              ...(activeSet.has("photography") ? [{ href: "/photography", label: "Photography" }] : []),
+              { href: "/contact?category=photography", label: "Book", primary: true },
             ]}
           />
         )}

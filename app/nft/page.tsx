@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { StickyCta } from "@/components/site/StickyCta";
 import NftCollection from "@/components/nft/NftCollection";
 import { getPublicNfts } from "@/lib/server/public-nfts";
+import { getPageSettings } from "@/lib/server/page-settings";
 import { PageHeader } from "@/components/shared/PageHeader";
 
 export const revalidate = 300;
@@ -13,6 +15,9 @@ export const metadata: Metadata = {
 };
 
 export default async function NftPage() {
+  const { isActive } = await getPageSettings("nft");
+  if (!isActive) redirect("/");
+
   const items = await getPublicNfts();
 
   return (

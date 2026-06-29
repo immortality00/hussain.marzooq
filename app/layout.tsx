@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { AppShell } from "@/components/site/AppShell";
 import { CustomCursor } from "@/components/site/CustomCursor";
+import { SiteFooter } from "@/components/site/SiteFooter";
 
 export const metadata: Metadata = {
   title: "HM Visuals",
@@ -28,6 +29,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
           <CustomCursor />
           <AppShell>{children}</AppShell>
+          <SiteFooter />
         </ThemeProvider>
       </body>
     </html>

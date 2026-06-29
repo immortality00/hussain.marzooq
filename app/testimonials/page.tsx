@@ -4,6 +4,7 @@ import TestimonialsSection from "@/components/testimonials/TestimonialsSection";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { getPublicTestimonials } from "@/lib/server/testimonials";
 import { AnimatedText } from "@/components/shared/AnimatedText";
+import { getAllPageSettings } from "@/lib/server/page-settings";
 
 export const revalidate = 300;
 
@@ -21,7 +22,11 @@ function renderStars(value: number) {
 }
 
 export default async function TestimonialsPage() {
-  const data = await getPublicTestimonials(60);
+  const [data, pageSettings] = await Promise.all([
+    getPublicTestimonials(60),
+    getAllPageSettings(),
+  ]);
+  const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
   return (
     <main className="relative overflow-hidden bg-background text-foreground">
@@ -111,7 +116,7 @@ export default async function TestimonialsPage() {
                 },
               ]}
               links={[
-                { href: "/photography", label: "View work" },
+                ...(activeSet.has("photography") ? [{ href: "/photography", label: "View work" }] : []),
                 { href: "/contact", label: "Book", primary: true },
               ]}
             />

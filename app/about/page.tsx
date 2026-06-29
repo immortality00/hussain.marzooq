@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
 import { AnimatedText } from "@/components/shared/AnimatedText";
+import { getAllPageSettings } from "@/lib/server/page-settings";
 
 const disciplines = [
   {
@@ -28,7 +29,14 @@ const principles = [
   "Premium execution across public presentation, private delivery, and client communication.",
 ];
 
-export default function AboutPage() {
+const DISCIPLINE_ORDER = ["photography", "videography", "nft", "dancing", "web-development"];
+
+export default async function AboutPage() {
+  const pageSettings = await getAllPageSettings();
+  const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
+  const firstActiveSlug = DISCIPLINE_ORDER.find((s) => activeSet.has(s));
+  const workHref = firstActiveSlug ? `/${firstActiveSlug}` : null;
+
   return (
     <>
       <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
@@ -118,12 +126,14 @@ export default function AboutPage() {
             </div>
 
             <div className="flex flex-wrap gap-3">
-              <Link
-                href="/photography"
-                className="rounded-xl border border-background/30 px-4 py-2 text-sm transition-colors hover:bg-background/10"
-              >
-                See the work
-              </Link>
+              {workHref && (
+                <Link
+                  href={workHref}
+                  className="rounded-xl border border-background/30 px-4 py-2 text-sm transition-colors hover:bg-background/10"
+                >
+                  See the work
+                </Link>
+              )}
               <Link
                 href="/contact"
                 className="rounded-xl bg-background px-4 py-2 text-sm text-foreground transition-opacity hover:opacity-90"
