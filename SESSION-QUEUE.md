@@ -50,7 +50,7 @@ Read every file that will be changed before writing any code. List all files aff
 
 ---
 
-### Session F3 — Split large admin files — `in-progress`
+### Session F3 — Split large admin files — `done`
 Admin files are too large. Split without breaking any admin functionality.
 
 Target files:
@@ -64,7 +64,7 @@ Read each file completely before splitting. Verify imports after each split. Adm
 
 ## Phase 1 — Navigation & global systems
 
-### Session N1 — Minimal nav + Work overlay — `pending`
+### Session N1 — Minimal nav + Work overlay — `in-progress`
 Replace the current 11-item Navbar with the new 3-item minimal nav.
 
 New nav structure: **Work · About · Book**
