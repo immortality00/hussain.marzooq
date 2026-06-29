@@ -18,7 +18,7 @@ to open a new session.
 
 ## Phase 0 — Foundation (must complete before any design session)
 
-### Session F1 — Remove violations + initialize Lenis — `pending`
+### Session F1 — Remove violations + initialize Lenis — `in-progress`
 Remove all design violations before any design work begins.
 
 Tasks in this session (all in one commit):

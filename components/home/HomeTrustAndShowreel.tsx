@@ -53,7 +53,7 @@ export function HomeTrustAndShowreel({
               src={showreelVideo}
             />
           ) : (
-            <div className="h-full w-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent_26%),linear-gradient(135deg,#050505,#1f1f24)]" />
+            <div className="h-full w-full bg-muted" />
           )}
         </div>
 
