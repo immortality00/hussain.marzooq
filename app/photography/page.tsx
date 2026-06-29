@@ -2,7 +2,8 @@ import { MediaGrid } from "@/components/media/MediaGrid";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPhotographyItems } from "@/lib/server/public-media";
-import { AnimatedText } from "@/components/shared/AnimatedText";
+import { PageHeader } from "@/components/shared/PageHeader";
+
 
 export const revalidate = 300;
 
@@ -12,15 +13,11 @@ export default async function PhotographyPage() {
   return (
     <>
       <main className="mx-auto max-w-6xl px-4 py-16">
-        <section className="max-w-3xl">
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            <AnimatedText>Photography</AnimatedText>
-          </h1>
-          <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
-            Cinematic portraits, fashion, weddings, events, and emotional visual
-            stories.
-          </p>
-        </section>
+        <PageHeader
+          title="Photography"
+          description="Cinematic portraits, fashion, weddings, events, and emotional visual stories."
+          className="max-w-3xl"
+        />
 
         {items.length > 0 ? (
           <MediaGrid items={items} searchCategory="photography" />
