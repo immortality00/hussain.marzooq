@@ -245,7 +245,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6">
+            <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6" data-lenis-prevent>
               <input
                 tabIndex={-1}
                 autoComplete="off"

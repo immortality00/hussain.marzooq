@@ -50,7 +50,7 @@ Read every file that will be changed before writing any code. List all files aff
 
 ---
 
-### Session F3 — Split large admin files — `pending`
+### Session F3 — Split large admin files — `in-progress`
 Admin files are too large. Split without breaking any admin functionality.
 
 Target files:

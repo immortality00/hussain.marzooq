@@ -167,7 +167,7 @@ export default function PrivateGalleryBrowser({
               </div>
 
               <div className="flex min-h-0 flex-col">
-                <div className="min-h-0 flex-1 overflow-y-auto p-5">
+                <div className="min-h-0 flex-1 overflow-y-auto p-5" data-lenis-prevent>
                   <div className="space-y-4">
                     {active.description ? (
                       <div className="rounded-2xl border bg-background/50 p-4">
