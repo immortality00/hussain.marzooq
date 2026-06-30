@@ -37,7 +37,7 @@ export default async function BlogPage() {
 
   return (
     <>
-      <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
+      <main className="section-shell py-12 sm:py-16">
         <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
           <div>
             <div className="inline-flex rounded-full border px-3 py-1 text-[11px] tracking-[0.16em] text-muted-foreground">

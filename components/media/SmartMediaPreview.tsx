@@ -30,7 +30,6 @@ function PlayBadge() {
 function EmbedPlaceholder({ title }: { title: string }) {
   return (
     <div className="absolute inset-0 bg-linear-to-br from-zinc-900 via-zinc-800 to-zinc-950">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.12),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.08),transparent_30%)]" />
       <div className="absolute inset-0 flex flex-col items-center justify-center px-6 text-center text-white">
         <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-white/20 bg-white/10 text-xl backdrop-blur">
           ▶

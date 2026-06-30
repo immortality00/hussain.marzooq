@@ -25,7 +25,7 @@ export default async function PersonDetailPage({
 
   return (
     <>
-      <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
+      <main className="section-shell py-12 sm:py-16">
         <section className="mx-auto max-w-3xl text-center">
           <div className="flex justify-center">
             <div className="relative h-28 w-28 overflow-hidden rounded-full border bg-muted sm:h-36 sm:w-36">
@@ -39,7 +39,7 @@ export default async function PersonDetailPage({
                   priority
                 />
               ) : (
-                <div className="h-full w-full bg-[radial-gradient(circle_at_35%_20%,rgba(255,255,255,0.55),transparent_26%),linear-gradient(135deg,var(--muted),var(--background))]" />
+                <div className="h-full w-full bg-muted" />
               )}
             </div>
           </div>

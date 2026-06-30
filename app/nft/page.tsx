@@ -22,7 +22,7 @@ export default async function NftPage() {
 
   return (
     <>
-      <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
+      <main className="section-shell py-12 sm:py-16">
         <PageHeader
           title="NFT"
           description="Published collectible works, edition structure, and marketplace access — all presented inside one unified collection page."

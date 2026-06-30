@@ -33,7 +33,7 @@ export default async function VideographyPage() {
 
   return (
     <>
-      <main className="mx-auto max-w-6xl px-4 py-16">
+      <main className="section-shell py-16">
         <PageHeader
           title="Videography"
           description="Cinematic films, dance, events, fashion, weddings, and movement-led visual stories."

@@ -3,7 +3,7 @@ import PeopleIndex from "@/components/people/PeopleIndex";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPublicPeople } from "@/lib/server/public-people";
-import { AnimatedText } from "@/components/shared/AnimatedText";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { getPageSeo } from "@/lib/server/page-seo";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -23,17 +23,12 @@ export default async function PeoplePage() {
 
   return (
     <>
-      <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
-        <section className="max-w-3xl">
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            <AnimatedText>People</AnimatedText>
-          </h1>
-
-          <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
-            Portraits, collaborators, artists, dancers, clients, and people
-            connected to the visual work.
-          </p>
-        </section>
+      <main className="section-shell py-12 sm:py-16">
+        <PageHeader
+          title="People"
+          description="Portraits, collaborators, artists, dancers, clients, and people connected to the visual work."
+          className="max-w-3xl"
+        />
 
         {items.length > 0 ? (
           <PeopleIndex items={items} />

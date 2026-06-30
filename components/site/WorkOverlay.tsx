@@ -13,14 +13,6 @@ type DisciplineCard = {
   imageUrl: string | null;
 };
 
-const FALLBACK_GRADIENTS: Record<string, string> = {
-  photography: "#1a1a1a, #0d0d0d",
-  videography: "#141414, #0a0a0a",
-  nft: "#111118, #08080f",
-  dancing: "#12100e, #090807",
-  "web-development": "#0e0e0e, #080808",
-};
-
 const EYEBROWS: Record<string, string> = {
   photography: "Still image",
   videography: "Motion",
@@ -207,7 +199,6 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
         >
           {cards.map((card, i) => {
             const angle = (360 / count) * i;
-            const gradient = FALLBACK_GRADIENTS[card.slug] ?? "#111, #0a0a0a";
             const eyebrow = EYEBROWS[card.slug] ?? "";
 
             return (
@@ -225,8 +216,7 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
                   href={card.href}
                   onClick={(e) => { if (drag.current.didDrag) { e.preventDefault(); return; } onClose(); }}
                   draggable={false}
-                  className="group relative flex h-full w-full flex-col justify-end overflow-hidden rounded-2xl border border-white/10"
-                  style={{ background: `linear-gradient(160deg, ${gradient})` }}
+                  className="group relative flex h-full w-full flex-col justify-end overflow-hidden rounded-2xl border border-white/10 bg-muted"
                 >
                   {card.imageUrl && (
                     <Image

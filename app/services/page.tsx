@@ -7,7 +7,7 @@ import {
   getPublicServicesData,
   workLinkForCategory,
 } from "@/lib/server/public-services";
-import { AnimatedText } from "@/components/shared/AnimatedText";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 
 export const dynamic = "force-dynamic";
@@ -50,16 +50,12 @@ export default async function ServicesPage({
   ];
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
-      <header className="max-w-3xl">
-        <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-          <AnimatedText>Services</AnimatedText>
-        </h1>
-        <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
-          Photography, film, dance, creative direction, web systems, and digital
-          work shaped around the tone of the project.
-        </p>
-      </header>
+    <main className="section-shell py-12 sm:py-16">
+      <PageHeader
+        title="Services"
+        description="Photography, film, dance, creative direction, web systems, and digital work shaped around the tone of the project."
+        className="max-w-3xl"
+      />
 
       <div className="mt-8 flex flex-wrap gap-2">
         {tabs.map((t) => {
@@ -137,7 +133,7 @@ export default async function ServicesPage({
                         fetchPriority={imagePriority ? "high" : undefined}
                       />
                     ) : (
-                      <div className="h-full w-full bg-[radial-gradient(circle_at_28%_20%,rgba(255,255,255,0.55),transparent_26%),linear-gradient(135deg,var(--muted),var(--background))]" />
+                      <div className="h-full w-full bg-muted" />
                     )}
 
                     <div className="absolute inset-0 bg-linear-to-t from-black/68 via-black/14 to-transparent" />
