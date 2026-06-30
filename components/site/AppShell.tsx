@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 import { Navbar } from "@/components/site/Navbar";
+import { Preloader } from "@/components/site/Preloader";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -26,6 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="page-shell min-h-screen">
+      <Preloader />
       <div className="grain-overlay" />
       <Navbar />
       <div className="relative z-10">{children}</div>
