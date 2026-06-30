@@ -76,7 +76,7 @@ hook, the same pattern already used in `usePrivateGalleriesAdmin.ts`.
 
 ---
 
-### Session F4 — Design-rule cleanup + dead code removal — `pending`
+### Session F4 — Design-rule cleanup + dead code removal — `done`
 Small, low-risk fixes found in a full-repo audit after F1–N3. Nothing here requires a
 design decision — every item below is enforcing a rule already in this doc.
 

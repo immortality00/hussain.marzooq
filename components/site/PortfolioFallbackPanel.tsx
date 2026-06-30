@@ -26,7 +26,6 @@ export function PortfolioFallbackPanel({
     <section className="mt-10 overflow-hidden rounded-[2.25rem] border bg-background/70 shadow-sm backdrop-blur">
       <div className="grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
         <div className="relative min-h-[20rem] overflow-hidden bg-foreground text-background">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(255,255,255,0.24),transparent_28%),radial-gradient(circle_at_80%_80%,rgba(255,255,255,0.14),transparent_26%)]" />
           <div className="absolute inset-0 bg-linear-to-br from-transparent via-background/0 to-background/10" />
 
           <div className="relative flex h-full min-h-[20rem] flex-col justify-end p-6 sm:p-8">

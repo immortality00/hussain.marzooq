@@ -42,7 +42,7 @@ export default async function WebDevelopmentPage() {
   if (!isActive) redirect("/");
   return (
     <>
-      <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
+      <main className="section-shell py-12 sm:py-16">
         <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
           <PageHeader
             eyebrow="DIGITAL BUILDS"

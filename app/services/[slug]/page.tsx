@@ -38,7 +38,7 @@ export default async function ServiceDetailPage({
   const workLinkActive = activeSet.has(workLink.href.replace("/", ""));
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
+    <main className="section-shell py-12 sm:py-16">
       <Link
         href="/services"
         className="inline-flex text-sm text-muted-foreground underline underline-offset-4"
@@ -100,7 +100,7 @@ export default async function ServiceDetailPage({
               priority
             />
           ) : (
-            <div className="min-h-[420px] bg-[radial-gradient(circle_at_28%_20%,rgba(255,255,255,0.56),transparent_26%),linear-gradient(135deg,var(--muted),var(--background))]" />
+            <div className="min-h-[420px] bg-muted" />
           )}
         </div>
       </section>

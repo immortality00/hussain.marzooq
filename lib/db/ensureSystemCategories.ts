@@ -39,9 +39,15 @@ export async function ensureOthersCategory(db: Db) {
     });
   }
 
-  // 2) Migrate legacy "general" services to "others"
-  await db.collection("services").updateMany(
+  // 2) Migrate legacy "general" services to "others" — skip if none exist
+  const hasLegacy = await db.collection("services").findOne(
     { category: "general" },
-    { $set: { category: "others", updatedAt: now } }
+    { projection: { _id: 1 } }
   );
+  if (hasLegacy) {
+    await db.collection("services").updateMany(
+      { category: "general" },
+      { $set: { category: "others", updatedAt: now } }
+    );
+  }
 }

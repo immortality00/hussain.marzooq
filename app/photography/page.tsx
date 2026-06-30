@@ -23,7 +23,7 @@ export default async function PhotographyPage() {
 
   return (
     <>
-      <main className="mx-auto max-w-6xl px-4 py-16">
+      <main className="section-shell py-16">
         <PageHeader
           title="Photography"
           description="Cinematic portraits, fashion, weddings, events, and emotional visual stories."

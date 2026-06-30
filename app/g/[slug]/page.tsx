@@ -31,7 +31,7 @@ export default async function PrivateGalleryPage({
   const gallery = result.gallery;
 
   return (
-    <main className="mx-auto max-w-6xl px-4 py-12 sm:py-16">
+    <main className="section-shell py-12 sm:py-16">
       <section className="max-w-3xl">
         <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl"><AnimatedText>{gallery.title}</AnimatedText></h1>
         {gallery.description ? (
