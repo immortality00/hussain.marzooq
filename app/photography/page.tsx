@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPhotographyItems } from "@/lib/server/public-media";
+import { getPageSeo } from "@/lib/server/page-seo";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("photography");
+  return { title: seo.title, description: seo.description };
+}
 import { getPageSettings } from "@/lib/server/page-settings";
 import { PageHeader } from "@/components/shared/PageHeader";
 

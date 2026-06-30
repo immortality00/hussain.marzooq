@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import PeopleIndex from "@/components/people/PeopleIndex";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPublicPeople } from "@/lib/server/public-people";
 import { AnimatedText } from "@/components/shared/AnimatedText";
+import { getPageSeo } from "@/lib/server/page-seo";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("people");
+  return { title: seo.title, description: seo.description };
+}
 import { getAllPageSettings } from "@/lib/server/page-settings";
 
 export const revalidate = 300;

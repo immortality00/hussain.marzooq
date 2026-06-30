@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getPageSeo } from "@/lib/server/page-seo";
 import { HomeCreativeSystem } from "@/components/home/HomeCreativeSystem";
 import { HomeFeaturedWork } from "@/components/home/HomeFeaturedWork";
 import { HomeHero } from "@/components/home/HomeHero";
@@ -17,11 +18,10 @@ import { getAllPageSettings } from "@/lib/server/page-settings";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: "HM Visuals — Cinematic Photography, Film & Creative Direction",
-  description:
-    "Premium portfolio of Hussain Marzooq across photography, videography, NFT work, dance, web development, and creative visual direction.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("home");
+  return { title: seo.title, description: seo.description };
+}
 
 export default async function HomePage() {
   const [photos, videos, showreelUrl, nfts, servicesData, testimonials, pageSettings] =

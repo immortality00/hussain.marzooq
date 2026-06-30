@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { getActiveServicesForContact } from "@/lib/server/public-services";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { getPageSeo } from "@/lib/server/page-seo";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("contact");
+  return { title: seo.title, description: seo.description };
+}
 
 type SP = {
   success?: string;

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { getPageSeo } from "@/lib/server/page-seo";
 import Link from "next/link";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import {
@@ -11,11 +12,10 @@ import { getAllPageSettings } from "@/lib/server/page-settings";
 
 export const dynamic = "force-dynamic";
 
-export const metadata: Metadata = {
-  title: "Creative Services | HM Visuals",
-  description:
-    "Book premium photography, filmmaking, creative direction, dancing, web development, and NFT-focused services by HM Visuals.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("services");
+  return { title: seo.title, description: seo.description };
+}
 
 export default async function ServicesPage({
   searchParams,

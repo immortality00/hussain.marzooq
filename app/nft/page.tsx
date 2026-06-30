@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { getPageSeo } from "@/lib/server/page-seo";
 import { StickyCta } from "@/components/site/StickyCta";
 import NftCollection from "@/components/nft/NftCollection";
 import { getPublicNfts } from "@/lib/server/public-nfts";
@@ -8,11 +9,10 @@ import { PageHeader } from "@/components/shared/PageHeader";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: "NFT Collection | HM Visuals",
-  description:
-    "Explore HM Visuals collectible NFT works, edition structures, availability, and marketplace access.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("nft");
+  return { title: seo.title, description: seo.description };
+}
 
 export default async function NftPage() {
   const { isActive } = await getPageSettings("nft");

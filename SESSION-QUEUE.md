@@ -81,7 +81,7 @@ Read: components/site/Navbar.tsx, components/site/AppShell.tsx, globals.css, eve
 
 ---
 
-### Session N2 — Page activity toggle system — `in-progress`
+### Session N2 — Page activity toggle system — `done`
 Build a system to activate/deactivate public discipline pages from the admin.
 
 Backend:
@@ -102,7 +102,7 @@ Read all admin files, Navbar.tsx, and all public page.tsx files before writing.
 
 ---
 
-### Session N3 — SEO + page metadata admin control — `pending`
+### Session N3 — SEO + page metadata admin control — `in-progress`
 Build admin control over the title and description shown on every public page, and the OG metadata.
 
 Backend:
