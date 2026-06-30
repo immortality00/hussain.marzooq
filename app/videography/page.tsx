@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
 import { toEmbedUrl } from "@/components/media/utils";
+import { getPageSeo } from "@/lib/server/page-seo";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("videography");
+  return { title: seo.title, description: seo.description };
+}
 import {
   getShowreelItem,
   getVideographyItems,

@@ -17,6 +17,7 @@ const nav = [
   { href: "/admin/private-galleries", label: "Private Galleries" },
   { href: "/admin/removal-requests", label: "Removal Requests" },
   { href: "/admin/pages", label: "Pages" },
+  { href: "/admin/seo", label: "SEO" },
 ];
 
 export default async function AdminProtectedLayout({

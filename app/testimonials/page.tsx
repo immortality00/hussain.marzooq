@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getPageSeo } from "@/lib/server/page-seo";
 import PublicReviewForm from "@/components/testimonials/PublicReviewForm";
 import TestimonialsSection from "@/components/testimonials/TestimonialsSection";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
@@ -8,11 +9,10 @@ import { getAllPageSettings } from "@/lib/server/page-settings";
 
 export const revalidate = 300;
 
-export const metadata: Metadata = {
-  title: "Testimonials | HM Visuals",
-  description:
-    "Client reviews and creative collaborations with HM Visuals across portraits, weddings, events, films, fashion, dance, and editorial visual work.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("testimonials");
+  return { title: seo.title, description: seo.description };
+}
 
 function renderStars(value: number) {
   const rounded = Math.round(value);

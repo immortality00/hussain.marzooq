@@ -83,6 +83,7 @@ export function Navbar() {
                   <span className="absolute inset-x-4 bottom-1 h-px scale-x-0 bg-foreground transition-transform duration-300 group-hover:scale-x-100" />
                 </button>
                 <NavLink href="/about">About</NavLink>
+                <NavLink href="/services">Services</NavLink>
               </nav>
 
               {/* Theme toggle */}
@@ -164,6 +165,13 @@ export function Navbar() {
             className="rounded-lg px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
           >
             About
+          </Link>
+          <Link
+            href="/services"
+            onClick={() => setMobileOpen(false)}
+            className="rounded-lg px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+          >
+            Services
           </Link>
         </nav>
 

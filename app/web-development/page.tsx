@@ -1,8 +1,15 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getPageSettings } from "@/lib/server/page-settings";
+import { getPageSeo } from "@/lib/server/page-seo";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("web-development");
+  return { title: seo.title, description: seo.description };
+}
 
 const capabilities = [
   {

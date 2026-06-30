@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
 import { AnimatedText } from "@/components/shared/AnimatedText";
 import { getAllPageSettings } from "@/lib/server/page-settings";
+import { getPageSeo } from "@/lib/server/page-seo";
+
+export async function generateMetadata(): Promise<Metadata> {
+  const seo = await getPageSeo("blog");
+  return { title: seo.title, description: seo.description };
+}
 
 const pillars = [
   {
