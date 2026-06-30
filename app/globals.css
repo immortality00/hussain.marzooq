@@ -239,6 +239,68 @@
     @apply h-16 w-16;
   }
 
+  /* Preloader */
+  .preloader-root {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: var(--background);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .preloader-photos {
+    position: absolute;
+    inset: 0;
+  }
+
+  .preloader-photo {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .preloader-burst {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    transform: translateY(-50%) scaleX(0);
+    height: 2px;
+    background: var(--foreground);
+    transform-origin: center;
+    opacity: 0;
+    box-shadow: 0 0 40px 20px var(--foreground);
+  }
+
+  .preloader-name {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: baseline;
+    gap: 0;
+    font-size: clamp(3rem, 8vw, 7rem);
+    font-weight: 300;
+    letter-spacing: 0.02em;
+    color: var(--foreground);
+    line-height: 1;
+  }
+
+  .preloader-hussain {
+    display: inline-flex;
+  }
+
+  .preloader-art {
+    display: inline-block;
+    opacity: 0;
+    visibility: hidden;
+  }
+
   .grain-overlay {
     position: fixed;
     inset: 0;

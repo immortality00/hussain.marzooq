@@ -102,7 +102,7 @@ Read all admin files, Navbar.tsx, and all public page.tsx files before writing.
 
 ---
 
-### Session N3 — SEO + page metadata admin control — `in-progress`
+### Session N3 — SEO + page metadata admin control — `done`
 Build admin control over the title and description shown on every public page, and the OG metadata.
 
 Backend:
@@ -123,7 +123,7 @@ Read all public page.tsx files and app/layout.tsx before writing.
 
 ## Phase 2 — Preloader & core experience
 
-### Session D1 — Preloader — `pending`
+### Session D1 — Preloader — `in-progress`
 Full-screen preloader that runs once per session (sessionStorage flag).
 
 GSAP timeline animation sequence:
