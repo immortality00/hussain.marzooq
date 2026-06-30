@@ -25,10 +25,10 @@ Framer Motion installed
 Lenis installed
 
 ## Animation stack status
-- Lenis: installed, **not yet initialized** — must be done in Session F1
-- GSAP ScrollTrigger: installed, underused — core of scroll design
-- Three.js: used only in HeroBokeh — must expand to full homepage WebGL
-- react-globe.gl: installed, not yet built
+- Lenis: **initialized** in components/site/AppShell.tsx (Session F1, done) — active on all public pages, skipped on admin routes
+- GSAP ScrollTrigger: installed, used in components/shared/AnimatedText.tsx for scroll-triggered word reveals — still underused elsewhere, core of scroll design
+- Three.js: used only in HeroBokeh — must expand to full homepage WebGL (Session D2)
+- react-globe.gl: installed, not yet built (Session D6)
 - Framer Motion: installed, used minimally
 
 ## Design direction — the standard
@@ -51,13 +51,26 @@ This means:
 - No gradients (decorative). Body had two radial-gradients — removed in Session F1.
 - No page-vignette. Removed in Session F1.
 - No site-grid-bg. Removed in Session F1.
-- No gradient fallback divs — replace with flat bg-muted.
+- No gradient fallback divs — replace with flat bg-muted. **Re-audit (post-F1) found 6 more
+  instances added since F1 in components/media/SmartMediaPreview.tsx,
+  components/site/PortfolioFallbackPanel.tsx, components/site/WorkOverlay.tsx,
+  app/services/page.tsx, app/services/[slug]/page.tsx, app/people/[slug]/page.tsx —
+  scheduled as Session F4. This rule applies sitewide, not just to the original 3 files,
+  and needs to be checked on every session that touches a missing-image fallback state
+  going forward.**
 - Grain texture: active, uniform CSS noise only, fixed position, 3–5% opacity, above backgrounds, below all content. No oval. No vignette. Does not bleed into cards.
 
-## Navigation — 3-item minimal nav
-**Visible nav: Work · About · Book**
-- "Work" opens a full-screen immersive overlay showing all 5 discipline cards (Photography, Videography, NFT, Dancing, Web Development) with content pulled from Cloudinary. Cards scroll horizontally in the cylinder style used by aikawakenichi. Inactive discipline pages are excluded from the overlay automatically.
+## Navigation — 4-item nav
+**Visible nav: Work · About · Services · Book**
+
+Corrected from the original 3-item spec ("Work · About · Book"). Session N1 shipped a 4th
+item (Services) that wasn't in the original doc — confirmed intentional and kept, since
+Services has its own full admin section (service-categories, services) and dropping it
+from primary nav would hide a real revenue path. This doc was wrong, not the build.
+
+- "Work" opens a full-screen immersive overlay showing the 5 discipline cards (Photography, Videography, NFT, Dancing, Web Development) with content pulled from Cloudinary. Cards scroll horizontally in the cylinder style used by aikawakenichi. Inactive discipline pages are excluded from the overlay automatically. Services is **not** part of the Work overlay — it's a standalone top-level nav link, not one of the 5 disciplines.
 - "About" navigates to /about.
+- "Services" navigates to /services.
 - "Book" navigates to /contact.
 
 ## Page activity toggle
@@ -65,6 +78,9 @@ Every public discipline page has an `isActive` field in the database.
 - When inactive: excluded from the Work overlay and all homepage sections referencing it.
 - Direct URL still works but redirects to homepage.
 - Admin toggle control for each page.
+- Scope: the 5 discipline pages only (photography, videography, nft, dancing,
+  web-development). Services, About, People, Blog, Contact, Testimonials do not have this
+  toggle and are not expected to — they aren't "disciplines" in the Work-overlay sense.
 
 ## Homepage architecture
 The homepage is a WebGL-first experience:
@@ -75,14 +91,41 @@ All are animated on scroll with GSAP ScrollTrigger.
 
 ## Preloader
 Runs once per session (sessionStorage flag). Full-screen.
+
+**Materials — corrected.** No photos. No Cloudinary. No network request at all. 5 vector
+icons from lucide-react (already a dependency, already used in Navbar and WorkOverlay),
+one per discipline, matching the site's existing icon language rather than literal emoji
+or photography. Recommended mapping — confirm or swap during Session D1's Gate-1 proposal:
+
+| Discipline | Icon |
+|---|---|
+| Photography | Camera |
+| Videography | Video |
+| NFT | Hexagon |
+| Dancing | Footprints |
+| Web Development | Code2 |
+
 **Animation sequence:**
-1. Multiple photos appear sequentially — like emoji reactions replacing one another — each representing a discipline (photography, videography, NFT, art, web, dancing). Fast, rhythmic.
-2. The sequence repeats twice.
-3. A visual effect fires. A light burst expands horizontally from the center of the screen.
-4. From the burst, the word **"Art"** appears and moves to the right side of the screen.
-5. Letter animations with effects begin — building out to reveal the full name **"Hussain.Art"**
+1. The 5 icons flash in sequence, fast and rhythmic, one replacing the last — full-bleed, centered, stacked. ("Like emoji reactions replacing one another" in the original draft of this doc described this *pace*, not the materials — it got built as a literal Cloudinary photo fetch instead. That's corrected here: the pace description was right, the materials were wrong.)
+2. The sequence repeats exactly twice.
+3. A horizontal light burst expands from the center of the screen.
+4. From the burst, the word **"Art"** appears and settles on the right side of the name.
+5. "Hussain." builds in letter-by-letter beside it, completing **"Hussain.Art"**.
 6. Hold. Site loads beneath.
-Built with GSAP timeline. Images pulled from Cloudinary (featured/hero photos across all disciplines).
+
+Built with a GSAP timeline, entirely local assets — no data fetching, no loading state, no
+network-dependent fallback needed.
+
+**Do not route the "Hussain." letter reveal through components/shared/AnimatedText.tsx.**
+That component is scroll-triggered (fires via ScrollTrigger when scrolled into view) and
+word-mode only — it does not currently have a char-mode despite being described as
+supporting "word/char/line modes" below (separate doc-accuracy gap, not this session's
+job to fix). The preloader needs a reveal sequenced at exact offsets inside one master
+GSAP timeline, which is a different problem than AnimatedText solves. A purpose-built
+letter stagger inside Preloader.tsx is correct here, not a "should be shared" violation.
+
+Delete app/api/preloader-images/route.ts as part of Session D1 — once there's no Cloudinary
+fetch, it has zero callers.
 
 ## Photography viewer — 3 modes
 The photography page offers users 3 modes:
@@ -133,11 +176,53 @@ Standard blog with admin-defined categories (like the existing media categories)
 - Public: listing page (/blog) + article page (/blog/[slug]).
 - Categories: admin-defined, flexible.
 
-## SEO + page titles/descriptions
-Admin control over title and description for every public page.
-- MongoDB collection: `page_seo` — one document per public page (slug, title, description).
-- Admin UI to edit these fields.
-- Each page.tsx calls `getPageSeo(slug)` and passes values to Next.js `generateMetadata`.
+## Page content — header text + SEO metadata
+Two different things, both admin-controlled, both stored on the same `page_seo` document
+per slug, both edited at `/admin/seo`. They started identical in concept and got
+conflated in early planning — they are not the same field.
+
+1. **On-page header** — the visible H1 + description a visitor reads, rendered by
+   `components/shared/PageHeader.tsx` for interior pages. Fields: `headerTitle`,
+   `headerDescription`. No eyebrow field — see Reusable components above. This was
+   hardcoded directly in every page.tsx file with no admin control at all until Session N4.
+2. **Search & social metadata** — the `<title>` tag and `<meta name="description">` a
+   search engine or shared-link preview sees, passed to Next.js `generateMetadata`.
+   Fields: `title`, `description`, `ogImageUrl`. This is what Session N3 actually built.
+
+MongoDB collection: `page_seo` — one document per public page (slug + all 5 fields above).
+Admin UI at `/admin/seo` (labeled "Page Content" in the sidebar, route unchanged) edits
+both groups, clearly separated. Each page.tsx calls `getPageSeo(slug)` once and uses
+`.title`/`.description` for `generateMetadata`, `.headerTitle`/`.headerDescription` for
+the visible header.
+
+**The homepage is included** — it was wrongly scoped out of the first draft of this plan
+on the assumption that "WebGL hero, no text" applied to the whole page. It doesn't: the
+homepage has more hardcoded copy than any other single page. Full inventory, confirmed by
+reading every component directly:
+
+- `components/home/HomeHero.tsx` — h1 + p (the largest, most prominent text on the site).
+  This is `home`'s `headerTitle`/`headerDescription` in the same `page_seo` system as
+  every other page, wired directly into HomeHero's existing h1/p — it doesn't use
+  `PageHeader` (the hero has its own full-bleed image + bokeh + gradient-overlay layout)
+  but the same CMS fields apply, same pattern as testimonials/page.tsx.
+- `components/home/HomeFeaturedWork.tsx` — 2 card titles + descriptions (Photography, Film).
+- `components/home/HomeCreativeSystem.tsx` — section h2 + p, plus an NFT card title.
+- `components/home/HomeServicesPreview.tsx` — section h2.
+- `components/home/HomeTrustAndShowreel.tsx` — 2 section h2s (trust panel, showreel panel) + a fallback paragraph used when no testimonial exists yet.
+- `app/page.tsx` — the closing `StickyCta` title/description/buttonLabel. The same
+  pattern (custom `StickyCta` copy, hardcoded) also exists on `app/nft/page.tsx`,
+  `app/people/page.tsx`, and `app/people/[slug]/page.tsx` — not unique to home.
+
+That's 5 components beyond the hero, each with their own heading (and in 2 cases, card-level
+sub-titles) — a genuinely different shape than the one-header-per-page pattern everywhere
+else. Session N4 covers the hero only (same field shape as every other page). The other 5
+text blocks, plus the equivalent repeating-card content already known to exist on
+about/page.tsx (`disciplines`, `principles`), dancing/page.tsx (`sections`, `directions`),
+web-development/page.tsx (`capabilities`, `principles`), and blog/page.tsx (`pillars`) —
+all currently hardcoded arrays of `{title, text}` objects — are tracked as Session N5,
+scope and architecture pending Hussain's confirmation (see SESSION-QUEUE.md). Don't assume
+either a minimal scope (header only) or a maximal one (every string on every page) without
+asking again — that assumption is exactly what went wrong here the first time.
 
 ## Open Graph images
 Each public page needs a proper OG image using actual photography from Cloudinary.
@@ -155,10 +240,27 @@ The location field on appearances currently accepts free text.
 It must be updated to use the same cities list system used in testimonials — a connected, searchable, validated city selector. This is required for the globe to work correctly.
 
 ## Reusable components — always use, never reinvent
-components/shared/PageHeader.tsx — all public page headers (h1 + description)
+components/shared/PageHeader.tsx — all public page headers (h1 + description). Props:
+`title`, `description?`, `className?`, `titleClassName?` (added in Session N4 so
+about/page.tsx can keep its larger hero-size title without a one-off component). **No
+`eyebrow` prop** — removed in N4. It existed on only 4 of 11 pages (dancing, web-development,
+plus the hand-rolled chips on about and blog) with no stated reason for which pages got one
+and which didn't. That inconsistency was visible in the first audit and should have been
+flagged as a decision point instead of silently carried into the new CMS as an "optional"
+field — caught when Hussain reviewed the plan directly, not by this audit. Removed sitewide
+rather than half-kept.
+Confirmed gap as of this audit: about/page.tsx, services/page.tsx, people/page.tsx,
+testimonials/page.tsx, and blog/page.tsx were hand-rolling their own h1+p instead of using
+this — fixed in Sessions F4 (services, people) and N4 (about, blog). testimonials/page.tsx
+keeps its own distinct hero-card layout deliberately — it's a genuinely different design,
+not a missed migration.
 components/shared/PortfolioCard.tsx — all full-bleed image cards with overlay
-components/shared/AnimatedText.tsx — all text reveals (word/char/line modes)
-components/admin/action-feedback/AdminActionFeedback.tsx
+components/shared/AnimatedText.tsx — all text reveals. **Word-mode only, scroll-triggered
+via ScrollTrigger. Does not currently support char/line modes** — correct this doc if/when
+that capability actually gets built, don't assume it exists.
+components/admin/action-feedback/AdminActionFeedback.tsx — at least 6 admin clients
+duplicate the loading+fetch+try/catch+setFeedback boilerplate around this by hand instead
+of sharing a hook. Scheduled for Session F5.
 components/search/SearchInput.tsx
 components/site/PortfolioFallbackPanel.tsx
 components/site/Navbar.tsx
@@ -172,17 +274,51 @@ components/site/AppShell.tsx — Lenis initialized here, all global elements liv
 - No dead code, no duplicated logic
 - Before every session: audit connected files, report what changes and what could break
 - Never touch admin pages unless the session is specifically for admin
+- **Before marking a session `done`: re-read that session's own task list against the
+  files actually changed and confirm each listed item was completed, not just attempted.**
+  F2 listed about/page.tsx in scope and marked itself done without migrating it; N1 shipped
+  a 4-item nav against a 3-item spec without flagging the deviation. Both were caught by a
+  later full-repo audit instead of at commit time — that gap is what this line is for.
 
 ## Design tokens
-Colors: OKLCH tokens in globals.css — use variables, never hardcode hex
-Radius: rounded-xl, rounded-2xl, rounded-3xl only
-Section container: always use .section-shell class — never write mx-auto max-w-6xl px-4 inline
+Colors: OKLCH tokens in globals.css — confirmed in active use (52 references). Use
+variables, never hardcode hex. **One unflagged violation found on re-check:**
+`components/home/HomeHero.tsx:27` — `bg-[#1a1814]` is a raw hex value, not a token. Fixed
+as part of Session N4 (that file is already being touched there for the header copy) —
+propose a named CSS variable or confirm an existing dark token is close enough, rather than
+guessing which is "correct" without seeing it rendered.
+
+Radius: rounded-xl, rounded-2xl, rounded-3xl only. **This rule does not match the actual
+codebase and was never re-checked until now.** 83 instances of arbitrary `rounded-[Xrem]`
+values exist across the repo — `rounded-[2rem]` alone appears 47 times, plus
+`rounded-[1.25rem]`, `rounded-[2.25rem]`, `rounded-[1.5rem]`, and 8 other distinct values,
+consistently, on nearly every card and panel sitewide, including in `PortfolioCard.tsx`
+itself (one of the reusable components this same doc tells you to always use). A pattern
+that consistent, that widespread, isn't 83 separate mistakes — it's the actual radius
+scale the site has been built with, and this line is stale. Two real options, not a third
+where I quietly pick one: (a) update this rule to document the scale that's actually in
+use, or (b) treat it as a real design-system gap and do a deliberate, scoped pass to
+convert everything to the 3-token scale. (b) is a much bigger, visually-risky undertaking
+than it sounds — it touches nearly every visual surface on the public site. Not scheduled
+in any session until you say which.
+
+Section container: always use .section-shell class — never write mx-auto max-w-6xl px-4
+inline. **Also not actually true today.** `.section-shell` (`mx-auto max-w-6xl px-4`,
+confirmed in globals.css) is used by exactly 6 files — `Navbar.tsx`, `SiteFooter.tsx`, and
+the 4 home/* section components. Every public page.tsx (photography, videography, nft,
+dancing, web-development, about, blog, services, services/[slug], people, people/[slug],
+g/[slug]/page.tsx — 12 files) writes the identical `mx-auto max-w-6xl px-4` inline instead.
+This one's a safe, mechanical fix — the values are byte-for-byte what `.section-shell`
+already encodes — scheduled in Session F4. Three files intentionally use a different
+width and should stay that way, not get forced in: `contact/page.tsx` (max-w-4xl, a
+focused booking form), `g/[slug]/GalleryPasswordForm.tsx` (max-w-xl, a centered password
+prompt), `testimonials/page.tsx` (max-w-7xl, its wider stats/map hero layout).
 
 ## Claude tooling for this project
 - **Claude Code Desktop (Code tab):** all development sessions. Triggered by "Continue queue".
 - **Cowork:** all copy writing after design is complete. Always use hm-visuals-voice skill.
 - **Claude Design project:** design decisions and mockups before building.
-- **This claude.ai interface:** planning, architecture, interview sessions.
+- **This claude.ai interface:** planning, architecture, interview sessions, full-repo audits. Does not write or edit repo code directly — corrections from a planning session land here and in SESSION-QUEUE.md, then get executed via "Continue queue".
 
 ## Queue protocol — triggered by exactly "Continue queue"
 1. Read SESSION-QUEUE.md at project root.
@@ -204,6 +340,8 @@ STOP. Wait for confirmation everything works.
 If errors: diagnose root cause, fix, repeat. Do not proceed to Gate 3 until Hussain explicitly confirms working.
 
 ### Gate 3 — Commit
+Re-read this session's task list against what was actually changed — confirm every item
+was completed, not just attempted, before marking done.
 Provide exact git commands:
   git add [exact files changed]
   git commit -m "[type(scope): specific description]"
@@ -222,5 +360,5 @@ Never output partial files or snippets.
 feat(scope): what was added
 refactor(scope): what was restructured
 fix(scope): what was corrected
-Good: "feat(preloader): GSAP photo sequence with Hussain.Art reveal"
+Good: "feat(preloader): GSAP icon sequence with Hussain.Art reveal"
 Bad: "fix bugs" / "update files"
