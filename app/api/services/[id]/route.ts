@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const guard = await requireAdminOr401();
-  if (guard) return guard as unknown as Response;
+  if (guard) return guard;
 
   const { id } = await ctx.params;
   if (!ObjectId.isValid(id)) {
@@ -215,7 +215,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
 export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const guard = await requireAdminOr401();
-  if (guard) return guard as unknown as Response;
+  if (guard) return guard;
 
   const { id } = await ctx.params;
   if (!ObjectId.isValid(id)) {

@@ -1,15 +1,9 @@
-import { v2 as cloudinary } from "cloudinary";
 import { isRecord, noStoreJson } from "@/app/api/_lib/common";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
+import { signCloudinaryParams } from "@/lib/server/cloudinary";
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
 
 export const dynamic = "force-dynamic";
-
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
 
 const TESTIMONIALS_FOLDER = CLOUDINARY_TESTIMONIALS_FOLDER;
 const MAX_TIMESTAMP_AGE_SECONDS = 10 * 60;
@@ -80,13 +74,11 @@ function sanitizeParamsToSign(rawParams: Record<string, unknown>) {
 }
 
 export async function POST(request: Request) {
-  const apiSecret = process.env.CLOUDINARY_API_SECRET ?? "";
-
-  if (!apiSecret) {
-    return noStoreJson({ error: "Missing CLOUDINARY_API_SECRET." }, { status: 500 });
-  }
-
-  if (!process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || !process.env.CLOUDINARY_API_KEY) {
+  if (
+    !process.env.CLOUDINARY_API_SECRET ||
+    !process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ||
+    !process.env.CLOUDINARY_API_KEY
+  ) {
     return noStoreJson({ error: "Cloudinary config missing." }, { status: 500 });
   }
 
@@ -120,7 +112,7 @@ export async function POST(request: Request) {
 
   paramsToSign.timestamp = timestamp;
 
-  const signature = cloudinary.utils.api_sign_request(paramsToSign, apiSecret);
+  const signature = signCloudinaryParams(paramsToSign);
 
   return noStoreJson({ signature });
 }

@@ -1,10 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import {
-  AdminActionFeedback,
-  type AdminActionFeedbackState,
-} from "@/components/admin/action-feedback/AdminActionFeedback";
+import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { useAdminAction } from "@/hooks/useAdminAction";
 import type { TestimonialItem } from "./components/TestimonialShared";
 import { ReviewRow } from "./components/TestimonialList";
 import { TestimonialInspectModal } from "./components/TestimonialForm";
@@ -12,7 +10,7 @@ import { TestimonialInspectModal } from "./components/TestimonialForm";
 export default function TestimonialsAdminClient() {
   const [items, setItems] = useState<TestimonialItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [banner, setBanner] = useState<AdminActionFeedbackState>(null);
+  const { feedback: banner, setFeedback: setBanner } = useAdminAction();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | "pending" | "approved">("all");
   const [active, setActive] = useState<TestimonialItem | null>(null);

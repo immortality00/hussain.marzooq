@@ -24,7 +24,7 @@ const MINIMUM_FORM_TIME_MS = 2500;
 
 export async function GET(req: Request) {
   const deny = await requireAdminOr401();
-  if (deny) return deny as unknown as Response;
+  if (deny) return deny;
 
   const url = new URL(req.url);
   const status = (url.searchParams.get("status") ?? "").trim();

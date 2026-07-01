@@ -38,7 +38,7 @@ async function ensureUniqueSlug(baseSlug: string, excludeId?: string) {
 
 export async function GET() {
   const deny = await requireAdminOr401();
-  if (deny) return deny as unknown as Response;
+  if (deny) return deny;
 
   const db = await getDb();
 
@@ -62,7 +62,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const deny = await requireAdminOr401();
-  if (deny) return deny as unknown as Response;
+  if (deny) return deny;
 
   const body = (await req.json().catch(() => null)) as unknown;
   if (!isRecord(body)) return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });

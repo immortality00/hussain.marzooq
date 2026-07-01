@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const deny = await requireAdminOr401();
-  if (deny) return deny as unknown as Response;
+  if (deny) return deny;
 
   if (!isCloudinaryConfigured()) {
     return noStoreJson({ error: "Cloudinary config missing." }, { status: 500 });

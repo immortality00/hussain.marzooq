@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import type { PageSeo } from "@/lib/server/page-seo";
-import {
-  AdminActionFeedback,
-  type AdminActionFeedbackState,
-} from "@/components/admin/action-feedback/AdminActionFeedback";
+import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { useAdminAction } from "@/hooks/useAdminAction";
 
 const LABELS: Record<string, string> = {
   home: "Home",
@@ -28,8 +26,8 @@ export function SeoAdminClient({ initialPages }: { initialPages: PageSeo[] }) {
   const [pages, setPages] = useState(initialPages);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
-  const [feedback, setFeedback] = useState<AdminActionFeedbackState>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  const { feedback, setFeedback, run } = useAdminAction();
 
   function getDraft(page: PageSeo): Draft {
     return drafts[page.slug] ?? {
@@ -54,30 +52,28 @@ export function SeoAdminClient({ initialPages }: { initialPages: PageSeo[] }) {
     const page = pages.find((p) => p.slug === slug)!;
     const draft = getDraft(page);
     setSaving(slug);
-    setFeedback(null);
-    try {
-      const res = await fetch(`/api/admin/page-seo/${slug}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(draft),
-      });
-      if (!res.ok) throw new Error("Request failed");
-      setPages((prev) =>
-        prev.map((p) =>
-          p.slug === slug ? { ...p, ...draft, updatedAt: new Date() } : p,
-        ),
-      );
-      setDrafts((prev) => {
-        const next = { ...prev };
-        delete next[slug];
-        return next;
-      });
-      setFeedback({ type: "ok", text: `${LABELS[slug]} SEO updated.` });
-    } catch {
-      setFeedback({ type: "err", text: "Failed to save. Try again." });
-    } finally {
-      setSaving(null);
-    }
+    await run(
+      async () => {
+        const res = await fetch(`/api/admin/page-seo/${slug}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(draft),
+        });
+        if (!res.ok) throw new Error("Failed to save. Try again.");
+        setPages((prev) =>
+          prev.map((p) =>
+            p.slug === slug ? { ...p, ...draft, updatedAt: new Date() } : p,
+          ),
+        );
+        setDrafts((prev) => {
+          const next = { ...prev };
+          delete next[slug];
+          return next;
+        });
+      },
+      { successText: `${LABELS[slug]} SEO updated.` },
+    );
+    setSaving(null);
   }
 
   return (

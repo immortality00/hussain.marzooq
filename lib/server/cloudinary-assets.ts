@@ -123,54 +123,22 @@ export function isAllowedCloudinaryUrl(url: string, allowedFolders: readonly str
   return isAllowedCloudinaryPublicId(parsed.publicId, allowedFolders);
 }
 
+// Overloads: strict=false (default) returns boolean, strict=true returns CloudinaryCleanupResult
 export async function deleteManagedCloudinaryAsset(
-  input: {
-    url?: string | null;
-    publicId?: string | null;
-    resourceType?: string | null;
-  },
-  allowedFolders: readonly string[]
-) {
-  let publicId = (input.publicId ?? "").trim();
-  let resourceType = (input.resourceType ?? "").trim() as CloudinaryResourceType | "";
-
-  if (!publicId && input.url) {
-    const parsed = parseCloudinaryAssetFromUrl(input.url);
-    if (parsed) {
-      publicId = parsed.publicId;
-      resourceType = parsed.resourceType;
-    }
-  }
-
-  if (!publicId) return false;
-  if (!isAllowedCloudinaryPublicId(publicId, allowedFolders)) return false;
-
-  const safeResourceType: CloudinaryResourceType =
-    resourceType === "video" ? "video" : resourceType === "raw" ? "raw" : "image";
-
-  if (!isCloudinaryConfigured()) return false;
-
-  ensureCloudinaryConfigured();
-
-  try {
-    await cloudinary.uploader.destroy(publicId, {
-      resource_type: safeResourceType,
-      invalidate: true,
-    });
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-async function deleteManagedCloudinaryAssetStrict(
-  input: {
-    url?: string | null;
-    publicId?: string | null;
-    resourceType?: string | null;
-  },
-  allowedFolders: readonly string[]
-): Promise<CloudinaryCleanupResult> {
+  input: { url?: string | null; publicId?: string | null; resourceType?: string | null },
+  allowedFolders: readonly string[],
+  strict?: false
+): Promise<boolean>;
+export async function deleteManagedCloudinaryAsset(
+  input: { url?: string | null; publicId?: string | null; resourceType?: string | null },
+  allowedFolders: readonly string[],
+  strict: true
+): Promise<CloudinaryCleanupResult>;
+export async function deleteManagedCloudinaryAsset(
+  input: { url?: string | null; publicId?: string | null; resourceType?: string | null },
+  allowedFolders: readonly string[],
+  strict = false
+): Promise<boolean | CloudinaryCleanupResult> {
   let publicId = (input.publicId ?? "").trim();
   let resourceType = (input.resourceType ?? "").trim() as CloudinaryResourceType | "";
 
@@ -185,30 +153,18 @@ async function deleteManagedCloudinaryAssetStrict(
   const target = publicId || input.url || "unknown";
 
   if (!publicId) {
-    return {
-      ok: false,
-      target,
-      action: "delete-asset",
-      error: "Missing Cloudinary public ID.",
-    };
+    if (!strict) return false;
+    return { ok: false, target, action: "delete-asset", error: "Missing Cloudinary public ID." };
   }
 
   if (!isAllowedCloudinaryPublicId(publicId, allowedFolders)) {
-    return {
-      ok: false,
-      target,
-      action: "delete-asset",
-      error: "Cloudinary public ID is outside the allowed folders.",
-    };
+    if (!strict) return false;
+    return { ok: false, target, action: "delete-asset", error: "Cloudinary public ID is outside the allowed folders." };
   }
 
   if (!isCloudinaryConfigured()) {
-    return {
-      ok: false,
-      target,
-      action: "delete-asset",
-      error: "Cloudinary config missing.",
-    };
+    if (!strict) return false;
+    return { ok: false, target, action: "delete-asset", error: "Cloudinary config missing." };
   }
 
   const safeResourceType: CloudinaryResourceType =
@@ -221,19 +177,11 @@ async function deleteManagedCloudinaryAssetStrict(
       resource_type: safeResourceType,
       invalidate: true,
     });
-
-    return {
-      ok: true,
-      target: publicId,
-      action: "delete-asset",
-    };
+    if (!strict) return true;
+    return { ok: true, target: publicId, action: "delete-asset" };
   } catch (error) {
-    return {
-      ok: false,
-      target: publicId,
-      action: "delete-asset",
-      error: getErrorMessage(error),
-    };
+    if (!strict) return false;
+    return { ok: false, target: publicId, action: "delete-asset", error: getErrorMessage(error) };
   }
 }
 
@@ -257,64 +205,30 @@ export async function deleteManagedCloudinaryUrlsStrict(
   );
 
   return Promise.all(
-    uniqueUrls.map((url) => deleteManagedCloudinaryAssetStrict({ url }, allowedFolders))
+    uniqueUrls.map((url) => deleteManagedCloudinaryAsset({ url }, allowedFolders, true))
   );
 }
 
 export async function deleteManagedCloudinaryResourcesByPrefix(
   prefix: string,
-  allowedFolders: readonly string[]
-) {
-  const normalizedPrefix = normalizeFolderPath(prefix);
-  if (!normalizedPrefix) return false;
-  if (!isAllowedCloudinaryPublicId(normalizedPrefix, allowedFolders)) return false;
-  if (!isCloudinaryConfigured()) return false;
-
-  ensureCloudinaryConfigured();
-
-  try {
-    await cloudinary.api.delete_resources_by_prefix(normalizedPrefix, {
-      resource_type: "image",
-      invalidate: true,
-    });
-
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-export async function deleteManagedCloudinaryResourcesByPrefixStrict(
-  prefix: string,
-  allowedFolders: readonly string[]
-): Promise<CloudinaryCleanupResult> {
+  allowedFolders: readonly string[],
+  strict = false
+): Promise<boolean | CloudinaryCleanupResult> {
   const normalizedPrefix = normalizeFolderPath(prefix);
 
   if (!normalizedPrefix) {
-    return {
-      ok: false,
-      target: prefix,
-      action: "delete-prefix",
-      error: "Missing Cloudinary prefix.",
-    };
+    if (!strict) return false;
+    return { ok: false, target: prefix, action: "delete-prefix", error: "Missing Cloudinary prefix." };
   }
 
   if (!isAllowedCloudinaryPublicId(normalizedPrefix, allowedFolders)) {
-    return {
-      ok: false,
-      target: normalizedPrefix,
-      action: "delete-prefix",
-      error: "Cloudinary prefix is outside the allowed folders.",
-    };
+    if (!strict) return false;
+    return { ok: false, target: normalizedPrefix, action: "delete-prefix", error: "Cloudinary prefix is outside the allowed folders." };
   }
 
   if (!isCloudinaryConfigured()) {
-    return {
-      ok: false,
-      target: normalizedPrefix,
-      action: "delete-prefix",
-      error: "Cloudinary config missing.",
-    };
+    if (!strict) return false;
+    return { ok: false, target: normalizedPrefix, action: "delete-prefix", error: "Cloudinary config missing." };
   }
 
   ensureCloudinaryConfigured();
@@ -324,19 +238,11 @@ export async function deleteManagedCloudinaryResourcesByPrefixStrict(
       resource_type: "image",
       invalidate: true,
     });
-
-    return {
-      ok: true,
-      target: normalizedPrefix,
-      action: "delete-prefix",
-    };
+    if (!strict) return true;
+    return { ok: true, target: normalizedPrefix, action: "delete-prefix" };
   } catch (error) {
-    return {
-      ok: false,
-      target: normalizedPrefix,
-      action: "delete-prefix",
-      error: getErrorMessage(error),
-    };
+    if (!strict) return false;
+    return { ok: false, target: normalizedPrefix, action: "delete-prefix", error: getErrorMessage(error) };
   }
 }
 
@@ -350,32 +256,17 @@ async function deleteFolderViaAdminApi(folder: string): Promise<CloudinaryCleanu
   const normalizedFolder = normalizeFolderPath(folder);
 
   if (!cloudName || !apiKey || !apiSecret) {
-    return {
-      ok: false,
-      target: normalizedFolder || folder,
-      action: "delete-folder",
-      error: "Cloudinary config missing.",
-    };
+    return { ok: false, target: normalizedFolder || folder, action: "delete-folder", error: "Cloudinary config missing." };
   }
 
   if (!normalizedFolder) {
-    return {
-      ok: false,
-      target: folder,
-      action: "delete-folder",
-      error: "Missing Cloudinary folder.",
-    };
+    return { ok: false, target: folder, action: "delete-folder", error: "Missing Cloudinary folder." };
   }
 
   const encodedFolderPath = encodeCloudinaryFolderPath(normalizedFolder);
 
   if (!encodedFolderPath) {
-    return {
-      ok: false,
-      target: normalizedFolder,
-      action: "delete-folder",
-      error: "Invalid Cloudinary folder path.",
-    };
+    return { ok: false, target: normalizedFolder, action: "delete-folder", error: "Invalid Cloudinary folder path." };
   }
 
   const url = new URL(
@@ -389,18 +280,12 @@ async function deleteFolderViaAdminApi(folder: string): Promise<CloudinaryCleanu
   try {
     const response = await fetch(url.toString(), {
       method: "DELETE",
-      headers: {
-        Authorization: `Basic ${auth}`,
-      },
+      headers: { Authorization: `Basic ${auth}` },
       cache: "no-store",
     });
 
     if (response.ok || response.status === 404) {
-      return {
-        ok: true,
-        target: normalizedFolder,
-        action: "delete-folder",
-      };
+      return { ok: true, target: normalizedFolder, action: "delete-folder" };
     }
 
     const responseText = await response.text().catch(() => "");
@@ -409,17 +294,10 @@ async function deleteFolderViaAdminApi(folder: string): Promise<CloudinaryCleanu
       ok: false,
       target: normalizedFolder,
       action: "delete-folder",
-      error: `Cloudinary folder delete failed with ${response.status}${
-        responseText ? `: ${responseText}` : ""
-      }`,
+      error: `Cloudinary folder delete failed with ${response.status}${responseText ? `: ${responseText}` : ""}`,
     };
   } catch (error) {
-    return {
-      ok: false,
-      target: normalizedFolder,
-      action: "delete-folder",
-      error: getErrorMessage(error),
-    };
+    return { ok: false, target: normalizedFolder, action: "delete-folder", error: getErrorMessage(error) };
   }
 }
 
@@ -433,7 +311,6 @@ export async function deleteManagedEmptyCloudinaryFolders(
 
   const normalized = Array.from(new Set(folders.map(normalizeFolderPath).filter(Boolean)));
   const safeFolders = normalized.filter((folder) => isAllowedCloudinaryFolder(folder, allowedFolders));
-
   const deepestFirst = safeFolders.sort((a, b) => b.split("/").length - a.split("/").length);
 
   for (const folder of deepestFirst) {
@@ -445,66 +322,12 @@ export async function deleteManagedEmptyCloudinaryFolders(
   }
 }
 
-export async function deleteManagedCloudinaryFolderTree(
-  rootFolder: string,
-  allowedFolders: readonly string[]
-) {
-  const normalizedRootFolder = normalizeFolderPath(rootFolder);
-
-  const cleanupResults: CloudinaryCleanupResult[] = [];
-
-  if (!normalizedRootFolder) {
-    return [
-      {
-        ok: false,
-        target: rootFolder,
-        action: "delete-asset",
-        error: "Missing Cloudinary folder.",
-      },
-    ];
-  }
-
-  if (!isAllowedCloudinaryFolder(normalizedRootFolder, allowedFolders)) {
-    return [
-      {
-        ok: false,
-        target: normalizedRootFolder,
-        action: "delete-asset",
-        error: "Cloudinary folder is outside the allowed folders.",
-      },
-    ];
-  }
-
-  const prefixResult = await deleteManagedCloudinaryResourcesByPrefixStrict(
-    normalizedRootFolder,
-    allowedFolders
-  );
-
-  cleanupResults.push(prefixResult);
-
-  const folderDeletionResults = await deleteManagedEmptyCloudinaryFoldersStrict(
-    [`${normalizedRootFolder}/pfp`, `${normalizedRootFolder}/photos`, normalizedRootFolder],
-    allowedFolders
-  );
-
-  cleanupResults.push(...folderDeletionResults);
-
-  return cleanupResults;
-}
-
 export async function deleteManagedEmptyCloudinaryFoldersStrict(
   folders: string[],
   allowedFolders: readonly string[]
 ) {
   if (!isCloudinaryConfigured()) {
-    return [
-      {
-        ok: false,
-        target: "Cloudinary",
-        action: "delete-folder" as const,
-        error: "Cloudinary config missing.",
-      },
-    ];
+    return [{ ok: false, target: "Cloudinary", action: "delete-folder" as const, error: "Cloudinary config missing." }];
   }
 
   ensureCloudinaryConfigured();
@@ -520,9 +343,7 @@ export async function deleteManagedEmptyCloudinaryFoldersStrict(
     for (let attempt = 0; attempt < 8; attempt += 1) {
       const result = await deleteFolderViaAdminApi(folder);
       finalResult = result;
-
       if (result.ok) break;
-
       await sleep(500);
     }
 
@@ -530,4 +351,32 @@ export async function deleteManagedEmptyCloudinaryFoldersStrict(
   }
 
   return results;
+}
+
+export async function deleteManagedCloudinaryFolderTree(
+  rootFolder: string,
+  allowedFolders: readonly string[]
+) {
+  const normalizedRootFolder = normalizeFolderPath(rootFolder);
+
+  if (!normalizedRootFolder) {
+    return [{ ok: false, target: rootFolder, action: "delete-asset" as const, error: "Missing Cloudinary folder." }];
+  }
+
+  if (!isAllowedCloudinaryFolder(normalizedRootFolder, allowedFolders)) {
+    return [{ ok: false, target: normalizedRootFolder, action: "delete-asset" as const, error: "Cloudinary folder is outside the allowed folders." }];
+  }
+
+  const cleanupResults: CloudinaryCleanupResult[] = [];
+
+  const prefixResult = await deleteManagedCloudinaryResourcesByPrefix(normalizedRootFolder, allowedFolders, true) as CloudinaryCleanupResult;
+  cleanupResults.push(prefixResult);
+
+  const folderDeletionResults = await deleteManagedEmptyCloudinaryFoldersStrict(
+    [`${normalizedRootFolder}/pfp`, `${normalizedRootFolder}/photos`, normalizedRootFolder],
+    allowedFolders
+  );
+  cleanupResults.push(...folderDeletionResults);
+
+  return cleanupResults;
 }

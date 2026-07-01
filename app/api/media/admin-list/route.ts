@@ -121,7 +121,7 @@ function buildQuery(url: URL) {
 
 export async function GET(req: Request) {
   const deny = await requireAdminOr401();
-  if (deny) return deny as unknown as Response;
+  if (deny) return deny;
 
   const url = new URL(req.url);
   const { query, idsMode } = buildQuery(url);

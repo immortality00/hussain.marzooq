@@ -39,7 +39,7 @@ async function decrementServiceInquiriesCount(db: Db, serviceId: string): Promis
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const deny = await requireAdminOr401();
-  if (deny) return deny as unknown as Response;
+  if (deny) return deny;
 
   const { id } = await params;
   if (!ObjectId.isValid(id)) {
@@ -89,7 +89,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const deny = await requireAdminOr401();
-  if (deny) return deny as unknown as Response;
+  if (deny) return deny;
 
   const { id } = await params;
   if (!ObjectId.isValid(id)) {

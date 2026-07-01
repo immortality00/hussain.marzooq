@@ -150,7 +150,7 @@ async function cleanupTestimonialCloudinary(doc: Record<string, unknown>) {
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const deny = await requireAdminOr401();
-  if (deny) return deny as unknown as Response;
+  if (deny) return deny;
 
   const { id } = await ctx.params;
   const oid = parseObjectId(id);
@@ -174,7 +174,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const deny = await requireAdminOr401();
-  if (deny) return deny as unknown as Response;
+  if (deny) return deny;
 
   const { id } = await ctx.params;
   const oid = parseObjectId(id);
@@ -233,7 +233,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const deny = await requireAdminOr401();
-  if (deny) return deny as unknown as Response;
+  if (deny) return deny;
 
   const { id } = await ctx.params;
   const oid = parseObjectId(id);

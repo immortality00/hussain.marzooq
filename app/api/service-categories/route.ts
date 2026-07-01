@@ -43,7 +43,7 @@ export async function GET() {
 
 export async function POST(req: Request) {
   const guard = await requireAdminOr401();
-  if (guard) return guard as unknown as Response;
+  if (guard) return guard;
 
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
   const body = isRecord(bodyUnknown) ? bodyUnknown : {};
