@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { AdminActionFeedback, type AdminActionFeedbackState } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { useAdminAction } from "@/hooks/useAdminAction";
 import CategoriesTable from "./components/CategoriesTable";
 import CategoriesToolbar from "./components/CategoriesToolbar";
 import CategoryFormCard from "./components/CategoryFormCard";
@@ -17,7 +18,7 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
   const [slug, setSlug] = useState("");
   const [creating, setCreating] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
-  const [feedback, setFeedback] = useState<AdminActionFeedbackState>(null);
+  const { feedback, setFeedback } = useAdminAction();
   const [mounted, setMounted] = useState(false);
 
   const actionBusy = creating || savingOrder;

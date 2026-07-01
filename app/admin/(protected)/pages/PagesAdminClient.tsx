@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import type { PageSettings } from "@/lib/server/page-settings";
-import {
-  AdminActionFeedback,
-  type AdminActionFeedbackState,
-} from "@/components/admin/action-feedback/AdminActionFeedback";
+import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { useAdminAction } from "@/hooks/useAdminAction";
 
 const LABELS: Record<string, string> = {
   photography: "Photography",
@@ -17,28 +15,26 @@ const LABELS: Record<string, string> = {
 
 export function PagesAdminClient({ initialPages }: { initialPages: PageSettings[] }) {
   const [pages, setPages] = useState(initialPages);
-  const [feedback, setFeedback] = useState<AdminActionFeedbackState>(null);
   const [loading, setLoading] = useState<string | null>(null);
+  const { feedback, setFeedback, run } = useAdminAction();
 
   async function toggle(slug: string, nextActive: boolean) {
     setLoading(slug);
-    setFeedback(null);
-    try {
-      const res = await fetch(`/api/admin/page-settings/${slug}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: nextActive }),
-      });
-      if (!res.ok) throw new Error("Request failed");
-      setPages((prev) =>
-        prev.map((p) => (p.slug === slug ? { ...p, isActive: nextActive } : p)),
-      );
-      setFeedback({ type: "ok", text: `${LABELS[slug]} ${nextActive ? "activated" : "deactivated"}.` });
-    } catch {
-      setFeedback({ type: "err", text: "Failed to update. Try again." });
-    } finally {
-      setLoading(null);
-    }
+    await run(
+      async () => {
+        const res = await fetch(`/api/admin/page-settings/${slug}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: nextActive }),
+        });
+        if (!res.ok) throw new Error("Failed to update. Try again.");
+        setPages((prev) =>
+          prev.map((p) => (p.slug === slug ? { ...p, isActive: nextActive } : p)),
+        );
+      },
+      { successText: `${LABELS[slug]} ${nextActive ? "activated" : "deactivated"}.` },
+    );
+    setLoading(null);
   }
 
   return (

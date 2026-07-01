@@ -3,7 +3,6 @@
 type SearchInputProps = {
   value: string;
   onValueChange?: (value: string) => void;
-  onChange?: (value: string) => void;
   placeholder: string;
   showClear?: boolean;
   onClear?: () => void;
@@ -16,7 +15,6 @@ type SearchInputProps = {
 export function SearchInput({
   value,
   onValueChange,
-  onChange,
   placeholder,
   showClear = value.trim().length > 0,
   onClear,
@@ -25,7 +23,7 @@ export function SearchInput({
   clearButtonClassName = "rounded-full border px-3 py-1.5 text-sm transition-colors hover:bg-accent",
   resultText,
 }: SearchInputProps) {
-  const updateValue = onValueChange ?? onChange;
+  const updateValue = onValueChange;
 
   function handleClear() {
     updateValue?.("");

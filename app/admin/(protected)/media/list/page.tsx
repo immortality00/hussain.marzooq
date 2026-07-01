@@ -3,10 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import {
-  AdminActionFeedback,
-  type AdminActionFeedbackState,
-} from "@/components/admin/action-feedback/AdminActionFeedback";
+import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { useAdminAction } from "@/hooks/useAdminAction";
 import { MediaListFilterBar } from "./components/MediaListFilterBar";
 import { MediaListItem, type MediaItem } from "./components/MediaListItem";
 
@@ -51,7 +49,7 @@ export default function AdminMediaListPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [banner, setBanner] = useState<AdminActionFeedbackState>(null);
+  const { feedback: banner, setFeedback: setBanner } = useAdminAction();
 
   const [query, setQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState(initialCategory);

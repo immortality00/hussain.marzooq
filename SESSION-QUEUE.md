@@ -128,7 +128,7 @@ Read every listed file before changing it. Report back before writing code, per 
 
 ---
 
-### Session F5 — Admin orchestration & data-layer consolidation — `pending`
+### Session F5 — Admin orchestration & data-layer consolidation — `in-progress`
 Larger, multi-file refactor found in the same audit. More risk than F4 — read everything
 fully before touching anything, and expect this to be its own session, not a quick pass.
 
