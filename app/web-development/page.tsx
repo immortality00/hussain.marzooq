@@ -38,16 +38,18 @@ const principles = [
 ];
 
 export default async function WebDevelopmentPage() {
-  const { isActive } = await getPageSettings("web-development");
+  const [{ isActive }, seo] = await Promise.all([
+    getPageSettings("web-development"),
+    getPageSeo("web-development"),
+  ]);
   if (!isActive) redirect("/");
   return (
     <>
       <main className="section-shell py-12 sm:py-16">
         <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
           <PageHeader
-            eyebrow="DIGITAL BUILDS"
-            title="Web Development"
-            description="Design-led front-end work, custom portfolio systems, admin flows, and digital presentation tools connected to the same creative direction as the visual work."
+            title={seo.headerTitle}
+            description={seo.headerDescription}
           />
 
           <div className="rounded-[2rem] border bg-background/60 p-6 shadow-sm backdrop-blur">

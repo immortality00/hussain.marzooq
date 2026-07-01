@@ -22,9 +22,10 @@ function renderStars(value: number) {
 }
 
 export default async function TestimonialsPage() {
-  const [data, pageSettings] = await Promise.all([
+  const [data, pageSettings, seo] = await Promise.all([
     getPublicTestimonials(60),
     getAllPageSettings(),
+    getPageSeo("testimonials"),
   ]);
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
@@ -38,12 +39,11 @@ export default async function TestimonialsPage() {
 
               <div className="max-w-3xl">
                 <h1 className="text-balance text-3xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-4xl lg:text-5xl">
-                  <AnimatedText>What people say about me</AnimatedText>
+                  <AnimatedText>{seo.headerTitle}</AnimatedText>
                 </h1>
 
                 <p className="mt-5 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-                  Real feedback from shoots, films, events, classes, and
-                  creative collaborations.
+                  {seo.headerDescription}
                 </p>
               </div>
 

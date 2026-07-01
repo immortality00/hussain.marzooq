@@ -22,9 +22,10 @@ export const revalidate = 300;
 export default async function VideographyPage() {
   const { isActive } = await getPageSettings("videography");
   if (!isActive) redirect("/");
-  const [showreel, videos] = await Promise.all([
+  const [showreel, videos, seo] = await Promise.all([
     getShowreelItem(),
     getVideographyItems(),
+    getPageSeo("videography"),
   ]);
   const showreelEmbed =
     showreel?.type === "embed" && showreel.embedUrl
@@ -35,8 +36,8 @@ export default async function VideographyPage() {
     <>
       <main className="section-shell py-16">
         <PageHeader
-          title="Videography"
-          description="Cinematic films, dance, events, fashion, weddings, and movement-led visual stories."
+          title={seo.headerTitle}
+          description={seo.headerDescription}
           className="max-w-3xl"
         />
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
-import { AnimatedText } from "@/components/shared/AnimatedText";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 import { getPageSeo } from "@/lib/server/page-seo";
 
@@ -39,7 +39,10 @@ const principles = [
 const DISCIPLINE_ORDER = ["photography", "videography", "nft", "dancing", "web-development"];
 
 export default async function AboutPage() {
-  const pageSettings = await getAllPageSettings();
+  const [pageSettings, seo] = await Promise.all([
+    getAllPageSettings(),
+    getPageSeo("about"),
+  ]);
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
   const firstActiveSlug = DISCIPLINE_ORDER.find((s) => activeSet.has(s));
   const workHref = firstActiveSlug ? `/${firstActiveSlug}` : null;
@@ -48,21 +51,11 @@ export default async function AboutPage() {
     <>
       <main className="section-shell py-12 sm:py-16">
         <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
-          <div>
-            <div className="inline-flex rounded-full border px-3 py-1 text-[11px] tracking-[0.16em] text-muted-foreground">
-              HM VISUALS
-            </div>
-
-            <h1 className="mt-5 max-w-4xl text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
-              <AnimatedText>Cinematic visual work across photography, film, movement, and digital experience.</AnimatedText>
-            </h1>
-
-            <p className="mt-5 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-              HM Visuals is the creative practice of Hussain Marzooq, built around portraits, fashion,
-              events, dance, web experiences, and Web3-ready artwork. The work connects camera craft,
-              movement, atmosphere, and strong presentation systems into one visual identity.
-            </p>
-          </div>
+          <PageHeader
+            title={seo.headerTitle}
+            description={seo.headerDescription}
+            titleClassName="max-w-4xl lg:text-6xl"
+          />
 
           <div className="rounded-[2rem] border bg-background/60 p-6 shadow-sm backdrop-blur">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">

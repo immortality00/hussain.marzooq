@@ -19,14 +19,17 @@ export default async function PhotographyPage() {
   const { isActive } = await getPageSettings("photography");
   if (!isActive) redirect("/");
 
-  const items = await getPhotographyItems();
+  const [items, seo] = await Promise.all([
+    getPhotographyItems(),
+    getPageSeo("photography"),
+  ]);
 
   return (
     <>
       <main className="section-shell py-16">
         <PageHeader
-          title="Photography"
-          description="Cinematic portraits, fashion, weddings, events, and emotional visual stories."
+          title={seo.headerTitle}
+          description={seo.headerDescription}
           className="max-w-3xl"
         />
 

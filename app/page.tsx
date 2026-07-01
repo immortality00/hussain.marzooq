@@ -24,7 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [photos, videos, showreelUrl, nfts, servicesData, testimonials, pageSettings] =
+  const [photos, videos, showreelUrl, nfts, servicesData, testimonials, pageSettings, seo] =
     await Promise.all([
       getPhotographyItems(),
       getVideographyItems(),
@@ -33,6 +33,7 @@ export default async function HomePage() {
       getPublicServicesData(),
       getPublicTestimonials(3),
       getAllPageSettings(),
+      getPageSeo("home"),
     ]);
 
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
@@ -40,7 +41,13 @@ export default async function HomePage() {
   return (
     <>
       <main>
-        <HomeHero photos={photos} videos={videos} activeSet={activeSet} />
+        <HomeHero
+          photos={photos}
+          videos={videos}
+          activeSet={activeSet}
+          headerTitle={seo.headerTitle}
+          headerDescription={seo.headerDescription}
+        />
         <HomeFeaturedWork photos={photos} videos={videos} activeSet={activeSet} />
         <HomeCreativeSystem nfts={nfts} activeSet={activeSet} />
         <HomeServicesPreview services={servicesData.services.slice(0, 3)} activeSet={activeSet} />

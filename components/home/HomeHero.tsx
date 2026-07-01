@@ -14,17 +14,21 @@ export function HomeHero({
   photos,
   videos,
   activeSet,
+  headerTitle,
+  headerDescription,
 }: {
   photos: PublicMediaItem[];
   videos: PublicMediaItem[];
   activeSet: Set<string>;
+  headerTitle: string;
+  headerDescription: string;
 }) {
   const heroImage = firstImage(photos) ?? firstImage(videos);
   const firstActiveSlug = DISCIPLINE_ORDER.find((s) => activeSet.has(s));
   const workHref = firstActiveSlug ? `/${firstActiveSlug}` : null;
 
   return (
-    <section className="relative h-svh min-h-[600px] overflow-hidden bg-[#1a1814]">
+    <section className="relative h-svh min-h-[600px] overflow-hidden bg-background">
       {/* Background image */}
       {heroImage?.secureUrl && (
         <SmartImage
@@ -52,14 +56,11 @@ export function HomeHero({
       {/* Content — lower-third cinematic placement */}
       <div className="absolute inset-0 z-30 flex flex-col justify-end px-8 pb-16 sm:px-14 sm:pb-20 lg:px-20 lg:pb-24">
         <h1 className="max-w-5xl text-5xl font-semibold leading-[0.9] tracking-[-0.07em] text-white sm:text-6xl lg:text-[5.5rem]">
-          <AnimatedText delay={0.15}>
-            Cinematic visual direction for people, movement, fashion, weddings, and digital culture.
-          </AnimatedText>
+          <AnimatedText delay={0.15}>{headerTitle}</AnimatedText>
         </h1>
 
         <p className="mt-6 max-w-xl text-base leading-7 text-white/55 sm:text-lg">
-          Photography, film, dance, NFT work, and creative web systems shaped
-          with atmosphere, precision, and a high-end visual language.
+          {headerDescription}
         </p>
 
         <div className="mt-9 flex flex-wrap gap-3">

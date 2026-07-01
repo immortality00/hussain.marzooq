@@ -15,9 +15,10 @@ import { getAllPageSettings } from "@/lib/server/page-settings";
 export const revalidate = 300;
 
 export default async function PeoplePage() {
-  const [items, pageSettings] = await Promise.all([
+  const [items, pageSettings, seo] = await Promise.all([
     getPublicPeople(),
     getAllPageSettings(),
+    getPageSeo("people"),
   ]);
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
@@ -25,8 +26,8 @@ export default async function PeoplePage() {
     <>
       <main className="section-shell py-12 sm:py-16">
         <PageHeader
-          title="People"
-          description="Portraits, collaborators, artists, dancers, clients, and people connected to the visual work."
+          title={seo.headerTitle}
+          description={seo.headerDescription}
           className="max-w-3xl"
         />
 
