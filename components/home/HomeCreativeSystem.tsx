@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { PublicNftItem } from "@/lib/server/public-nfts";
+import type { HomeSections } from "@/lib/server/page-sections";
 import { PortfolioCard } from "@/components/shared/PortfolioCard";
 
 const DISCIPLINE_LINKS = [
@@ -12,9 +13,11 @@ const DISCIPLINE_LINKS = [
 export function HomeCreativeSystem({
   nfts,
   activeSet,
+  content,
 }: {
   nfts: PublicNftItem[];
   activeSet: Set<string>;
+  content: HomeSections["creativeSystem"];
 }) {
   const nftImage = nfts.find((item) => item.mediaUrl);
   const showNftCard = activeSet.has("nft");
@@ -28,13 +31,10 @@ export function HomeCreativeSystem({
   return (
     <section className={`section-shell grid gap-5 py-8 ${showNftCard ? "lg:grid-cols-[0.95fr_1.05fr]" : ""}`}>
       <div className="premium-panel p-6 sm:p-8">
-        <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          One visual identity across stills, film, movement, collectibles, and web experiences.
-        </h2>
+        <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{content.heading}</h2>
 
         <p className="mt-5 text-sm leading-7 text-muted-foreground sm:text-base">
-          The portfolio connects creative disciplines through the same cinematic taste, clean
-          presentation, and strong visual direction.
+          {content.paragraph}
         </p>
 
         {creativeLinks.length > 0 && (
@@ -55,7 +55,7 @@ export function HomeCreativeSystem({
       {showNftCard && (
         <PortfolioCard
           href="/nft"
-          title="Digital work with collector-ready presentation."
+          title={content.nftCardTitle}
           imageUrl={nftImage?.mediaUrl}
           ctaLabel="View collection"
           minHeight="min-h-[24rem]"

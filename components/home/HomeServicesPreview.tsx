@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { PublicServiceItem } from "@/lib/server/public-services";
+import type { HomeSections } from "@/lib/server/page-sections";
 
 const serviceDirections = [
   { label: "Photography", slug: "photography" },
@@ -23,9 +24,11 @@ function disciplineSlugForCategory(category: string): string | null {
 export function HomeServicesPreview({
   services,
   activeSet,
+  content,
 }: {
   services: PublicServiceItem[];
   activeSet: Set<string>;
+  content: HomeSections["servicesPreview"];
 }) {
   const filteredServices = services.filter((s) => {
     const discipline = disciplineSlugForCategory(s.category);
@@ -39,9 +42,7 @@ export function HomeServicesPreview({
   return (
     <section className="section-shell grid gap-5 py-8 lg:grid-cols-[0.85fr_1.15fr]">
       <div className="premium-panel p-6 sm:p-8">
-        <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Services built around strong direction, clean delivery, and premium presentation.
-        </h2>
+        <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{content.heading}</h2>
 
         <Link
           href="/services"

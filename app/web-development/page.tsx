@@ -5,42 +5,18 @@ import { StickyCta } from "@/components/site/StickyCta";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getPageSettings } from "@/lib/server/page-settings";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { getPageSections } from "@/lib/server/page-sections";
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("web-development");
   return { title: seo.title, description: seo.description };
 }
 
-const capabilities = [
-  {
-    title: "Creative portfolios",
-    text: "High-end portfolio systems with strong visual direction, motion, media structure, and clear client pathways.",
-  },
-  {
-    title: "Custom admin tools",
-    text: "Content management flows built around real relationships between media, services, people, galleries, and inquiries.",
-  },
-  {
-    title: "Front-end systems",
-    text: "Design-led interfaces, reusable components, responsive layouts, and polished public presentation layers.",
-  },
-  {
-    title: "Interactive direction",
-    text: "Digital experiments, Web3-ready presentation, editorial sections, and cinematic UI moments where they add value.",
-  },
-];
-
-const principles = [
-  "Design and code should serve the same visual identity.",
-  "Admin systems should make content easier to manage, not harder to understand.",
-  "Reusable components should replace duplicated one-off UI blocks.",
-  "Public presentation should feel intentional, cinematic, and premium.",
-];
-
 export default async function WebDevelopmentPage() {
-  const [{ isActive }, seo] = await Promise.all([
+  const [{ isActive }, seo, content] = await Promise.all([
     getPageSettings("web-development"),
     getPageSeo("web-development"),
+    getPageSections("web-development"),
   ]);
   if (!isActive) redirect("/");
   return (
@@ -54,19 +30,18 @@ export default async function WebDevelopmentPage() {
 
           <div className="rounded-[2rem] border bg-background/60 p-6 shadow-sm backdrop-blur">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Creative technology
+              {content.creativeTechnology.label}
             </div>
             <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              Visual design, content structure, client experience, and technical execution working
-              together inside one focused digital system.
+              {content.creativeTechnology.paragraph}
             </p>
           </div>
         </section>
 
         <section className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {capabilities.map((item) => (
+          {content.capabilities.map((item, i) => (
             <article
-              key={item.title}
+              key={i}
               className="rounded-[2rem] border bg-background/60 p-5 shadow-sm backdrop-blur"
             >
               <h2 className="text-lg font-semibold tracking-tight">{item.title}</h2>
@@ -78,24 +53,23 @@ export default async function WebDevelopmentPage() {
         <section className="mt-12 grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="rounded-[2rem] border bg-background/60 p-6 shadow-sm backdrop-blur">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Technical direction
+              {content.technicalDirection.label}
             </div>
             <h2 className="mt-4 text-2xl font-semibold tracking-tight">
-              Interfaces with structure, not just surface.
+              {content.technicalDirection.heading}
             </h2>
             <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              The work focuses on systems that make creative content easier to present, manage,
-              search, connect, and deliver with a premium public experience.
+              {content.technicalDirection.paragraph}
             </p>
           </div>
 
           <div className="rounded-[2rem] border bg-background/60 p-6 shadow-sm backdrop-blur">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Build principles
+              {content.buildPrinciples.label}
             </div>
             <ul className="mt-4 space-y-3 text-sm leading-6 text-muted-foreground">
-              {principles.map((item) => (
-                <li key={item} className="flex gap-3">
+              {content.buildPrinciples.items.map((item, i) => (
+                <li key={i} className="flex gap-3">
                   <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/70" />
                   <span>{item}</span>
                 </li>
@@ -108,14 +82,13 @@ export default async function WebDevelopmentPage() {
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.16em] text-background/65">
-                Creative digital work
+                {content.closingCta.label}
               </div>
               <h2 className="mt-3 text-2xl font-semibold tracking-tight">
-                Build a visual system that feels as strong as the work it holds.
+                {content.closingCta.heading}
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-background/70">
-                Create a portfolio, interface, admin system, or digital presentation layer with
-                clear structure and high-end visual direction.
+                {content.closingCta.paragraph}
               </p>
             </div>
 

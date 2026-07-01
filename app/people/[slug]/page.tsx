@@ -6,6 +6,7 @@ import { StickyCta } from "@/components/site/StickyCta";
 import { getPublicPersonBySlug } from "@/lib/server/public-people";
 import { AnimatedText } from "@/components/shared/AnimatedText";
 import { getAllPageSettings } from "@/lib/server/page-settings";
+import { getPageSections } from "@/lib/server/page-sections";
 
 export const revalidate = 300;
 
@@ -15,9 +16,10 @@ export default async function PersonDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [person, pageSettings] = await Promise.all([
+  const [person, pageSettings, sections] = await Promise.all([
     getPublicPersonBySlug(slug),
     getAllPageSettings(),
+    getPageSections("people-detail"),
   ]);
 
   if (!person) notFound();
@@ -86,9 +88,9 @@ export default async function PersonDetailPage({
       </main>
 
       <StickyCta
-        title="Inspired by this style of work?"
-        description="Book a portrait, fashion, or people-focused shoot."
-        buttonLabel="Book a shoot"
+        title={sections.stickyCta.title}
+        description={sections.stickyCta.description}
+        buttonLabel={sections.stickyCta.buttonLabel}
         href={`/contact?service=Portrait%20Inquiry&category=photography&context=${encodeURIComponent(`Inquiry source: /people/${person.slug}\nRelated profile: ${person.name}`)}`}
       />
     </>

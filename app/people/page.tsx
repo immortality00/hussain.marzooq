@@ -5,6 +5,7 @@ import { StickyCta } from "@/components/site/StickyCta";
 import { getPublicPeople } from "@/lib/server/public-people";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { getPageSections } from "@/lib/server/page-sections";
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("people");
@@ -15,10 +16,11 @@ import { getAllPageSettings } from "@/lib/server/page-settings";
 export const revalidate = 300;
 
 export default async function PeoplePage() {
-  const [items, pageSettings, seo] = await Promise.all([
+  const [items, pageSettings, seo, sections] = await Promise.all([
     getPublicPeople(),
     getAllPageSettings(),
     getPageSeo("people"),
+    getPageSections("people"),
   ]);
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
@@ -60,9 +62,9 @@ export default async function PeoplePage() {
       </main>
 
       <StickyCta
-        title="Looking for portrait or people-focused work?"
-        description="Explore the portfolio or book a shoot."
-        buttonLabel="Book a shoot"
+        title={sections.stickyCta.title}
+        description={sections.stickyCta.description}
+        buttonLabel={sections.stickyCta.buttonLabel}
         href="/contact?service=Portrait%20Inquiry&category=photography&context=Inquiry%20source:%20People%20index"
       />
     </>
