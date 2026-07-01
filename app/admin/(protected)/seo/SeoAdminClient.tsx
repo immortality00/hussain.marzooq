@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { PageSeo } from "@/lib/server/page-seo";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useAdminAction } from "@/hooks/useAdminAction";
+import { SeoPageForm, type SeoDraft } from "./components/SeoPageForm";
 
 const LABELS: Record<string, string> = {
   home: "Home",
@@ -20,24 +21,26 @@ const LABELS: Record<string, string> = {
   testimonials: "Testimonials",
 };
 
-type Draft = { title: string; description: string; ogImageUrl: string };
-
 export function SeoAdminClient({ initialPages }: { initialPages: PageSeo[] }) {
   const [pages, setPages] = useState(initialPages);
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  const [drafts, setDrafts] = useState<Record<string, SeoDraft>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const { feedback, setFeedback, run } = useAdminAction();
 
-  function getDraft(page: PageSeo): Draft {
-    return drafts[page.slug] ?? {
-      title: page.title,
-      description: page.description,
-      ogImageUrl: page.ogImageUrl,
-    };
+  function getDraft(page: PageSeo): SeoDraft {
+    return (
+      drafts[page.slug] ?? {
+        title: page.title,
+        description: page.description,
+        headerTitle: page.headerTitle,
+        headerDescription: page.headerDescription,
+        ogImageUrl: page.ogImageUrl,
+      }
+    );
   }
 
-  function setDraft(slug: string, field: keyof Draft, value: string) {
+  function setDraft(slug: string, field: keyof SeoDraft, value: string) {
     setDrafts((prev) => ({
       ...prev,
       [slug]: { ...getDraft(pages.find((p) => p.slug === slug)!), [field]: value },
@@ -46,6 +49,14 @@ export function SeoAdminClient({ initialPages }: { initialPages: PageSeo[] }) {
 
   function toggle(slug: string) {
     setExpanded((prev) => (prev === slug ? null : slug));
+  }
+
+  function discard(slug: string) {
+    setDrafts((prev) => {
+      const next = { ...prev };
+      delete next[slug];
+      return next;
+    });
   }
 
   async function save(slug: string) {
@@ -65,22 +76,18 @@ export function SeoAdminClient({ initialPages }: { initialPages: PageSeo[] }) {
             p.slug === slug ? { ...p, ...draft, updatedAt: new Date() } : p,
           ),
         );
-        setDrafts((prev) => {
-          const next = { ...prev };
-          delete next[slug];
-          return next;
-        });
+        discard(slug);
       },
-      { successText: `${LABELS[slug]} SEO updated.` },
+      { successText: `${LABELS[slug]} content updated.` },
     );
     setSaving(null);
   }
 
   return (
     <div>
-      <h1 className="mb-1 text-lg font-semibold">Page SEO</h1>
+      <h1 className="mb-1 text-lg font-semibold">Page Content</h1>
       <p className="mb-6 text-sm text-muted-foreground">
-        Control the title and description shown in search results and social link previews for each public page.
+        Control the heading and description visitors see on each public page, plus the title and description search engines and social previews see.
       </p>
 
       <div className="space-y-2">
@@ -90,6 +97,8 @@ export function SeoAdminClient({ initialPages }: { initialPages: PageSeo[] }) {
           const isDirty =
             draft.title !== page.title ||
             draft.description !== page.description ||
+            draft.headerTitle !== page.headerTitle ||
+            draft.headerDescription !== page.headerDescription ||
             draft.ogImageUrl !== page.ogImageUrl;
 
           return (
@@ -102,7 +111,7 @@ export function SeoAdminClient({ initialPages }: { initialPages: PageSeo[] }) {
                 <div>
                   <p className="text-sm font-medium">{LABELS[page.slug]}</p>
                   <p className="mt-0.5 max-w-lg truncate text-xs text-muted-foreground">
-                    {page.title}
+                    {page.headerTitle}
                   </p>
                 </div>
                 <span className="ml-4 shrink-0 text-muted-foreground">
@@ -111,73 +120,15 @@ export function SeoAdminClient({ initialPages }: { initialPages: PageSeo[] }) {
               </button>
 
               {isOpen && (
-                <div className="border-t px-4 pb-4 pt-3">
-                  <div className="space-y-3">
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                        Page title
-                      </label>
-                      <input
-                        type="text"
-                        value={draft.title}
-                        onChange={(e) => setDraft(page.slug, "title", e.target.value)}
-                        className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                      />
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                        Meta description
-                      </label>
-                      <textarea
-                        rows={3}
-                        value={draft.description}
-                        onChange={(e) => setDraft(page.slug, "description", e.target.value)}
-                        className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                      />
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {draft.description.length} chars — recommended 120–160
-                      </p>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                        OG image URL (optional — used in Session C2)
-                      </label>
-                      <input
-                        type="text"
-                        value={draft.ogImageUrl}
-                        placeholder="https://res.cloudinary.com/..."
-                        onChange={(e) => setDraft(page.slug, "ogImageUrl", e.target.value)}
-                        className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex gap-2">
-                    <button
-                      type="button"
-                      disabled={!isDirty || saving === page.slug}
-                      onClick={() => save(page.slug)}
-                      className="rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-80 disabled:opacity-40"
-                    >
-                      {saving === page.slug ? "Saving…" : "Save"}
-                    </button>
-                    {isDirty && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setDrafts((prev) => {
-                            const next = { ...prev };
-                            delete next[page.slug];
-                            return next;
-                          })
-                        }
-                        className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent/40"
-                      >
-                        Discard
-                      </button>
-                    )}
-                  </div>
-                </div>
+                <SeoPageForm
+                  page={page}
+                  draft={draft}
+                  isDirty={isDirty}
+                  isSaving={saving === page.slug}
+                  onChange={(field, value) => setDraft(page.slug, field, value)}
+                  onSave={() => save(page.slug)}
+                  onDiscard={() => discard(page.slug)}
+                />
               )}
             </div>
           );

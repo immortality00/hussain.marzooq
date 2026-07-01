@@ -35,6 +35,9 @@ export async function PATCH(
   const update: Record<string, string | Date> = { updatedAt: new Date() };
   if (typeof body.title === "string") update.title = body.title;
   if (typeof body.description === "string") update.description = body.description;
+  if (typeof body.headerTitle === "string") update.headerTitle = body.headerTitle;
+  if (typeof body.headerDescription === "string")
+    update.headerDescription = body.headerDescription;
   if (typeof body.ogImageUrl === "string") update.ogImageUrl = body.ogImageUrl;
 
   const db = await getDb();

@@ -128,7 +128,7 @@ Read every listed file before changing it. Report back before writing code, per 
 
 ---
 
-### Session F5 — Admin orchestration & data-layer consolidation — `in-progress`
+### Session F5 — Admin orchestration & data-layer consolidation — `done`
 Larger, multi-file refactor found in the same audit. More risk than F4 — read everything
 fully before touching anything, and expect this to be its own session, not a quick pass.
 
@@ -257,7 +257,7 @@ it's an extension of this session's collection, not a fix to this session's work
 
 ---
 
-### Session N4 — Page header content (extend page_seo) — `pending`
+### Session N4 — Page header content (extend page_seo) — `done`
 Make the on-page H1 + description editable from admin. Currently hardcoded as literal
 JSX props or template strings in 12 page-level files with no CMS control at all.
 

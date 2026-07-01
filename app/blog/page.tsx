@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { StickyCta } from "@/components/site/StickyCta";
-import { AnimatedText } from "@/components/shared/AnimatedText";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 import { getPageSeo } from "@/lib/server/page-seo";
 
@@ -32,25 +32,17 @@ const pillars = [
 ];
 
 export default async function BlogPage() {
-  const pageSettings = await getAllPageSettings();
+  const [pageSettings, seo] = await Promise.all([
+    getAllPageSettings(),
+    getPageSeo("blog"),
+  ]);
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
   return (
     <>
       <main className="section-shell py-12 sm:py-16">
         <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
-          <div>
-            <div className="inline-flex rounded-full border px-3 py-1 text-[11px] tracking-[0.16em] text-muted-foreground">
-              JOURNAL
-            </div>
-
-            <h1 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl"><AnimatedText>Blog</AnimatedText></h1>
-
-            <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-              Visual essays, creative process, and long-form writing around photography, film,
-              movement, and image-making.
-            </p>
-          </div>
+          <PageHeader title={seo.headerTitle} description={seo.headerDescription} />
 
           <div className="rounded-[2rem] border bg-background/60 p-6">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">

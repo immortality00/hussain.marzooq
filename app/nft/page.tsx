@@ -18,14 +18,14 @@ export default async function NftPage() {
   const { isActive } = await getPageSettings("nft");
   if (!isActive) redirect("/");
 
-  const items = await getPublicNfts();
+  const [items, seo] = await Promise.all([getPublicNfts(), getPageSeo("nft")]);
 
   return (
     <>
       <main className="section-shell py-12 sm:py-16">
         <PageHeader
-          title="NFT"
-          description="Published collectible works, edition structure, and marketplace access — all presented inside one unified collection page."
+          title={seo.headerTitle}
+          description={seo.headerDescription}
           className="max-w-3xl"
         />
 

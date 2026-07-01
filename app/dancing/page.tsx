@@ -34,9 +34,10 @@ const directions = [
 ];
 
 export default async function DancingPage() {
-  const [{ isActive }, allSettings] = await Promise.all([
+  const [{ isActive }, allSettings, seo] = await Promise.all([
     getPageSettings("dancing"),
     getAllPageSettings(),
+    getPageSeo("dancing"),
   ]);
   if (!isActive) redirect("/");
   const activeSet = new Set(allSettings.filter((p) => p.isActive).map((p) => p.slug));
@@ -45,9 +46,8 @@ export default async function DancingPage() {
       <main className="section-shell py-12 sm:py-16">
         <section className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-end">
           <PageHeader
-            eyebrow="MOVEMENT"
-            title="Dancing"
-            description="Performance, teaching, and visual work shaped around rhythm, motion, presence, and the way bodies transform space on camera."
+            title={seo.headerTitle}
+            description={seo.headerDescription}
           />
 
           <div className="rounded-[2rem] border bg-background/60 p-6 shadow-sm backdrop-blur">

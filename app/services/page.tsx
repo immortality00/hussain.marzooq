@@ -26,9 +26,10 @@ export default async function ServicesPage({
   const selectedCategory =
     typeof sp.category === "string" ? sp.category : "all";
 
-  const [{ services: servicesAll, categories }, pageSettings] = await Promise.all([
+  const [{ services: servicesAll, categories }, pageSettings, seo] = await Promise.all([
     getPublicServicesData(),
     getAllPageSettings(),
+    getPageSeo("services"),
   ]);
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
@@ -52,8 +53,8 @@ export default async function ServicesPage({
   return (
     <main className="section-shell py-12 sm:py-16">
       <PageHeader
-        title="Services"
-        description="Photography, film, dance, creative direction, web systems, and digital work shaped around the tone of the project."
+        title={seo.headerTitle}
+        description={seo.headerDescription}
         className="max-w-3xl"
       />
 

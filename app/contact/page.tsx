@@ -31,14 +31,17 @@ export default async function ContactPage({
   const initialContextMessage =
     typeof sp?.context === "string" ? sp.context : "";
 
-  const services = await getActiveServicesForContact();
+  const [services, seo] = await Promise.all([
+    getActiveServicesForContact(),
+    getPageSeo("contact"),
+  ]);
 
   return (
     <main className="mx-auto max-w-4xl px-4 py-16">
       <section className="rounded-[2.25rem] border bg-background/70 p-6 shadow-sm backdrop-blur sm:p-8">
         <PageHeader
-          title="Contact / Booking"
-          description="Tell me what you want to create and I'll reply with the best direction for the project."
+          title={seo.headerTitle}
+          description={seo.headerDescription}
         />
 
         {success ? (
