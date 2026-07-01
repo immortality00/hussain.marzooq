@@ -345,34 +345,77 @@ single line.
 
 ---
 
-### Session N5 — Section-level content CMS (homepage + interim pages) — `pending`
-**Scope not yet confirmed with Hussain — confirm before Gate 1, don't assume either
-boundary below.** Surfaced by the same audit that found the N4 gaps: the homepage has 5
-more hardcoded text blocks beyond its hero (covered by N4), and `about/page.tsx`,
-`dancing/page.tsx`, `web-development/page.tsx`, and `blog/page.tsx` each hardcode several
-standalone text panels plus repeating arrays of card content. Full inventory, counted
-panel-by-panel against the actual file content, not estimated:
+### Session N5 — Section-level content CMS (homepage + interim pages) — `in-progress`
+**Part 1 (content wiring) is done and confirmed working by Hussain.** Full scope was
+confirmed as option (b) from the original ambiguity — every panel plus the repeating card
+arrays, not just headings. Shipped: `lib/server/page-sections.ts` (`page_sections`
+collection, one document per slug, covering home/about/dancing/web-development/blog/nft/
+people/people-detail), `app/api/admin/page-sections/[slug]/route.ts`, the admin editor at
+`/admin/page-sections` (`PageSectionsAdminClient.tsx` + per-slug Form components +
+`RepeatingCardListEditor`/`RepeatingStringListEditor` with dnd-kit drag-reorder), and all
+public call sites wired: `components/home/HomeFeaturedWork.tsx`,
+`components/home/HomeCreativeSystem.tsx`, `components/home/HomeServicesPreview.tsx`,
+`components/home/HomeTrustAndShowreel.tsx`, `about/page.tsx`, `dancing/page.tsx`,
+`web-development/page.tsx`, `blog/page.tsx`, and every `StickyCta` call site with custom
+copy (`app/page.tsx`, `app/nft/page.tsx`, `app/people/page.tsx`,
+`app/people/[slug]/page.tsx`). Verified with `tsc --noEmit` and eslint, both clean.
 
-- `components/home/HomeFeaturedWork.tsx` — 2 cards, each title + description (Photography, Film).
-- `components/home/HomeCreativeSystem.tsx` — 1 panel (h2 + p), plus an NFT card title (no description on that card).
-- `components/home/HomeServicesPreview.tsx` — 1 heading (no separate paragraph — goes straight into a CTA button).
-- `components/home/HomeTrustAndShowreel.tsx` — 2 headings (trust panel, showreel panel) + 1 paragraph shown only when no testimonial exists yet.
-- `about/page.tsx` — "Creative position" panel (label + p, sits beside the N4 header) + `disciplines` array (4 × {title, text}) + "Approach" panel (label + h2 + p) + "Principles" panel (label + 4-string list) + 1 closing CTA panel (label + h2 + p). 4 standalone panels, 1 array of 4.
-- `dancing/page.tsx` — "Movement language" panel (beside the N4 header) + `sections` array (3 × {title, description}) + "Direction" panel (label + h2 + p) + "Work covered" panel (label + 4-string list) + 1 closing CTA panel. 4 standalone panels, 1 array of 3.
-- `web-development/page.tsx` — "Creative technology" panel (beside the N4 header) + `capabilities` array (4 × {title, text}) + "Technical direction" panel (label + h2 + p) + "Build principles" panel (label + 4-string list) + 1 closing CTA panel. 4 standalone panels, 1 array of 4.
-- `blog/page.tsx` — "Editorial direction" panel (beside the N4 header) + `pillars` array (4 × {title, description}) + an "Explore the work" row of links (mostly structural nav labels, not prose — lower priority than the rest of this list).
-- `StickyCta` — used bare (no custom copy) on most pages, but `app/page.tsx`, `app/nft/page.tsx`, `app/people/page.tsx`, and `app/people/[slug]/page.tsx` all pass custom `title`/`description`/`buttonLabel` props. Same hardcoded-copy pattern as everything else above, confirmed by checking every call site rather than just the homepage one.
+**Part 2 (admin consolidation) is the remaining work — reset to `pending` for this.**
+Post-ship review found the admin side confusing: the same public page now has its data
+split across three separate sidebar entries — **Pages** (visibility toggle,
+`/admin/pages`, 5 discipline pages), **Page Content** (SEO title/description + on-page
+header, `/admin/seo`, 12 pages), and **Page Sections** (panels + repeating cards,
+`/admin/page-sections`, 8 pages). Editing one real page means hunting across three
+places, and the three slug-sets don't even match, which reads as messy rather than
+intentional. Confirmed plan, presented to and approved in scope by Hussain:
 
-This is a different data shape than N4 (one heading + one description per page) — it's
-multiple named panels per page plus repeating arrays that would need add/remove/reorder
-admin UI, not just text inputs. Before Gate 1, ask Hussain directly how far this should
-go: every panel's heading + paragraph only (simpler, still a real scope increase over N4),
-or full control including the repeating card arrays (bigger admin build — a generic
-repeating-group editor, not just more text fields). Don't pick one and build it without
-asking — that's the exact mistake N4's eyebrow field and homepage exclusion both were, and
-this list itself was undercounted on the first pass (missed the panel sitting beside the
-header on about/dancing/web-development/blog) until checked panel-by-panel against the
-actual files instead of skimmed.
+1. **Keep the data layer as three separate collections/APIs** — `page_settings`,
+   `page_seo`, `page_sections` stay as-is (`getAllPageSettings()`, `getAllPageSeo()`,
+   `getAllPageSections()` already exist and cover this). Merging the data model would mean
+   rewriting three API routes and touching every public page.tsx for a problem that's
+   actually about admin presentation, not data shape — not worth the risk.
+2. **One new admin route:** `/admin/pages`, replacing all three sidebar links with a
+   single **"Pages"** entry in `app/admin/(protected)/layout.tsx`.
+   - `app/admin/(protected)/pages/page.tsx` — fetch all three `getAll*()` functions in
+     parallel, merge by slug into one fixed row order: Home, About, Photography,
+     Videography, NFT, Dancing, Web Development, Services, People, People — detail page,
+     Blog, Contact, Testimonials.
+   - `app/admin/(protected)/pages/PagesAdminClient.tsx` — one accordion row per page.
+     Each row renders only the groups that actually apply to it (this varies per page —
+     e.g. Photography has no Sections group, Contact has neither Visibility nor Sections,
+     People — detail page has only Sections):
+     - **Visibility** — on/off toggle (5 discipline pages only)
+     - **On-page header** — headerTitle/headerDescription
+     - **Search & social** — title/description/OG image
+     - **Sections** — panels + repeating card lists (reuse the existing
+       HomeSectionsForm/AboutSectionsForm/etc. components unchanged)
+   - Each group gets its own labeled sub-card with a lucide-react icon (Eye / Type /
+     Search / LayoutGrid) and a tinted background so it's visually clear what belongs to
+     what.
+   - **One "Save changes" button per page row**, not per group — saves whichever groups
+     are dirty in parallel (up to 3 PATCH calls via the existing `useAdminAction` hook),
+     so a page reads and saves as one coherent unit.
+   - Delete the old `app/admin/(protected)/pages/PagesAdminClient.tsx`, the whole
+     `app/admin/(protected)/seo/` directory, and the whole
+     `app/admin/(protected)/page-sections/` directory — relocate their working parts
+     (`SeoPageForm.tsx`, the per-slug section Form components) into a new
+     `app/admin/(protected)/pages/components/` folder rather than rewriting them.
+   - Delete the old `/admin/seo` and `/admin/page-sections` routes outright (no redirect
+     stubs) — internal admin tool, no external links to preserve.
+3. **Explicitly out of scope for this pass:** reordering the home cards themselves
+   (e.g. Photography/Film card order in Featured Work). Raised during review, deferred —
+   revisit as its own follow-up once Hussain decides whether that means reordering the two
+   Featured Work cards specifically or the homepage's whole section order.
+
+Read every file listed above before touching anything — this is a UI consolidation across
+existing, working systems, so the main risk is regressing a save path, not building new
+data logic. Report the complete affected-file list and confirm before writing code, per
+standard gate.
+
+**Status note:** Part 1 and Part 2 as scoped above are both built, verified in-browser
+(save flows tested on NFT and About rows, reverted cleanly), and committed. Left
+`in-progress` rather than `done` — Hussain has more changes planned on top of this before
+the session is considered closed out. Do not mark `done` without checking back first.
 
 ---
 

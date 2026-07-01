@@ -4,44 +4,20 @@ import { StickyCta } from "@/components/site/StickyCta";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { getPageSections } from "@/lib/server/page-sections";
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("about");
   return { title: seo.title, description: seo.description };
 }
 
-const disciplines = [
-  {
-    title: "Photography",
-    text: "Portraits, fashion, events, and cinematic still work shaped around atmosphere, presence, and strong visual identity.",
-  },
-  {
-    title: "Film",
-    text: "Movement, performance, weddings, festivals, and brand-led stories built with rhythm, emotion, and visual direction.",
-  },
-  {
-    title: "Digital craft",
-    text: "Interfaces, portfolios, Web3-ready presentation systems, and custom tools that connect creative work with a refined online experience.",
-  },
-  {
-    title: "Movement",
-    text: "Dance and performance influence the way the camera reads posture, timing, energy, and the space around the subject.",
-  },
-];
-
-const principles = [
-  "Cinematic presentation without losing honesty or intimacy.",
-  "Creative direction that treats every subject as part of a larger visual world.",
-  "Clean systems behind the work, so galleries, people, services, and inquiries stay connected.",
-  "Premium execution across public presentation, private delivery, and client communication.",
-];
-
 const DISCIPLINE_ORDER = ["photography", "videography", "nft", "dancing", "web-development"];
 
 export default async function AboutPage() {
-  const [pageSettings, seo] = await Promise.all([
+  const [pageSettings, seo, sections] = await Promise.all([
     getAllPageSettings(),
     getPageSeo("about"),
+    getPageSections("about"),
   ]);
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
   const firstActiveSlug = DISCIPLINE_ORDER.find((s) => activeSet.has(s));
@@ -59,20 +35,18 @@ export default async function AboutPage() {
 
           <div className="rounded-[2rem] border bg-background/60 p-6 shadow-sm backdrop-blur">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Creative position
+              {sections.creativePosition.label}
             </div>
             <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              The portfolio is not only a gallery. It is a connected platform for visual work, client
-              inquiries, private delivery, testimonials, people profiles, services, and selected digital
-              experiments.
+              {sections.creativePosition.paragraph}
             </p>
           </div>
         </section>
 
         <section className="mt-14 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {disciplines.map((item) => (
+          {sections.disciplines.map((item, i) => (
             <article
-              key={item.title}
+              key={i}
               className="rounded-[2rem] border bg-background/60 p-5 shadow-sm backdrop-blur"
             >
               <h2 className="text-lg font-semibold tracking-tight">{item.title}</h2>
@@ -84,24 +58,23 @@ export default async function AboutPage() {
         <section className="mt-14 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="rounded-[2rem] border bg-background/60 p-6 shadow-sm backdrop-blur">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Approach
+              {sections.approach.label}
             </div>
             <h2 className="mt-4 text-2xl font-semibold tracking-tight">
-              High-end work needs direction, not decoration.
+              {sections.approach.heading}
             </h2>
             <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              The visual language is built around controlled atmosphere, strong subject presence, clean
-              composition, and details that feel intentional from the first image to the final delivery.
+              {sections.approach.paragraph}
             </p>
           </div>
 
           <div className="rounded-[2rem] border bg-background/60 p-6 shadow-sm backdrop-blur">
             <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              Principles
+              {sections.principles.label}
             </div>
             <ul className="mt-4 space-y-3 text-sm leading-6 text-muted-foreground">
-              {principles.map((item) => (
-                <li key={item} className="flex gap-3">
+              {sections.principles.items.map((item, i) => (
+                <li key={i} className="flex gap-3">
                   <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-foreground/70" />
                   <span>{item}</span>
                 </li>
@@ -114,14 +87,13 @@ export default async function AboutPage() {
           <div className="grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
             <div>
               <div className="text-xs font-semibold uppercase tracking-[0.16em] text-background/65">
-                Work together
+                {sections.closingCta.label}
               </div>
               <h2 className="mt-3 text-2xl font-semibold tracking-tight">
-                Build a visual direction with weight, rhythm, and identity.
+                {sections.closingCta.heading}
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-6 text-background/70">
-                Start with photography, film, private galleries, NFT artwork, dance-led visuals, or a
-                complete digital presentation system.
+                {sections.closingCta.paragraph}
               </p>
             </div>
 

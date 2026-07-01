@@ -1,15 +1,18 @@
 import Link from "next/link";
 import type { PublicTestimonial } from "@/lib/server/testimonials";
+import type { HomeSections } from "@/lib/server/page-sections";
 import { toEmbedUrl } from "@/components/media/utils";
 
 export function HomeTrustAndShowreel({
   testimonial,
   showreelUrl,
   activeSet,
+  content,
 }: {
   testimonial: PublicTestimonial | null;
   showreelUrl: string | null;
   activeSet: Set<string>;
+  content: Pick<HomeSections, "trust" | "showreel">;
 }) {
   const showreelEmbed = showreelUrl ? toEmbedUrl(showreelUrl) : null;
   const showreelVideo = showreelUrl && !showreelEmbed ? showreelUrl : null;
@@ -17,14 +20,10 @@ export function HomeTrustAndShowreel({
   return (
     <section className={`section-shell grid gap-5 pb-28 pt-8 sm:pb-32 ${activeSet.has("videography") ? "lg:grid-cols-2" : ""}`}>
       <div className="premium-panel p-6 sm:p-8">
-        <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-          Trust built through clear direction and strong final delivery.
-        </h2>
+        <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{content.trust.heading}</h2>
 
         <p className="mt-6 text-lg leading-8 text-muted-foreground">
-          {testimonial
-            ? `“${testimonial.review}”`
-            : "Photography, film, movement, and creative direction shaped with care from the first conversation to the final selection."}
+          {testimonial ? `“${testimonial.review}”` : content.trust.fallbackParagraph}
         </p>
 
         <Link
@@ -62,7 +61,7 @@ export function HomeTrustAndShowreel({
 
         <div className="p-6 sm:p-8">
           <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            Film, rhythm, and movement in one visual language.
+            {content.showreel.heading}
           </h2>
 
           <Link

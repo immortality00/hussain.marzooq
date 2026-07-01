@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { getPageSections } from "@/lib/server/page-sections";
 import { HomeCreativeSystem } from "@/components/home/HomeCreativeSystem";
 import { HomeFeaturedWork } from "@/components/home/HomeFeaturedWork";
 import { HomeHero } from "@/components/home/HomeHero";
@@ -24,7 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [photos, videos, showreelUrl, nfts, servicesData, testimonials, pageSettings, seo] =
+  const [photos, videos, showreelUrl, nfts, servicesData, testimonials, pageSettings, seo, sections] =
     await Promise.all([
       getPhotographyItems(),
       getVideographyItems(),
@@ -34,6 +35,7 @@ export default async function HomePage() {
       getPublicTestimonials(3),
       getAllPageSettings(),
       getPageSeo("home"),
+      getPageSections("home"),
     ]);
 
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
@@ -48,20 +50,30 @@ export default async function HomePage() {
           headerTitle={seo.headerTitle}
           headerDescription={seo.headerDescription}
         />
-        <HomeFeaturedWork photos={photos} videos={videos} activeSet={activeSet} />
-        <HomeCreativeSystem nfts={nfts} activeSet={activeSet} />
-        <HomeServicesPreview services={servicesData.services.slice(0, 3)} activeSet={activeSet} />
+        <HomeFeaturedWork
+          photos={photos}
+          videos={videos}
+          activeSet={activeSet}
+          content={sections.featuredWork}
+        />
+        <HomeCreativeSystem nfts={nfts} activeSet={activeSet} content={sections.creativeSystem} />
+        <HomeServicesPreview
+          services={servicesData.services.slice(0, 3)}
+          activeSet={activeSet}
+          content={sections.servicesPreview}
+        />
         <HomeTrustAndShowreel
           testimonial={testimonials.items[0] ?? null}
           showreelUrl={showreelUrl}
           activeSet={activeSet}
+          content={{ trust: sections.trust, showreel: sections.showreel }}
         />
       </main>
 
       <StickyCta
-        title="Ready to create something strong?"
-        description="Tell me the work you need and I'll reply with the best direction."
-        buttonLabel="Book"
+        title={sections.stickyCta.title}
+        description={sections.stickyCta.description}
+        buttonLabel={sections.stickyCta.buttonLabel}
       />
     </>
   );

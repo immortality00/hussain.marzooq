@@ -1,4 +1,5 @@
 import type { PublicMediaItem } from "@/lib/server/media-serializers";
+import type { HomeSections } from "@/lib/server/page-sections";
 import { PortfolioCard } from "@/components/shared/PortfolioCard";
 
 function firstImage(items: PublicMediaItem[]) {
@@ -9,10 +10,12 @@ export function HomeFeaturedWork({
   photos,
   videos,
   activeSet,
+  content,
 }: {
   photos: PublicMediaItem[];
   videos: PublicMediaItem[];
   activeSet: Set<string>;
+  content: HomeSections["featuredWork"];
 }) {
   const photoImage = firstImage(photos);
   const videoImage = firstImage(videos);
@@ -27,16 +30,16 @@ export function HomeFeaturedWork({
       {showPhoto && (
         <PortfolioCard
           href="/photography"
-          title="Photography with cinematic presence."
-          description="Portraits, fashion, weddings, events, and editorial visual stories."
+          title={content.photography.title}
+          description={content.photography.description}
           imageUrl={photoImage?.secureUrl}
         />
       )}
       {showVideo && (
         <PortfolioCard
           href="/videography"
-          title="Film work shaped by motion and rhythm."
-          description="Dance, events, fashion films, weddings, festivals, and atmosphere-led stories."
+          title={content.film.title}
+          description={content.film.description}
           imageUrl={videoImage?.secureUrl}
         />
       )}

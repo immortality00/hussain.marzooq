@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { getPageSections } from "@/lib/server/page-sections";
 import { StickyCta } from "@/components/site/StickyCta";
 import NftCollection from "@/components/nft/NftCollection";
 import { getPublicNfts } from "@/lib/server/public-nfts";
@@ -18,7 +19,11 @@ export default async function NftPage() {
   const { isActive } = await getPageSettings("nft");
   if (!isActive) redirect("/");
 
-  const [items, seo] = await Promise.all([getPublicNfts(), getPageSeo("nft")]);
+  const [items, seo, sections] = await Promise.all([
+    getPublicNfts(),
+    getPageSeo("nft"),
+    getPageSections("nft"),
+  ]);
 
   return (
     <>
@@ -33,9 +38,9 @@ export default async function NftPage() {
       </main>
 
       <StickyCta
-        title="Interested in a piece?"
-        description="Ask about availability, editions, or collector details."
-        buttonLabel="Inquire"
+        title={sections.stickyCta.title}
+        description={sections.stickyCta.description}
+        buttonLabel={sections.stickyCta.buttonLabel}
       />
     </>
   );
