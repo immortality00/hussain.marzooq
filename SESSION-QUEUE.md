@@ -417,6 +417,106 @@ standard gate.
 `in-progress` rather than `done` — Hussain has more changes planned on top of this before
 the session is considered closed out. Do not mark `done` without checking back first.
 
+**Part 3 (confirmed scope, not yet built) — the "more changes" referenced above.** Raised
+during a live bug-report + planning conversation, not a fresh planning pass — full
+per-page admin group table below is the final confirmed scope, superseding the Part 2
+group list where they differ:
+
+1. **CTA group — add where missing:** About, Photography, Videography, Dancing, Web
+   Development, Testimonials currently render a hardcoded `<StickyCta />` with no admin
+   wiring (confirmed by direct read of each page.tsx). Wire all six to admin-editable CTA
+   content (title/description/buttonLabel), same pattern as Home/NFT/People.
+   - **Do not add a CTA to Services or Contact.** Services has its own booking flow built
+     into the page; Contact is itself the booking destination every other CTA points to —
+     confirmed explicitly by Hussain, not an oversight.
+   - Dancing and Web Development currently have unused `closingCta` fields in their
+     `page_sections` schema (headings/paragraphs, not the title/description/buttonLabel
+     shape `StickyCta` actually takes) — verify during Gate 1 whether these are dead
+     fields to delete or partially-wired and need reconciling, don't assume either way
+     before reading the code.
+2. **Relabel, no functional change:** NFT, People, People-detail currently expose a
+   "Sections" admin group that is actually just `CtaOnlySections` (stickyCta only, per
+   Part 2's own research). Rename this group to "CTA" in the admin UI for these three —
+   confirmed this is a labeling fix, not a data change.
+3. **Add missing groups:** People-detail currently has no Header or SEO admin group at
+   all (only the CTA-only "Sections", per above) — add both, matching every other page.
+   Flag before touching: confirm this gap is unintentional and not a deliberate omission
+   for per-person detail pages before wiring it.
+4. **Delete entirely — component markup, `page_sections` data fields, and admin form
+   controls, all three layers, not just the admin UI:**
+   - About: `disciplines` + `principles` arrays (about/page.tsx, currently CMS-wired per
+     Session N5 Part 1 — read the live file, don't assume this doc's line numbers are
+     current).
+   - Dancing: `sections` + `workCovered` arrays.
+   - Web Development: `capabilities` + `buildPrinciples` arrays.
+   - Blog: `pillars` array only — **Blog keeps its Sections admin group otherwise**,
+     reserved for future post/category content (Session C1). This is the one page where
+     "delete the repeating cards" does not mean "remove the Sections group."
+   - These three pages (About, Dancing, Web Development) end this session with just:
+     header + description + hero content + the new CTA from item 1 — until each gets a
+     real design pass later (Dancing = Session D10, Web Development = Session D11, both
+     still `pending`). About has no dedicated rebuild session in the queue yet — flag this
+     gap to Hussain rather than silently inventing one.
+5. **Final per-page admin group table (confirm against live code before executing, this
+   supersedes any earlier draft):**
+
+   | Page | Visibility | Header | SEO | CTA |
+   |---|---|---|---|---|
+   | Home | — | ✓ | ✓ | ✓ (full Sections — see Session N6) |
+   | Blog | — | ✓ | ✓ | ✓ (Sections group kept, `pillars` removed) |
+   | About | — | ✓ | ✓ | ✓ new |
+   | Photography | ✓ | ✓ | ✓ | ✓ new |
+   | Videography | ✓ | ✓ | ✓ | ✓ new |
+   | NFT | ✓ | ✓ | ✓ | ✓ (relabel only) |
+   | Dancing | ✓ | ✓ | ✓ | ✓ new |
+   | Web Development | ✓ | ✓ | ✓ | ✓ new |
+   | People | — | ✓ | ✓ | ✓ (relabel only) |
+   | People-detail | — | ✓ new | ✓ new | ✓ (relabel only) |
+   | Services | — | ✓ | ✓ | — (has its own booking flow) |
+   | Contact | — | ✓ | ✓ | — (is the booking destination) |
+   | Testimonials | — | ✓ | ✓ | ✓ new |
+
+Read every affected file fresh before writing code — this doc is a planning snapshot from
+the conversation that confirmed this scope, not a substitute for re-reading the current
+state of each page/schema/admin form. Report the complete affected-file list per standard
+gate before touching anything. Keep `in-progress` through this part too; only mark N5
+`done` once Hussain confirms Part 3 is fully closed out.
+
+---
+
+### Session N6 — Homepage section redesign — `pending`
+Raised in the same bug-report + planning conversation as N5 Part 3 above. Scope confirmed
+by Hussain, not yet built.
+
+1. **Featured Work → dynamic cards.** `components/home/HomeFeaturedWork.tsx` currently
+   renders exactly 2 hardcoded/conditional cards (Photography, Film) sourced from fixed
+   keys in `sections.featuredWork`. Convert to an array-backed structure
+   (`cards: [{slug, title, description}]`) with admin add/delete, replacing the
+   fixed-key shape in the `page_sections` `home` schema and the corresponding
+   `HomeSectionsForm.tsx` fields.
+2. **Fold the NFT card into Featured Work.** `components/home/HomeCreativeSystem.tsx`
+   currently renders a separate hardcoded NFT `PortfolioCard` alongside its text panel.
+   Remove that card from `HomeCreativeSystem` entirely — NFT becomes just another
+   addable/removable card in the Featured Work array from item 1, not a special case.
+3. **Services Preview — one unified box.** `components/home/HomeServicesPreview.tsx`
+   currently splits into a left text panel and a separate right 3-column card grid,
+   reading as two disconnected components. Wrap the whole section (heading, intro, and
+   grid together) in one outer bounded container so it reads as a single cohesive
+   services box. The existing per-service cards inside the grid stay as they are.
+4. **Trust panel — full testimonial card.** `components/home/HomeTrustAndShowreel.tsx`
+   currently shows one truncated quote (`<p>` of `testimonial.review`, no avatar, no
+   stars, no metadata). Replace with the full `SingleReviewCard` component already used
+   on `/testimonials` (`app/testimonials/` — reuse the same component, don't rebuild it).
+5. **Remove the Showreel panel entirely.** Confirmed structurally independent from the
+   trust panel (separate conditional block) — delete it outright, including its
+   `page_sections` field and `HomeSectionsForm.tsx` controls.
+6. **Keep the closing CTA (`StickyCta`) as-is** — no changes requested there.
+
+Read HomeFeaturedWork.tsx, HomeCreativeSystem.tsx, HomeServicesPreview.tsx,
+HomeTrustAndShowreel.tsx, HomeSectionsForm.tsx, page-sections.ts, and app/testimonials/'s
+review card component fresh before writing code. Report the complete affected-file list
+and confirm the plan before touching anything, per standard gate.
+
 ---
 
 ## Phase 2 — Preloader & core experience
