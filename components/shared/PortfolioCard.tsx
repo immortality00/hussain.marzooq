@@ -8,6 +8,7 @@ interface PortfolioCardProps {
   imageUrl?: string | null;
   ctaLabel?: string;
   minHeight?: string;
+  className?: string;
 }
 
 export function PortfolioCard({
@@ -17,11 +18,12 @@ export function PortfolioCard({
   imageUrl,
   ctaLabel = "Explore",
   minHeight = "min-h-[25rem]",
+  className,
 }: PortfolioCardProps) {
   return (
     <Link
       href={href}
-      className={`group relative ${minHeight} overflow-hidden rounded-[2.25rem] border bg-muted shadow-sm`}
+      className={`group relative ${minHeight} overflow-hidden rounded-[2.25rem] border bg-muted shadow-sm${className ? ` ${className}` : ""}`}
     >
       {imageUrl ? (
         <Image

@@ -345,7 +345,7 @@ single line.
 
 ---
 
-### Session N5 — Section-level content CMS (homepage + interim pages) — `in-progress`
+### Session N5 — Section-level content CMS (homepage + interim pages) — `done`
 **Part 1 (content wiring) is done and confirmed working by Hussain.** Full scope was
 confirmed as option (b) from the original ambiguity — every panel plus the repeating card
 arrays, not just headings. Shipped: `lib/server/page-sections.ts` (`page_sections`
@@ -519,7 +519,7 @@ Part 3 is fully closed out.
 
 ---
 
-### Session N6 — Homepage section redesign — `pending`
+### Session N6 — Homepage section redesign — `in-progress`
 Raised in the same bug-report + planning conversation as N5 Part 3 above. Scope confirmed
 by Hussain, not yet built.
 

@@ -61,8 +61,3 @@ export async function getShowreelItem(): Promise<PublicMediaItem | null> {
 
   return doc ? toPublicMediaItem(doc as Record<string, unknown>) : null;
 }
-
-export async function getShowreelUrl(): Promise<string | null> {
-  const item = await getShowreelItem();
-  return item?.embedUrl ?? item?.secureUrl ?? null;
-}

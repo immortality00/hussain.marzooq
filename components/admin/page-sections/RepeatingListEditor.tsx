@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import {
   DndContext,
   closestCenter,
@@ -15,17 +16,15 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { TextCard } from "@/lib/server/page-sections";
+import type { TextCard } from "@/lib/page-sections-shared";
 
-function SortableCardRow({
+function SortableRow({
   id,
-  card,
-  onChange,
+  children,
   onRemove,
 }: {
   id: string;
-  card: TextCard;
-  onChange: (card: TextCard) => void;
+  children: ReactNode;
   onRemove: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -46,22 +45,7 @@ function SortableCardRow({
         ⠿
       </button>
 
-      <div className="min-w-0 flex-1 space-y-2">
-        <input
-          type="text"
-          value={card.title}
-          onChange={(e) => onChange({ ...card, title: e.target.value })}
-          placeholder="Title"
-          className="w-full rounded-xl border bg-background px-3 py-2 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-ring"
-        />
-        <textarea
-          rows={2}
-          value={card.text}
-          onChange={(e) => onChange({ ...card, text: e.target.value })}
-          placeholder="Text"
-          className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-        />
-      </div>
+      <div className="min-w-0 flex-1 space-y-2">{children}</div>
 
       <button
         type="button"
@@ -74,12 +58,16 @@ function SortableCardRow({
   );
 }
 
-export function RepeatingCardListEditor({
+export function RepeatingListEditor<T>({
   items,
   onChange,
+  makeNew,
+  renderFields,
 }: {
-  items: TextCard[];
-  onChange: (items: TextCard[]) => void;
+  items: T[];
+  onChange: (items: T[]) => void;
+  makeNew: () => T;
+  renderFields: (item: T, onItemChange: (item: T) => void) => ReactNode;
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const ids = items.map((_, i) => String(i));
@@ -94,25 +82,55 @@ export function RepeatingCardListEditor({
     <div className="space-y-2">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-          {items.map((card, i) => (
-            <SortableCardRow
-              key={ids[i]}
-              id={ids[i]}
-              card={card}
-              onChange={(next) => onChange(items.map((c, idx) => (idx === i ? next : c)))}
-              onRemove={() => onChange(items.filter((_, idx) => idx !== i))}
-            />
+          {items.map((item, i) => (
+            <SortableRow key={ids[i]} id={ids[i]} onRemove={() => onChange(items.filter((_, idx) => idx !== i))}>
+              {renderFields(item, (next) => onChange(items.map((c, idx) => (idx === i ? next : c))))}
+            </SortableRow>
           ))}
         </SortableContext>
       </DndContext>
 
       <button
         type="button"
-        onClick={() => onChange([...items, { title: "", text: "" }])}
+        onClick={() => onChange([...items, makeNew()])}
         className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent/40"
       >
         + Add card
       </button>
     </div>
+  );
+}
+
+export function RepeatingCardListEditor({
+  items,
+  onChange,
+}: {
+  items: TextCard[];
+  onChange: (items: TextCard[]) => void;
+}) {
+  return (
+    <RepeatingListEditor
+      items={items}
+      onChange={onChange}
+      makeNew={() => ({ title: "", text: "" })}
+      renderFields={(card, onItemChange) => (
+        <>
+          <input
+            type="text"
+            value={card.title}
+            onChange={(e) => onItemChange({ ...card, title: e.target.value })}
+            placeholder="Title"
+            className="w-full rounded-xl border bg-background px-3 py-2 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+          <textarea
+            rows={2}
+            value={card.text}
+            onChange={(e) => onItemChange({ ...card, text: e.target.value })}
+            placeholder="Text"
+            className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+        </>
+      )}
+    />
   );
 }
