@@ -1,7 +1,56 @@
 "use client";
 
 import type { HomeSections } from "@/lib/server/page-sections";
+import type { FeaturedCard, FeaturedCardSlug } from "@/lib/page-sections-shared";
+import { FEATURED_CARD_SLUGS } from "@/lib/page-sections-shared";
 import { TextField, TextAreaField } from "@/components/admin/page-sections/fields";
+import { RepeatingListEditor } from "@/components/admin/page-sections/RepeatingListEditor";
+
+const SLUG_LABELS: Record<FeaturedCardSlug, string> = {
+  photography: "Photography",
+  videography: "Videography",
+  nft: "NFT",
+  dancing: "Dancing",
+  "web-development": "Web Development",
+};
+
+function FeaturedCardFields({
+  card,
+  onChange,
+}: {
+  card: FeaturedCard;
+  onChange: (card: FeaturedCard) => void;
+}) {
+  return (
+    <>
+      <select
+        value={card.slug}
+        onChange={(e) => onChange({ ...card, slug: e.target.value as FeaturedCardSlug })}
+        className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+      >
+        {FEATURED_CARD_SLUGS.map((slug) => (
+          <option key={slug} value={slug}>
+            {SLUG_LABELS[slug]}
+          </option>
+        ))}
+      </select>
+      <input
+        type="text"
+        value={card.title}
+        onChange={(e) => onChange({ ...card, title: e.target.value })}
+        placeholder="Title"
+        className="w-full rounded-xl border bg-background px-3 py-2 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-ring"
+      />
+      <textarea
+        rows={2}
+        value={card.description}
+        onChange={(e) => onChange({ ...card, description: e.target.value })}
+        placeholder="Description (optional)"
+        className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+      />
+    </>
+  );
+}
 
 export function HomeSectionsForm({
   data,
@@ -14,64 +63,19 @@ export function HomeSectionsForm({
     <div className="space-y-6">
       <div className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-          Featured work — Photography card
+          Featured work cards
         </p>
-        <TextField
-          label="Title"
-          value={data.featuredWork.photography.title}
-          onChange={(v) =>
-            onChange({
-              ...data,
-              featuredWork: {
-                ...data.featuredWork,
-                photography: { ...data.featuredWork.photography, title: v },
-              },
-            })
-          }
-        />
-        <TextAreaField
-          label="Description"
-          rows={2}
-          value={data.featuredWork.photography.description}
-          onChange={(v) =>
-            onChange({
-              ...data,
-              featuredWork: {
-                ...data.featuredWork,
-                photography: { ...data.featuredWork.photography, description: v },
-              },
-            })
-          }
-        />
-      </div>
-
-      <div className="space-y-3 border-t pt-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-          Featured work — Film card
+        <p className="text-xs text-muted-foreground">
+          Each card links to its discipline page and pulls that discipline’s latest image. Cards
+          for pages turned off under Visibility are hidden automatically.
         </p>
-        <TextField
-          label="Title"
-          value={data.featuredWork.film.title}
-          onChange={(v) =>
-            onChange({
-              ...data,
-              featuredWork: { ...data.featuredWork, film: { ...data.featuredWork.film, title: v } },
-            })
-          }
-        />
-        <TextAreaField
-          label="Description"
-          rows={2}
-          value={data.featuredWork.film.description}
-          onChange={(v) =>
-            onChange({
-              ...data,
-              featuredWork: {
-                ...data.featuredWork,
-                film: { ...data.featuredWork.film, description: v },
-              },
-            })
-          }
+        <RepeatingListEditor
+          items={data.featuredCards}
+          onChange={(cards) => onChange({ ...data, featuredCards: cards })}
+          makeNew={(): FeaturedCard => ({ slug: "photography", title: "", description: "" })}
+          renderFields={(card, onItemChange) => (
+            <FeaturedCardFields card={card} onChange={onItemChange} />
+          )}
         />
       </div>
 
@@ -89,13 +93,6 @@ export function HomeSectionsForm({
           rows={2}
           value={data.creativeSystem.paragraph}
           onChange={(v) => onChange({ ...data, creativeSystem: { ...data.creativeSystem, paragraph: v } })}
-        />
-        <TextField
-          label="NFT card title"
-          value={data.creativeSystem.nftCardTitle}
-          onChange={(v) =>
-            onChange({ ...data, creativeSystem: { ...data.creativeSystem, nftCardTitle: v } })
-          }
         />
       </div>
 
@@ -124,17 +121,6 @@ export function HomeSectionsForm({
           rows={2}
           value={data.trust.fallbackParagraph}
           onChange={(v) => onChange({ ...data, trust: { ...data.trust, fallbackParagraph: v } })}
-        />
-      </div>
-
-      <div className="space-y-3 border-t pt-4">
-        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-          Showreel panel
-        </p>
-        <TextField
-          label="Heading"
-          value={data.showreel.heading}
-          onChange={(v) => onChange({ ...data, showreel: { heading: v } })}
         />
       </div>
 

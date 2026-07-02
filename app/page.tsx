@@ -5,13 +5,9 @@ import { HomeCreativeSystem } from "@/components/home/HomeCreativeSystem";
 import { HomeFeaturedWork } from "@/components/home/HomeFeaturedWork";
 import { HomeHero } from "@/components/home/HomeHero";
 import { HomeServicesPreview } from "@/components/home/HomeServicesPreview";
-import { HomeTrustAndShowreel } from "@/components/home/HomeTrustAndShowreel";
+import { HomeTrust } from "@/components/home/HomeTrust";
 import { StickyCta } from "@/components/site/StickyCta";
-import {
-  getPhotographyItems,
-  getShowreelUrl,
-  getVideographyItems,
-} from "@/lib/server/public-media";
+import { getPhotographyItems, getVideographyItems } from "@/lib/server/public-media";
 import { getPublicNfts } from "@/lib/server/public-nfts";
 import { getPublicServicesData } from "@/lib/server/public-services";
 import { getPublicTestimonials } from "@/lib/server/testimonials";
@@ -25,11 +21,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [photos, videos, showreelUrl, nfts, servicesData, testimonials, pageSettings, seo, sections] =
+  const [photos, videos, nfts, servicesData, testimonials, pageSettings, seo, sections] =
     await Promise.all([
       getPhotographyItems(),
       getVideographyItems(),
-      getShowreelUrl(),
       getPublicNfts(),
       getPublicServicesData(),
       getPublicTestimonials(3),
@@ -53,21 +48,19 @@ export default async function HomePage() {
         <HomeFeaturedWork
           photos={photos}
           videos={videos}
+          nfts={nfts}
           activeSet={activeSet}
-          content={sections.featuredWork}
+          cards={sections.featuredCards}
         />
-        <HomeCreativeSystem nfts={nfts} activeSet={activeSet} content={sections.creativeSystem} />
-        <HomeServicesPreview
-          services={servicesData.services.slice(0, 3)}
-          activeSet={activeSet}
-          content={sections.servicesPreview}
-        />
-        <HomeTrustAndShowreel
-          testimonial={testimonials.items[0] ?? null}
-          showreelUrl={showreelUrl}
-          activeSet={activeSet}
-          content={{ trust: sections.trust, showreel: sections.showreel }}
-        />
+        <section className="section-shell grid gap-5 py-8 lg:grid-cols-2">
+          <HomeCreativeSystem activeSet={activeSet} content={sections.creativeSystem} />
+          <HomeServicesPreview
+            services={servicesData.services.slice(0, 3)}
+            activeSet={activeSet}
+            content={sections.servicesPreview}
+          />
+        </section>
+        <HomeTrust testimonials={testimonials.items} content={sections.trust} />
       </main>
 
       <StickyCta

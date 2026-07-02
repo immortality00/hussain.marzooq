@@ -38,6 +38,7 @@ export function PagesAdminClient({
             sectionsData={row.sectionsSlug ? admin.sectionsOf(row) : undefined}
             dirty={admin.isDirty(row)}
             isSaving={admin.saving === row.key}
+            feedback={admin.expanded === row.key ? admin.feedback : null}
             onVisibilityChange={(next) => admin.setVisibilityDraft(row, next)}
             onSeoChange={(field, value) => admin.setSeoField(row, field, value)}
             onSectionsChange={(data) => admin.setSectionsDraft(row, data)}

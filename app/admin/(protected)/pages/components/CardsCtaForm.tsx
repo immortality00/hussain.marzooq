@@ -2,7 +2,7 @@
 
 import type { CtaCopy, TextCard } from "@/lib/server/page-sections";
 import { TextField, TextAreaField } from "@/components/admin/page-sections/fields";
-import { RepeatingCardListEditor } from "@/components/admin/page-sections/RepeatingCardListEditor";
+import { RepeatingCardListEditor } from "@/components/admin/page-sections/RepeatingListEditor";
 
 // Shared form for About, Dancing, Web Development, and Blog — all four hold the
 // same shape until their design-pass sessions: one card grid and the closing

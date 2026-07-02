@@ -1,17 +1,16 @@
 import { getDb } from "@/lib/server/db";
+import type { FeaturedCard, TextCard, CtaCopy } from "@/lib/page-sections-shared";
 
-export type TextCard = { title: string; text: string };
-export type CtaCopy = { title: string; description: string; buttonLabel: string };
+export type { FeaturedCard, FeaturedCardSlug, TextCard, CtaCopy } from "@/lib/page-sections-shared";
 
 export type HomeSections = {
-  featuredWork: {
-    photography: { title: string; description: string };
-    film: { title: string; description: string };
-  };
-  creativeSystem: { heading: string; paragraph: string; nftCardTitle: string };
+  // Named featuredCards (not featuredWork) on purpose: mergeWithDefaults is a
+  // shallow spread, so reusing the old key would let a stale fixed-key object
+  // from an existing Mongo doc override the array shape and break rendering.
+  featuredCards: FeaturedCard[];
+  creativeSystem: { heading: string; paragraph: string };
   servicesPreview: { heading: string };
   trust: { heading: string; fallbackParagraph: string };
-  showreel: { heading: string };
   stickyCta: CtaCopy;
 };
 
@@ -63,23 +62,29 @@ const BOOKING_CTA: CtaCopy = {
 
 const DEFAULTS: PageSectionsMap = {
   home: {
-    featuredWork: {
-      photography: {
+    featuredCards: [
+      {
+        slug: "photography",
         title: "Photography with cinematic presence.",
         description: "Portraits, fashion, weddings, events, and editorial visual stories.",
       },
-      film: {
+      {
+        slug: "videography",
         title: "Film work shaped by motion and rhythm.",
         description:
           "Dance, events, fashion films, weddings, festivals, and atmosphere-led stories.",
       },
-    },
+      {
+        slug: "nft",
+        title: "Digital work with collector-ready presentation.",
+        description: "",
+      },
+    ],
     creativeSystem: {
       heading:
         "One visual identity across stills, film, movement, collectibles, and web experiences.",
       paragraph:
         "The portfolio connects creative disciplines through the same cinematic taste, clean presentation, and strong visual direction.",
-      nftCardTitle: "Digital work with collector-ready presentation.",
     },
     servicesPreview: {
       heading: "Services built around strong direction, clean delivery, and premium presentation.",
@@ -89,7 +94,6 @@ const DEFAULTS: PageSectionsMap = {
       fallbackParagraph:
         "Photography, film, movement, and creative direction shaped with care from the first conversation to the final selection.",
     },
-    showreel: { heading: "Film, rhythm, and movement in one visual language." },
     stickyCta: {
       title: "Ready to create something strong?",
       description: "Tell me the work you need and I'll reply with the best direction.",
