@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="page-shell min-h-screen">
-      <Preloader />
+      {pathname === "/" && <Preloader />}
       <div className="grain-overlay" />
       <Navbar />
       <div className="relative z-10">{children}</div>
