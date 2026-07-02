@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import SmartImage from "@/components/shared/SmartImage";
 import { notFound } from "next/navigation";
 import { MediaGrid } from "@/components/media/MediaGrid";
@@ -7,8 +8,26 @@ import { getPublicPersonBySlug } from "@/lib/server/public-people";
 import { AnimatedText } from "@/components/shared/AnimatedText";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 import { getPageSections } from "@/lib/server/page-sections";
+import { getPageSeo } from "@/lib/server/page-seo";
 
 export const revalidate = 300;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const [person, seo] = await Promise.all([
+    getPublicPersonBySlug(slug),
+    getPageSeo("people-detail"),
+  ]);
+  if (!person) return {};
+  return {
+    title: seo.title.replaceAll("{name}", person.name),
+    description: seo.description.replaceAll("{name}", person.name),
+  };
+}
 
 export default async function PersonDetailPage({
   params,

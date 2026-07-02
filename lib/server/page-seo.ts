@@ -98,6 +98,17 @@ const DEFAULTS: Record<string, SeoDefaults> = {
     headerDescription:
       "Portraits, collaborators, artists, dancers, clients, and people connected to the visual work.",
   },
+  // Template for every /people/[slug] page — {name} is replaced with the
+  // person's name at render time. The on-page header is the person's own
+  // name/bio (edited per person in the People admin), so only the search &
+  // social fields are exposed for this slug.
+  "people-detail": {
+    title: "{name} — HM Visuals",
+    description:
+      "Portraits, film, and visual work with {name} by Hussain Marzooq — photography, creative direction, and movement-led stories.",
+    headerTitle: "{name}",
+    headerDescription: "",
+  },
   blog: {
     title: "Blog — HM Visuals",
     description:

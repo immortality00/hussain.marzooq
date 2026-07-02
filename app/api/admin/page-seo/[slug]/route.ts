@@ -15,6 +15,7 @@ const SLUG_TO_PATH: Record<string, string> = {
   contact: "/contact",
   services: "/services",
   people: "/people",
+  "people-detail": "/people/[slug]",
   blog: "/blog",
   testimonials: "/testimonials",
 };
@@ -46,7 +47,11 @@ export async function PATCH(
     .updateOne({ slug }, { $set: update }, { upsert: true });
 
   const path = SLUG_TO_PATH[slug];
-  if (path) revalidatePath(path);
+  if (path === "/people/[slug]") {
+    revalidatePath(path, "page");
+  } else if (path) {
+    revalidatePath(path);
+  }
 
   return NextResponse.json({ ok: true });
 }

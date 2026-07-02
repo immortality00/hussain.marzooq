@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { getPageSections } from "@/lib/server/page-sections";
+import { StickyCta } from "@/components/site/StickyCta";
 import PublicReviewForm from "@/components/testimonials/PublicReviewForm";
 import TestimonialsSection from "@/components/testimonials/TestimonialsSection";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
@@ -22,14 +24,16 @@ function renderStars(value: number) {
 }
 
 export default async function TestimonialsPage() {
-  const [data, pageSettings, seo] = await Promise.all([
+  const [data, pageSettings, seo, sections] = await Promise.all([
     getPublicTestimonials(60),
     getAllPageSettings(),
     getPageSeo("testimonials"),
+    getPageSections("testimonials"),
   ]);
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
   return (
+    <>
     <main className="relative overflow-hidden bg-background text-foreground">
       <section className="mx-auto max-w-7xl px-4 pb-12 pt-4 sm:px-6 sm:pb-16 sm:pt-5 lg:pb-20 lg:pt-6">
         <div className="overflow-hidden rounded-[2rem] border border-border/60 bg-muted/20 shadow-sm">
@@ -124,5 +128,12 @@ export default async function TestimonialsPage() {
         </div>
       </section>
     </main>
+
+    <StickyCta
+      title={sections.stickyCta.title}
+      description={sections.stickyCta.description}
+      buttonLabel={sections.stickyCta.buttonLabel}
+    />
+    </>
   );
 }

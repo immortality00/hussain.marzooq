@@ -12,14 +12,30 @@ export type PageRow = {
   label: string;
   settingsSlug?: string;
   seoSlug?: string;
+  // Dynamic detail pages: the on-page header is the record's own data (edited
+  // in its own admin section), so only the search & social group is shown, and
+  // the {name} placeholder hint applies.
+  seoDetailPage?: boolean;
   sectionsSlug?: PageSectionsSlug;
 };
 
 export const PAGE_ROWS: PageRow[] = [
   { key: "home", label: "Home", seoSlug: "home", sectionsSlug: "home" },
   { key: "about", label: "About", seoSlug: "about", sectionsSlug: "about" },
-  { key: "photography", label: "Photography", settingsSlug: "photography", seoSlug: "photography" },
-  { key: "videography", label: "Videography", settingsSlug: "videography", seoSlug: "videography" },
+  {
+    key: "photography",
+    label: "Photography",
+    settingsSlug: "photography",
+    seoSlug: "photography",
+    sectionsSlug: "photography",
+  },
+  {
+    key: "videography",
+    label: "Videography",
+    settingsSlug: "videography",
+    seoSlug: "videography",
+    sectionsSlug: "videography",
+  },
   { key: "nft", label: "NFT", settingsSlug: "nft", seoSlug: "nft", sectionsSlug: "nft" },
   { key: "dancing", label: "Dancing", settingsSlug: "dancing", seoSlug: "dancing", sectionsSlug: "dancing" },
   {
@@ -31,10 +47,16 @@ export const PAGE_ROWS: PageRow[] = [
   },
   { key: "services", label: "Services", seoSlug: "services" },
   { key: "people", label: "People", seoSlug: "people", sectionsSlug: "people" },
-  { key: "people-detail", label: "People — detail page", sectionsSlug: "people-detail" },
+  {
+    key: "people-detail",
+    label: "People — detail page",
+    seoSlug: "people-detail",
+    seoDetailPage: true,
+    sectionsSlug: "people-detail",
+  },
   { key: "blog", label: "Blog", seoSlug: "blog", sectionsSlug: "blog" },
   { key: "contact", label: "Contact", seoSlug: "contact" },
-  { key: "testimonials", label: "Testimonials", seoSlug: "testimonials" },
+  { key: "testimonials", label: "Testimonials", seoSlug: "testimonials", sectionsSlug: "testimonials" },
 ];
 
 function seoDraftOf(seo: PageSeo): SeoDraft {

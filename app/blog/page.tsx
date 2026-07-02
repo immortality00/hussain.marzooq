@@ -22,18 +22,11 @@ export default async function BlogPage() {
   return (
     <>
       <main className="section-shell py-12 sm:py-16">
-        <section className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-end">
-          <PageHeader title={seo.headerTitle} description={seo.headerDescription} />
-
-          <div className="rounded-[2rem] border bg-background/60 p-6">
-            <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-              {content.editorialDirection.label}
-            </div>
-            <p className="mt-4 text-sm leading-6 text-muted-foreground">
-              {content.editorialDirection.paragraph}
-            </p>
-          </div>
-        </section>
+        <PageHeader
+          title={seo.headerTitle}
+          description={seo.headerDescription}
+          className="max-w-3xl"
+        />
 
         <section className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           {content.pillars.map((item, i) => (
@@ -76,7 +69,11 @@ export default async function BlogPage() {
         </section>
       </main>
 
-      <StickyCta />
+      <StickyCta
+        title={content.stickyCta.title}
+        description={content.stickyCta.description}
+        buttonLabel={content.stickyCta.buttonLabel}
+      />
     </>
   );
 }

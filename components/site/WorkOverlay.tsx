@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
+import SmartImage from "@/components/shared/SmartImage";
 import { gsap } from "gsap";
 import { X } from "lucide-react";
 
@@ -219,11 +219,15 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
                   className="group relative flex h-full w-full flex-col justify-end overflow-hidden rounded-2xl border border-white/10 bg-muted"
                 >
                   {card.imageUrl && (
-                    <Image
+                    // The overlay stays mounted (opacity-animated, never display:none),
+                    // so lazy card images get flagged as un-eager LCP candidates.
+                    // Eager-load them: 5 small cards, ready before the overlay opens.
+                    <SmartImage
                       src={card.imageUrl}
                       alt={card.label}
                       fill
                       draggable={false}
+                      loading="eager"
                       sizes="260px"
                       className="object-cover opacity-70 transition-opacity duration-500 group-hover:opacity-90"
                     />

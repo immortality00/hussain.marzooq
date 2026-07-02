@@ -5,6 +5,7 @@ import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPhotographyItems } from "@/lib/server/public-media";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { getPageSections } from "@/lib/server/page-sections";
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("photography");
@@ -19,9 +20,10 @@ export default async function PhotographyPage() {
   const { isActive } = await getPageSettings("photography");
   if (!isActive) redirect("/");
 
-  const [items, seo] = await Promise.all([
+  const [items, seo, sections] = await Promise.all([
     getPhotographyItems(),
     getPageSeo("photography"),
+    getPageSections("photography"),
   ]);
 
   return (
@@ -65,7 +67,11 @@ export default async function PhotographyPage() {
         )}
       </main>
 
-      <StickyCta />
+      <StickyCta
+        title={sections.stickyCta.title}
+        description={sections.stickyCta.description}
+        buttonLabel={sections.stickyCta.buttonLabel}
+      />
     </>
   );
 }

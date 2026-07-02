@@ -5,6 +5,7 @@ import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel
 import { StickyCta } from "@/components/site/StickyCta";
 import { toEmbedUrl } from "@/components/media/utils";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { getPageSections } from "@/lib/server/page-sections";
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("videography");
@@ -22,10 +23,11 @@ export const revalidate = 300;
 export default async function VideographyPage() {
   const { isActive } = await getPageSettings("videography");
   if (!isActive) redirect("/");
-  const [showreel, videos, seo] = await Promise.all([
+  const [showreel, videos, seo, sections] = await Promise.all([
     getShowreelItem(),
     getVideographyItems(),
     getPageSeo("videography"),
+    getPageSections("videography"),
   ]);
   const showreelEmbed =
     showreel?.type === "embed" && showreel.embedUrl
@@ -110,7 +112,11 @@ export default async function VideographyPage() {
         )}
       </main>
 
-      <StickyCta />
+      <StickyCta
+        title={sections.stickyCta.title}
+        description={sections.stickyCta.description}
+        buttonLabel={sections.stickyCta.buttonLabel}
+      />
     </>
   );
 }
