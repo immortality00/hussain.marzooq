@@ -519,7 +519,7 @@ Part 3 is fully closed out.
 
 ---
 
-### Session N6 — Homepage section redesign — `in-progress`
+### Session N6 — Homepage section redesign — `done`
 Raised in the same bug-report + planning conversation as N5 Part 3 above. Scope confirmed
 by Hussain, not yet built.
 
@@ -556,7 +556,7 @@ and confirm the plan before touching anything, per standard gate.
 
 ## Phase 2 — Preloader & core experience
 
-### Session D1 — Preloader — `pending`
+### Session D1 — Preloader — `in-progress`
 Reset from `in-progress`. The version currently in the repo was built against an
 ambiguous spec (it fetches real Cloudinary photos via a dedicated API route) and needs to
 be rebuilt, not patched — see "Materials — corrected" below before starting.
@@ -604,6 +604,23 @@ Added to: AppShell.tsx (public pages only, not admin) — already wired, no chan
 no Cloudinary fetch, it has zero callers and does 5 sequential MongoDB queries for nothing.
 
 **Before writing any code:** present the complete GSAP timeline with timing values and easing for each step. Wait for approval before building.
+
+**Build outcome (2026-07-02) — shipped with three Hussain-directed changes from the spec
+above, all requested live during Gate 2 review, not build errors:**
+1. **No sessionStorage gate.** Spec said once per session; Hussain wants the preloader on
+   every homepage visit — every hard refresh *and* every client-side navigation back to
+   `/`. AppShell now mounts `<Preloader />` only when `pathname === "/"`, remounting on
+   each arrival. Other public pages no longer show it at all.
+2. **Symbol swaps:** NFT = lucide `Bitcoin` (not Hexagon; lucide has no ETH icon),
+   Dancing = the 🕺💃 emoji pair rendered as text (not Footprints). Camera/Video/Code2 as
+   proposed. Flash beat tightened to 0.22s per symbol after review ("reduce the emojis time").
+3. **"Art" choreography:** appears centered on screen out of the burst (offset by half of
+   "Hussain."'s measured width), holds, then glides right while "Hussain." assembles from
+   per-letter random scatter + blur focus-pull (right-to-left, growing out from "Art") —
+   replacing the simple slide-in spec'd above. Name renders in Cormorant Garamond via
+   `next/font`, preloader-only.
+Uses `useGSAP` (repo idiom from AnimatedText.tsx) rather than a raw effect — a raw
+`useEffect` version tripped `react-hooks/set-state-in-effect`.
 
 ---
 

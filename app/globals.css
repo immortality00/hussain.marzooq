@@ -251,18 +251,30 @@
     overflow: hidden;
   }
 
-  .preloader-photos {
+  .preloader-icons {
     position: absolute;
     inset: 0;
   }
 
-  .preloader-photo {
+  .preloader-icon {
     position: absolute;
     inset: 0;
-    background-size: cover;
-    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     opacity: 0;
     visibility: hidden;
+    color: var(--foreground);
+  }
+
+  .preloader-icon svg {
+    width: clamp(6rem, 18vw, 11rem);
+    height: clamp(6rem, 18vw, 11rem);
+  }
+
+  .preloader-emoji {
+    font-size: clamp(4.5rem, 13vw, 8rem);
+    line-height: 1;
   }
 
   .preloader-burst {
@@ -289,10 +301,17 @@
     letter-spacing: 0.02em;
     color: var(--foreground);
     line-height: 1;
+    perspective: 600px;
   }
 
   .preloader-hussain {
     display: inline-flex;
+  }
+
+  .preloader-letter {
+    display: inline-block;
+    opacity: 0;
+    visibility: hidden;
   }
 
   .preloader-art {
