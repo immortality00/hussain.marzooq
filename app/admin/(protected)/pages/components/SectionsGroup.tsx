@@ -1,14 +1,22 @@
 "use client";
 
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid, Megaphone } from "lucide-react";
 import type { PageSectionsSlug, PageSectionsMap } from "@/lib/server/page-sections";
 import { GroupCard } from "./GroupCard";
 import { HomeSectionsForm } from "./HomeSectionsForm";
-import { AboutSectionsForm } from "./AboutSectionsForm";
-import { DancingSectionsForm } from "./DancingSectionsForm";
-import { WebDevSectionsForm } from "./WebDevSectionsForm";
-import { BlogSectionsForm } from "./BlogSectionsForm";
+import { CardsCtaForm } from "./CardsCtaForm";
 import { CtaOnlyForm } from "./CtaOnlyForm";
+
+type AnySections = PageSectionsMap[PageSectionsSlug];
+
+const CTA_ONLY_SLUGS: PageSectionsSlug[] = [
+  "photography",
+  "videography",
+  "nft",
+  "people",
+  "people-detail",
+  "testimonials",
+];
 
 function SectionForm({
   slug,
@@ -16,25 +24,66 @@ function SectionForm({
   onChange,
 }: {
   slug: PageSectionsSlug;
-  data: PageSectionsMap[PageSectionsSlug];
-  onChange: (data: PageSectionsMap[PageSectionsSlug]) => void;
+  data: AnySections;
+  onChange: (data: AnySections) => void;
 }) {
   switch (slug) {
     case "home":
       return <HomeSectionsForm data={data as PageSectionsMap["home"]} onChange={onChange} />;
-    case "about":
-      return <AboutSectionsForm data={data as PageSectionsMap["about"]} onChange={onChange} />;
-    case "dancing":
-      return <DancingSectionsForm data={data as PageSectionsMap["dancing"]} onChange={onChange} />;
-    case "web-development":
+    case "about": {
+      const d = data as PageSectionsMap["about"];
       return (
-        <WebDevSectionsForm data={data as PageSectionsMap["web-development"]} onChange={onChange} />
+        <CardsCtaForm
+          cardsTitle="Disciplines"
+          cards={d.disciplines}
+          cta={d.stickyCta}
+          onCardsChange={(cards) => onChange({ ...d, disciplines: cards })}
+          onCtaChange={(cta) => onChange({ ...d, stickyCta: cta })}
+        />
       );
-    case "blog":
-      return <BlogSectionsForm data={data as PageSectionsMap["blog"]} onChange={onChange} />;
+    }
+    case "dancing": {
+      const d = data as PageSectionsMap["dancing"];
+      return (
+        <CardsCtaForm
+          cardsTitle="Sections"
+          cards={d.sections}
+          cta={d.stickyCta}
+          onCardsChange={(cards) => onChange({ ...d, sections: cards })}
+          onCtaChange={(cta) => onChange({ ...d, stickyCta: cta })}
+        />
+      );
+    }
+    case "web-development": {
+      const d = data as PageSectionsMap["web-development"];
+      return (
+        <CardsCtaForm
+          cardsTitle="Capabilities"
+          cards={d.capabilities}
+          cta={d.stickyCta}
+          onCardsChange={(cards) => onChange({ ...d, capabilities: cards })}
+          onCtaChange={(cta) => onChange({ ...d, stickyCta: cta })}
+        />
+      );
+    }
+    case "blog": {
+      const d = data as PageSectionsMap["blog"];
+      return (
+        <CardsCtaForm
+          cardsTitle="Pillars"
+          cards={d.pillars}
+          cta={d.stickyCta}
+          onCardsChange={(cards) => onChange({ ...d, pillars: cards })}
+          onCtaChange={(cta) => onChange({ ...d, stickyCta: cta })}
+        />
+      );
+    }
+    case "photography":
+    case "videography":
     case "nft":
     case "people":
     case "people-detail":
+    case "testimonials":
       return <CtaOnlyForm data={data as PageSectionsMap["nft"]} onChange={onChange} />;
   }
 }
@@ -45,11 +94,16 @@ export function SectionsGroup({
   onChange,
 }: {
   slug: PageSectionsSlug;
-  data: PageSectionsMap[PageSectionsSlug];
-  onChange: (data: PageSectionsMap[PageSectionsSlug]) => void;
+  data: AnySections;
+  onChange: (data: AnySections) => void;
 }) {
+  const ctaOnly = CTA_ONLY_SLUGS.includes(slug);
   return (
-    <GroupCard icon={LayoutGrid} label="Sections" tint="sections">
+    <GroupCard
+      icon={ctaOnly ? Megaphone : LayoutGrid}
+      label={ctaOnly ? "CTA" : "Sections"}
+      tint="sections"
+    >
       <SectionForm slug={slug} data={data} onChange={onChange} />
     </GroupCard>
   );

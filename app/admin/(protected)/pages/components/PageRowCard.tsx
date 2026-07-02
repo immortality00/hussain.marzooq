@@ -54,7 +54,9 @@ export function PageRowCard({
             <VisibilityGroup isActive={isActive} onToggle={onVisibilityChange} />
           )}
 
-          {row.seoSlug && <SeoPageForm draft={seo} onChange={onSeoChange} />}
+          {row.seoSlug && (
+            <SeoPageForm draft={seo} onChange={onSeoChange} detailPage={row.seoDetailPage} />
+          )}
 
           {row.sectionsSlug && sectionsData && (
             <SectionsGroup slug={row.sectionsSlug} data={sectionsData} onChange={onSectionsChange} />

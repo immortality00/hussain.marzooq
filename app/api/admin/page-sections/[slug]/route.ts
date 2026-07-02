@@ -7,12 +7,15 @@ import { ALL_PAGE_SECTIONS_SLUGS, type PageSectionsSlug } from "@/lib/server/pag
 const SLUG_TO_PATH: Record<PageSectionsSlug, string> = {
   home: "/",
   about: "/about",
+  photography: "/photography",
+  videography: "/videography",
   dancing: "/dancing",
   "web-development": "/web-development",
   blog: "/blog",
   nft: "/nft",
   people: "/people",
   "people-detail": "/people/[slug]",
+  testimonials: "/testimonials",
 };
 
 export async function PATCH(

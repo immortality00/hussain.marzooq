@@ -14,36 +14,48 @@ export type SeoDraft = {
 export function SeoPageForm({
   draft,
   onChange,
+  detailPage = false,
 }: {
   draft: SeoDraft;
   onChange: (field: keyof SeoDraft, value: string) => void;
+  // Dynamic detail pages: the visible header is the record's own data, so the
+  // on-page group is hidden and {name} is replaced with the record's name.
+  detailPage?: boolean;
 }) {
   return (
     <>
-      <GroupCard icon={Type} label="On the page — what visitors see" tint="header">
-        <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">Heading</label>
-          <input
-            type="text"
-            value={draft.headerTitle}
-            onChange={(e) => onChange("headerTitle", e.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-            Description
-          </label>
-          <textarea
-            rows={3}
-            value={draft.headerDescription}
-            onChange={(e) => onChange("headerDescription", e.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-          />
-        </div>
-      </GroupCard>
+      {!detailPage && (
+        <GroupCard icon={Type} label="On the page — what visitors see" tint="header">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">Heading</label>
+            <input
+              type="text"
+              value={draft.headerTitle}
+              onChange={(e) => onChange("headerTitle", e.target.value)}
+              className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              Description
+            </label>
+            <textarea
+              rows={3}
+              value={draft.headerDescription}
+              onChange={(e) => onChange("headerDescription", e.target.value)}
+              className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+          </div>
+        </GroupCard>
+      )}
 
       <GroupCard icon={Search} label="Search & social — what search engines see" tint="seo">
+        {detailPage && (
+          <p className="text-xs text-muted-foreground">
+            Applies to every person&apos;s page — write <code>{"{name}"}</code> where the
+            person&apos;s name should appear.
+          </p>
+        )}
         <div>
           <label className="mb-1 block text-xs font-medium text-muted-foreground">
             Page title

@@ -15,37 +15,24 @@ export type HomeSections = {
   stickyCta: CtaCopy;
 };
 
-export type PanelWithParagraph = { label: string; paragraph: string };
-export type PanelWithHeading = { label: string; heading: string; paragraph: string };
-export type LabeledList = { label: string; items: string[] };
-
 export type AboutSections = {
-  creativePosition: PanelWithParagraph;
   disciplines: TextCard[];
-  approach: PanelWithHeading;
-  principles: LabeledList;
-  closingCta: PanelWithHeading;
+  stickyCta: CtaCopy;
 };
 
 export type DancingSections = {
-  movementLanguage: PanelWithParagraph;
   sections: TextCard[];
-  direction: PanelWithHeading;
-  workCovered: LabeledList;
-  closingCta: PanelWithHeading;
+  stickyCta: CtaCopy;
 };
 
 export type WebDevSections = {
-  creativeTechnology: PanelWithParagraph;
   capabilities: TextCard[];
-  technicalDirection: PanelWithHeading;
-  buildPrinciples: LabeledList;
-  closingCta: PanelWithHeading;
+  stickyCta: CtaCopy;
 };
 
 export type BlogSections = {
-  editorialDirection: PanelWithParagraph;
   pillars: TextCard[];
+  stickyCta: CtaCopy;
 };
 
 export type CtaOnlySections = { stickyCta: CtaCopy };
@@ -53,15 +40,26 @@ export type CtaOnlySections = { stickyCta: CtaCopy };
 export type PageSectionsMap = {
   home: HomeSections;
   about: AboutSections;
+  photography: CtaOnlySections;
+  videography: CtaOnlySections;
   dancing: DancingSections;
   "web-development": WebDevSections;
   blog: BlogSections;
   nft: CtaOnlySections;
   people: CtaOnlySections;
   "people-detail": CtaOnlySections;
+  testimonials: CtaOnlySections;
 };
 
 export type PageSectionsSlug = keyof PageSectionsMap;
+
+// Matches the previous hardcoded <StickyCta /> component defaults, so wiring
+// these pages through the CMS changes zero visible copy on day one.
+const BOOKING_CTA: CtaCopy = {
+  title: "Ready to book?",
+  description: "Tell me what you need and I’ll reply with the best next step.",
+  buttonLabel: "Book",
+};
 
 const DEFAULTS: PageSectionsMap = {
   home: {
@@ -99,11 +97,6 @@ const DEFAULTS: PageSectionsMap = {
     },
   },
   about: {
-    creativePosition: {
-      label: "Creative position",
-      paragraph:
-        "The portfolio is not only a gallery. It is a connected platform for visual work, client inquiries, private delivery, testimonials, people profiles, services, and selected digital experiments.",
-    },
     disciplines: [
       {
         title: "Photography",
@@ -122,34 +115,11 @@ const DEFAULTS: PageSectionsMap = {
         text: "Dance and performance influence the way the camera reads posture, timing, energy, and the space around the subject.",
       },
     ],
-    approach: {
-      label: "Approach",
-      heading: "High-end work needs direction, not decoration.",
-      paragraph:
-        "The visual language is built around controlled atmosphere, strong subject presence, clean composition, and details that feel intentional from the first image to the final delivery.",
-    },
-    principles: {
-      label: "Principles",
-      items: [
-        "Cinematic presentation without losing honesty or intimacy.",
-        "Creative direction that treats every subject as part of a larger visual world.",
-        "Clean systems behind the work, so galleries, people, services, and inquiries stay connected.",
-        "Premium execution across public presentation, private delivery, and client communication.",
-      ],
-    },
-    closingCta: {
-      label: "Work together",
-      heading: "Build a visual direction with weight, rhythm, and identity.",
-      paragraph:
-        "Start with photography, film, private galleries, NFT artwork, dance-led visuals, or a complete digital presentation system.",
-    },
+    stickyCta: BOOKING_CTA,
   },
+  photography: { stickyCta: BOOKING_CTA },
+  videography: { stickyCta: BOOKING_CTA },
   dancing: {
-    movementLanguage: {
-      label: "Movement language",
-      paragraph:
-        "Dance informs both the performance work and the camera work: timing, weight, pauses, transitions, and the emotional shape of movement.",
-    },
     sections: [
       {
         title: "Performance",
@@ -164,34 +134,9 @@ const DEFAULTS: PageSectionsMap = {
         text: "Creative partnerships with artists, festivals, brands, and visual projects built around movement.",
       },
     ],
-    direction: {
-      label: "Direction",
-      heading: "Dance as performance, archive, and visual identity.",
-      paragraph:
-        "This section connects movement-based work with the wider HM Visuals practice: cinematic video, performance documentation, creative collaborations, and teaching material.",
-    },
-    workCovered: {
-      label: "Work covered",
-      items: [
-        "Performance films and movement-led visual pieces.",
-        "Festival, rehearsal, and behind-the-scenes dance coverage.",
-        "Teaching, workshops, and class documentation.",
-        "Creative collaborations where motion becomes the visual language.",
-      ],
-    },
-    closingCta: {
-      label: "Movement-led visuals",
-      heading: "Create dance work with cinematic direction.",
-      paragraph:
-        "Build a performance film, document a class or festival, or shape a collaboration around movement.",
-    },
+    stickyCta: BOOKING_CTA,
   },
   "web-development": {
-    creativeTechnology: {
-      label: "Creative technology",
-      paragraph:
-        "Visual design, content structure, client experience, and technical execution working together inside one focused digital system.",
-    },
     capabilities: [
       {
         title: "Creative portfolios",
@@ -210,34 +155,9 @@ const DEFAULTS: PageSectionsMap = {
         text: "Digital experiments, Web3-ready presentation, editorial sections, and cinematic UI moments where they add value.",
       },
     ],
-    technicalDirection: {
-      label: "Technical direction",
-      heading: "Interfaces with structure, not just surface.",
-      paragraph:
-        "The work focuses on systems that make creative content easier to present, manage, search, connect, and deliver with a premium public experience.",
-    },
-    buildPrinciples: {
-      label: "Build principles",
-      items: [
-        "Design and code should serve the same visual identity.",
-        "Admin systems should make content easier to manage, not harder to understand.",
-        "Reusable components should replace duplicated one-off UI blocks.",
-        "Public presentation should feel intentional, cinematic, and premium.",
-      ],
-    },
-    closingCta: {
-      label: "Creative digital work",
-      heading: "Build a visual system that feels as strong as the work it holds.",
-      paragraph:
-        "Create a portfolio, interface, admin system, or digital presentation layer with clear structure and high-end visual direction.",
-    },
+    stickyCta: BOOKING_CTA,
   },
   blog: {
-    editorialDirection: {
-      label: "Editorial direction",
-      paragraph:
-        "A focused space for stories behind the work, creative decisions, locations, movement, atmosphere, and visual identity.",
-    },
     pillars: [
       {
         title: "Portraits",
@@ -250,6 +170,7 @@ const DEFAULTS: PageSectionsMap = {
       { title: "Weddings", text: "Emotion-led coverage with a premium and artistic point of view." },
       { title: "Film", text: "Cinematic shooting, visual pacing, and stronger moving-image work." },
     ],
+    stickyCta: BOOKING_CTA,
   },
   nft: {
     stickyCta: {
@@ -272,6 +193,7 @@ const DEFAULTS: PageSectionsMap = {
       buttonLabel: "Book a shoot",
     },
   },
+  testimonials: { stickyCta: BOOKING_CTA },
 };
 
 export const ALL_PAGE_SECTIONS_SLUGS = Object.keys(DEFAULTS) as PageSectionsSlug[];

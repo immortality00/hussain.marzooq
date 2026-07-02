@@ -215,14 +215,14 @@ reading every component directly:
 
 That's 5 components beyond the hero, each with their own heading (and in 2 cases, card-level
 sub-titles) — a genuinely different shape than the one-header-per-page pattern everywhere
-else. Session N4 covers the hero only (same field shape as every other page). The other 5
-text blocks, plus the equivalent repeating-card content already known to exist on
-about/page.tsx (`disciplines`, `principles`), dancing/page.tsx (`sections`, `directions`),
-web-development/page.tsx (`capabilities`, `principles`), and blog/page.tsx (`pillars`) —
-all currently hardcoded arrays of `{title, text}` objects — are tracked as Session N5,
-scope and architecture pending Hussain's confirmation (see SESSION-QUEUE.md). Don't assume
-either a minimal scope (header only) or a maximal one (every string on every page) without
-asking again — that assumption is exactly what went wrong here the first time.
+else. Session N4 covers the hero only (same field shape as every other page). The rest
+shipped in Session N5 as the `page_sections` collection (one document per slug), the
+Sections/CTA groups inside the consolidated `/admin/pages` UI, and admin-wired `StickyCta`
+copy on every public page that renders one (Services and Contact deliberately have none).
+About / Dancing / Web Development / Blog are interim pages awaiting their design-pass
+sessions — each currently holds just a header + one `{title, text}` card grid + the
+booking bar, and both the pages and their admin forms are expected to change again in
+those sessions (see SESSION-QUEUE.md N5 Part 3 for the confirmed per-page group table).
 
 ## Open Graph images
 Each public page needs a proper OG image using actual photography from Cloudinary.

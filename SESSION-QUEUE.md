@@ -463,7 +463,7 @@ group list where they differ:
    | Page | Visibility | Header | SEO | CTA |
    |---|---|---|---|---|
    | Home | — | ✓ | ✓ | ✓ (full Sections — see Session N6) |
-   | Blog | — | ✓ | ✓ | ✓ (Sections group kept, `pillars` removed) |
+   | Blog | — | ✓ | ✓ | ✓ (Sections group kept, `pillars` also kept — see outcome note) |
    | About | — | ✓ | ✓ | ✓ new |
    | Photography | ✓ | ✓ | ✓ | ✓ new |
    | Videography | ✓ | ✓ | ✓ | ✓ new |
@@ -471,16 +471,51 @@ group list where they differ:
    | Dancing | ✓ | ✓ | ✓ | ✓ new |
    | Web Development | ✓ | ✓ | ✓ | ✓ new |
    | People | — | ✓ | ✓ | ✓ (relabel only) |
-   | People-detail | — | ✓ new | ✓ new | ✓ (relabel only) |
+   | People-detail | — | — (see outcome note) | ✓ new | ✓ (relabel only) |
    | Services | — | ✓ | ✓ | — (has its own booking flow) |
    | Contact | — | ✓ | ✓ | — (is the booking destination) |
    | Testimonials | — | ✓ | ✓ | ✓ new |
 
-Read every affected file fresh before writing code — this doc is a planning snapshot from
-the conversation that confirmed this scope, not a substitute for re-reading the current
-state of each page/schema/admin form. Report the complete affected-file list per standard
-gate before touching anything. Keep `in-progress` through this part too; only mark N5
-`done` once Hussain confirms Part 3 is fully closed out.
+**Part 3 Gate-1 outcome (2026-07-02) — corrections found against live code, and
+Hussain's confirmed adjustments. This supersedes items 1–4 above where they differ:**
+
+- **`closingCta` was not dead** (item 1's open question): it was fully wired to the dark
+  full-width closing panel on About, Dancing, *and* Web Development — those pages had two
+  CTAs (dark panel + hardcoded floating bar). Reconciled by deleting the dark panels and
+  their `closingCta` fields at all three layers; the admin-wired floating `StickyCta` is
+  now the single closing CTA on those pages. The panels' secondary links ("View video
+  work", "Start a project", etc.) were removed with them.
+- **Card grids kept** (adjusts item 4): Hussain confirmed About / Dancing / Web
+  Development / Blog keep their `{title, text}` card grid (`disciplines` / `sections` /
+  `capabilities` / `pillars`) plus header and description, so the interim pages stay
+  visually consistent with the rest of the site until their design passes (Dancing =
+  D10, Web Dev = D11, About/Blog = not yet scheduled — **About still has no rebuild
+  session in the queue**). What was deleted: the mid panel-pair grids
+  (`approach`+`principles`, `direction`+`workCovered`,
+  `technicalDirection`+`buildPrinciples`) and the dark closing panels. At Gate-2 review
+  Hussain also had the four hero side panels removed (`creativePosition`,
+  `movementLanguage`, `creativeTechnology`, `editorialDirection` — component markup,
+  data fields, and admin controls), so each interim page is now header + card grid +
+  booking bar. All four pages' admin forms share one `CardsCtaForm` component;
+  `RepeatingStringListEditor.tsx` deleted (zero callers).
+- **Testimonials had no `StickyCta` at all** (item 1 claimed it rendered a hardcoded
+  one) — the admin-wired booking bar there is a *new* visible element, shipped with the
+  default "Ready to book?" copy.
+- **Blog also rendered a hardcoded `<StickyCta />`** and wasn't in item 1's six-page
+  list — wired too, making 7 newly wired pages total.
+- **People-detail gets SEO only, no Header group** (adjusts item 3): the on-page H1 is
+  the person's own name + bio, already editable per person in the People admin, so a
+  page-level header field has nothing to control. The SEO group uses a `{name}`
+  placeholder template (`page_seo` slug `people-detail`) substituted into
+  `generateMetadata` per person — confirmed by Hussain specifically so famous subjects'
+  pages can rank for their own name searches. The detail page previously had no
+  `generateMetadata` at all.
+- Mongo: no migration — removed keys linger in existing `page_sections` docs, are
+  ignored by the new code, and get replaced wholesale on the first admin save per page.
+  Cloudinary: untouched by this session.
+
+Keep `in-progress` through this part too; only mark N5 `done` once Hussain confirms
+Part 3 is fully closed out.
 
 ---
 
@@ -783,6 +818,16 @@ Review every public page for visual and functional consistency.
 Check and fix:
 - PageHeader component used on all pages (not inline h1+p).
 - PortfolioCard component used everywhere appropriate.
+- SmartImage used for all public-page images — no raw `next/image` imports outside
+  `components/shared/SmartImage.tsx`. Found during N5 Part 3 (2026-07-02): 13 files
+  still import `next/image` directly (7 public-side: `PortfolioCard.tsx`,
+  `PeopleIndex.tsx`, `SmartMediaPreview.tsx`, `SafeImage.tsx`,
+  `review-form/PreviewImage.tsx`, `app/services/page.tsx`, plus 6 admin files —
+  admin ones are D9/admin-session territory, not this pass). `WorkOverlay.tsx` was
+  the 14th and was fixed in N5 Part 3 after its lazy card image triggered a dev LCP
+  warning — the overlay stays mounted with opacity 0, so its images must load eagerly.
+  Wrappers like `SafeImage` may legitimately keep an inner `next/image` — evaluate
+  each, don't blind-swap.
 - section-shell class used for all page containers.
 - No gradient fallback divs anywhere.
 - AnimatedText applied to all h1 elements.
