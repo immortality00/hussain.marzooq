@@ -554,6 +554,71 @@ and confirm the plan before touching anything, per standard gate.
 
 ---
 
+### Session N7 — Admin-selectable card images (Work overlay + Featured Work) — `pending`
+Confirmed gap, verified by reading both sources directly: `app/api/work-overlay/route.ts`
+and `components/home/HomeFeaturedWork.tsx`'s `firstImage()` helper both auto-select
+whichever media item was uploaded most recently matching the discipline's category
+(`sort: { createdAt: -1 }`) — there is no admin control anywhere on the site over which
+specific photo represents each discipline card. Also confirmed: `dancing` and
+`web-development` currently have `category: null` in the Work overlay route, so those two
+cards get no image at all today, not even an auto-picked one — this session decides
+whether to fix that as part of the same pass.
+
+1. Extend `page_sections`'s `home.featuredCards` (N6) and the Work overlay's discipline
+   list with an admin-picked `mediaId` per card/discipline, defaulting to the current
+   auto-pick behavior when nothing has been chosen — ships with zero visible change until
+   Hussain actually picks something.
+2. Build the picker UI by adapting `components/admin/private-galleries/PrivateGalleryMediaPicker.tsx`
+   (93 lines, already built for exactly this "browse existing media, pick one" admin flow)
+   rather than building a new picker from scratch. Read it fully first — confirm what's
+   private-gallery-specific versus generic before reusing.
+3. Wire the picker into both surfaces that need it: the Work overlay's discipline-card
+   admin and the Featured Work admin section already built in N6 (`HomeSectionsForm.tsx`).
+4. Decide and implement the `dancing`/`web-development` no-image gap — either give them a
+   real `category` value so the auto-pick fallback works, or leave them
+   image-picker-only with a clear empty state until an admin picks something. Propose
+   both at Gate 1, don't assume.
+
+Read `app/api/work-overlay/route.ts`, `components/home/HomeFeaturedWork.tsx`,
+`lib/server/page-sections.ts`, `lib/page-sections-shared.ts`, and
+`PrivateGalleryMediaPicker.tsx` fresh before writing code. Report the complete
+affected-file list before touching anything, per standard gate.
+
+---
+
+### Session N8 — Add People + Testimonials to the navbar — `pending`
+Confirmed gap, verified by reading `components/site/Navbar.tsx` in full: current nav is
+exactly Work (overlay button) · About · Services · Book, in both the desktop bar and the
+mobile drawer. `/people` and `/testimonials` are real, live, working pages — they're
+simply not linked from the nav anywhere.
+
+Add both as flat links, not inside the Work overlay — confirmed explicitly: Work stays
+scoped to the 5 disciplines only; People and Testimonials are separate top-level nav
+items alongside About/Services/Book.
+
+**A camera-hump navbar redesign was explored and explicitly dropped.** Several mockup
+passes (flat CSS shapes, then real Playwright-rendered HTML/CSS with actual gradients and
+shadows) did not land against a reference image Hussain provided — the composition was
+eventually confirmed correct on close re-inspection, but the exercise wasn't resolved in
+this planning context and Hussain moved on. **The navbar's visual design stays exactly as
+N1 shipped it — flat, no shape change.** This session is scope-limited to adding two
+links to the existing structure, nothing else.
+
+Desktop: add `<NavLink href="/people">People</NavLink>` and
+`<NavLink href="/testimonials">Testimonials</NavLink>` to the existing link row in
+`Navbar.tsx`, same pattern as the existing About/Services links. Six items total is tight
+at real desktop nav width — check it doesn't wrap or crowd the Book CTA before calling
+this done; if it's too tight, propose a fix (reduced letter-spacing, smaller inter-link
+gap) rather than silently letting it overflow.
+
+Mobile: add the same two links to the drawer list, matching the existing About/Services/
+Contact pattern already there.
+
+Read `Navbar.tsx` in full before writing — both the desktop link row and the mobile
+drawer markup need the same two additions.
+
+---
+
 ## Phase 2 — Preloader & core experience
 
 ### Session D1 — Preloader — `in-progress`
@@ -624,17 +689,183 @@ Uses `useGSAP` (repo idiom from AnimatedText.tsx) rather than a raw effect — a
 
 ---
 
-### Session D2 — Homepage WebGL rebuild — `pending`
-Rebuild the homepage hero as a full-viewport WebGL experience using Three.js.
+### Session D2a — Homepage WebGL scene: foundation — `pending`
+**Rescoped after the Memore reference image (uploaded 2026-07-04), and updated
+2026-07-06 — the hero asset exists now, this is no longer an open sourcing decision.**
+The previous D2 spec said HTML sections "exist below the WebGL viewport and scroll
+normally" — a decorated hero, not the full-page scene the reference image and CLAUDE.md's
+"Homepage architecture" describe. Read that section in full before Gate 1 for the ice
+material spec.
 
-The Three.js canvas is the primary layer of the homepage first viewport. The camera moves through the 3D scene on scroll (GSAP ScrollTrigger drives camera position). The existing HTML content sections (Featured Work, Stats, About, Globe, Press, Services) exist below the WebGL viewport and scroll normally.
+**Hero ring asset — delivered, not a decision to make in this session.** Generated via
+Meshy image-to-3D from a crop of the reference image, cleaned up and corrected in
+Blender: scale fixed to real-world 1.93 × 1.929 × 0.561 units, origin centered on
+geometry, Decimate applied (587K → 234,822 triangles), Draco-compressed, all embedded
+Meshy textures stripped (Materials export set to Placeholder — they're being replaced by
+the material in item 4 below regardless). Verified directly before being accepted: parsed
+the GLB's JSON chunk to confirm node transform is clean identity (no un-applied scale),
+confirmed `POSITION`/`NORMAL`/`TEXCOORD_0` attributes all survived the texture strip, and
+Hussain confirmed the decompressed shape in Blender's viewport matches the reference
+image. File: `hero-ring.glb` (Hussain has it; drop it in `/public/models/` or wherever
+this session's Gate-1 proposal puts static model assets — confirm the path, don't assume
+an existing convention that may not exist yet).
 
-**Before writing any code:**
-- Read HomeHero.tsx, HeroBokeh.tsx, app/page.tsx, AppShell.tsx, globals.css.
-- Propose the specific Three.js scene composition: what 3D elements exist, what the camera does, how it connects to scroll.
-- Wait for approval before building anything.
+Build in this session — foundation only, no discipline content yet:
+1. **Library adoption:** add `@react-three/fiber` and `@react-three/drei`. Port
+   `HeroBokeh.tsx`'s particle system into the new R3F scene as the atmosphere layer
+   (instanced points, same visual result, same 180-particle drift/parallax behavior);
+   delete the standalone canvas once absorbed.
+2. **Persistent full-page canvas** — fixed behind all content, alive for the entire
+   homepage. A scroll-proxy element defines page height; Lenis scroll drives a GSAP
+   ScrollTrigger scrub that moves the camera along a spline (`CatmullRomCurve3` or drei's
+   equivalent). Scrubbed, not tweened — reversing scroll must reverse the journey with
+   zero lag.
+3. **Camera rail with 2 real stations**: hero, and one placeholder photography station
+   positioned far enough down the rail to prove the travel — not five placeholder
+   stations for disciplines that don't have content yet (that's D2c's job, after the
+   pattern is proven).
+4. **The hero ice object — material, not sourcing.** Load `hero-ring.glb` via
+   `useGLTF`/`GLTFLoader`. **It is not glass — it's ice.** Base material:
+   `MeshPhysicalMaterial`, high roughness, `clearcoat` enabled — not
+   `MeshTransmissionMaterial` (that's built for clear refraction; wrong tool for a frosted
+   surface). Layer an animated ice/frost/sparkle shader on top, in TSL or GLSL: a
+   Voronoi-cell crystal pattern using `TEXCOORD_0` (confirmed present on the asset) driven
+   by a time uniform, plus a second high-frequency noise layer that flickers specular
+   highlights on and off to read as sparkle/shimmer. This is the one object in the scene
+   allowed the heaviest material cost — everything else (D2b/D2c shards) uses a cheaper
+   version of the same technique.
+5. **DOM-sync overlay system** — the mechanism that projects a 3D anchor to screen
+   coordinates each frame and drives a real DOM element's transform/opacity from it. The
+   hero h1/p (`seo.headerTitle`/`headerDescription` from N4) is the first and only
+   consumer this session — prove the sync works before D2b hangs more content off it.
+6. **Quality + fallback scaffolding** — DPR cap, visibility-based render pausing, full
+   `dispose()` on unmount, `prefers-reduced-motion` and no-WebGL static fallback (same
+   content, real DOM, a composed still image in place of the canvas).
 
-The bokeh particle system currently in HeroBokeh.tsx should be elevated into the main Three.js scene rather than a separate canvas. The hero image from Cloudinary should be integrated into the 3D scene.
+**Gate-1 decisions — propose both, wait for approval, do not default silently:**
+- **Where `hero-ring.glb` lives in the repo** — `/public/models/` is a reasonable default
+  but this repo has no existing convention for static 3D assets; confirm rather than
+  assume.
+- **TSL vs. plain GLSL** for the ice shader in item 4 — TSL is Three.js's newer node-based
+  shader system and is the current tool of choice for this kind of animated
+  procedural-surface effect; plain GLSL via `onBeforeCompile`/custom `ShaderMaterial` is
+  the older, more manual route. Propose both, pick one, don't mix them mid-scene.
+**Settled, not a Gate-1 decision:** every shard beyond the hero ring — all of D2b/D2c's
+secondary shard geometry — is procedural, generated directly in code (convex-hull or
+Voronoi fracture of a base shape, randomized per instance). No Blender, no Meshy, no
+authored asset for any of them. They're small, numerous, and don't need to match a
+specific silhouette the way the hero ring did — procedural variety is the better outcome
+here, not a compromise. Same reasoning covers their material: the cheaper faked-ice
+technique from CLAUDE.md's "ice/frost look" section, not the hero's heavier treatment.
+
+Read before Gate 1: `HomeHero.tsx`, `HeroBokeh.tsx`, `app/page.tsx`, `AppShell.tsx` (Lenis
+setup), `globals.css`, `components/site/Preloader.tsx` (D2d will need its handoff
+contract — see that session). Propose scene composition, camera path shape, and the two
+decisions above. Wait for approval before writing code.
+
+---
+
+### Session D2b — Homepage WebGL scene: photography stations — `pending`
+Prove the full station pattern on photography alone before touching any other
+discipline. This is the session that actually answers "will this look and feel like the
+reference image" — everything after it is repetition, not R&D.
+
+1. **Featured-variation curation — new, does not exist yet (confirmed by reading
+   `MediaGrid.tsx`, `lib/page-sections-shared.ts`, `lib/server/page-sections.ts`
+   directly).** Media items already carry a free-form `tags: string[]` field with full
+   filter support on `/photography` — the raw material for "Portraits / Fashion /
+   Weddings"-style variations already exists. What's missing is any admin-side concept of
+   "these specific tags are the featured homepage variations, in this order." Build it as
+   its own small piece: a `featuredPhotographyTags: string[]` field (ordered array of tag
+   strings Hussain picks from what already exists on his media), stored alongside the
+   existing `page_sections` `home` document, editable from the same admin surface N5/N6
+   already built for home content — not a new admin page. Do **not** touch or extend the
+   closed 5-slug `FeaturedCard`/`FEATURED_CARD_SLUGS` system from N6 — that's
+   discipline-level for the DOM grid and is out of scope here.
+2. **Photography variation stations** — one ice slab per curated tag, positioned along
+   the D2a camera rail after the hero. Each slab: a real photo (queried by tag from
+   existing `public-media` helpers) on a plane, faked-ice material (Fresnel + normal
+   map + env reflection + clearcoat — see CLAUDE.md "ice/frost look"), continuous idle
+   micro-animation (slow rotation/float — nothing in the scene sits perfectly still),
+   label synced via the D2a DOM-overlay system, not baked into the texture. Clicking a
+   slab routes to `/photography?tag=...` (or the equivalent the existing filter already
+   supports) — confirm the exact query param by reading `MediaGrid.tsx`'s filter logic
+   before wiring it, don't guess the param name.
+3. **Empty-state behavior** — if Hussain hasn't curated any `featuredPhotographyTags` yet,
+   the photography stations must not render broken/empty ice slabs. Fall back to the N
+   most-recently-uploaded photography items, or skip the photography-variation stations
+   entirely and go straight from hero to whatever D2c later adds — propose which at Gate 1,
+   don't assume.
+4. **Verify against the reference image directly** — render this session's output next to
+   the uploaded Memore image before calling it done. If the ice doesn't read as ice in
+   motion, that's this session's problem to solve before D2c multiplies the pattern.
+
+Read: `lib/server/page-sections.ts`, `lib/page-sections-shared.ts`, `MediaGrid.tsx`,
+`MediaFilterBar.tsx`, `lib/server/public-media.ts`, and D2a's finished output. Propose the
+curation-field schema, the admin UI location, and the station composition. Wait for
+approval.
+
+---
+
+### Session D2c — Homepage WebGL scene: extend to remaining disciplines — `pending`
+Repeat D2b's proven station pattern for Videography, NFT, Dancing, Web Development. Not
+started until D2b is confirmed working and approved — this session should be mechanical,
+not exploratory, because the hard problems (ice material, DOM sync, camera rail, curation
+UI) are already solved by then.
+
+1. Extend the `featuredPhotographyTags`-style curation to the other four disciplines
+   where a tag/variation concept makes sense (videography likely does — weddings/events/
+   brand films; NFT, dancing, and web development may not have meaningful sub-genre tags
+   at all, in which case their station is just the discipline itself, not a set of
+   variations — confirm per-discipline at Gate 1, don't force a variation concept where
+   none exists).
+2. Add each discipline's station(s) to the camera rail, same ice/animation treatment as
+   D2b, respecting `page_settings.isActive` — an inactive discipline's station is skipped
+   and the rail shortens cleanly, exactly like the current DOM Work overlay already does.
+3. Decide and implement where the exhibition globe (Session D6) sits relative to this rail
+   — inside the scene as a station, or reached as a DOM section after the rail ends. Flag
+   this explicitly at Gate 1; it's been an open question since D2 was first split and
+   still hasn't been decided.
+
+Read: D2b's finished implementation, `components/site/WorkOverlay.tsx` (existing
+active-page filtering logic to match), Session D6 below. Propose the per-discipline station
+plan before writing code.
+
+---
+
+### Session D2d — Preloader handoff + scene polish — `pending`
+Make preloader → homepage → scroll one continuous motion. No unmount flash, no white
+frame, no hard cut from "preloader" to "site."
+
+1. **Preloader contract change — required first, small, contained.** `Preloader.tsx`
+   currently self-manages its exit (fades its own container, calls `setDone(true)` to
+   hard-unmount — see CLAUDE.md's Preloader section for the exact current behavior). It
+   needs to instead hold the light burst at full intensity and fire an `onComplete` prop,
+   letting the parent decide when/how it leaves. This is an edit to the existing shipped
+   component, not a rebuild — everything else about D1's build (the icon set, the timing,
+   the emoji/Bitcoin symbols, the Cormorant Garamond name reveal) stays exactly as shipped.
+2. **Handoff** — the burst becomes the scene's opening key light; the camera starts pulled
+   back/rising and settles into the hero station as "Hussain.Art" resolves and hands off to
+   the real DOM h1. Propose at Gate 1 whether the preloader renders inside the same
+   canvas/context as the scene (seamless, couples D1's component to the scene — the
+   recommended option) or crossfades between two synchronized layers (simpler, small
+   risk of a visible seam). Hussain approves whichever gets proposed before it's built.
+3. **Post-processing pass** — film grain inside the scene matched to the existing CSS
+   grain (one grain total, not two stacked), gentle depth-of-field or bloom on the hero
+   ice. Respect existing design rules: no vignette, no decorative gradients beyond what's
+   already approved for the ice material itself.
+4. **Scroll feel tuning** — easing on the camera scrub, per-station "settle," and how
+   Lenis's smoothing interacts with the scrub so fast scrolling stays legible and doesn't
+   overshoot past a station.
+5. **Performance verification, measured not asserted** — frame budget on a genuine
+   mid-range phone, texture memory with all stations populated (post-D2c), worst case for
+   the number of faked-ice materials on screen at once. This is where "epic but still
+   60fps" gets proven before Gate 3, not assumed because it looked fine on a desktop GPU
+   during development.
+
+Depends on: D2a, D2b, D2c, and the preloader contract change in item 1. Read
+`Preloader.tsx`'s current implementation directly before touching it — the exact GSAP
+timeline structure (phases, offsets, `useGSAP` scope) needs to survive this change intact.
 
 ---
 
@@ -678,12 +909,17 @@ Architecture:
 
 Transitions to implement in this session:
 - **→ Photography:** Hero image expands from small to full viewport, 3D cylinder assembles.
-- **→ Videography:** Images scatter as glass shards (Three.js), film strip assembles from right.
+- **→ Videography:** Images scatter as ice shards (Three.js), film strip assembles from right.
 - **→ NFT:** Images fragment/glitch, NFT grid assembles.
 - **→ Dancing:** Images distort with wave physics (GSAP elastic), dancing page fades in.
 - **→ About:** Single portrait expands full-screen, about content fades over it.
 - **→ Web Development:** Brief terminal-style effect, page assembles.
-- **Homepage → any:** Origin images scatter, destination assembles.
+- **Homepage → any:** leaving the homepage means leaving the D2a–D2d WebGL scene, not
+  scattering DOM images — the camera accelerates through/past the nearest station and its
+  content hands off into the destination page's transition. Reuse the scene's existing
+  canvas/context rather than layering a second transition system on top of it. Read the
+  finished D2a–D2d implementation before proposing this one; it doesn't exist yet as of
+  this writing, so this bullet may need revision once it does.
 
 **Before writing any code:**
 - Read AppShell.tsx, layout.tsx, every public page.tsx, every public page's primary image source.
@@ -707,6 +943,12 @@ Read CustomCursor.tsx fully before writing. Verify cursor is applied correctly t
 ---
 
 ### Session D6 — Exhibition globe — `pending`
+**Open dependency, not yet decided:** whether this globe renders as a station inside the
+homepage WebGL scene (Sessions D2a–D2d) or stays a standalone DOM section reached after
+the camera rail ends. Flagged at Gate 1 of Session D2c — this session's build should wait
+until that's settled, since "globe inside the scene" changes items 2–4 below into 3D-space
+placement instead of a DOM section.
+
 Implement react-globe.gl on the homepage showing exhibition cities.
 
 Data:
@@ -948,7 +1190,7 @@ Test every public page on mobile viewport. Report all issues before fixing.
 
 ## Phase 5 — NFT smart contract (future)
 
-### Session N1 — Smart contract architecture planning — `pending`
+### Session NFT1 — Smart contract architecture planning — `pending`
 Planning session only. No code written until plan is approved.
 
 - Separate git repository: hussain-nft-contracts
@@ -963,7 +1205,7 @@ Read existing NftCard.tsx and lib/server/public-nfts.ts to understand current NF
 
 ---
 
-### Session N2 — Minting UI — `pending`
+### Session NFT2 — Minting UI — `pending`
 Build after smart contract is deployed and Session N1 is approved.
 
 - Wallet connect button (RainbowKit or similar — propose)

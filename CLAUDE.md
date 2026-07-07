@@ -27,7 +27,7 @@ Lenis installed
 ## Animation stack status
 - Lenis: **initialized** in components/site/AppShell.tsx (Session F1, done) — active on all public pages, skipped on admin routes
 - GSAP ScrollTrigger: installed, used in components/shared/AnimatedText.tsx for scroll-triggered word reveals — still underused elsewhere, core of scroll design
-- Three.js: used only in HeroBokeh — must expand to full homepage WebGL (Session D2)
+- Three.js: currently only in `HeroBokeh.tsx` (raw Three.js, a self-contained 180-point shader system). The homepage scene (Sessions D2a–D2d) adds `@react-three/fiber` + `@react-three/drei` as new dependencies — `HeroBokeh`'s particle technique gets ported in, the raw-Three.js pattern itself is not extended further.
 - react-globe.gl: installed, not yet built (Session D6)
 - Framer Motion: installed, used minimally
 
@@ -60,17 +60,28 @@ This means:
   going forward.**
 - Grain texture: active, uniform CSS noise only, fixed position, 3–5% opacity, above backgrounds, below all content. No oval. No vignette. Does not bleed into cards.
 
-## Navigation — 4-item nav
-**Visible nav: Work · About · Services · Book**
+## Navigation — 6-item nav (Session N8, pending)
+**Visible nav, once N8 ships: Work · About · Services · People · Testimonials · Book**
 
 Corrected from the original 3-item spec ("Work · About · Book"). Session N1 shipped a 4th
 item (Services) that wasn't in the original doc — confirmed intentional and kept, since
 Services has its own full admin section (service-categories, services) and dropping it
 from primary nav would hide a real revenue path. This doc was wrong, not the build.
+Session N8 (pending) adds People and Testimonials as two more flat links — both are real,
+live pages that were simply never linked from the nav. Confirmed: they're separate
+top-level links, not folded into the Work overlay, which stays scoped to the 5
+disciplines only.
+
+**A camera-hump visual redesign for the navbar was explored and explicitly dropped.**
+Multiple mockup passes did not land — not resolved in this planning context. **The
+navbar's visual design stays exactly as N1 shipped it.** Six items at real desktop width
+is tight; N8 needs to verify it doesn't crowd the Book CTA before shipping.
 
 - "Work" opens a full-screen immersive overlay showing the 5 discipline cards (Photography, Videography, NFT, Dancing, Web Development) with content pulled from Cloudinary. Cards scroll horizontally in the cylinder style used by aikawakenichi. Inactive discipline pages are excluded from the overlay automatically. Services is **not** part of the Work overlay — it's a standalone top-level nav link, not one of the 5 disciplines.
 - "About" navigates to /about.
 - "Services" navigates to /services.
+- "People" navigates to /people (Session N8).
+- "Testimonials" navigates to /testimonials (Session N8).
 - "Book" navigates to /contact.
 
 ## Page activity toggle
@@ -82,50 +93,124 @@ Every public discipline page has an `isActive` field in the database.
   web-development). Services, About, People, Blog, Contact, Testimonials do not have this
   toggle and are not expected to — they aren't "disciplines" in the Work-overlay sense.
 
-## Homepage architecture
-The homepage is a WebGL-first experience:
-1. **Full-viewport Three.js scene** — the primary layer. Camera moves through it on scroll.
-2. HTML content sections exist below the WebGL zone and scroll normally with GSAP ScrollTrigger animation.
-3. Sections below the hero: Featured Work, Stats, About snippet, Globe, Press/Publications, Services.
-All are animated on scroll with GSAP ScrollTrigger.
+## Homepage architecture — full-page WebGL scene, built photography-first
+**Rescoped after the Memore reference image (uploaded 2026-07-04) and Hussain's direction
+to prove the technique on photography before extending it.** The previous version of this
+section described a WebGL hero with ordinary HTML sections stacked below it — that is a
+decorated hero, not what the reference image or the benchmark sites (aikawakenichi,
+ten.375.studio, igloo.inc) actually are. Corrected model:
+
+**The mechanism — one persistent scene, camera-on-a-rail:**
+1. One full-page Three.js canvas, fixed behind everything, alive for the whole homepage.
+   Lenis scroll drives a GSAP ScrollTrigger scrub that moves the camera along a 3D spline.
+   Every homepage section is a station on that path — scrolling never exits the scene.
+2. Real photography from Cloudinary, mapped onto planes/geometry arranged in 3D space at
+   each station. The scene is built from the actual work, not abstract shapes.
+3. Text and links stay real DOM, position-synced to 3D anchor points each frame (project
+   anchor → screen space → drive the element's transform). Non-negotiable: the h1 must be
+   a real heading for SEO, and the N4/N5/N6 admin-controlled copy must stay editable text,
+   never baked into a texture.
+4. Library: **`@react-three/fiber` + `@react-three/drei`**, not raw Three.js, despite
+   `HeroBokeh.tsx` already being a working raw-Three.js pattern in this repo (checked —
+   it's a solid, properly-disposed 180-point shader system, confirmed by reading the file
+   directly). Raw Three.js is fine for one self-contained particle canvas; it is the wrong
+   tool for a scene with a persistent camera rig, multiple loaded content stations, and
+   dozens of DOM-sync'd elements — R3F exists specifically to manage that lifecycle instead
+   of hand-rolling it. `HeroBokeh.tsx`'s particle system gets ported into the R3F scene as
+   atmosphere in Session D2a, not kept as a separate canvas.
+
+**The ice/frost look — concrete technique, not a mood board. Corrected: it's ice, not
+glass.** Glass and ice render differently — glass is close to uniformly transparent, ice
+is frosted/crystalline with visible internal fracture and a shimmer that reads as light
+catching moving facets. The "alive" quality Hussain asked for lives specifically in that
+shimmer — an animated shader effect, not a property of the geometry (rotation/float alone
+doesn't make something read as ice; the surface has to visibly sparkle).
+
+- **Hero object (the fractured lens ring):** base material `MeshPhysicalMaterial`, high
+  roughness, `clearcoat` enabled — **not** drei's `MeshTransmissionMaterial`, which is
+  built for clear refraction and is the wrong tool for a frosted surface. On top of that
+  base, an animated ice/frost/sparkle shader (TSL or GLSL, decided at Session D2a's Gate
+  1): a time-driven Voronoi-cell crystal pattern using the asset's UV coordinates, plus a
+  second high-frequency noise layer that flickers specular highlights on and off to read
+  as sparkle. This is the one object in the scene allowed the heaviest material cost.
+- **Every other ice surface** (the per-station photo slabs, the smaller shards): the
+  same technique, cheaper — Fresnel rim light + a normal map for surface distortion + a
+  cheap env-map reflection, same animated sparkle layer at lower resolution/frequency. A
+  `PortfolioCard`-style photo slab doesn't need heavy per-pixel cost to read as "alive," it
+  needs to catch light and shimmer as the camera moves past.
+- **Assets — hero ring delivered, not an open question.** Generated via Meshy image-to-3D
+  from a crop of the reference image, corrected and cleaned in Blender (scale, origin,
+  Decimate 587K→234,822 triangles, Draco-compressed, all Meshy textures stripped since the
+  material above replaces them entirely), verified by parsing the file directly (clean
+  node transform, `POSITION`/`NORMAL`/`TEXCOORD_0` all present) and by Hussain confirming
+  the decompressed shape in Blender's viewport matches the reference image. File:
+  `hero-ring.glb`. **Every other shard is procedural** — generated directly in code
+  (convex-hull/Voronoi fracture, randomized per instance), no Blender, no Meshy, no
+  authored asset. They're small, numerous, and don't need to match one specific
+  silhouette the way the hero ring did.
+
+**Photography-first build order — this is the actual phasing, not a simplification:**
+1. Prove the mechanism and the ice/frost technique entirely within photography before
+   spending a single session on the other four disciplines. If the hero ring, the camera
+   rail, the DOM sync, and one tier of ice slabs don't feel right at photography scale,
+   the fix is cheap. If they don't feel right after being copied across five disciplines,
+   the fix is five times the work.
+2. **Station-curation gap, found by reading the actual code, not assumed:** the reference
+   image's "Portraits / Fashion / Weddings" are photography sub-genres, not the site's five
+   top-level disciplines. Checked `MediaGrid.tsx` — media items already carry a free-form
+   `tags: string[]` field with full filter support (`allTags` derived live from whatever
+   tags exist), so the raw material for "variations" already exists. What does **not**
+   exist: any admin concept of "these N tags are the featured homepage variations." That's
+   new, scoped as its own task below — don't conflate it with the closed 5-slug
+   `FeaturedCard` system N6 already shipped for the DOM homepage grid; that system is
+   discipline-level and stays exactly as N6 built it.
+3. Once photography stations are proven, the same mechanism (station template + ice
+   material + curated-tag data) extends to Videography, NFT, Dancing, Web Development —
+   each becomes a repeat of an already-working pattern, not new R&D.
+
+Scope note: this is deliberately four sessions (D2a foundation, D2b photography stations,
+D2c extend to remaining disciplines, D2d preloader handoff + polish), listed in full in
+SESSION-QUEUE.md. Whether the exhibition globe (Session D6) becomes a station inside this
+scene or stays a DOM section below it is still an open Gate-1 decision, flagged again in
+D6 itself — not assumed either way here.
 
 ## Preloader
-Runs once per session (sessionStorage flag). Full-screen.
+**Shipped in Session D1 (2026-07-02) — this section is now a record of what's actually in
+the repo, not the pre-build spec.** Three details below differ from earlier drafts of this
+doc because Hussain changed them live during Gate 2 review — noted so nothing here reads
+as a bug that needs fixing:
 
-**Materials — corrected.** No photos. No Cloudinary. No network request at all. 5 vector
-icons from lucide-react (already a dependency, already used in Navbar and WorkOverlay),
-one per discipline, matching the site's existing icon language rather than literal emoji
-or photography. Recommended mapping — confirm or swap during Session D1's Gate-1 proposal:
+- **Runs on every visit to `/`**, not once per session. `AppShell.tsx` mounts
+  `<Preloader />` only when `pathname === "/"` and it remounts on every arrival —
+  hard refresh and client-side nav back to home both replay it. No `sessionStorage` gate
+  exists. Every other public page never shows it.
+- **Symbols:** Camera (photography), Video (videography), lucide `Bitcoin` (NFT — lucide
+  has no ETH glyph), the 🕺💃 emoji pair rendered as text (dancing), Code2 (web
+  development). This replaces the "vector icons only, no emoji" direction from earlier —
+  Hussain asked for the emoji pair specifically during the build. **Open question, not
+  urgent:** this now conflicts with the "no eyebrow, no emoji" reasoning used elsewhere in
+  this doc (PageHeader's eyebrow removal, for instance). Not a problem unless the
+  inconsistency itself bothers you — flag it if you want Dancing's symbol reconsidered,
+  otherwise leave as shipped.
+- **"Art" appears centered on screen** (not slid in from the burst edge), holds, then
+  glides right while "Hussain." assembles from a per-letter scatter+blur focus-pull,
+  right-to-left, growing outward from "Art." Renders in Cormorant Garamond
+  (`next/font/google`), preloader-only — not the site's Geist stack.
 
-| Discipline | Icon |
-|---|---|
-| Photography | Camera |
-| Videography | Video |
-| NFT | Hexagon |
-| Dancing | Footprints |
-| Web Development | Code2 |
+Beat tightened to 0.22s per symbol per Hussain's direct feedback ("reduce the emojis
+time"). Built with `useGSAP` (matches the `AnimatedText.tsx` idiom in this repo) inside
+`components/site/Preloader.tsx`. `app/api/preloader-images/route.ts` is deleted — no
+Cloudinary fetch, zero remaining callers.
 
-**Animation sequence:**
-1. The 5 icons flash in sequence, fast and rhythmic, one replacing the last — full-bleed, centered, stacked. ("Like emoji reactions replacing one another" in the original draft of this doc described this *pace*, not the materials — it got built as a literal Cloudinary photo fetch instead. That's corrected here: the pace description was right, the materials were wrong.)
-2. The sequence repeats exactly twice.
-3. A horizontal light burst expands from the center of the screen.
-4. From the burst, the word **"Art"** appears and settles on the right side of the name.
-5. "Hussain." builds in letter-by-letter beside it, completing **"Hussain.Art"**.
-6. Hold. Site loads beneath.
-
-Built with a GSAP timeline, entirely local assets — no data fetching, no loading state, no
-network-dependent fallback needed.
-
-**Do not route the "Hussain." letter reveal through components/shared/AnimatedText.tsx.**
-That component is scroll-triggered (fires via ScrollTrigger when scrolled into view) and
-word-mode only — it does not currently have a char-mode despite being described as
-supporting "word/char/line modes" below (separate doc-accuracy gap, not this session's
-job to fix). The preloader needs a reveal sequenced at exact offsets inside one master
-GSAP timeline, which is a different problem than AnimatedText solves. A purpose-built
-letter stagger inside Preloader.tsx is correct here, not a "should be shared" violation.
-
-Delete app/api/preloader-images/route.ts as part of Session D1 — once there's no Cloudinary
-fetch, it has zero callers.
+**Required follow-up, not yet built — blocks Session D2d.** `Preloader.tsx` currently
+manages its own exit: it holds, fades its own container to `autoAlpha: 0`, and calls
+`setDone(true)` to hard-unmount itself. There is no way for a parent to take over that
+final frame. The seamless preloader→scene handoff planned in Session D2d needs the
+opposite contract: the timeline holds the light burst at full intensity and fires an
+`onComplete` prop instead of self-unmounting; whoever mounts `<Preloader />` decides when
+and how it leaves. This is a small, contained change to the existing component (add a prop,
+remove the self-fade + `setDone` unmount), not a rebuild — scoped as the first task in
+Session D2d in SESSION-QUEUE.md.
 
 ## Photography viewer — 3 modes
 The photography page offers users 3 modes:
@@ -262,6 +347,10 @@ components/admin/action-feedback/AdminActionFeedback.tsx — at least 6 admin cl
 duplicate the loading+fetch+try/catch+setFeedback boilerplate around this by hand instead
 of sharing a hook. Scheduled for Session F5.
 components/search/SearchInput.tsx
+components/admin/private-galleries/PrivateGalleryMediaPicker.tsx — 93-line media picker
+built for private galleries. Session N7 (pending) adapts this for admin-selectable card
+images (Work overlay + Featured Work) rather than building a second picker from scratch —
+read it fully first to confirm what's private-gallery-specific versus generic.
 components/site/PortfolioFallbackPanel.tsx
 components/site/Navbar.tsx
 components/site/AppShell.tsx — Lenis initialized here, all global elements live here
