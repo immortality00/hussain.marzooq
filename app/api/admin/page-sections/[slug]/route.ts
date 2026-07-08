@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { ALL_PAGE_SECTIONS_SLUGS, type PageSectionsSlug } from "@/lib/server/page-sections";
+import { deleteReplacedSectionImages } from "@/lib/server/section-images";
 
 const SLUG_TO_PATH: Record<PageSectionsSlug, string> = {
   home: "/",
@@ -33,6 +34,11 @@ export async function PATCH(
   const data = await req.json();
 
   const db = await getDb();
+
+  // Delete uploaded section images that were replaced or removed in this save.
+  const existing = await db.collection("page_sections").findOne({ slug });
+  await deleteReplacedSectionImages(existing?.data, data);
+
   await db
     .collection("page_sections")
     .updateOne({ slug }, { $set: { data, updatedAt: new Date() } }, { upsert: true });

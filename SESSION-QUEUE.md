@@ -554,7 +554,7 @@ and confirm the plan before touching anything, per standard gate.
 
 ---
 
-### Session N7 — Admin-selectable card images (Work overlay + Featured Work) — `pending`
+### Session N7 — Admin-selectable card images (Work overlay + Featured Work) — `in-progress`
 Confirmed gap, verified by reading both sources directly: `app/api/work-overlay/route.ts`
 and `components/home/HomeFeaturedWork.tsx`'s `firstImage()` helper both auto-select
 whichever media item was uploaded most recently matching the discipline's category

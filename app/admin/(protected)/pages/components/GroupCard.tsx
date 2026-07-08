@@ -2,13 +2,14 @@
 
 import type { LucideIcon } from "lucide-react";
 
-export type GroupTint = "visibility" | "header" | "seo" | "sections";
+export type GroupTint = "visibility" | "header" | "seo" | "sections" | "image";
 
 const TINTS: Record<GroupTint, string> = {
   visibility: "border-sky-500/20 bg-sky-500/5",
   header: "border-violet-500/20 bg-violet-500/5",
   seo: "border-amber-500/20 bg-amber-500/5",
   sections: "border-emerald-500/20 bg-emerald-500/5",
+  image: "border-rose-500/20 bg-rose-500/5",
 };
 
 const ICON_TINTS: Record<GroupTint, string> = {
@@ -16,6 +17,7 @@ const ICON_TINTS: Record<GroupTint, string> = {
   header: "text-violet-600 dark:text-violet-400",
   seo: "text-amber-600 dark:text-amber-400",
   sections: "text-emerald-600 dark:text-emerald-400",
+  image: "text-rose-600 dark:text-rose-400",
 };
 
 export function GroupCard({

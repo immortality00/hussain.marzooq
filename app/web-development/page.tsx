@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import SmartImage from "@/components/shared/SmartImage";
 import { StickyCta } from "@/components/site/StickyCta";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getPageSettings } from "@/lib/server/page-settings";
@@ -33,6 +34,17 @@ export default async function WebDevelopmentPage() {
               key={i}
               className="rounded-[2rem] border bg-background/60 p-5 shadow-sm backdrop-blur"
             >
+              {item.image?.url ? (
+                <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-2xl">
+                  <SmartImage
+                    src={item.image.url}
+                    alt=""
+                    fill
+                    sizes="(max-width: 768px) 100vw, 25vw"
+                    className="object-cover"
+                  />
+                </div>
+              ) : null}
               <h2 className="text-lg font-semibold tracking-tight">{item.title}</h2>
               <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.text}</p>
             </article>

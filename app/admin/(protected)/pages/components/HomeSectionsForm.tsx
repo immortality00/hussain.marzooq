@@ -2,9 +2,10 @@
 
 import type { HomeSections } from "@/lib/server/page-sections";
 import type { FeaturedCard, FeaturedCardSlug } from "@/lib/page-sections-shared";
-import { FEATURED_CARD_SLUGS } from "@/lib/page-sections-shared";
+import { FEATURED_CARD_SLUGS, EMPTY_SECTION_IMAGE } from "@/lib/page-sections-shared";
 import { TextField, TextAreaField } from "@/components/admin/page-sections/fields";
 import { RepeatingListEditor } from "@/components/admin/page-sections/RepeatingListEditor";
+import { ImageField } from "@/components/admin/media-picker/ImageField";
 
 const SLUG_LABELS: Record<FeaturedCardSlug, string> = {
   photography: "Photography",
@@ -48,6 +49,11 @@ function FeaturedCardFields({
         placeholder="Description (optional)"
         className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
       />
+      <ImageField
+        label="Card image"
+        value={card.image}
+        onChange={(image) => onChange({ ...card, image })}
+      />
     </>
   );
 }
@@ -63,6 +69,16 @@ export function HomeSectionsForm({
     <div className="space-y-6">
       <div className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+          Hero background image
+        </p>
+        <ImageField
+          value={data.hero?.image}
+          onChange={(image) => onChange({ ...data, hero: { image } })}
+        />
+      </div>
+
+      <div className="space-y-3 border-t pt-4">
+        <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
           Featured work cards
         </p>
         <p className="text-xs text-muted-foreground">
@@ -72,7 +88,12 @@ export function HomeSectionsForm({
         <RepeatingListEditor
           items={data.featuredCards}
           onChange={(cards) => onChange({ ...data, featuredCards: cards })}
-          makeNew={(): FeaturedCard => ({ slug: "photography", title: "", description: "" })}
+          makeNew={(): FeaturedCard => ({
+            slug: "photography",
+            title: "",
+            description: "",
+            image: EMPTY_SECTION_IMAGE,
+          })}
           renderFields={(card, onItemChange) => (
             <FeaturedCardFields card={card} onChange={onItemChange} />
           )}
@@ -94,6 +115,11 @@ export function HomeSectionsForm({
           value={data.creativeSystem.paragraph}
           onChange={(v) => onChange({ ...data, creativeSystem: { ...data.creativeSystem, paragraph: v } })}
         />
+        <ImageField
+          label="Panel image"
+          value={data.creativeSystem.image}
+          onChange={(image) => onChange({ ...data, creativeSystem: { ...data.creativeSystem, image } })}
+        />
       </div>
 
       <div className="space-y-3 border-t pt-4">
@@ -105,6 +131,9 @@ export function HomeSectionsForm({
           value={data.servicesPreview.heading}
           onChange={(v) => onChange({ ...data, servicesPreview: { heading: v } })}
         />
+        <p className="text-xs text-muted-foreground">
+          Cards below the heading show each service&apos;s own image, uploaded in the Services admin.
+        </p>
       </div>
 
       <div className="space-y-3 border-t pt-4">

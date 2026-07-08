@@ -8,7 +8,6 @@ import { HomeServicesPreview } from "@/components/home/HomeServicesPreview";
 import { HomeTrust } from "@/components/home/HomeTrust";
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPhotographyItems, getVideographyItems } from "@/lib/server/public-media";
-import { getPublicNfts } from "@/lib/server/public-nfts";
 import { getPublicServicesData } from "@/lib/server/public-services";
 import { getPublicTestimonials } from "@/lib/server/testimonials";
 import { getAllPageSettings } from "@/lib/server/page-settings";
@@ -21,11 +20,10 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [photos, videos, nfts, servicesData, testimonials, pageSettings, seo, sections] =
+  const [photos, videos, servicesData, testimonials, pageSettings, seo, sections] =
     await Promise.all([
       getPhotographyItems(),
       getVideographyItems(),
-      getPublicNfts(),
       getPublicServicesData(),
       getPublicTestimonials(3),
       getAllPageSettings(),
@@ -42,16 +40,11 @@ export default async function HomePage() {
           photos={photos}
           videos={videos}
           activeSet={activeSet}
+          heroImage={sections.hero.image}
           headerTitle={seo.headerTitle}
           headerDescription={seo.headerDescription}
         />
-        <HomeFeaturedWork
-          photos={photos}
-          videos={videos}
-          nfts={nfts}
-          activeSet={activeSet}
-          cards={sections.featuredCards}
-        />
+        <HomeFeaturedWork activeSet={activeSet} cards={sections.featuredCards} />
         <section className="section-shell grid gap-5 py-8 lg:grid-cols-2">
           <HomeCreativeSystem activeSet={activeSet} content={sections.creativeSystem} />
           <HomeServicesPreview
