@@ -554,7 +554,7 @@ and confirm the plan before touching anything, per standard gate.
 
 ---
 
-### Session N7 — Admin-selectable card images (Work overlay + Featured Work) — `in-progress`
+### Session N7 — Admin-selectable card images (Work overlay + Featured Work) — `done`
 Confirmed gap, verified by reading both sources directly: `app/api/work-overlay/route.ts`
 and `components/home/HomeFeaturedWork.tsx`'s `firstImage()` helper both auto-select
 whichever media item was uploaded most recently matching the discipline's category
@@ -583,6 +583,39 @@ Read `app/api/work-overlay/route.ts`, `components/home/HomeFeaturedWork.tsx`,
 `lib/server/page-sections.ts`, `lib/page-sections-shared.ts`, and
 `PrivateGalleryMediaPicker.tsx` fresh before writing code. Report the complete
 affected-file list before touching anything, per standard gate.
+
+**Build outcome — shipped with a deliberate re-scope from Hussain, well beyond the
+original spec above. Recorded so the deviations don't read as bugs:**
+- **Not a `mediaId` string, not optional, not pick-only.** Hussain rejected the
+  auto-select `mediaId` model. Images are a first-class `SectionImage` object
+  (`{ url, publicId }`, in `lib/page-sections-shared.ts`) with **two** ways to set them:
+  pick from the existing media library (reuses the `PrivateGalleryMediaPicker` hook/card
+  via a new single-select `components/admin/media-picker/MediaPickerModal.tsx`) **or**
+  upload a fresh image to Cloudinary (`ImageField.tsx`, `CldUploadWidget` →
+  `/api/sign-cloudinary-params`, into the new managed folder `hm_visuals/sections`).
+- **Every work-layout page and every section got the field, not just Work overlay +
+  Featured Work.** Work overlay cards store `cardImage` on `page_settings` (new
+  `CardImageGroup` on the 5 discipline rows in `/admin/pages`); Featured Work cards, the
+  hero, the creative panel, and every card-grid section (about/dancing/web-development/blog
+  `TextCard`s) all carry an `image`. The three text-only home panels got the field too,
+  per Hussain ("depends on the section / future design, but add it for now").
+- **Empty means empty** (Hussain's call) — the old newest-by-category auto-pick was
+  removed from both Featured Work and the Work overlay. The **hero is the one exception**:
+  it keeps a photo/video fallback so it's never a blank full-screen frame.
+- **dancing / web-development no-image gap** resolved as picker/upload-only (no category
+  auto-pick invented for them).
+- **Delete-on-replace** for uploaded assets: `lib/server/section-images.ts`
+  (`deleteReplacedSectionImages`) diffs old vs new content on save in both the
+  `page-sections` and `page-settings` PATCH routes and deletes orphaned uploaded
+  `publicId`s, scoped to `hm_visuals/sections`. Library picks (empty publicId) are never
+  deleted.
+- **Gate-2 review changes:** removed the panel image from Services Preview and Testimonials
+  (Hussain), rendered the creative panel as a Featured-Work-style image card, and
+  extracted a shared `components/services/ServiceCard.tsx` used by both the Services page
+  and the homepage Services Preview (`preview` variant trims the price chip + button row)
+  so all service cards share one design — no duplicated markup.
+- Mongo: no migration — missing `image` keys default to empty and merge cleanly, replaced
+  wholesale on first admin save per page.
 
 ---
 
