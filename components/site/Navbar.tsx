@@ -84,6 +84,8 @@ export function Navbar() {
                 </button>
                 <NavLink href="/about">About</NavLink>
                 <NavLink href="/services">Services</NavLink>
+                <NavLink href="/people">People</NavLink>
+                <NavLink href="/testimonials">Testimonials</NavLink>
               </nav>
 
               {/* Theme toggle */}
@@ -172,6 +174,20 @@ export function Navbar() {
             className="rounded-lg px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
           >
             Services
+          </Link>
+          <Link
+            href="/people"
+            onClick={() => setMobileOpen(false)}
+            className="rounded-lg px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+          >
+            People
+          </Link>
+          <Link
+            href="/testimonials"
+            onClick={() => setMobileOpen(false)}
+            className="rounded-lg px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+          >
+            Testimonials
           </Link>
         </nav>
 
