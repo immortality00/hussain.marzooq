@@ -1,12 +1,14 @@
 "use client";
 
 import type { PageSectionsMap, PageSectionsSlug } from "@/lib/server/page-sections";
+import type { SectionImage } from "@/lib/page-sections-shared";
 import {
   AdminActionFeedback,
   type AdminActionFeedbackState,
 } from "@/components/admin/action-feedback/AdminActionFeedback";
 import type { PageRow } from "../usePagesAdmin";
 import { VisibilityGroup } from "./VisibilityGroup";
+import { CardImageGroup } from "./CardImageGroup";
 import { SeoPageForm, type SeoDraft } from "./SeoPageForm";
 import { SectionsGroup } from "./SectionsGroup";
 
@@ -17,12 +19,14 @@ export function PageRowCard({
   isOpen,
   onToggleOpen,
   isActive,
+  cardImage,
   seo,
   sectionsData,
   dirty,
   isSaving,
   feedback,
   onVisibilityChange,
+  onCardImageChange,
   onSeoChange,
   onSectionsChange,
   onSave,
@@ -32,12 +36,14 @@ export function PageRowCard({
   isOpen: boolean;
   onToggleOpen: () => void;
   isActive: boolean;
+  cardImage: SectionImage | undefined;
   seo: SeoDraft;
   sectionsData: SectionsData | undefined;
   dirty: boolean;
   isSaving: boolean;
   feedback: AdminActionFeedbackState;
   onVisibilityChange: (next: boolean) => void;
+  onCardImageChange: (image: SectionImage) => void;
   onSeoChange: (field: keyof SeoDraft, value: string) => void;
   onSectionsChange: (data: SectionsData) => void;
   onSave: () => void;
@@ -78,6 +84,10 @@ export function PageRowCard({
             <div className="max-h-[70vh] space-y-3 overflow-y-auto p-5" data-lenis-prevent>
               {row.settingsSlug && (
                 <VisibilityGroup isActive={isActive} onToggle={onVisibilityChange} />
+              )}
+
+              {row.settingsSlug && cardImage && (
+                <CardImageGroup value={cardImage} onChange={onCardImageChange} />
               )}
 
               {row.seoSlug && (

@@ -4,8 +4,11 @@ import { useState } from "react";
 import type { PageSettings } from "@/lib/server/page-settings";
 import type { PageSeo } from "@/lib/server/page-seo";
 import type { PageSectionsSlug, PageSectionsMap } from "@/lib/server/page-sections";
+import type { SectionImage } from "@/lib/page-sections-shared";
 import { useAdminAction } from "@/hooks/useAdminAction";
 import type { SeoDraft } from "./components/SeoPageForm";
+
+type SettingsDraft = { isActive: boolean; cardImage: SectionImage };
 
 export type PageRow = {
   key: string;
@@ -88,7 +91,7 @@ export function usePagesAdmin({
     Object.fromEntries(initialSections.map((s) => [s.slug, s.data])),
   );
 
-  const [settingsDrafts, setSettingsDrafts] = useState<Partial<Record<string, boolean>>>({});
+  const [settingsDrafts, setSettingsDrafts] = useState<Partial<Record<string, SettingsDraft>>>({});
   const [seoDrafts, setSeoDrafts] = useState<Partial<Record<string, SeoDraft>>>({});
   const [sectionsDrafts, setSectionsDrafts] = useState<
     Partial<Record<string, PageSectionsMap[PageSectionsSlug]>>
@@ -98,9 +101,24 @@ export function usePagesAdmin({
   const [saving, setSaving] = useState<string | null>(null);
   const { feedback, run } = useAdminAction();
 
+  function settingsOf(row: PageRow): SettingsDraft {
+    if (!row.settingsSlug) throw new Error(`Row ${row.key} has no settings slug`);
+    const current = settings[row.settingsSlug]!;
+    return (
+      settingsDrafts[row.settingsSlug] ?? {
+        isActive: current.isActive,
+        cardImage: current.cardImage,
+      }
+    );
+  }
+
   function isActiveOf(row: PageRow): boolean {
     if (!row.settingsSlug) return true;
-    return settingsDrafts[row.settingsSlug] ?? settings[row.settingsSlug]!.isActive;
+    return settingsOf(row).isActive;
+  }
+
+  function cardImageOf(row: PageRow): SectionImage {
+    return settingsOf(row).cardImage;
   }
 
   function seoOf(row: PageRow): SeoDraft {
@@ -123,7 +141,18 @@ export function usePagesAdmin({
 
   function setVisibilityDraft(row: PageRow, next: boolean) {
     if (!row.settingsSlug) return;
-    setSettingsDrafts((prev) => ({ ...prev, [row.settingsSlug!]: next }));
+    setSettingsDrafts((prev) => ({
+      ...prev,
+      [row.settingsSlug!]: { ...settingsOf(row), isActive: next },
+    }));
+  }
+
+  function setCardImageDraft(row: PageRow, image: SectionImage) {
+    if (!row.settingsSlug) return;
+    setSettingsDrafts((prev) => ({
+      ...prev,
+      [row.settingsSlug!]: { ...settingsOf(row), cardImage: image },
+    }));
   }
 
   function setSeoField(row: PageRow, field: keyof SeoDraft, value: string) {
@@ -167,17 +196,21 @@ export function usePagesAdmin({
         const tasks: Promise<void>[] = [];
 
         if (row.settingsSlug && settingsDrafts[row.settingsSlug] !== undefined) {
-          const nextActive = settingsDrafts[row.settingsSlug]!;
+          const draft = settingsDrafts[row.settingsSlug]!;
           tasks.push(
             fetch(`/api/admin/page-settings/${row.settingsSlug}`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ isActive: nextActive }),
+              body: JSON.stringify({ isActive: draft.isActive, cardImage: draft.cardImage }),
             }).then((res) => {
               if (!res.ok) throw new Error("Failed to save. Try again.");
               setSettings((prev) => ({
                 ...prev,
-                [row.settingsSlug!]: { ...prev[row.settingsSlug!]!, isActive: nextActive },
+                [row.settingsSlug!]: {
+                  ...prev[row.settingsSlug!]!,
+                  isActive: draft.isActive,
+                  cardImage: draft.cardImage,
+                },
               }));
             }),
           );
@@ -228,10 +261,12 @@ export function usePagesAdmin({
     saving,
     feedback,
     isActiveOf,
+    cardImageOf,
     seoOf,
     sectionsOf,
     isDirty,
     setVisibilityDraft,
+    setCardImageDraft,
     setSeoField,
     setSectionsDraft,
     discard,

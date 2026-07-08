@@ -16,7 +16,8 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { TextCard } from "@/lib/page-sections-shared";
+import { EMPTY_SECTION_IMAGE, type TextCard } from "@/lib/page-sections-shared";
+import { ImageField } from "@/components/admin/media-picker/ImageField";
 
 function SortableRow({
   id,
@@ -112,7 +113,7 @@ export function RepeatingCardListEditor({
     <RepeatingListEditor
       items={items}
       onChange={onChange}
-      makeNew={() => ({ title: "", text: "" })}
+      makeNew={() => ({ title: "", text: "", image: EMPTY_SECTION_IMAGE })}
       renderFields={(card, onItemChange) => (
         <>
           <input
@@ -128,6 +129,11 @@ export function RepeatingCardListEditor({
             onChange={(e) => onItemChange({ ...card, text: e.target.value })}
             placeholder="Text"
             className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          />
+          <ImageField
+            label="Card image"
+            value={card.image}
+            onChange={(image) => onItemChange({ ...card, image })}
           />
         </>
       )}

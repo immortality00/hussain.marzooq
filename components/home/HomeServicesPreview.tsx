@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ServiceCard } from "@/components/services/ServiceCard";
 import type { PublicServiceItem } from "@/lib/server/public-services";
 import type { HomeSections } from "@/lib/server/page-sections";
 
@@ -46,24 +47,10 @@ export function HomeServicesPreview({
     <div className="premium-panel p-6 sm:p-8">
       <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{content.heading}</h2>
 
-      <div className="mt-8 grid gap-4">
+      <div className="mt-8 grid gap-6">
         {filteredServices.length
           ? filteredServices.map((service) => (
-              <Link
-                key={service.id}
-                href={`/services/${encodeURIComponent(service.slug)}`}
-                className="rounded-[2rem] border bg-background/60 p-5 hover:bg-accent"
-              >
-                <div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  {service.category}
-                </div>
-
-                <h3 className="mt-4 text-lg font-semibold tracking-tight">{service.name}</h3>
-
-                <p className="mt-3 line-clamp-4 text-sm leading-6 text-muted-foreground">
-                  {service.description || "Creative execution tailored to the project."}
-                </p>
-              </Link>
+              <ServiceCard key={service.id} service={service} activeSet={activeSet} preview />
             ))
           : filteredDirections.map((item) => (
               <Link
