@@ -46,3 +46,7 @@ cities1000.zip
 *.geonames.txt
 *.geonames.zipcities1000.txt
 cities1000.zip
+
+# Grapity
+graph.json
+graphify-out/cost.json
