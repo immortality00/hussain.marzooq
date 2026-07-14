@@ -619,7 +619,7 @@ original spec above. Recorded so the deviations don't read as bugs:**
 
 ---
 
-### Session N8 — Add People + Testimonials to the navbar — `in-progress`
+### Session N8 — Add People + Testimonials to the navbar — `done`
 Confirmed gap, verified by reading `components/site/Navbar.tsx` in full: current nav is
 exactly Work (overlay button) · About · Services · Book, in both the desktop bar and the
 mobile drawer. `/people` and `/testimonials` are real, live, working pages — they're
