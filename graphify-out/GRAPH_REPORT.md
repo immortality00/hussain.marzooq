@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `7daccacf`
+- Built from commit: `b4d931d6`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -197,7 +197,7 @@ Nodes (42): HM Visuals — Session Queue, How to use, Phase 0 — Foundation (mu
 
 ### Community 20 - "Runtime Dependencies"
 Cohesion: 0.09
-Nodes (23): class-variance-authority, clsx, @dnd-kit/core, framer-motion, @gsap/react, lucide-react, mongodb, next-cloudinary (+15 more)
+Nodes (23): class-variance-authority, clsx, @dnd-kit/core, framer-motion, lucide-react, mongodb, next-cloudinary, next-themes (+15 more)
 
 ### Community 21 - "package.json"
 Cohesion: 0.12
@@ -284,7 +284,7 @@ Cohesion: 0.70
 Nodes (4): main(), normalizeLocationValue(), parseLine(), unique()
 
 ## Knowledge Gaps
-- **320 isolated node(s):** `InquiryStatus`, `nav`, `SelectedPerson`, `currencies`, `NftMeta` (+315 more)
+- **320 isolated node(s):** `Who this is for`, `The site`, `Domain`, `Stack`, `Animation stack status` (+315 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **24 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -292,10 +292,10 @@ Nodes (4): main(), normalizeLocationValue(), parseLine(), unique()
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `getDb()` connect `NFT Admin & API` to `Page Sections Shared`, `Home Sections & Media Cards`, `Admin Protected Layout`, `Admin Auth & Login`, `Services Admin`, `Interior Public Pages`, `public-people.ts`, `Featured Work Cards`, `Public Form Security API`, `route.ts`, `Media Search/Cursor API`?**
-  _High betweenness centrality (0.153) - this node is a cross-community bridge._
+  _High betweenness centrality (0.159) - this node is a cross-community bridge._
 - **Why does `dependencies` connect `Runtime Dependencies` to `@dnd-kit/sortable`, `@dnd-kit/utilities`, `geist`, `Root Layout & Nav Shell`, `gsap`, `next`, `next-themes`, `radix-ui`, `package.json`, `react`, `react-dom`, `tailwind-merge`, `cloudinary`?**
-  _High betweenness centrality (0.069) - this node is a cross-community bridge._
-- **What connects `InquiryStatus`, `nav`, `SelectedPerson` to the rest of the system?**
+  _High betweenness centrality (0.106) - this node is a cross-community bridge._
+- **What connects `Who this is for`, `The site`, `Domain` to the rest of the system?**
   _320 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Admin Media & People Lists` be split into smaller, more focused modules?**
   _Cohesion score 0.05745814307458143 - nodes in this community are weakly interconnected._
