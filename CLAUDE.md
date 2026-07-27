@@ -27,7 +27,7 @@ Lenis installed
 ## Animation stack status
 - Lenis: **initialized** in components/site/AppShell.tsx (Session F1, done) — active on all public pages, skipped on admin routes
 - GSAP ScrollTrigger: installed, used in components/shared/AnimatedText.tsx for scroll-triggered word reveals — still underused elsewhere, core of scroll design
-- Three.js: currently only in `HeroBokeh.tsx` (raw Three.js, a self-contained 180-point shader system). The homepage scene (Sessions D2a–D2d) adds `@react-three/fiber` + `@react-three/drei` as new dependencies — `HeroBokeh`'s particle technique gets ported in, the raw-Three.js pattern itself is not extended further.
+- Three.js: currently only in `HeroBokeh.tsx` (raw Three.js, a self-contained 180-point shader system).
 - react-globe.gl: installed, not yet built (Session D6)
 - Framer Motion: installed, used minimally
 
@@ -38,10 +38,8 @@ The site must match the creative and technical level of:
 - **igloo.inc** — full 3D WebGL environment as the primary layer, scroll moves through the scene
 
 This means:
-- The homepage is a WebGL-first experience. Three.js canvas is the primary layer.
 - Page transitions use the actual photos/videos on each page as the animation material.
 - Every page has a unique transition in and out. No generic overlays.
-- Three.js, GSAP ScrollTrigger, and Lenis are all active on every public page.
 - Photography and videography are the primary visual identity — the work IS the design.
 
 ## What is NOT in the design
@@ -92,87 +90,6 @@ Every public discipline page has an `isActive` field in the database.
 - Scope: the 5 discipline pages only (photography, videography, nft, dancing,
   web-development). Services, About, People, Blog, Contact, Testimonials do not have this
   toggle and are not expected to — they aren't "disciplines" in the Work-overlay sense.
-
-## Homepage architecture — full-page WebGL scene, built photography-first
-**Rescoped after the Memore reference image (uploaded 2026-07-04) and Hussain's direction
-to prove the technique on photography before extending it.** The previous version of this
-section described a WebGL hero with ordinary HTML sections stacked below it — that is a
-decorated hero, not what the reference image or the benchmark sites (aikawakenichi,
-ten.375.studio, igloo.inc) actually are. Corrected model:
-
-**The mechanism — one persistent scene, camera-on-a-rail:**
-1. One full-page Three.js canvas, fixed behind everything, alive for the whole homepage.
-   Lenis scroll drives a GSAP ScrollTrigger scrub that moves the camera along a 3D spline.
-   Every homepage section is a station on that path — scrolling never exits the scene.
-2. Real photography from Cloudinary, mapped onto planes/geometry arranged in 3D space at
-   each station. The scene is built from the actual work, not abstract shapes.
-3. Text and links stay real DOM, position-synced to 3D anchor points each frame (project
-   anchor → screen space → drive the element's transform). Non-negotiable: the h1 must be
-   a real heading for SEO, and the N4/N5/N6 admin-controlled copy must stay editable text,
-   never baked into a texture.
-4. Library: **`@react-three/fiber` + `@react-three/drei`**, not raw Three.js, despite
-   `HeroBokeh.tsx` already being a working raw-Three.js pattern in this repo (checked —
-   it's a solid, properly-disposed 180-point shader system, confirmed by reading the file
-   directly). Raw Three.js is fine for one self-contained particle canvas; it is the wrong
-   tool for a scene with a persistent camera rig, multiple loaded content stations, and
-   dozens of DOM-sync'd elements — R3F exists specifically to manage that lifecycle instead
-   of hand-rolling it. `HeroBokeh.tsx`'s particle system gets ported into the R3F scene as
-   atmosphere in Session D2a, not kept as a separate canvas.
-
-**The ice/frost look — concrete technique, not a mood board. Corrected: it's ice, not
-glass.** Glass and ice render differently — glass is close to uniformly transparent, ice
-is frosted/crystalline with visible internal fracture and a shimmer that reads as light
-catching moving facets. The "alive" quality Hussain asked for lives specifically in that
-shimmer — an animated shader effect, not a property of the geometry (rotation/float alone
-doesn't make something read as ice; the surface has to visibly sparkle).
-
-- **Hero object (the fractured lens ring):** base material `MeshPhysicalMaterial`, high
-  roughness, `clearcoat` enabled — **not** drei's `MeshTransmissionMaterial`, which is
-  built for clear refraction and is the wrong tool for a frosted surface. On top of that
-  base, an animated ice/frost/sparkle shader (TSL or GLSL, decided at Session D2a's Gate
-  1): a time-driven Voronoi-cell crystal pattern using the asset's UV coordinates, plus a
-  second high-frequency noise layer that flickers specular highlights on and off to read
-  as sparkle. This is the one object in the scene allowed the heaviest material cost.
-- **Every other ice surface** (the per-station photo slabs, the smaller shards): the
-  same technique, cheaper — Fresnel rim light + a normal map for surface distortion + a
-  cheap env-map reflection, same animated sparkle layer at lower resolution/frequency. A
-  `PortfolioCard`-style photo slab doesn't need heavy per-pixel cost to read as "alive," it
-  needs to catch light and shimmer as the camera moves past.
-- **Assets — hero ring delivered, not an open question.** Generated via Meshy image-to-3D
-  from a crop of the reference image, corrected and cleaned in Blender (scale, origin,
-  Decimate 587K→234,822 triangles, Draco-compressed, all Meshy textures stripped since the
-  material above replaces them entirely), verified by parsing the file directly (clean
-  node transform, `POSITION`/`NORMAL`/`TEXCOORD_0` all present) and by Hussain confirming
-  the decompressed shape in Blender's viewport matches the reference image. File:
-  `hero-ring.glb`. **Every other shard is procedural** — generated directly in code
-  (convex-hull/Voronoi fracture, randomized per instance), no Blender, no Meshy, no
-  authored asset. They're small, numerous, and don't need to match one specific
-  silhouette the way the hero ring did.
-
-**Photography-first build order — this is the actual phasing, not a simplification:**
-1. Prove the mechanism and the ice/frost technique entirely within photography before
-   spending a single session on the other four disciplines. If the hero ring, the camera
-   rail, the DOM sync, and one tier of ice slabs don't feel right at photography scale,
-   the fix is cheap. If they don't feel right after being copied across five disciplines,
-   the fix is five times the work.
-2. **Station-curation gap, found by reading the actual code, not assumed:** the reference
-   image's "Portraits / Fashion / Weddings" are photography sub-genres, not the site's five
-   top-level disciplines. Checked `MediaGrid.tsx` — media items already carry a free-form
-   `tags: string[]` field with full filter support (`allTags` derived live from whatever
-   tags exist), so the raw material for "variations" already exists. What does **not**
-   exist: any admin concept of "these N tags are the featured homepage variations." That's
-   new, scoped as its own task below — don't conflate it with the closed 5-slug
-   `FeaturedCard` system N6 already shipped for the DOM homepage grid; that system is
-   discipline-level and stays exactly as N6 built it.
-3. Once photography stations are proven, the same mechanism (station template + ice
-   material + curated-tag data) extends to Videography, NFT, Dancing, Web Development —
-   each becomes a repeat of an already-working pattern, not new R&D.
-
-Scope note: this is deliberately four sessions (D2a foundation, D2b photography stations,
-D2c extend to remaining disciplines, D2d preloader handoff + polish), listed in full in
-SESSION-QUEUE.md. Whether the exhibition globe (Session D6) becomes a station inside this
-scene or stays a DOM section below it is still an open Gate-1 decision, flagged again in
-D6 itself — not assumed either way here.
 
 ## Preloader
 **Shipped in Session D1 (2026-07-02) — this section is now a record of what's actually in
