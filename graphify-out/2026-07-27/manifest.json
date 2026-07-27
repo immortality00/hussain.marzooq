@@ -1320,9 +1320,9 @@
     "semantic_hash": "c698309979460d0f02ba616417844399"
   },
   "CLAUDE.md": {
-    "mtime": 1785136178.4014592,
-    "ast_hash": "2ef8f71993b20412b3f1666b26558606",
-    "semantic_hash": ""
+    "mtime": 1784042469.6646285,
+    "ast_hash": "2d2ca8a58e714dff71548d506d834e22",
+    "semantic_hash": "2d2ca8a58e714dff71548d506d834e22"
   },
   "README.md": {
     "mtime": 1767717951.7182589,
@@ -1330,9 +1330,9 @@
     "semantic_hash": "f15aaa42d5d299d091b1171097ea56ad"
   },
   "SESSION-QUEUE.md": {
-    "mtime": 1785136198.9001675,
-    "ast_hash": "2e7f68371f0d1b459dfa76bb1a549395",
-    "semantic_hash": ""
+    "mtime": 1783511649.7169914,
+    "ast_hash": "dbcd55a697ac18c6eb8e000cd1c40ac3",
+    "semantic_hash": "dbcd55a697ac18c6eb8e000cd1c40ac3"
   },
   "public/file.svg": {
     "mtime": 1767717951.7198257,
