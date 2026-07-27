@@ -119,15 +119,10 @@ time"). Built with `useGSAP` (matches the `AnimatedText.tsx` idiom in this repo)
 `components/site/Preloader.tsx`. `app/api/preloader-images/route.ts` is deleted — no
 Cloudinary fetch, zero remaining callers.
 
-**Required follow-up, not yet built — blocks Session D2d.** `Preloader.tsx` currently
-manages its own exit: it holds, fades its own container to `autoAlpha: 0`, and calls
-`setDone(true)` to hard-unmount itself. There is no way for a parent to take over that
-final frame. The seamless preloader→scene handoff planned in Session D2d needs the
-opposite contract: the timeline holds the light burst at full intensity and fires an
-`onComplete` prop instead of self-unmounting; whoever mounts `<Preloader />` decides when
-and how it leaves. This is a small, contained change to the existing component (add a prop,
-remove the self-fade + `setDone` unmount), not a rebuild — scoped as the first task in
-Session D2d in SESSION-QUEUE.md.
+**Exit behavior — intentional, self-managed.** `Preloader.tsx` manages its own exit: it
+holds, fades its own container to `autoAlpha: 0`, and calls `setDone(true)` to
+hard-unmount itself. This is the intended final behavior — there is no separate homepage
+scene for it to hand off into, so no parent-controlled `onComplete` contract is needed.
 
 ## Photography viewer — 3 modes
 The photography page offers users 3 modes:

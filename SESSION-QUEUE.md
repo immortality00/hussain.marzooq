@@ -412,10 +412,10 @@ existing, working systems, so the main risk is regressing a save path, not build
 data logic. Report the complete affected-file list and confirm before writing code, per
 standard gate.
 
-**Status note:** Part 1 and Part 2 as scoped above are both built, verified in-browser
-(save flows tested on NFT and About rows, reverted cleanly), and committed. Left
-`in-progress` rather than `done` — Hussain has more changes planned on top of this before
-the session is considered closed out. Do not mark `done` without checking back first.
+**Status note:** Parts 1, 2, and 3 are all built, verified in-browser (save flows tested
+on NFT and About rows, reverted cleanly), and committed (`9826804`, `46c69ee`).
+Confirmed closed out and marked `done` (2026-07-27) after a full re-verification pass —
+`tsc --noEmit` and `next build` both clean.
 
 **Part 3 (confirmed scope, not yet built) — the "more changes" referenced above.** Raised
 during a live bug-report + planning conversation, not a fresh planning pass — full
@@ -514,8 +514,7 @@ Hussain's confirmed adjustments. This supersedes items 1–4 above where they di
   ignored by the new code, and get replaced wholesale on the first admin save per page.
   Cloudinary: untouched by this session.
 
-Keep `in-progress` through this part too; only mark N5 `done` once Hussain confirms
-Part 3 is fully closed out.
+Part 3 is fully closed out — N5 is `done` (confirmed 2026-07-27).
 
 ---
 
@@ -654,10 +653,13 @@ drawer markup need the same two additions.
 
 ## Phase 2 — Preloader & core experience
 
-### Session D1 — Preloader — `in-progress`
-Reset from `in-progress`. The version currently in the repo was built against an
-ambiguous spec (it fetches real Cloudinary photos via a dedicated API route) and needs to
-be rebuilt, not patched — see "Materials — corrected" below before starting.
+### Session D1 — Preloader — `done`
+Rebuilt and shipped (`fe97097`), replacing the ambiguous first version (`4ac950a`) that
+fetched Cloudinary photos via a dedicated API route. Confirmed `done` (2026-07-27) after a
+full re-verification pass — `tsc --noEmit` and `next build` both clean. The pre-rebuild
+spec and the "Build outcome" record below are kept as history. One optional future
+refactor exists (parent-controlled exit instead of self-unmount) but nothing downstream
+depends on it — see the Preloader section in CLAUDE.md.
 
 Full-screen preloader that runs once per session (sessionStorage flag).
 
@@ -767,12 +769,9 @@ Transitions to implement in this session:
 - **→ Dancing:** Images distort with wave physics (GSAP elastic), dancing page fades in.
 - **→ About:** Single portrait expands full-screen, about content fades over it.
 - **→ Web Development:** Brief terminal-style effect, page assembles.
-- **Homepage → any:** leaving the homepage means leaving the D2a–D2d WebGL scene, not
-  scattering DOM images — the camera accelerates through/past the nearest station and its
-  content hands off into the destination page's transition. Reuse the scene's existing
-  canvas/context rather than layering a second transition system on top of it. Read the
-  finished D2a–D2d implementation before proposing this one; it doesn't exist yet as of
-  this writing, so this bullet may need revision once it does.
+- **Homepage → any:** deferred. There is no dedicated homepage-scene session in the
+  queue, so the homepage's in/out transition is out of scope for D4 and will be defined
+  alongside the homepage's own design pass. The six routes above are what D4 builds.
 
 **Before writing any code:**
 - Read AppShell.tsx, layout.tsx, every public page.tsx, every public page's primary image source.
@@ -796,11 +795,8 @@ Read CustomCursor.tsx fully before writing. Verify cursor is applied correctly t
 ---
 
 ### Session D6 — Exhibition globe — `pending`
-**Open dependency, not yet decided:** whether this globe renders as a station inside the
-homepage WebGL scene (Sessions D2a–D2d) or stays a standalone DOM section reached after
-the camera rail ends. Flagged at Gate 1 of Session D2c — this session's build should wait
-until that's settled, since "globe inside the scene" changes items 2–4 below into 3D-space
-placement instead of a DOM section.
+The globe renders as a standalone DOM section on the homepage, so items 2–4 below are a
+DOM section as written.
 
 Implement react-globe.gl on the homepage showing exhibition cities.
 
