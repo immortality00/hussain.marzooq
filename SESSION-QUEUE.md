@@ -724,7 +724,7 @@ Uses `useGSAP` (repo idiom from AnimatedText.tsx) rather than a raw effect — a
 
 ---
 
-### Session D3 — Photography page: 3-mode viewer — `pending`
+### Session D3 — Photography page: 3-mode viewer — `done`
 Rebuild the photography gallery with 3 switchable display modes.
 
 Mode 1: **3D Cylinder** (default)
@@ -751,6 +751,41 @@ Mobile: Mode 1 falls back to Mode 2 automatically. Mode switcher is hidden on mo
 - Read the existing MediaGrid, MediaFilterBar, MediaLightbox components fully.
 - Propose the Three.js cylinder implementation approach.
 - Wait for approval.
+
+**Build outcome (2026-07-30) — shipped with several Hussain-directed deviations from
+the spec above, all requested live during the multi-round Gate 2 review. Recorded so they
+don't read as bugs:**
+- **3 views, not "3 modes over one grid":** switcher is Cylinder · Horizontal · Grid.
+  The shared filter (search + tag chips) is the "category filter" and drives all three.
+  Grid is the existing `MediaGrid` body verbatim.
+- **Shared search extracted:** `components/media/useMediaSearch.ts` (all search/filter/DB
+  logic pulled out of `MediaGrid`), `MediaGridResults.tsx` (card grid + load-more), and
+  `MediaTagChips.tsx` (split from `MediaFilterBar`). `MediaGrid` now consumes these and is
+  behaviour-identical for its other callers (videography, people/[slug]).
+- **Cylinder** (`PhotographyCylinder.tsx`, raw Three.js, HeroBokeh idiom, full dispose):
+  two geometry cases — a **wide shallow arc** for ≤5 photos (search results: big, all
+  visible, gentle sway, no empty) and a **closed prism/cylinder** for 6+ (continuous
+  right-to-left spin, camera pulled in so photos stay large). Assemble-scatter on
+  (re)build, raycast click → existing `MediaLightbox`, ← / → arrow keys rotate.
+  The original flat-plane even-ring / arc-adjacent / prism attempts each failed a specific
+  Hussain complaint (2 flat planes → gaps between few → empty back → tiny box for search);
+  the shallow-arc-vs-prism split is what finally landed.
+- **Horizontal = auto-scroll marquee, NOT a ScrollTrigger pin.** Spec said "GSAP
+  ScrollTrigger-driven horizontal track." Hussain rejected the pinned scroll-jack ("the
+  lock is ruining the user experience"). Shipped as an rAF marquee
+  (`PhotographyHorizontal.tsx`): auto right-to-left drift, **ping-pong around centre**,
+  drag, ← / → keys. Full-bleed. Only unique results (no duplication); results that fit are
+  centred by the container (the earlier `justify-center`-on-`w-max` was a no-op — the real
+  bug behind "search results stuck left").
+- **Switcher moved:** inline segmented control top-left, search top-right, tag chips inline
+  next to the search (not a fixed corner, not a separate row) — per Hussain.
+- **Mobile:** Mode 1 → **Grid** fallback (not Horizontal), switcher hidden — confirmed at
+  Gate 1.
+- **Shared file touched:** `components/site/AppShell.tsx` gained
+  `lenis.on("scroll", ScrollTrigger.update)` (standard Lenis↔ScrollTrigger sync; benefits
+  `AnimatedText` scroll reveals). No other page affected.
+- Modes 1 & 2 are `next/dynamic({ ssr:false })` so three/gsap code-split out of initial load.
+- Verified in-browser across many rounds; `tsc --noEmit` + eslint clean.
 
 ---
 
