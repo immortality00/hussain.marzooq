@@ -3,8 +3,12 @@
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Lenis from "lenis";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Navbar } from "@/components/site/Navbar";
 import { Preloader } from "@/components/site/Preloader";
+
+gsap.registerPlugin(ScrollTrigger);
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -13,6 +17,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (isAdmin) return;
     const lenis = new Lenis();
+    // Keep GSAP ScrollTrigger in sync with Lenis's smoothed scroll position,
+    // otherwise pinned/scrubbed sections (e.g. photography horizontal mode) drift.
+    lenis.on("scroll", ScrollTrigger.update);
     const raf = (time: number) => {
       lenis.raf(time);
       requestAnimationFrame(raf);

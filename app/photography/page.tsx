@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { MediaGrid } from "@/components/media/MediaGrid";
+import PhotographyViewer from "@/components/photography/PhotographyViewer";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPhotographyItems } from "@/lib/server/public-media";
@@ -28,15 +28,16 @@ export default async function PhotographyPage() {
 
   return (
     <>
-      <main className="section-shell py-16">
+      <main className="section-shell pt-8 pb-32">
         <PageHeader
           title={seo.headerTitle}
           description={seo.headerDescription}
           className="max-w-3xl"
+          titleClassName="text-2xl! sm:text-3xl!"
         />
 
         {items.length > 0 ? (
-          <MediaGrid items={items} searchCategory="photography" />
+          <PhotographyViewer items={items} searchCategory="photography" />
         ) : (
           <PortfolioFallbackPanel
             title="Portraits, fashion, weddings, and atmosphere-led image work."
