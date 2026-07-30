@@ -600,9 +600,9 @@
     "semantic_hash": "b545cf546c8afd04212c686141d0281c"
   },
   "app/photography/page.tsx": {
-    "mtime": 1785223032.720629,
-    "ast_hash": "e8a974563f54dc018f85375991fb753c",
-    "semantic_hash": ""
+    "mtime": 1782980544.2803645,
+    "ast_hash": "b10c16d3a692aa584f519ebdae416fce",
+    "semantic_hash": "b10c16d3a692aa584f519ebdae416fce"
   },
   "app/services/[slug]/page.tsx": {
     "mtime": 1782834266.4842205,
@@ -805,14 +805,14 @@
     "semantic_hash": "58233994e6361b5c1118918f467b37bb"
   },
   "components/media/MediaFilterBar.tsx": {
-    "mtime": 1785221699.2414114,
-    "ast_hash": "166094d590539d728749a26f4dbf1cbf",
-    "semantic_hash": ""
+    "mtime": 1782486019.2347865,
+    "ast_hash": "d097df447b39dc9b4a81e501d82d52a1",
+    "semantic_hash": "d097df447b39dc9b4a81e501d82d52a1"
   },
   "components/media/MediaGrid.tsx": {
-    "mtime": 1785138435.7780292,
-    "ast_hash": "4e4d014900fc42255c26355331353523",
-    "semantic_hash": ""
+    "mtime": 1782485999.043513,
+    "ast_hash": "2bb8750ff350ff827c92570ed67a50a4",
+    "semantic_hash": "2bb8750ff350ff827c92570ed67a50a4"
   },
   "components/media/MediaLightbox.tsx": {
     "mtime": 1782754650.7063897,
@@ -910,9 +910,9 @@
     "semantic_hash": "a934cf098c04f8d222e97c8a977c42ba"
   },
   "components/site/AppShell.tsx": {
-    "mtime": 1785138924.5137732,
-    "ast_hash": "ae3663c972e80292a709a4a02b4ea7dd",
-    "semantic_hash": ""
+    "mtime": 1783070177.824716,
+    "ast_hash": "2bebe6ed1c064b14293e3bd5386b7dd4",
+    "semantic_hash": "2bebe6ed1c064b14293e3bd5386b7dd4"
   },
   "components/site/CustomCursor.tsx": {
     "mtime": 1782380697.361721,
@@ -1330,8 +1330,8 @@
     "semantic_hash": "f15aaa42d5d299d091b1171097ea56ad"
   },
   "SESSION-QUEUE.md": {
-    "mtime": 1785398421.6532874,
-    "ast_hash": "d927c25e5b6cbaf520607c2cbc384bd1",
+    "mtime": 1785137842.669311,
+    "ast_hash": "ef243dd79aac9ceb2b54e6cc03291778",
     "semantic_hash": ""
   },
   "public/file.svg": {
@@ -1358,45 +1358,5 @@
     "mtime": 1767717951.720818,
     "ast_hash": "a2760511c65806022ad20adf74370ff3",
     "semantic_hash": "a2760511c65806022ad20adf74370ff3"
-  },
-  "components/media/MediaGridResults.tsx": {
-    "mtime": 1785138426.1337805,
-    "ast_hash": "e14c547d3e363abbfc703b0554ac13e5",
-    "semantic_hash": ""
-  },
-  "components/media/MediaTagChips.tsx": {
-    "mtime": 1785221692.7928987,
-    "ast_hash": "d3b936ce75847ecaf07bdd055d595ba7",
-    "semantic_hash": ""
-  },
-  "components/media/useMediaSearch.ts": {
-    "mtime": 1785138416.422869,
-    "ast_hash": "ade71ece4e7c17a2aba833e5f500e59c",
-    "semantic_hash": ""
-  },
-  "components/photography/ModeSwitcher.tsx": {
-    "mtime": 1785222117.5974586,
-    "ast_hash": "355a90345ee0ec72144cb7d4844003d6",
-    "semantic_hash": ""
-  },
-  "components/photography/PhotographyCylinder.tsx": {
-    "mtime": 1785397614.6508317,
-    "ast_hash": "2facf03f50d9638ddbf784b1c1739bc8",
-    "semantic_hash": ""
-  },
-  "components/photography/PhotographyHorizontal.tsx": {
-    "mtime": 1785309306.4289856,
-    "ast_hash": "fc92a1480d7bf84c1b63febe8d7d26b9",
-    "semantic_hash": ""
-  },
-  "components/photography/PhotographyViewer.tsx": {
-    "mtime": 1785307431.7340639,
-    "ast_hash": "611056219605d88f9326e5d8b2cd29cd",
-    "semantic_hash": ""
-  },
-  "components/photography/lib.ts": {
-    "mtime": 1785223004.857041,
-    "ast_hash": "b477d57f50f11ddc60363a158ae773d0",
-    "semantic_hash": ""
   }
 }
