@@ -375,14 +375,14 @@
     "semantic_hash": "5e33417ad1b4206c387c21beebaae341"
   },
   "app/admin/logout/route.ts": {
-    "mtime": 1779770752.043987,
-    "ast_hash": "4c7c85444362da60ca26f8bc00550796",
-    "semantic_hash": "4c7c85444362da60ca26f8bc00550796"
+    "mtime": 1785482646.111482,
+    "ast_hash": "353337a9c2474591da57375801264255",
+    "semantic_hash": ""
   },
   "app/admin/page.tsx": {
-    "mtime": 1780503894.952484,
-    "ast_hash": "78a713e7171b5e18489b1c38678177ef",
-    "semantic_hash": "78a713e7171b5e18489b1c38678177ef"
+    "mtime": 1785482639.61316,
+    "ast_hash": "adee5f620c7fa0a87a0ec49ecd0c3c63",
+    "semantic_hash": ""
   },
   "app/api/_lib/common.ts": {
     "mtime": 1777300028.2989078,
@@ -1080,9 +1080,9 @@
     "semantic_hash": "41de24a56354b7afa39bb933aa8d336b"
   },
   "lib/auth/admin.ts": {
-    "mtime": 1780154919.1105838,
-    "ast_hash": "7e9e4c9c9d1e2ff90eeccc2637c940fb",
-    "semantic_hash": "7e9e4c9c9d1e2ff90eeccc2637c940fb"
+    "mtime": 1785489193.1595314,
+    "ast_hash": "77da0b0d3a08400bf7faa1fa526c5ea6",
+    "semantic_hash": ""
   },
   "lib/cloudinary-folders.ts": {
     "mtime": 1783447341.6647046,
@@ -1230,9 +1230,9 @@
     "semantic_hash": "5a6fd53fdcf2be529e9cc0b718fde352"
   },
   "next.config.ts": {
-    "mtime": 1780587793.098963,
-    "ast_hash": "39d2f4290994b7c07004d30063c1ceed",
-    "semantic_hash": "39d2f4290994b7c07004d30063c1ceed"
+    "mtime": 1785483236.0593743,
+    "ast_hash": "3dfd91800a87e6932667dd35f9868984",
+    "semantic_hash": ""
   },
   "package.json": {
     "mtime": 1783514159.2828412,
@@ -1245,9 +1245,9 @@
     "semantic_hash": "239f3ebf717465dc636818a1a619398d"
   },
   "proxy.ts": {
-    "mtime": 1779734415.9830604,
-    "ast_hash": "ea6c5e6eae2b02c8c4d4042c32009228",
-    "semantic_hash": "ea6c5e6eae2b02c8c4d4042c32009228"
+    "mtime": 1785482584.7589417,
+    "ast_hash": "c3e4bc2f962af523f4f986a2af03d91c",
+    "semantic_hash": ""
   },
   "scripts/ensure-indexes.mjs": {
     "mtime": 1781634936.7203581,
@@ -1320,8 +1320,8 @@
     "semantic_hash": "c698309979460d0f02ba616417844399"
   },
   "CLAUDE.md": {
-    "mtime": 1785480653.4694202,
-    "ast_hash": "964ba09d144a76ae7888bf7593926c43",
+    "mtime": 1785483325.1209257,
+    "ast_hash": "c5a8d5fbbbec8fd916c70609d515bf14",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1330,8 +1330,8 @@
     "semantic_hash": "f15aaa42d5d299d091b1171097ea56ad"
   },
   "SESSION-QUEUE.md": {
-    "mtime": 1785480573.5764809,
-    "ast_hash": "f632f42e4fc047fcd603abe014cc533e",
+    "mtime": 1785489236.2084801,
+    "ast_hash": "4494ab6111826897599317e57374f8f1",
     "semantic_hash": ""
   },
   "public/file.svg": {
@@ -1375,13 +1375,13 @@
     "semantic_hash": ""
   },
   "components/photography/ModeSwitcher.tsx": {
-    "mtime": 1785222117.5974586,
-    "ast_hash": "355a90345ee0ec72144cb7d4844003d6",
+    "mtime": 1785483317.707308,
+    "ast_hash": "cca24978776e7489238b2858f80d229b",
     "semantic_hash": ""
   },
   "components/photography/PhotographyCylinder.tsx": {
-    "mtime": 1785397614.6508317,
-    "ast_hash": "2facf03f50d9638ddbf784b1c1739bc8",
+    "mtime": 1785483299.172861,
+    "ast_hash": "1b2e6e40476fb37aa3f4e8ee67c966ef",
     "semantic_hash": ""
   },
   "components/photography/PhotographyHorizontal.tsx": {
@@ -1390,18 +1390,28 @@
     "semantic_hash": ""
   },
   "components/photography/PhotographyViewer.tsx": {
-    "mtime": 1785307431.7340639,
-    "ast_hash": "611056219605d88f9326e5d8b2cd29cd",
+    "mtime": 1785483276.5743127,
+    "ast_hash": "65f7315e5e4c7972258d8e218d0212a8",
     "semantic_hash": ""
   },
   "components/photography/lib.ts": {
-    "mtime": 1785223004.857041,
-    "ast_hash": "b477d57f50f11ddc60363a158ae773d0",
+    "mtime": 1785483242.3526015,
+    "ast_hash": "a2bdee4fb2783ac465076738c25ce3e0",
     "semantic_hash": ""
   },
   "SESSION-ARCHIVE.md": {
     "mtime": 1785480512.303935,
     "ast_hash": "673ca492d5add2c1cdd030fcf4e57079",
+    "semantic_hash": ""
+  },
+  "lib/auth/session-token.ts": {
+    "mtime": 1785482570.4113548,
+    "ast_hash": "427aba9cb09577712af0f059c9391fbf",
+    "semantic_hash": ""
+  },
+  "lib/cloudinary-image-loader.ts": {
+    "mtime": 1785483227.8608592,
+    "ast_hash": "e990290cfbf12dea7b9c382aa095b082",
     "semantic_hash": ""
   }
 }
