@@ -1320,8 +1320,8 @@
     "semantic_hash": "c698309979460d0f02ba616417844399"
   },
   "CLAUDE.md": {
-    "mtime": 1785480653.4694202,
-    "ast_hash": "964ba09d144a76ae7888bf7593926c43",
+    "mtime": 1785137572.0961914,
+    "ast_hash": "c5500c9969c26e7730e502c67a8a0982",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1330,8 +1330,8 @@
     "semantic_hash": "f15aaa42d5d299d091b1171097ea56ad"
   },
   "SESSION-QUEUE.md": {
-    "mtime": 1785480573.5764809,
-    "ast_hash": "f632f42e4fc047fcd603abe014cc533e",
+    "mtime": 1785398421.6532874,
+    "ast_hash": "d927c25e5b6cbaf520607c2cbc384bd1",
     "semantic_hash": ""
   },
   "public/file.svg": {
@@ -1397,11 +1397,6 @@
   "components/photography/lib.ts": {
     "mtime": 1785223004.857041,
     "ast_hash": "b477d57f50f11ddc60363a158ae773d0",
-    "semantic_hash": ""
-  },
-  "SESSION-ARCHIVE.md": {
-    "mtime": 1785480512.303935,
-    "ast_hash": "673ca492d5add2c1cdd030fcf4e57079",
     "semantic_hash": ""
   }
 }
