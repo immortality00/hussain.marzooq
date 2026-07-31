@@ -45,6 +45,164 @@ D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
 
+## Phase S — Security & hardening (do S1 before launch)
+
+### Session S1 — Finish the security migration — `pending`
+Part of this work already shipped from Cowork (2026-07-31): expiring signed session
+tokens (`lib/auth/session-token.ts`), server-enforced expiry in both the Edge proxy and
+the Node auth lib, deduplicated cookie constants, and baseline security headers in
+`next.config.ts`. **What remains needs a browser and env access, which is why it's a
+session and not a docs edit.**
+
+1. **Move off the plaintext admin password.** `ADMIN_PASSWORD_HASH` is currently NOT set
+   in `.env.local` — only plaintext `ADMIN_PASSWORD`. Order matters, do not reorder:
+   a. Run `node scripts/generate-admin-password-hash.mjs` to produce a scrypt hash.
+   b. Set `ADMIN_PASSWORD_HASH` in `.env.local` **and** in Netlify env vars.
+   c. Verify login works in both local and deployed environments.
+   d. Only then delete the plaintext fallback branch in `verifyAdminPassword()`
+      (`lib/auth/admin.ts`, marked with a DEPRECATED comment) and remove `ADMIN_PASSWORD`
+      from both environments.
+   Deleting the fallback before (b) locks admin out of whichever environment lacks the hash.
+2. **Rotate `ADMIN_COOKIE_SECRET`** in both environments. The old scheme signed the
+   constant string `"ok"`, so the old signature was a permanent credential — rotating
+   guarantees any copy of it is dead.
+3. **Add a Content-Security-Policy.** Deliberately omitted from the shipped headers: a
+   correct CSP must allow Cloudinary, the upload widget, and Next's inline runtime, and a
+   wrong one silently breaks images and admin uploads. Build it, then verify in-browser:
+   homepage images, photography viewer (Three.js), admin media upload, testimonial upload.
+4. **Clean unused public env vars.** `.env.local` defines `NEXT_PUBLIC_CLOUDINARY_API_KEY`
+   and `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`, neither referenced anywhere in source
+   (confirmed by full-text search — only `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` and
+   `NEXT_PUBLIC_SITE_URL` are used). Any `NEXT_PUBLIC_` var is compiled into the browser
+   bundle, so an API key must never carry that prefix. Delete both, and the duplicate
+   `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` line.
+5. **Consider real session revocation.** Current tokens are stateless: expiry is enforced,
+   but a stolen token stays valid until it expires (7 days) — logout can't kill it. True
+   revocation needs a session collection in Mongo, which the Edge proxy cannot query
+   directly. Decide: accept the bounded window, shorten the TTL, or move the admin auth
+   check out of Edge middleware. Propose options at Gate 1, don't pick silently.
+
+**Gate 2 must include, at minimum:** log in, confirm admin loads, log out, confirm the
+admin redirects to login, and confirm a browser devtools check that `hm_admin` is now a
+`v1.<timestamp>.<nonce>` value rather than `ok`.
+
+---
+
+### Session S6 — Remove `unoptimized` from testimonial images — `pending`
+Found 2026-07-31 after the Cloudinary custom loader shipped.
+`components/testimonials/SafeImage.tsx:14` and
+`components/testimonials/review-form/PreviewImage.tsx:6` pass `unoptimized`, which
+bypasses the image loader entirely — the browser downloads the **full original** from
+Cloudinary. Same slowness class as the `/_next/image` timeout bug the loader fixed;
+the flag was likely added to dodge exactly those problems, and is now obsolete.
+
+Fix: remove `unoptimized` from both. Caveat to verify at Gate 2: testimonial photos are
+user-uploaded — confirm all stored srcs are Cloudinary URLs. Non-Cloudinary srcs pass
+through the loader unchanged (no resizing, but nothing breaks). Verify avatars, review
+photo strips, and the review-form preview all still render.
+
+---
+
+### Session S3 — Automated test baseline — `pending`
+There is no test script in `package.json` and no CI. Verification today is
+`tsc --noEmit` + eslint + Gate-2 manual checks. That has already let real gaps ship
+(archive §F2, §N1 — both caught by later audits, not at commit time).
+
+Minimum viable baseline, not full coverage:
+1. Test runner (propose Vitest vs node:test for a Next 16 project) + `npm test` script.
+2. **Auth tests first** — highest value, pure functions, no DB needed:
+   `lib/auth/session-token.ts` (token round-trip, expiry boundary, malformed input,
+   version mismatch, `safeEqual`) and `verifyAdminPassword` (correct/incorrect/missing-config).
+3. A smoke test that every public route module imports without throwing.
+4. Optional: GitHub Action running typecheck + lint + test on push.
+
+Propose the runner and the exact test list at Gate 1 before writing.
+
+---
+
+### Session S4 — Work overlay card images: decide the empty state — `pending`
+**Symptom:** `/api/work-overlay` returns `imageUrl: null` for all 5 disciplines, so the
+Work overlay — the primary navigation surface, opened from the nav on every visit —
+renders 5 flat `bg-muted` cards.
+
+**Cause, confirmed by git, not a regression:** commit `1862175` (N7) removed the
+auto-pick. Before it, the route ran
+`findOne(buildPublicMediaQuery({type:"image", category}), {sort:{createdAt:-1}})` per
+discipline, so cards silently showed the newest photo in that category. N7 replaced this
+with the admin-picked `page_settings.cardImage` and the rule "empty means empty, hero is
+the only exception." Nothing is broken; nothing has been picked.
+
+**Admin capability already exists** — `/admin/pages` → discipline row → "Work layout
+image" (`CardImageGroup` → `ImageField`, library-pick **or** Cloudinary upload). No new
+admin surface is needed for the picking itself.
+
+**HARD CONSTRAINT — read before proposing anything.** A "fall back to newest photo in the
+category" scheme **cannot work**, and was already proposed once and rejected. In the
+pre-N7 route, `dancing` and `web-development` had `category: null` — they have no media
+category at all, so there is no photo to fall back to for 2 of the 5 cards. Any proposal
+must cover all five or explicitly say what those two show.
+
+Options to present at Gate 1 (do not pick silently):
+- **(a) Leave as-is.** N7's decision stands; Hussain picks 5 images once. Zero code.
+- **(b) One admin-set global fallback image** on `page_settings` (or a new settings doc),
+  used by any discipline whose `cardImage` is empty. Works for all five uniformly.
+- **(c) Per-discipline required image** — admin validation warns when a discipline is
+  active but has no card image, so the overlay can never silently go blank again.
+- (b) and (c) combine well. Whatever is chosen, record it in CLAUDE.md as either
+  upholding or reversing N7's "empty means empty" rule.
+
+Same-class check while in here: homepage **Featured Work cards** carry the same N7
+`image` field with the same empty-means-empty rule — confirm they aren't also silently
+blank, and apply whatever decision is made here to them consistently.
+
+---
+
+### Session S5 — `page-settings` PATCH treats partial updates as full replacement — `pending`
+**Latent data-loss bug, not currently firing.** In
+`app/api/admin/page-settings/[slug]/route.ts`:
+
+```
+line 29:  const cardImage = isSectionImage(body.cardImage) ? body.cardImage : EMPTY_SECTION_IMAGE;
+line 36:  await deleteReplacedSectionImages({ cardImage: existing?.cardImage }, { cardImage });
+line 38:  updateOne({ slug }, { $set: { ..., cardImage, ... } }, { upsert: true })
+```
+
+Any PATCH that omits `cardImage` silently resets it to empty **and** — because
+`deleteReplacedSectionImages` runs on the diff — permanently deletes the uploaded
+Cloudinary asset. Only uploads are destroyed (non-empty `publicId`); library picks are
+dereferenced but survive.
+
+Today's admin client always sends both fields
+(`usePagesAdmin.ts:204`), so nothing is losing data right now. The risk is any future
+caller — a script, a curl, a second admin surface, a partial-save refactor.
+
+Fix: make `cardImage` genuinely optional — only touch the field when the key is
+**present** in the request body; omission means "leave unchanged." Same review pass
+should check `app/api/admin/page-sections/[slug]/route.ts` for the identical pattern.
+Strictly a safety change, no behaviour change to the current UI.
+
+---
+
+### Session S2 — Reuse audit against the real code rule — `pending`
+**Run after S3 — a refactor this wide must be covered by the test baseline first.**
+
+The primary rule is reuse-over-repetition; file length is the symptom, not the rule.
+**91 source files currently exceed 100 lines.** Largest: `lib/server/cloudinary-assets.ts`
+(382), `components/testimonials/PublicReviewForm.tsx` (367), `app/api/media/[id]/route.ts`
+(363), `hooks/useServicesAdmin.ts` (333), `components/contact/useContactFormState.ts` (286),
+`components/photography/PhotographyCylinder.tsx` (285), `lib/server/page-sections.ts` (280).
+
+Do NOT blind-split by line count. For each file over ~150 lines, classify it:
+- **Extractable duplication** — the same shape appears elsewhere → extract a shared
+  component/hook/util. This is the actual work.
+- **Cohesive and unavoidable** — e.g. a single Three.js scene, one API route's full
+  CRUD surface. Leave it and add a one-line comment stating why.
+
+Report the classification for every file before changing any of them. Expect this to be
+several sessions, not one — propose a split at Gate 1.
+
+---
+
 ## Phase 2 — Preloader & core experience
 
 ### Session D4 — Page transition system — `pending`
@@ -149,6 +307,38 @@ Scope:
 Admin functionality: zero changes. Only visual.
 
 Read every admin layout file before writing. Report what will change visually and what will not be touched.
+
+**Note (2026-07-31):** Hussain reports the admin is "getting messy" — that is a
+*structural/UX* complaint, which this session does not cover. D9 stays visual-only;
+the structural work is Session D9b below. Do not silently widen D9's scope.
+
+---
+
+### Session D9b — Admin information architecture — `pending`
+Raised by Hussain 2026-07-31: the admin dashboard is getting messy as features accumulate.
+This is about structure and findability, not colours (colours = D9).
+
+N5 Part 2 already consolidated three sidebar entries into the single `/admin/pages`
+accordion, which was the right move. The mess is what has grown since: each discipline
+row now stacks Visibility + Work layout image + Header + Search & social + Sections
+groups behind one accordion, and image controls for the *same* visual surface live in
+two different places (Work overlay card image on `page_settings`, Featured Work card
+image on `page_sections`).
+
+Gate 1 must start with an inventory, not a redesign: list every admin route, every group
+inside `/admin/pages`, and which collection each writes to. Then propose structure.
+Specific things to evaluate — propose, do not assume:
+- Is one accordion per page still right at 13 pages × up to 5 groups?
+- Should "images used on other pages' cards" be grouped by *where they appear* rather
+  than by which collection stores them?
+- Is there a genuine landing/dashboard need (what's unpublished, what's missing an image,
+  what has pending removal requests), versus the current straight-to-lists layout?
+- Which admin surfaces are now dead or rarely used and could be removed outright.
+
+Constraint: no data-model changes in this session. Presentation only — the three
+collections stay as they are (that reasoning is in archive §N5 Part 2).
+If D9 and D9b are both still pending when reached: run **D9b first** (structure), then
+D9 (visual polish) — polishing a layout that's about to change is wasted work.
 
 ---
 

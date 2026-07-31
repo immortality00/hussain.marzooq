@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import { SearchInput } from "@/components/search/SearchInput";
 import MediaTagChips from "@/components/media/MediaTagChips";
@@ -22,7 +22,6 @@ export default function PhotographyViewer({
   searchCategory?: string;
 }) {
   const [mode, setMode] = useState<ViewerMode>("cylinder");
-  const [isDesktop, setIsDesktop] = useState(false);
   const [active, setActive] = useState<MediaItem | null>(null);
 
   const {
@@ -42,22 +41,15 @@ export default function PhotographyViewer({
 
   useModalNavbarLock(Boolean(active));
 
-  useEffect(() => {
-    const mql = window.matchMedia("(min-width: 768px)");
-    const update = () => setIsDesktop(mql.matches);
-    update();
-    mql.addEventListener("change", update);
-    return () => mql.removeEventListener("change", update);
-  }, []);
-
-  // Mobile always uses the responsive grid (Mode 1 → grid fallback).
-  const effectiveMode: ViewerMode = isDesktop ? mode : "grid";
+  // All three views work on every breakpoint — the cylinder included. There is
+  // deliberately no viewport gate here: gating on a post-mount matchMedia check
+  // made the first paint render the grid, then swap to the cylinder.
   const showLoadMore = Boolean(searchCategory) && hasActiveSearch && Boolean(nextCursor);
 
   return (
     <div className="mt-5 space-y-4">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <ModeSwitcher mode={mode} onChange={setMode} className="hidden md:inline-flex" />
+        <ModeSwitcher mode={mode} onChange={setMode} />
         <div className="ml-auto flex flex-1 flex-wrap items-center justify-end gap-x-3 gap-y-2 sm:flex-nowrap">
           <MediaTagChips activeTag={activeTag} setActiveTag={setActiveTag} allTags={allTags} />
           <div className="w-full sm:w-64 sm:shrink-0">
@@ -71,9 +63,9 @@ export default function PhotographyViewer({
         </div>
       </div>
 
-      {effectiveMode === "cylinder" ? (
+      {mode === "cylinder" ? (
         <PhotographyCylinder items={displayedItems} onSelect={setActive} />
-      ) : effectiveMode === "horizontal" ? (
+      ) : mode === "horizontal" ? (
         <PhotographyHorizontal
           key={displayedItems.map((m) => m.id).join(",")}
           items={displayedItems}

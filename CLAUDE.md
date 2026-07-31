@@ -90,8 +90,16 @@ Three views — **Cylinder · Horizontal · Grid** — driven by one shared filt
 tag chips via `useMediaSearch`). Cylinder: shallow arc ≤5 photos, closed prism 6+,
 raycast click → `MediaLightbox`, arrow keys rotate. Horizontal: auto-scroll marquee with
 drag + ping-pong (Hussain rejected a ScrollTrigger pin — "the lock is ruining the user
-experience"; do not reintroduce scroll-jacking). Mobile: Cylinder falls back to **Grid**,
-switcher hidden. Modes 1–2 are `next/dynamic({ ssr:false })`. Full deviations: archive §D3.
+experience"; do not reintroduce scroll-jacking). Modes 1–2 are
+`next/dynamic({ ssr:false })`. Full deviations: archive §D3.
+
+**All three views run on every breakpoint, cylinder included — switcher always visible
+(changed 2026-07-31, reversing D3's "mobile falls back to Grid" decision).** Do not
+reintroduce a viewport gate: the old post-mount `matchMedia` check made the first paint
+render the Grid and then swap to the Cylinder, which is the flash Hussain reported. The
+cylinder adapts instead of falling back — `fitDistance()` pulls the camera back so the
+front plane fits narrow viewports (`fov` is vertical, so phones crop horizontally), and
+`components/photography/lib.ts` cuts the texture budget to 16 @ 420px under 768px.
 
 ## Page transitions — content-as-animation (D4, pending)
 Every transition uses the actual photos/videos of origin/destination as material.
@@ -170,8 +178,10 @@ testimonials. Required for the globe (queue §C4).
   elements live here).
 
 ## Code quality rules
-- Every session produces files under 100 lines where possible
-- No file over 200 lines without justification
+- **Any code that can become a reusable component must be refactored into one.** Reuse
+  over repetition, always — this is the primary rule, not file length.
+- **No big files. Even 100 lines is a lot** — exceed only when genuinely unavoidable
+  (a cohesive scene/route that cannot be split without harming clarity), and state why.
 - No duplicated patterns — extract to shared components
 - No inline styles when a token exists
 - No dead code, no duplicated logic
@@ -181,9 +191,39 @@ testimonials. Required for the globe (queue §C4).
   files actually changed and confirm each listed item was completed, not just attempted.**
   (F2 and N1 both shipped gaps that were only caught by later audits — archive §F2, §N1.)
 
+## Security rules — check at Gate 1 of every session
+These exist because a 2026-07-31 audit found a static, non-expiring admin session cookie
+that had been live since the auth was written, and a plaintext password fallback silently
+in use in production. Both were invisible because no session ever had security in scope.
+
+**Standing rules:**
+- **Never invent auth.** Session tokens carry an issue timestamp inside the signed
+  payload and are verified for age server-side. Cookie `maxAge` is a browser hint, not
+  enforcement — never rely on it alone.
+- **Secrets never get a `NEXT_PUBLIC_` prefix.** That prefix compiles the value into the
+  browser bundle. Only genuinely public identifiers (Cloudinary cloud name, site URL).
+- **Auth constants live in exactly one place** — `lib/auth/session-token.ts`. It must stay
+  runtime-agnostic (no `node:crypto`, no `next/headers`, no DB) because `proxy.ts` runs in
+  the Edge runtime and imports it. Adding a Node-only import there breaks admin auth at
+  the middleware layer.
+- **Compare secrets in constant time** — `safeEqual` (any runtime) or
+  `crypto.timingSafeEqual` (Node). Never `===` on a signature or password.
+- **Every new public API route needs rate limiting** (`lib/server/request-guards.ts`) and
+  input validation before it ships. Follow the existing testimonials/inquiries routes.
+- **No `dangerouslySetInnerHTML`, no `eval`, no `new Function`.** Currently zero in the
+  repo — keep it that way.
+- **Never commit `.env*`.** Verified gitignored. If a secret is ever exposed, rotating it
+  is mandatory, not optional — the leaked value stays valid until rotated.
+
+**Gate 1 must explicitly answer, in one line each, whenever a session touches auth,
+API routes, cookies, env vars, or user input:** does this add a new trust boundary? does
+any secret cross into client code? is any new input validated and rate-limited? If the
+session touches none of those, say "no security surface" and move on.
+
 ## Design tokens
-- Colors: OKLCH tokens in globals.css. Use variables, never hardcode hex. (One HomeHero
-  raw-hex violation was flagged into N4 — if touching that file, verify it's resolved.)
+- Colors: OKLCH tokens in globals.css. Use variables, never hardcode hex. (The old
+  HomeHero raw-hex violation is resolved — verified 2026-07-31, zero hardcoded hex in
+  app/ and components/ outside components/ui/.)
 - Radius: **open decision** — the documented 3-token rule (rounded-xl/2xl/3xl) does not
   match the codebase (83 arbitrary `rounded-[Xrem]` uses, `rounded-[2rem]` ×47, incl.
   `PortfolioCard.tsx`). Either codify the de-facto scale or run a scoped conversion pass.
