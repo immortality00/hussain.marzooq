@@ -69,6 +69,7 @@
   "67": "react",
   "68": "react-globe.gl",
   "69": "tailwind-merge",
+  "70": "cloudinary-image-loader.ts",
   "72": "ESLint Config",
   "76": "Base URL Helper",
   "78": "Next Config",
