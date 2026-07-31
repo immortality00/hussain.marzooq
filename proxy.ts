@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import {
+  COOKIE_NAME,
+  SIG_NAME,
+  isSessionValueFresh,
+  safeEqual,
+} from "@/lib/auth/session-token";
 
-const COOKIE_NAME = "hm_admin";
-const SIG_NAME = "hm_admin_sig";
-const COOKIE_VALUE = "ok";
+// Edge runtime: Web Crypto only. Do not import node:crypto here.
 
 function isPublicAdminRoute(pathname: string) {
   return (
@@ -20,7 +24,7 @@ function toHex(buffer: ArrayBuffer): string {
     .join("");
 }
 
-async function signCookieValue(secret: string): Promise<string> {
+async function signValue(value: string, secret: string): Promise<string> {
   const key = await crypto.subtle.importKey(
     "raw",
     new TextEncoder().encode(secret),
@@ -29,7 +33,7 @@ async function signCookieValue(secret: string): Promise<string> {
     ["sign"]
   );
 
-  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(COOKIE_VALUE));
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value));
   return toHex(signature);
 }
 
@@ -37,13 +41,15 @@ async function isAdminAuthed(req: NextRequest): Promise<boolean> {
   const secret = (process.env.ADMIN_COOKIE_SECRET ?? "").trim();
   if (!secret) return false;
 
-  const cookieValue = req.cookies.get(COOKIE_NAME)?.value ?? "";
+  const value = req.cookies.get(COOKIE_NAME)?.value ?? "";
   const signature = req.cookies.get(SIG_NAME)?.value ?? "";
+  if (!value || !signature) return false;
 
-  if (cookieValue !== COOKIE_VALUE || !signature) return false;
+  // Expiry is checked before the HMAC so stale tokens are rejected outright.
+  if (!isSessionValueFresh(value)) return false;
 
-  const expectedSignature = await signCookieValue(secret);
-  return signature === expectedSignature;
+  const expected = await signValue(value, secret);
+  return safeEqual(signature, expected);
 }
 
 export async function proxy(req: NextRequest) {

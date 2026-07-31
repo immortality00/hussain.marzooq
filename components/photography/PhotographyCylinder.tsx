@@ -24,6 +24,21 @@ const AUTO_SPEED = 0.0032; // continuous rotation, radians/frame
 const KEY_SPEED = 0.02; // rotation while an arrow key is held
 const RESUME_MS = 1500;
 
+const FOV = 55;
+const FIT_MARGIN = 1.12; // breathing room around the front photo
+
+/**
+ * Distance needed for the front plane to fit BOTH axes at this aspect ratio.
+ * `fov` is vertical, so a narrow phone viewport crops horizontally unless the
+ * camera pulls back — this is what makes the cylinder usable on mobile.
+ */
+function fitDistance(aspect: number): number {
+  const halfFov = (FOV * Math.PI) / 180 / 2;
+  const forHeight = PLANE_H / 2 / Math.tan(halfFov);
+  const forWidth = PLANE_W / 2 / (Math.tan(halfFov) * Math.max(aspect, 0.0001));
+  return Math.max(forHeight, forWidth) * FIT_MARGIN;
+}
+
 /** Crop a loaded texture "cover"-style onto the fixed plane aspect. */
 function coverTexture(tex: THREE.Texture) {
   const img = tex.image as { width: number; height: number };
@@ -70,8 +85,9 @@ export default function PhotographyCylinder({
     // Few photos sway within the arc so nothing rotates into empty space.
     const maxRot = isFew ? Math.max(0.0001, ((count - 1) / 2) * spacing) : Infinity;
 
-    const camera = new THREE.PerspectiveCamera(55, 1, 0.1, 200);
-    camera.position.set(0, 0, radius + (isFew ? FEW_CAMERA : MANY_CAMERA));
+    const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 200);
+    const baseGap = isFew ? FEW_CAMERA : MANY_CAMERA;
+    camera.position.set(0, 0, radius + baseGap);
     camera.lookAt(0, 0, 0);
 
     const group = new THREE.Group();
@@ -213,7 +229,11 @@ export default function PhotographyCylinder({
       const h = canvas!.clientHeight;
       if (!w || !h) return;
       renderer.setSize(w, h, false);
-      camera.aspect = w / h;
+      const aspect = w / h;
+      camera.aspect = aspect;
+      // Pull back far enough that the front photo fits this viewport, never closer
+      // than the tuned desktop gap.
+      camera.position.z = radius + Math.max(baseGap, fitDistance(aspect));
       camera.updateProjectionMatrix();
     }
     resize();
@@ -278,7 +298,8 @@ export default function PhotographyCylinder({
     <div className="relative box-border h-[calc(100vh-21rem)] min-h-[440px] w-full overflow-hidden">
       <canvas ref={canvasRef} className="h-full w-full cursor-grab touch-none active:cursor-grabbing" />
       <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-white/15 bg-black/40 px-4 py-1.5 text-xs text-white/70 backdrop-blur">
-        Drag to rotate · click a photo to open
+        <span className="hidden sm:inline">Drag to rotate · click a photo to open</span>
+        <span className="sm:hidden">Swipe to rotate · tap to open</span>
       </div>
     </div>
   );

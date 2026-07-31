@@ -1,7 +1,10 @@
-import crypto from "crypto";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { isAdminPasswordConfigured, verifyAdminPassword } from "@/lib/auth/admin";
+import {
+  createAdminSessionCookies,
+  isAdminPasswordConfigured,
+  verifyAdminPassword,
+} from "@/lib/auth/admin";
 import {
   clearFixedWindowRateLimit,
   consumeFixedWindowRateLimit,
@@ -14,10 +17,6 @@ type SearchParams = {
 
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const MAX_LOGIN_ATTEMPTS = 5;
-
-function hmacHex(value: string, secret: string) {
-  return crypto.createHmac("sha256", secret).update(value).digest("hex");
-}
 
 function getSearchParamValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
@@ -86,23 +85,10 @@ async function login(formData: FormData) {
   });
 
   const cookieStore = await cookies();
-  const signature = hmacHex("ok", adminCookieSecret);
 
-  cookieStore.set("hm_admin", "ok", {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
-
-  cookieStore.set("hm_admin_sig", signature, {
-    httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7,
-  });
+  for (const cookie of createAdminSessionCookies(adminCookieSecret)) {
+    cookieStore.set(cookie.name, cookie.value, cookie.options);
+  }
 
   redirect(getSafeNextPath(nextPath));
 }

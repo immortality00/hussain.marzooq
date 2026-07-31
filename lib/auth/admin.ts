@@ -1,10 +1,14 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
-import type { NextRequest } from "next/server";
+import {
+  COOKIE_NAME,
+  SIG_NAME,
+  SESSION_TTL_SECONDS,
+  createSessionValue,
+  isSessionValueFresh,
+  safeEqual,
+} from "./session-token";
 
-const COOKIE_NAME = "hm_admin";
-const SIG_NAME = "hm_admin_sig";
-const COOKIE_VALUE = "ok";
 const SCRYPT_KEYLEN = 64;
 
 function hmacHex(value: string, secret: string) {
@@ -48,6 +52,10 @@ export function verifyAdminPassword(password: string) {
     return crypto.timingSafeEqual(derivedKey, parsed.hash);
   }
 
+  // DEPRECATED plaintext fallback — remove once ADMIN_PASSWORD_HASH is set in
+  // .env.local AND in the Netlify environment. Tracked as Session S1 in
+  // SESSION-QUEUE.md. Do not delete this branch before that migration, or admin
+  // login breaks in whichever environment still lacks the hash.
   const expectedRaw = (process.env.ADMIN_PASSWORD ?? "").trim();
   if (!expectedRaw) return false;
   return timingSafeEqualString(password, expectedRaw);
@@ -59,25 +67,35 @@ export function isAdminPasswordConfigured() {
   );
 }
 
-export function getAdminCookieNames() {
-  return { COOKIE_NAME, SIG_NAME, COOKIE_VALUE };
+/** Builds the cookie pair for a newly authenticated admin session. */
+export function createAdminSessionCookies(secret: string) {
+  const value = createSessionValue();
+
+  const options = {
+    httpOnly: true as const,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: SESSION_TTL_SECONDS,
+  };
+
+  return [
+    { name: COOKIE_NAME, value, options },
+    { name: SIG_NAME, value: hmacHex(value, secret), options },
+  ];
+}
+
+function verifyPair(value: string, signature: string): boolean {
+  const secret = (process.env.ADMIN_COOKIE_SECRET ?? "").trim();
+  if (!secret || !value || !signature) return false;
+  if (!isSessionValueFresh(value)) return false;
+
+  return safeEqual(signature, hmacHex(value, secret));
 }
 
 export async function isAdminAuthedServer(): Promise<boolean> {
-  const secret = (process.env.ADMIN_COOKIE_SECRET ?? "").trim();
-  if (!secret) return false;
-
   const jar = await cookies();
-  const v = jar.get(COOKIE_NAME)?.value ?? "";
-  const sig = jar.get(SIG_NAME)?.value ?? "";
-
-  if (v !== COOKIE_VALUE) return false;
-  const expected = hmacHex(COOKIE_VALUE, secret);
-
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length) return false;
-  return crypto.timingSafeEqual(a, b);
+  return verifyPair(jar.get(COOKIE_NAME)?.value ?? "", jar.get(SIG_NAME)?.value ?? "");
 }
 
 export async function requireAdminOr401() {
@@ -86,10 +104,4 @@ export async function requireAdminOr401() {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
   return null;
-}
-
-export function isAdminAuthedRequest(req: NextRequest, expectedSig: string): boolean {
-  const v = req.cookies.get(COOKIE_NAME)?.value ?? "";
-  const sig = req.cookies.get(SIG_NAME)?.value ?? "";
-  return v === COOKIE_VALUE && sig === expectedSig;
 }

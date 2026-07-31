@@ -20,7 +20,9 @@ export default function ModeSwitcher({
   className?: string;
 }) {
   return (
-    <div className={`items-center gap-1 rounded-full border bg-background/60 p-1 ${className}`}>
+    <div
+      className={`inline-flex items-center gap-1 rounded-full border bg-background/60 p-1 ${className}`}
+    >
       {MODES.map(({ mode: m, label, Icon }) => {
         const isActive = m === mode;
         return (
