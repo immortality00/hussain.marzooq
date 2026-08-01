@@ -21,6 +21,10 @@ async function main() {
 
   const salt = crypto.randomBytes(16);
   const derived = await scryptAsync(password.trim(), salt, 64);
+  // Format MUST match parseScryptHash() in lib/auth/admin.ts:
+  //   scrypt:<hex salt>:<hex hash>   (colon-delimited hex).
+  // Do NOT use "$" or base64: Next's env loader runs dotenv-expand, which treats
+  // "$" as a variable reference and would silently corrupt the stored hash.
   const hash = `scrypt:${salt.toString("hex")}:${derived.toString("hex")}`;
   console.log(hash);
 }

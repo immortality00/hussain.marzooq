@@ -47,7 +47,7 @@ D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ## Phase S — Security & hardening (do S1 before launch)
 
-### Session S1 — Finish the security migration — `pending`
+### Session S1 — Finish the security migration — `in-progress`
 Part of this work already shipped from Cowork (2026-07-31): expiring signed session
 tokens (`lib/auth/session-token.ts`), server-enforced expiry in both the Edge proxy and
 the Node auth lib, deduplicated cookie constants, and baseline security headers in
