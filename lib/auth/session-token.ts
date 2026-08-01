@@ -13,8 +13,15 @@
 export const COOKIE_NAME = "hm_admin";
 export const SIG_NAME = "hm_admin_sig";
 
-/** Session lifetime. Also used as the cookie maxAge. */
-export const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+/**
+ * Session lifetime. Also used as the cookie maxAge.
+ *
+ * Tokens are stateless — expiry is enforced server-side, but logout cannot kill a
+ * token before it expires. Kept deliberately short (2 days) to bound the exposure of
+ * a stolen token. True revocation would require a session store the Edge proxy can
+ * reach (see SESSION-QUEUE.md S1 item 5) and is out of scope here.
+ */
+export const SESSION_TTL_MS = 2 * 24 * 60 * 60 * 1000;
 export const SESSION_TTL_SECONDS = SESSION_TTL_MS / 1000;
 
 const TOKEN_VERSION = "v1";
