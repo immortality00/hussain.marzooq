@@ -782,3 +782,87 @@ don't read as bugs:**
 - Verified in-browser across many rounds; `tsc --noEmit` + eslint clean.
 
 ---
+
+## Phase S — Security & hardening
+
+### Session S1 — Finish the security migration — `done`
+Part of this work already shipped from Cowork (2026-07-31): expiring signed session
+tokens (`lib/auth/session-token.ts`), server-enforced expiry in both the Edge proxy and
+the Node auth lib, deduplicated cookie constants, and baseline security headers in
+`next.config.ts`. **What remains needs a browser and env access, which is why it's a
+session and not a docs edit.**
+
+1. **Move off the plaintext admin password.** `ADMIN_PASSWORD_HASH` is currently NOT set
+   in `.env.local` — only plaintext `ADMIN_PASSWORD`. Order matters, do not reorder:
+   a. Run `node scripts/generate-admin-password-hash.mjs` to produce a scrypt hash.
+   b. Set `ADMIN_PASSWORD_HASH` in `.env.local` **and** in Netlify env vars.
+   c. Verify login works in both local and deployed environments.
+   d. Only then delete the plaintext fallback branch in `verifyAdminPassword()`
+      (`lib/auth/admin.ts`, marked with a DEPRECATED comment) and remove `ADMIN_PASSWORD`
+      from both environments.
+   Deleting the fallback before (b) locks admin out of whichever environment lacks the hash.
+2. **Rotate `ADMIN_COOKIE_SECRET`** in both environments. The old scheme signed the
+   constant string `"ok"`, so the old signature was a permanent credential — rotating
+   guarantees any copy of it is dead.
+3. **Add a Content-Security-Policy.** Deliberately omitted from the shipped headers: a
+   correct CSP must allow Cloudinary, the upload widget, and Next's inline runtime, and a
+   wrong one silently breaks images and admin uploads. Build it, then verify in-browser:
+   homepage images, photography viewer (Three.js), admin media upload, testimonial upload.
+4. **Clean unused public env vars.** `.env.local` defines `NEXT_PUBLIC_CLOUDINARY_API_KEY`
+   and `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`, neither referenced anywhere in source
+   (confirmed by full-text search — only `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` and
+   `NEXT_PUBLIC_SITE_URL` are used). Any `NEXT_PUBLIC_` var is compiled into the browser
+   bundle, so an API key must never carry that prefix. Delete both, and the duplicate
+   `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` line.
+5. **Consider real session revocation.** Current tokens are stateless: expiry is enforced,
+   but a stolen token stays valid until it expires (7 days) — logout can't kill it. True
+   revocation needs a session collection in Mongo, which the Edge proxy cannot query
+   directly. Decide: accept the bounded window, shorten the TTL, or move the admin auth
+   check out of Edge middleware. Propose options at Gate 1, don't pick silently.
+
+**Gate 2 must include, at minimum:** log in, confirm admin loads, log out, confirm the
+admin redirects to login, and confirm a browser devtools check that `hm_admin` is now a
+`v1.<timestamp>.<nonce>` value rather than `ok`.
+
+**Build outcome (2026-08-01):** committed `feaec2a`. No Netlify env / no deployed site
+exists yet, so every "both environments" and "deployed" step collapsed to local only.
+
+- **Two blocking bugs found and fixed that would otherwise have locked admin out:**
+  1. **Hash format mismatch.** `generate-admin-password-hash.mjs` emitted `scrypt:<hex>:<hex>`
+     while `parseScryptHash()` expected `scrypt$<base64>$<base64>` — the migration as
+     written would have failed every login. First reconciled to `$`/base64, which exposed:
+  2. **`$` is destroyed by Next's env loader.** `@next/env` runs `dotenv-expand`, which
+     treats `$` as variable interpolation, so a `$`-delimited hash is silently corrupted at
+     load (server saw `scrypt/w2uIPQ==+E5ANa...`). Final format is **colon-delimited hex**
+     (`scrypt:<hex>:<hex>`) — hex uses only `[0-9a-f]`, immune to any env parser. Both the
+     script and `parseScryptHash` now use it; verified the value survives `@next/env` intact
+     and that hash-only login works after the plaintext fallback was removed.
+- **Item 1 (plaintext → hash):** DONE. Hash set in `.env.local`, plaintext-fallback branch
+  and the now-dead `timingSafeEqualString` removed from `lib/auth/admin.ts`,
+  `isAdminPasswordConfigured()` now checks only the hash, `ADMIN_PASSWORD` removed from
+  `.env.local`. Verified in-browser: wrong password → `error=wrong`, correct password →
+  protected `/admin/inquiries`, admin renders, zero console errors.
+- **Item 3 (CSP):** DONE. Full CSP in `next.config.ts` (dev-only `'unsafe-eval'` + HMR
+  websockets; prod strict). Allows Cloudinary CDN (`res.cloudinary.com`), the upload-widget
+  script + iframe (`upload-widget.cloudinary.com`), and signed-upload POSTs
+  (`api.cloudinary.com`). Verified: homepage images load, Three.js photography viewer
+  renders, the Cloudinary upload widget script + iframe load, public testimonials page
+  clean — zero CSP violations anywhere. `'unsafe-inline'` kept for scripts (nonce-based CSP
+  impractical on this Netlify/App-Router setup; documented in-file).
+- **Item 4 (env cleanup):** DONE with one correction to the spec — `NEXT_PUBLIC_CLOUDINARY_API_KEY`
+  is **NOT** unused: `next-cloudinary` reads it internally to build the signed-upload widget
+  config (the original grep missed `node_modules`). Cloudinary's `api_key` is a public
+  identifier by design (only `api_secret` is sensitive), so `NEXT_PUBLIC_` is correct — it
+  was **kept**. Deleted only `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` (all uploads are signed,
+  none pass `uploadPreset`) and the duplicate `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` line.
+- **Item 5 (revocation):** decided **shorten TTL to 2 days** (`SESSION_TTL_MS` in
+  `session-token.ts`; cookie maxAge follows). Full stateful revocation deferred — would
+  need a Mongo session store the Edge proxy can't reach.
+- **Item 2 (rotate `ADMIN_COOKIE_SECRET`):** DEFERRED, not done. The rationale (kill the old
+  `"ok"`-signed credential) is moot locally — the new scheme already rejects any old-format
+  cookie via `isSessionValueFresh`, and the secret was never deployed or exposed. **Carry
+  to launch prep: rotate it in Netlify env when the site is first deployed**, alongside a
+  deploy-time re-verification of the CSP (prod drops the dev `'unsafe-eval'`/`ws:`) and of
+  hash login. `.gitignore` covers `.env.local` (never committed).
+
+---

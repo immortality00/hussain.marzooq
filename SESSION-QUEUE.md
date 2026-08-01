@@ -47,47 +47,6 @@ D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ## Phase S — Security & hardening (do S1 before launch)
 
-### Session S1 — Finish the security migration — `in-progress`
-Part of this work already shipped from Cowork (2026-07-31): expiring signed session
-tokens (`lib/auth/session-token.ts`), server-enforced expiry in both the Edge proxy and
-the Node auth lib, deduplicated cookie constants, and baseline security headers in
-`next.config.ts`. **What remains needs a browser and env access, which is why it's a
-session and not a docs edit.**
-
-1. **Move off the plaintext admin password.** `ADMIN_PASSWORD_HASH` is currently NOT set
-   in `.env.local` — only plaintext `ADMIN_PASSWORD`. Order matters, do not reorder:
-   a. Run `node scripts/generate-admin-password-hash.mjs` to produce a scrypt hash.
-   b. Set `ADMIN_PASSWORD_HASH` in `.env.local` **and** in Netlify env vars.
-   c. Verify login works in both local and deployed environments.
-   d. Only then delete the plaintext fallback branch in `verifyAdminPassword()`
-      (`lib/auth/admin.ts`, marked with a DEPRECATED comment) and remove `ADMIN_PASSWORD`
-      from both environments.
-   Deleting the fallback before (b) locks admin out of whichever environment lacks the hash.
-2. **Rotate `ADMIN_COOKIE_SECRET`** in both environments. The old scheme signed the
-   constant string `"ok"`, so the old signature was a permanent credential — rotating
-   guarantees any copy of it is dead.
-3. **Add a Content-Security-Policy.** Deliberately omitted from the shipped headers: a
-   correct CSP must allow Cloudinary, the upload widget, and Next's inline runtime, and a
-   wrong one silently breaks images and admin uploads. Build it, then verify in-browser:
-   homepage images, photography viewer (Three.js), admin media upload, testimonial upload.
-4. **Clean unused public env vars.** `.env.local` defines `NEXT_PUBLIC_CLOUDINARY_API_KEY`
-   and `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`, neither referenced anywhere in source
-   (confirmed by full-text search — only `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` and
-   `NEXT_PUBLIC_SITE_URL` are used). Any `NEXT_PUBLIC_` var is compiled into the browser
-   bundle, so an API key must never carry that prefix. Delete both, and the duplicate
-   `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` line.
-5. **Consider real session revocation.** Current tokens are stateless: expiry is enforced,
-   but a stolen token stays valid until it expires (7 days) — logout can't kill it. True
-   revocation needs a session collection in Mongo, which the Edge proxy cannot query
-   directly. Decide: accept the bounded window, shorten the TTL, or move the admin auth
-   check out of Edge middleware. Propose options at Gate 1, don't pick silently.
-
-**Gate 2 must include, at minimum:** log in, confirm admin loads, log out, confirm the
-admin redirects to login, and confirm a browser devtools check that `hm_admin` is now a
-`v1.<timestamp>.<nonce>` value rather than `ok`.
-
----
-
 ### Session S6 — Remove `unoptimized` from testimonial images — `pending`
 Found 2026-07-31 after the Cloudinary custom loader shipped.
 `components/testimonials/SafeImage.tsx:14` and
