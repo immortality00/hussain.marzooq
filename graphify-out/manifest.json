@@ -350,9 +350,9 @@
     "semantic_hash": "cb20e0413795e63af770da85275281a3"
   },
   "app/admin/(protected)/testimonials/components/TestimonialForm.tsx": {
-    "mtime": 1782754678.000052,
-    "ast_hash": "eeb11f8e90f354959fe0e9bda77f13e5",
-    "semantic_hash": "eeb11f8e90f354959fe0e9bda77f13e5"
+    "mtime": 1785742763.3039901,
+    "ast_hash": "52f91ec70341c54831b7db66d7ea008d",
+    "semantic_hash": ""
   },
   "app/admin/(protected)/testimonials/components/TestimonialList.tsx": {
     "mtime": 1782753770.337883,
@@ -920,9 +920,9 @@
     "semantic_hash": "dadb590394cf2d3ee5022fd10f58e206"
   },
   "components/site/Navbar.tsx": {
-    "mtime": 1783511331.825272,
-    "ast_hash": "67b11c7c2f55d119ce6b7afbadb86968",
-    "semantic_hash": "67b11c7c2f55d119ce6b7afbadb86968"
+    "mtime": 1785742767.8809433,
+    "ast_hash": "0a84888735b8b21521ea50e41ee25beb",
+    "semantic_hash": ""
   },
   "components/site/PortfolioFallbackPanel.tsx": {
     "mtime": 1782834317.2743735,
@@ -960,9 +960,9 @@
     "semantic_hash": "66773834c309a46daaae058d7494d679"
   },
   "components/testimonials/ReviewModal.tsx": {
-    "mtime": 1782889876.426791,
-    "ast_hash": "1792044b0acea153e3e9bc5c716c2855",
-    "semantic_hash": "1792044b0acea153e3e9bc5c716c2855"
+    "mtime": 1785742756.6693068,
+    "ast_hash": "c88ba3f986399b69dc00357343b717cd",
+    "semantic_hash": ""
   },
   "components/testimonials/ReviewPhotoStrip.tsx": {
     "mtime": 1782889840.2838511,
@@ -975,9 +975,9 @@
     "semantic_hash": ""
   },
   "components/testimonials/SingleReviewCard.tsx": {
-    "mtime": 1782889892.0430827,
-    "ast_hash": "1797b9f78236e2466ec7c87f2cfea651",
-    "semantic_hash": "1797b9f78236e2466ec7c87f2cfea651"
+    "mtime": 1785742759.8317814,
+    "ast_hash": "37e843a0d91de64fee0c27c850c815ba",
+    "semantic_hash": ""
   },
   "components/testimonials/TestimonialMap.tsx": {
     "mtime": 1785737530.7184136,
@@ -1235,9 +1235,9 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1783514159.2828412,
-    "ast_hash": "2dcf822a6229bb3ae36e06d9d867fb4a",
-    "semantic_hash": "2dcf822a6229bb3ae36e06d9d867fb4a"
+    "mtime": 1785741926.5125551,
+    "ast_hash": "b5277226a902f6d3a47f7c4f05221875",
+    "semantic_hash": ""
   },
   "postcss.config.mjs": {
     "mtime": 1767717951.7193127,
@@ -1320,8 +1320,8 @@
     "semantic_hash": "c698309979460d0f02ba616417844399"
   },
   "CLAUDE.md": {
-    "mtime": 1785740168.9395888,
-    "ast_hash": "1c2c99771de444ce2e90228d83c97d7f",
+    "mtime": 1785743380.2847877,
+    "ast_hash": "1895c4fe24edaf5c0949395c72e41e78",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1330,8 +1330,8 @@
     "semantic_hash": "f15aaa42d5d299d091b1171097ea56ad"
   },
   "SESSION-QUEUE.md": {
-    "mtime": 1785739730.7576907,
-    "ast_hash": "4f58c82b03091ddead1bd32c4fc2dbbb",
+    "mtime": 1785743334.3505836,
+    "ast_hash": "fa8d28325dc08dfc0da06fab33d5cbd9",
     "semantic_hash": ""
   },
   "public/file.svg": {
@@ -1400,8 +1400,8 @@
     "semantic_hash": ""
   },
   "SESSION-ARCHIVE.md": {
-    "mtime": 1785738956.431454,
-    "ast_hash": "b260ff64ccebcc94f716cf25942664a0",
+    "mtime": 1785743362.1616952,
+    "ast_hash": "92cdf3e3d95e93cbc6a776c6489fcc8b",
     "semantic_hash": ""
   },
   "lib/auth/session-token.ts": {
@@ -1412,6 +1412,31 @@
   "lib/cloudinary-image-loader.ts": {
     "mtime": 1785483227.8608592,
     "ast_hash": "e990290cfbf12dea7b9c382aa095b082",
+    "semantic_hash": ""
+  },
+  "test/auth/session-token.test.ts": {
+    "mtime": 1785741078.4396517,
+    "ast_hash": "192a8c0a881b013bfb59c1e1c2bb6da4",
+    "semantic_hash": ""
+  },
+  "test/auth/verify-admin-password.test.ts": {
+    "mtime": 1785741089.817303,
+    "ast_hash": "fe4faeecad12bab5fa42f4cadc11ee1b",
+    "semantic_hash": ""
+  },
+  "test/smoke/server-modules.test.ts": {
+    "mtime": 1785741921.8938832,
+    "ast_hash": "03ecdfcf7d0bcc6e29a13f687607528a",
+    "semantic_hash": ""
+  },
+  "vitest.config.ts": {
+    "mtime": 1785741964.2252982,
+    "ast_hash": "af927f28c26876e0aa0b849f833b7f9a",
+    "semantic_hash": ""
+  },
+  ".github/workflows/ci.yml": {
+    "mtime": 1785741933.7030993,
+    "ast_hash": "99222ae0818276d1987f5fd82c5bec6f",
     "semantic_hash": ""
   }
 }
