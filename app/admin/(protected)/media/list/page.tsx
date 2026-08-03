@@ -95,7 +95,7 @@ export default function AdminMediaListPage() {
         setLoadingMore(false);
       }
     },
-    [categoryFilter, query, typeFilter, visibilityFilter]
+    [categoryFilter, query, typeFilter, visibilityFilter, setBanner]
   );
 
   useEffect(() => {

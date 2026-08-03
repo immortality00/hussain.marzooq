@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAdminAction } from "./useAdminAction";
 
@@ -35,7 +35,7 @@ export function usePeopleAdmin() {
 
   const actionBusy = saving || Boolean(deletingId);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setBanner(null);
     try {
@@ -55,9 +55,9 @@ export function usePeopleAdmin() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [setBanner]);
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [load]);
 
   useEffect(() => {
     if (!editingId && createPrefill) {

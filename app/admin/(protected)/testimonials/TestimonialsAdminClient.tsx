@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useAdminAction } from "@/hooks/useAdminAction";
 import type { TestimonialItem } from "./components/TestimonialShared";
@@ -19,7 +19,7 @@ export default function TestimonialsAdminClient() {
 
   const actionBusy = Boolean(updatingId || deletingId);
 
-  async function load() {
+  const load = useCallback(async () => {
     setLoading(true);
     setBanner(null);
     try {
@@ -39,9 +39,9 @@ export default function TestimonialsAdminClient() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [setBanner]);
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); }, [load]);
 
   const stats = useMemo(() => {
     const approved = items.filter((i) => i.isApproved).length;
