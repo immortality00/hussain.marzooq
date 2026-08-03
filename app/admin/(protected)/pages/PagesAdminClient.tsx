@@ -35,6 +35,7 @@ export function PagesAdminClient({
             onToggleOpen={() => admin.setExpanded((prev) => (prev === row.key ? null : row.key))}
             isActive={admin.isActiveOf(row)}
             cardImage={row.settingsSlug ? admin.cardImageOf(row) : undefined}
+            needsImage={admin.needsImage(row)}
             seo={row.seoSlug ? admin.seoOf(row) : EMPTY_SEO_DRAFT}
             sectionsData={row.sectionsSlug ? admin.sectionsOf(row) : undefined}
             dirty={admin.isDirty(row)}
