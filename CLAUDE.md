@@ -215,6 +215,22 @@ testimonials. Required for the globe (queue §C4).
   files actually changed and confirm each listed item was completed, not just attempted.**
   (F2 and N1 both shipped gaps that were only caught by later audits — archive §F2, §N1.)
 
+## Testing & CI (S3, shipped 2026-08-03 — archive §S3)
+- **Runner: Vitest.** `npm test` (= `vitest run`), `npm test:watch` for the loop. Config in
+  `vitest.config.ts` (node env, `@/*` alias, dummy `MONGODB_URI`/`RESEND_API_KEY` so
+  import-time reads don't throw or hit the network). Tests live in `test/`.
+- **Never run `next build` to verify.** The verification chain is `tsc --noEmit` + `eslint`
+  + `npm test` + the dev server. CI (`.github/workflows/ci.yml`, Node 22) runs exactly
+  those three checks on push (`master`, `v2-portfolio`) + PR — no build step.
+- **Coverage today is deliberately minimal:** auth pure functions
+  (`lib/auth/session-token.ts`, `verifyAdminPassword`) + a smoke test that every
+  `lib/server/*.ts` and `app/api/**/route.ts` module imports without throwing. RSC
+  `page.tsx` trees are excluded from the smoke test (browser-only libs touch `window` at
+  module scope). Deeper coverage is an open decision (queue "Gaps" item 4).
+- **New pure logic — especially anything touching auth — gets a test in the same session.**
+- **`npm run lint` must stay at 0 errors** (CI fails on errors, not warnings). Remaining
+  `exhaustive-deps` warnings are tracked in queue S7; don't let new ones accumulate.
+
 ## Security rules — check at Gate 1 of every session
 These exist because a 2026-07-31 audit found a static, non-expiring admin session cookie
 that had been live since the auth was written, and a plaintext password fallback silently

@@ -904,3 +904,52 @@ reported them at Gate 2, approved fixing both):**
    chevrons and dot indicators (both pre-existing). Matches Hussain's standing "no
    scroll-jacking" rule. Verified: wheel over reviews scrolls the page and does not change
    the active review; chevrons + dots still navigate.
+
+---
+
+### Session S3 — Automated test baseline — `done`
+**Spec (as queued):** No test script in `package.json` and no CI; verification was
+`tsc --noEmit` + eslint + Gate-2 manual checks, which had already let real gaps ship
+(§F2, §N1). Minimum viable baseline: (1) a test runner + `npm test`; (2) auth tests first
+(`lib/auth/session-token.ts` round-trip/expiry/malformed/version/`safeEqual`, and
+`verifyAdminPassword` correct/incorrect/missing-config); (3) a smoke test that public
+route modules import without throwing; (4) optional GitHub Action running
+typecheck + lint + test.
+
+**Outcome — shipped 2026-08-03:**
+- **Runner: Vitest** (`^3.2`), chosen over `node:test` because the repo's `@/*` alias, TS/ESM,
+  env stubbing, and the smoke test's module discovery all work out of the box. Added
+  `test` (`vitest run`) + `test:watch` scripts. `vitest.config.ts`: node environment,
+  regex alias `/^@\//` → repo root (so scoped npm packages like `@gsap/react` are left
+  alone), and dummy `MONGODB_URI`/`MONGODB_DB_NAME`/`RESEND_API_KEY` env so modules that
+  read those at import time don't throw or hit the network.
+- **`test/auth/session-token.test.ts`** (15 tests): token shape + fresh nonce, `parseIssuedAt`
+  valid + all malformed branches, `isWithinTtl` inside/at/past the 2-day boundary + the
+  ±60s skew window, `isSessionValueFresh`, `safeEqual` (equal / length-mismatch / same-length-differ).
+- **`test/auth/verify-admin-password.test.ts`** (7 tests): builds a real `scrypt:<hex>:<hex>`
+  hash in-test and asserts correct→true, wrong→false, missing-config→false, wrong-prefix→false,
+  non-hex→false, plus `isAdminPasswordConfigured` true/false. `next/headers` is mocked so the
+  test doesn't depend on Next's request runtime.
+- **`test/smoke/server-modules.test.ts`** (53 tests): `import.meta.glob` over
+  `lib/server/*.ts` + `app/api/**/route.ts` (51 modules) — each must import without throwing.
+  RSC `page.tsx` trees excluded (they pull browser-only libs — Lenis, react-globe.gl,
+  GSAP/Three — that touch `window` at module scope). Needs `/// <reference types="vite/client" />`
+  for `import.meta.glob` typing under `tsc`.
+- **CI:** `.github/workflows/ci.yml` on push (`master`, `v2-portfolio`) + PR — Node 22,
+  `npm ci`, then `typecheck → lint → test`. **No `next build`** (matches the standing
+  verify-without-build rule).
+- **Security / supply chain:** Vitest introduced **zero** vulnerable packages — the 5
+  pre-existing high-severity advisories (`next`, `sharp`, `postcss`, `js-yaml`,
+  `brace-expansion`) predate this session; `npm audit fix` deliberately NOT run (would risk
+  breaking `next`/`sharp`, out of scope). Added `esbuild@0.28.1: true` to `allowScripts`
+  (its install script is vitest's; reviewed and allowed, matching the existing pinned-entry
+  convention).
+- **Lint:** the repo's `npm run lint` was already red (7 errors) before this session. Fixed
+  all 7 so CI is green: six `react/no-unescaped-entities` (`"` → `&quot;`, renders
+  identically — `ReviewModal.tsx`, `SingleReviewCard.tsx`, admin `TestimonialForm.tsx`)
+  and one `react-hooks/set-state-in-effect` on `Navbar.tsx`'s next-themes hydration-mount
+  flag (suppressed with a justified `eslint-disable-next-line`; the one-shot `setState` is
+  the documented pattern). Three `exhaustive-deps` **warnings** left deliberately (don't fail
+  lint) and queued as **S7** — fixing them changes effect re-run timing and needs per-surface
+  verification.
+- **Result:** `npm test` 75/75, `tsc --noEmit` clean, `npm run lint` 0 errors (exit 0).

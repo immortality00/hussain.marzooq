@@ -43,27 +43,36 @@ D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 3. **Radius scale decision.** 83 arbitrary `rounded-[Xrem]` uses vs the 3-token rule
    (details in CLAUDE.md, Design tokens). (a) codify the de-facto scale as the rule, or
    (b) a deliberate scoped conversion pass. Waiting on the call — do not quietly pick.
-4. **No tests / CI.** Verification today is `tsc --noEmit` + eslint + Gate-2 eyes only.
-   Decide whether a minimal automated-test baseline gets its own session before launch.
+4. **Tests / CI — baseline shipped (S3, archive §S3).** Vitest baseline + `npm test`
+   (auth unit tests + server-module import smoke) and a GitHub Action running
+   typecheck + lint + test now exist. Still deliberately minimal — no component/route
+   behaviour coverage. Decide whether deeper coverage warrants its own session before
+   launch, or waits until after.
 
 ---
 
 ## Phase S — Security & hardening (do S1 before launch)
 
-### Session S3 — Automated test baseline — `pending`
-There is no test script in `package.json` and no CI. Verification today is
-`tsc --noEmit` + eslint + Gate-2 manual checks. That has already let real gaps ship
-(archive §F2, §N1 — both caught by later audits, not at commit time).
+### Session S7 — Resolve remaining eslint `exhaustive-deps` warnings — `pending`
+S3 cleared all 7 eslint **errors** so `npm run lint` exits 0 and CI is green. Three
+`react-hooks/exhaustive-deps` **warnings** remain — deliberately left by S3 because fixing
+a dependency array changes *when* an effect/callback re-runs (get it wrong → infinite fetch
+loop or re-render storm), which is a real behaviour change, not a lint cosmetic. Each needs
+the data-loading path read fully before touching.
 
-Minimum viable baseline, not full coverage:
-1. Test runner (propose Vitest vs node:test for a Next 16 project) + `npm test` script.
-2. **Auth tests first** — highest value, pure functions, no DB needed:
-   `lib/auth/session-token.ts` (token round-trip, expiry boundary, malformed input,
-   version mismatch, `safeEqual`) and `verifyAdminPassword` (correct/incorrect/missing-config).
-3. A smoke test that every public route module imports without throwing.
-4. Optional: GitHub Action running typecheck + lint + test on push.
+The three warnings:
+1. `app/admin/(protected)/media/list/page.tsx:98` — `useCallback` missing `setBanner`.
+2. `app/admin/(protected)/testimonials/TestimonialsAdminClient.tsx:44` — `useEffect` missing `load`.
+3. `hooks/usePeopleAdmin.ts:60` — `useEffect` missing `load`.
 
-Propose the runner and the exact test list at Gate 1 before writing.
+Notes:
+- Two of the three are **admin files** — this overlaps admin-session territory; treat it as
+  a real change with Gate-2 verification of each affected admin surface, not a lint pass.
+- The usual correct fix for the `load` cases is to wrap `load` in `useCallback` (stable
+  identity) and then list it, **not** to just add the current `load` to the array (which
+  would re-run every render). Verify no fetch loop after each change.
+- After the fix, consider tightening `npm run lint` to `--max-warnings 0` so warnings can't
+  silently accumulate again — propose at Gate 1, don't assume.
 
 ---
 
