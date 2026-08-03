@@ -400,9 +400,9 @@
     "semantic_hash": "c66b208aa78b47ecfb87e2e79dbffe38"
   },
   "app/api/admin/page-sections/[slug]/route.ts": {
-    "mtime": 1783447655.5908146,
-    "ast_hash": "b05baac1b2b82a6e041df0753d38bc77",
-    "semantic_hash": "b05baac1b2b82a6e041df0753d38bc77"
+    "mtime": 1785773807.5692344,
+    "ast_hash": "15f4e67fa3045269769bb4f5cc7edec4",
+    "semantic_hash": ""
   },
   "app/api/admin/page-seo/[slug]/route.ts": {
     "mtime": 1782980493.9712102,
@@ -410,9 +410,9 @@
     "semantic_hash": "37ee09072c61ab38a362e9663fb9da77"
   },
   "app/api/admin/page-settings/[slug]/route.ts": {
-    "mtime": 1783447641.209205,
-    "ast_hash": "7768955178247e099e1ea68dff238043",
-    "semantic_hash": "7768955178247e099e1ea68dff238043"
+    "mtime": 1785773796.9273727,
+    "ast_hash": "e0246f59d5fe7b7909b08dad044482b3",
+    "semantic_hash": ""
   },
   "app/api/inquiries/[id]/route.ts": {
     "mtime": 1782890360.0018575,
@@ -1105,9 +1105,9 @@
     "semantic_hash": "f8014e8e20a681230559484f892c532d"
   },
   "lib/page-sections-shared.ts": {
-    "mtime": 1783447175.3447278,
-    "ast_hash": "9f2d1bacf526410ec0fa902528729bb1",
-    "semantic_hash": "9f2d1bacf526410ec0fa902528729bb1"
+    "mtime": 1785773776.278786,
+    "ast_hash": "be5ab1c2175fd8d172de72e922f2204f",
+    "semantic_hash": ""
   },
   "lib/private-galleries.ts": {
     "mtime": 1780679448.6015356,
@@ -1330,9 +1330,9 @@
     "semantic_hash": "f15aaa42d5d299d091b1171097ea56ad"
   },
   "SESSION-QUEUE.md": {
-    "mtime": 1785772628.8132381,
-    "ast_hash": "fc0b865bb5d37a667c0b975baf587d33",
-    "semantic_hash": "fc0b865bb5d37a667c0b975baf587d33"
+    "mtime": 1785774358.8613024,
+    "ast_hash": "73b794bc7db8f3557a651e16bdd0023d",
+    "semantic_hash": ""
   },
   "public/file.svg": {
     "mtime": 1767717951.7198257,
@@ -1400,9 +1400,9 @@
     "semantic_hash": "a2bdee4fb2783ac465076738c25ce3e0"
   },
   "SESSION-ARCHIVE.md": {
-    "mtime": 1785772613.964901,
-    "ast_hash": "e2ab311b8aacd93184ea19666c3c1f51",
-    "semantic_hash": "e2ab311b8aacd93184ea19666c3c1f51"
+    "mtime": 1785774383.9590814,
+    "ast_hash": "2f373e0a04bafe3e87b56bcfda8edabf",
+    "semantic_hash": ""
   },
   "lib/auth/session-token.ts": {
     "mtime": 1785490458.2333324,
@@ -1448,5 +1448,10 @@
     "mtime": 1785770433.6965015,
     "ast_hash": "cdef971a7c059efb59728194694a9580",
     "semantic_hash": "cdef971a7c059efb59728194694a9580"
+  },
+  "test/section-images.test.ts": {
+    "mtime": 1785773815.667373,
+    "ast_hash": "07e0b00bc36429f8caec404827a8d4f0",
+    "semantic_hash": ""
   }
 }

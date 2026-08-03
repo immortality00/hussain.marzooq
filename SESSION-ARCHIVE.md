@@ -1055,3 +1055,54 @@ means empty" upheld, no auto-pick), add an admin warning so a visible surface ca
   broken image.
 - **Flagged, out of scope:** the D1 preloader appeared to replay/loop across rapid dev
   navigations — noted for Hussain, not investigated here.
+
+---
+
+## Phase S — Security & hardening
+
+### Session S5 — `page-settings` PATCH treats partial updates as full replacement — `done`
+**Latent data-loss bug, not currently firing.** In
+`app/api/admin/page-settings/[slug]/route.ts`:
+
+```
+line 29:  const cardImage = isSectionImage(body.cardImage) ? body.cardImage : EMPTY_SECTION_IMAGE;
+line 36:  await deleteReplacedSectionImages({ cardImage: existing?.cardImage }, { cardImage });
+line 38:  updateOne({ slug }, { $set: { ..., cardImage, ... } }, { upsert: true })
+```
+
+Any PATCH that omits `cardImage` silently resets it to empty **and** — because
+`deleteReplacedSectionImages` runs on the diff — permanently deletes the uploaded
+Cloudinary asset. Only uploads are destroyed (non-empty `publicId`); library picks are
+dereferenced but survive.
+
+Today's admin client always sends both fields
+(`usePagesAdmin.ts:204`), so nothing is losing data right now. The risk is any future
+caller — a script, a curl, a second admin surface, a partial-save refactor.
+
+Fix: make `cardImage` genuinely optional — only touch the field when the key is
+**present** in the request body; omission means "leave unchanged." Same review pass
+should check `app/api/admin/page-sections/[slug]/route.ts` for the identical pattern.
+Strictly a safety change, no behaviour change to the current UI.
+
+**Build outcome (2026-08-03):**
+- New client-safe pure helper `resolveOptionalCardImage(body)` in
+  `lib/page-sections-shared.ts`: a **present** `cardImage` key (even null/garbage) is an
+  explicit set — garbage/null → `EMPTY_SECTION_IMAGE` (clear); an **absent** key → returns
+  `undefined`, meaning "leave unchanged."
+- `page-settings` PATCH route now builds `$set` incrementally: `slug`/`isActive`/`updatedAt`
+  always; `cardImage` — plus the `findOne` and the `deleteReplacedSectionImages` diff — only
+  when `resolveOptionalCardImage` returns a value. Response echoes `cardImage` only when it
+  participated. No behaviour change to today's UI (client still sends both fields → identical
+  stored result).
+- `page-sections` PATCH route: the field-omission bug doesn't exist there (the whole body
+  *is* `data`, always sent whole), but it lacked a shape guard — a null/array/primitive body
+  would corrupt the stored doc and orphan-delete every uploaded asset via the diff. Added
+  `if (!isRecord(data) || Array.isArray(data)) return 400`. Empty `{}` stays valid ("empty
+  means empty").
+- New unit test `test/section-images.test.ts` (4 cases, no mocks) covers
+  `resolveOptionalCardImage`: absent → undefined, valid → echo, null/malformed → empty image.
+- **Verification:** `tsc --noEmit` clean · `npm run lint` 0/0 · `vitest` 57 passed (new 4 +
+  smoke importing both edited routes). No CLAUDE.md impact (pure safety hardening, no
+  rule/constraint/architecture change).
+- Gate 1 security line: no new trust boundary (same admin-gated PATCH routes); no secret into
+  client; this session *adds* input validation; no rate-limit change (admin-authed, not public).

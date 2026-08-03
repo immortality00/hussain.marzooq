@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
-import { EMPTY_SECTION_IMAGE, isSectionImage } from "@/lib/page-sections-shared";
+import { resolveOptionalCardImage } from "@/lib/page-sections-shared";
 import { deleteReplacedSectionImages } from "@/lib/server/section-images";
 
 export const dynamic = "force-dynamic";
@@ -26,20 +26,28 @@ export async function PATCH(
     return NextResponse.json({ error: "isActive must be a boolean" }, { status: 400 });
   }
 
-  const cardImage = isSectionImage(body.cardImage) ? body.cardImage : EMPTY_SECTION_IMAGE;
+  // Only touch cardImage when the key is present. An omitted cardImage means
+  // "leave it unchanged" — never blank it (and never delete its Cloudinary
+  // asset) just because a partial PATCH didn't mention it.
+  const cardImage = resolveOptionalCardImage(body);
 
   const db = await getDb();
 
-  // Delete a previously uploaded card image if it was replaced or removed.
-  // Library-picked images have an empty publicId and are never deleted here.
-  const existing = await db.collection("page_settings").findOne({ slug });
-  await deleteReplacedSectionImages({ cardImage: existing?.cardImage }, { cardImage });
+  const set: Record<string, unknown> = {
+    slug,
+    isActive: body.isActive,
+    updatedAt: new Date(),
+  };
 
-  await db.collection("page_settings").updateOne(
-    { slug },
-    { $set: { slug, isActive: body.isActive, cardImage, updatedAt: new Date() } },
-    { upsert: true },
-  );
+  if (cardImage !== undefined) {
+    // Delete a previously uploaded card image if it was replaced or removed.
+    // Library-picked images have an empty publicId and are never deleted here.
+    const existing = await db.collection("page_settings").findOne({ slug });
+    await deleteReplacedSectionImages({ cardImage: existing?.cardImage }, { cardImage });
+    set.cardImage = cardImage;
+  }
+
+  await db.collection("page_settings").updateOne({ slug }, { $set: set }, { upsert: true });
 
   // Invalidate all pages that reference discipline links
   const AFFECTED_PATHS = ["/", "/about", "/blog", "/testimonials", "/people", "/dancing"];
@@ -47,5 +55,9 @@ export async function PATCH(
     revalidatePath(path);
   }
 
-  return NextResponse.json({ slug, isActive: body.isActive, cardImage });
+  return NextResponse.json({
+    slug,
+    isActive: body.isActive,
+    ...(cardImage !== undefined ? { cardImage } : {}),
+  });
 }

@@ -53,32 +53,6 @@ D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ## Phase S — Security & hardening (do S1 before launch)
 
-### Session S5 — `page-settings` PATCH treats partial updates as full replacement — `pending`
-**Latent data-loss bug, not currently firing.** In
-`app/api/admin/page-settings/[slug]/route.ts`:
-
-```
-line 29:  const cardImage = isSectionImage(body.cardImage) ? body.cardImage : EMPTY_SECTION_IMAGE;
-line 36:  await deleteReplacedSectionImages({ cardImage: existing?.cardImage }, { cardImage });
-line 38:  updateOne({ slug }, { $set: { ..., cardImage, ... } }, { upsert: true })
-```
-
-Any PATCH that omits `cardImage` silently resets it to empty **and** — because
-`deleteReplacedSectionImages` runs on the diff — permanently deletes the uploaded
-Cloudinary asset. Only uploads are destroyed (non-empty `publicId`); library picks are
-dereferenced but survive.
-
-Today's admin client always sends both fields
-(`usePagesAdmin.ts:204`), so nothing is losing data right now. The risk is any future
-caller — a script, a curl, a second admin surface, a partial-save refactor.
-
-Fix: make `cardImage` genuinely optional — only touch the field when the key is
-**present** in the request body; omission means "leave unchanged." Same review pass
-should check `app/api/admin/page-sections/[slug]/route.ts` for the identical pattern.
-Strictly a safety change, no behaviour change to the current UI.
-
----
-
 ### Session S2 — Reuse audit against the real code rule — `pending`
 **Run after S3 — a refactor this wide must be covered by the test baseline first.**
 

@@ -42,6 +42,18 @@ export function collectSectionImagePublicIds(value: unknown): string[] {
   return Array.from(new Set(found));
 }
 
+// Resolves an optional SectionImage field on a PATCH body. A present key —
+// even null or garbage — is an explicit intent to set the field (garbage means
+// "clear it"). An absent key means "leave the stored value unchanged", so the
+// caller must skip the $set (and the replace-delete diff) entirely. This is
+// what keeps a partial update from wiping a field the request never mentioned.
+export function resolveOptionalCardImage(
+  body: Record<string, unknown>,
+): SectionImage | undefined {
+  if (!Object.prototype.hasOwnProperty.call(body, "cardImage")) return undefined;
+  return isSectionImage(body.cardImage) ? body.cardImage : EMPTY_SECTION_IMAGE;
+}
+
 export type TextCard = { title: string; text: string; image: SectionImage };
 export type CtaCopy = { title: string; description: string; buttonLabel: string };
 
