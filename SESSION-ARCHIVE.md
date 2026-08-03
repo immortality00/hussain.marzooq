@@ -953,3 +953,49 @@ typecheck + lint + test.
   lint) and queued as **S7** — fixing them changes effect re-run timing and needs per-surface
   verification.
 - **Result:** `npm test` 75/75, `tsc --noEmit` clean, `npm run lint` 0 errors (exit 0).
+
+---
+
+### Session S7 — Resolve remaining eslint `exhaustive-deps` warnings — `done`
+S3 cleared all 7 eslint **errors** so `npm run lint` exits 0 and CI is green. Three
+`react-hooks/exhaustive-deps` **warnings** remain — deliberately left by S3 because fixing
+a dependency array changes *when* an effect/callback re-runs (get it wrong → infinite fetch
+loop or re-render storm), which is a real behaviour change, not a lint cosmetic. Each needs
+the data-loading path read fully before touching.
+
+The three warnings:
+1. `app/admin/(protected)/media/list/page.tsx:98` — `useCallback` missing `setBanner`.
+2. `app/admin/(protected)/testimonials/TestimonialsAdminClient.tsx:44` — `useEffect` missing `load`.
+3. `hooks/usePeopleAdmin.ts:60` — `useEffect` missing `load`.
+
+Notes:
+- Two of the three are **admin files** — this overlaps admin-session territory; treat it as
+  a real change with Gate-2 verification of each affected admin surface, not a lint pass.
+- The usual correct fix for the `load` cases is to wrap `load` in `useCallback` (stable
+  identity) and then list it, **not** to just add the current `load` to the array (which
+  would re-run every render). Verify no fetch loop after each change.
+- After the fix, consider tightening `npm run lint` to `--max-warnings 0` so warnings can't
+  silently accumulate again — propose at Gate 1, don't assume.
+
+**Build outcome (2026-08-03):**
+- Root insight: all three `load` paths close over **only stable references** — `useState`
+  setters plus `setBanner` (`= setFeedback` from `useAdminAction`, itself a raw `useState`
+  setter, so stable identity is React-guaranteed). ESLint flags `setBanner` only because it
+  crosses a custom-hook boundary it can't statically prove stable. Fixes therefore add
+  identity that never changes → zero behaviour change, no fetch loop.
+- **media/list/page.tsx** — `load` was already a `useCallback`; added `setBanner` to its
+  deps. The debounced `useEffect(…, [load])` still re-runs only on filter change.
+- **TestimonialsAdminClient.tsx** — wrapped `load` in `useCallback([setBanner])`; effect
+  now `[load]`. Added `useCallback` to the React import.
+- **usePeopleAdmin.ts** — same `useCallback([setBanner])` treatment; `save()` still calls
+  `load()` after a successful write. Added `useCallback` to the React import.
+- **Guardrail adopted** (Hussain approved): `package.json` lint script → `eslint
+  --max-warnings 0`, so any future `exhaustive-deps` warning fails CI. CLAUDE.md's Testing
+  & CI section updated to match (removed the now-stale "CI fails on errors, not warnings"
+  line and the "tracked in queue S7" pointer).
+- **Verification:** `tsc --noEmit` clean · `npm run lint` exits 0 under `--max-warnings 0`
+  (all 3 warnings gone) · `npm test` 75/75 · dev server: `/admin/{media/list,testimonials,people}`
+  each fetch their list on mount with **no loop**. The double `/api/people` and
+  `/api/testimonials` on first mount is React 19 StrictMode dev double-invoke (bounded to 2,
+  absent in production, and present before this change); `media/list` collapses it to one
+  via its debounce `setTimeout` + cleanup.

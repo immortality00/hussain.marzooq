@@ -228,8 +228,11 @@ testimonials. Required for the globe (queue §C4).
   `page.tsx` trees are excluded from the smoke test (browser-only libs touch `window` at
   module scope). Deeper coverage is an open decision (queue "Gaps" item 4).
 - **New pure logic — especially anything touching auth — gets a test in the same session.**
-- **`npm run lint` must stay at 0 errors** (CI fails on errors, not warnings). Remaining
-  `exhaustive-deps` warnings are tracked in queue S7; don't let new ones accumulate.
+- **`npm run lint` must stay at 0 errors *and* 0 warnings.** The script runs
+  `eslint --max-warnings 0` (S7), so CI now fails on any warning too — the three residual
+  `react-hooks/exhaustive-deps` warnings were resolved in S7 by memoizing each `load`
+  path. Don't reintroduce a bare dependency array on a mount effect that calls a
+  render-created function.
 
 ## Security rules — check at Gate 1 of every session
 These exist because a 2026-07-31 audit found a static, non-expiring admin session cookie

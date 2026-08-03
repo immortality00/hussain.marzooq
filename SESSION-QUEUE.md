@@ -53,29 +53,6 @@ D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ## Phase S — Security & hardening (do S1 before launch)
 
-### Session S7 — Resolve remaining eslint `exhaustive-deps` warnings — `pending`
-S3 cleared all 7 eslint **errors** so `npm run lint` exits 0 and CI is green. Three
-`react-hooks/exhaustive-deps` **warnings** remain — deliberately left by S3 because fixing
-a dependency array changes *when* an effect/callback re-runs (get it wrong → infinite fetch
-loop or re-render storm), which is a real behaviour change, not a lint cosmetic. Each needs
-the data-loading path read fully before touching.
-
-The three warnings:
-1. `app/admin/(protected)/media/list/page.tsx:98` — `useCallback` missing `setBanner`.
-2. `app/admin/(protected)/testimonials/TestimonialsAdminClient.tsx:44` — `useEffect` missing `load`.
-3. `hooks/usePeopleAdmin.ts:60` — `useEffect` missing `load`.
-
-Notes:
-- Two of the three are **admin files** — this overlaps admin-session territory; treat it as
-  a real change with Gate-2 verification of each affected admin surface, not a lint pass.
-- The usual correct fix for the `load` cases is to wrap `load` in `useCallback` (stable
-  identity) and then list it, **not** to just add the current `load` to the array (which
-  would re-run every render). Verify no fetch loop after each change.
-- After the fix, consider tightening `npm run lint` to `--max-warnings 0` so warnings can't
-  silently accumulate again — propose at Gate 1, don't assume.
-
----
-
 ### Session S4 — Work overlay card images: decide the empty state — `pending`
 **Symptom:** `/api/work-overlay` returns `imageUrl: null` for all 5 disciplines, so the
 Work overlay — the primary navigation surface, opened from the nav on every visit —
