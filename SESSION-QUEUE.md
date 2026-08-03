@@ -35,8 +35,11 @@ D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
    homepage's own transition "to the homepage's design pass" — which no longer exists
    anywhere in this queue. Decide: schedule a homepage design session, or declare the
    homepage final as-is and re-scope D4's homepage line.
+   → **Candidate answer:** Session DS2 step 3 proposes filling this with
+   `/impeccable shape` + `craft`. If that is accepted, this gap closes there.
 2. **About rebuild unscheduled.** Flagged twice in N5's notes ("About still has no
    rebuild session in the queue"). Dancing = D10, Web Development = D11, About = nothing.
+   → Same candidate answer as (1) — DS2 step 3.
 3. **Radius scale decision.** 83 arbitrary `rounded-[Xrem]` uses vs the 3-token rule
    (details in CLAUDE.md, Design tokens). (a) codify the de-facto scale as the rule, or
    (b) a deliberate scoped conversion pass. Waiting on the call — do not quietly pick.
@@ -144,6 +147,105 @@ Do NOT blind-split by line count. For each file over ~150 lines, classify it:
 
 Report the classification for every file before changing any of them. Expect this to be
 several sessions, not one — propose a split at Gate 1.
+
+---
+
+## Phase DS — Design system rescue (Impeccable)
+
+**Context, in Hussain's words:** the design target (aikawakenichi.com, igloo.inc,
+ten.375.studio) was not reached. What shipped is closer to generic AI-template output —
+exactly what Impeccable exists to detect and fix. These two sessions run **before** the
+remaining design sessions (D4–D13), because they produce the design context those
+sessions should be reading.
+
+Repo: https://github.com/pbakaus/impeccable — Apache 2.0, by Paul Bakaus. 1 skill,
+23 commands, 59 deterministic detector rules, standalone CLI that needs no LLM or API key.
+Docs: impeccable.style
+
+---
+
+### Session DS1 — Evaluate the detector (no install, no hooks) — `pending`
+Cheap, reversible, high information. **Do not install into the harness in this session.**
+Run the CLI standalone — it writes nothing to the repo:
+
+```
+npx impeccable detect app/ components/ --json > /tmp/impeccable-report.json
+npx impeccable detect app/ components/
+```
+
+Then produce a triage table. Every finding goes in exactly one column:
+
+| Column | Meaning |
+|---|---|
+| **Real** | Genuine quality problem → becomes work in a design session |
+| **Intentional** | Conflicts with a documented decision in CLAUDE.md → goes in `detector.ignoreRules` / `ignoreValues` with a stated reason |
+| **Wrong** | Detector misfire on this codebase → ignore and note why |
+
+**Known conflicts to expect — do not silently "fix" these:**
+- Impeccable bans **bounce/elastic easing** as dated. Session D5 explicitly specs spring
+  overshoot on the cursor, and D4 specs GSAP elastic wave physics for the Dancing
+  transition. Both are deliberate. Classify as **Intentional** unless Hussain changes his
+  mind on seeing the argument.
+- Impeccable bans **gray text on colored backgrounds** and **pure black/gray, always
+  tint**. Cross-check against the OKLCH tokens in globals.css before treating any of
+  these as real.
+- CLAUDE.md's own rules (no decorative gradients, flat `bg-muted` fallbacks, no eyebrow
+  chips, grain texture at 3–5%) take precedence where they conflict. **CLAUDE.md wins.**
+
+Deliverable: the triage table + a recommendation on whether DS2 is worth doing. If the
+"Real" column is thin, say so and stop — that is a valid outcome, not a failed session.
+
+---
+
+### Session DS2 — Adopt Impeccable and rescue the design — `pending`
+**Blocked by DS1.** Only run if DS1's "Real" column justifies it.
+
+**1. Install, project-scoped, and understand what it writes.**
+`npx impeccable install` writes: `.impeccable/` (working files), a `.gitignore` block
+between `# impeccable-ignore-start/end` markers, and — on Claude Code — a design hook in
+`.claude/settings.local.json` that runs the detector on UI file edits.
+- Report every file it touched before continuing.
+- **The hook is opt-in — decide deliberately.** It runs automatically on edits, which is
+  useful for catching regressions, but it is a tool that writes during builds. Use
+  `--no-hooks` if Hussain prefers manual runs. Ask; do not assume.
+- Keep tracked: `.impeccable/config.json`, `.impeccable/design.json`,
+  `.impeccable/critique/*.md`. The supplied gitignore block already handles the rest.
+
+**2. Run `/impeccable init` — and protect the existing docs.**
+`init` writes `PRODUCT.md` and offers `DESIGN.md` at repo root. It will ask whether the
+surface is **brand** (marketing, landing, portfolio) or **product** (app UI, dashboard).
+This is a **portfolio → brand**.
+
+**Critical:** the design rules currently live in `CLAUDE.md`. Do not let `DESIGN.md`
+become a second, conflicting source of truth — that is how the eyebrow/gradient
+contradictions happened before. Resolve explicitly at Gate 1, propose both:
+- (a) `DESIGN.md` holds the visual language; CLAUDE.md's design sections shrink to a
+  pointer. One source of truth, more churn.
+- (b) `DESIGN.md` is generated but explicitly subordinate — CLAUDE.md wins on conflict,
+  stated at the top of both files. Less churn, two files to keep in sync.
+
+Input for `init` — do not let it guess:
+- Audience: galleries, collectors, luxury brands, agencies, international booking
+- Anti-references: generic photographer-portfolio templates, SaaS-template look
+- References: aikawakenichi.com, ten.375.studio, igloo.inc
+- Voice: the `hm-visuals-voice` skill already defines this — feed it, don't reinvent it
+
+**3. Apply commands where the queue is actually missing design direction.**
+The highest-value targets are the two acknowledged gaps at the top of this file, not the
+pages that already have sessions:
+- **Homepage** — has no design session at all since D2 was deleted. Use
+  `/impeccable shape` then `/impeccable craft` to produce a real direction.
+- **About** — has no rebuild session. Same treatment.
+- Then, per page: `/impeccable critique <page>` → triage → fix. Prefer `critique`
+  (diagnosis) over `polish` (auto-changes) so Hussain sees the reasoning before code moves.
+
+**4. Feed the results back into the queue.** Findings become concrete tasks inside the
+existing design sessions (D4–D13), not a parallel workstream. Impeccable is the diagnosis
+tool; this queue stays the plan of record.
+
+**Guardrail for the whole session:** commands like `polish`, `bolder`, and `overdrive`
+change code. This project's standard applies unchanged — Gate 1 report, Hussain approves,
+then execute. Do not run a mutating command on a page without showing the plan first.
 
 ---
 

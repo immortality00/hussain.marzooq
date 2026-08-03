@@ -25,6 +25,26 @@ Deployed on **Netlify** — not Vercel.
 shadcn/ui new-york at components/ui/ · Three.js · react-globe.gl · GSAP + @gsap/react +
 ScrollTrigger · Framer Motion · Lenis
 
+## Image pipeline — Next's optimizer is bypassed (2026-07-31)
+`next.config.ts` sets `loader: "custom"` → `lib/cloudinary-image-loader.ts`. Every
+`next/image` src is rewritten to a Cloudinary delivery URL
+(`/upload/w_<width>,c_limit,q_<q>,f_auto/`) and fetched from Cloudinary's CDN. `/_next/image`
+is not used.
+
+**Why it must stay this way:** the optimizer downloaded each full-size original from
+Cloudinary, re-encoded it with sharp, and blew past its 7s fetch timeout on slow
+connections — every image 500'd. Cloudinary already resizes at the edge.
+
+Consequences for any session touching images:
+- **Never add `unoptimized`** to a Cloudinary `next/image`. It bypasses the loader and
+  pulls the full original (this was the S6 bug — archive §S6).
+- Non-Cloudinary srcs pass through untouched — no resizing, but nothing breaks.
+- URLs that already carry a transform are left alone (the loader checks).
+- WebGL textures use a separate helper, `components/photography/lib.ts`
+  (`cloudinaryTextureUrl`), with its own smaller width budget. Two paths, same idea.
+- `img-src` in the CSP allows `res.cloudinary.com` only — a new image host needs a CSP
+  edit too.
+
 ## Animation stack status
 - Lenis: initialized in `AppShell.tsx` (public pages only, not admin). Synced to
   ScrollTrigger via `lenis.on("scroll", ScrollTrigger.update)` (added in D3).
@@ -49,6 +69,10 @@ the design.
 - No viewport-scale decorative typography (existing title animations are kept)
 - No sound
 - No generic overlay transitions (white flash, curtain wipe, fade)
+- **No scroll-jacking anywhere.** Hussain's words: "the lock is ruining the user
+  experience." Rejected on the photography Horizontal view (D3) and removed again from
+  the testimonials section (S6). Do not pin the scroll, hijack the wheel, or take over
+  scroll position on any surface.
 - No decorative gradients anywhere, including missing-image fallback divs — always flat
   `bg-muted`. Applies sitewide; re-check on every session that touches a fallback state
   (violations were reintroduced once and cleaned in F4 — archive §F4).
@@ -194,7 +218,21 @@ testimonials. Required for the globe (queue §C4).
 ## Security rules — check at Gate 1 of every session
 These exist because a 2026-07-31 audit found a static, non-expiring admin session cookie
 that had been live since the auth was written, and a plaintext password fallback silently
-in use in production. Both were invisible because no session ever had security in scope.
+in use in production. **Both are now fixed (S1, archive §S1)** — the rules below are what
+keeps them fixed.
+
+**Current auth state (S1, shipped 2026-08-01):**
+- Login verifies a **scrypt hash** (`ADMIN_PASSWORD_HASH`). The plaintext `ADMIN_PASSWORD`
+  fallback is **deleted** — do not reintroduce it as a convenience.
+- Session cookie is `v1.<issuedAtMs>.<nonce>`, HMAC-signed, **2-day TTL** enforced
+  server-side (`lib/auth/session-token.ts`). Tokens are stateless: logout clears the
+  browser copy but cannot revoke a token before it expires — that is why the TTL is short.
+- Login is rate-limited via `lib/server/request-guards.ts` (Mongo-backed, collection
+  `request_guards`).
+- A full **Content-Security-Policy** ships in `next.config.ts`, dev/prod aware
+  (`'unsafe-eval'` and ws: are dev-only). Allowlist is deliberately narrow: images from
+  `res.cloudinary.com`, frames from the Cloudinary upload widget and
+  `www.openstreetmap.org`, `frame-ancestors 'none'`.
 
 **Standing rules:**
 - **Never invent auth.** Session tokens carry an issue timestamp inside the signed
@@ -269,10 +307,39 @@ If errors: diagnose root cause, fix, repeat. Do not proceed to Gate 3 until Huss
 ### Gate 3 — Commit
 Re-read this session's task list against what was actually changed — confirm every item
 was completed, not just attempted, before marking done.
-Provide exact git commands:
-  git add [exact files changed]
-  git commit -m "[type(scope): specific description]"
-  git push
+
+**Doc sync — do this before writing the git commands.** Ask explicitly: did this session
+change a rule, a constraint, an architectural fact, or a decision recorded in CLAUDE.md?
+If yes, update CLAUDE.md **in the same commit as the code**. Docs that drift from the
+code are how the site ended up contradicting its own design rules. If nothing changed,
+say "no CLAUDE.md impact" and move on. Things that always require an update: auth or
+session behaviour, CSP/allowlist changes, the image pipeline, new or removed shared
+components, any reversal of a previous decision.
+
+Provide exact git commands — **two commits, in this order.**
+
+1. Source + docs (one commit):
+```
+git add [exact files changed]        # include CLAUDE.md / SESSION-QUEUE.md / SESSION-ARCHIVE.md
+git commit -m "[type(scope): specific description]"
+```
+
+2. Knowledge graph (separate commit, because `graphify update` rewrites `graphify-out/`
+   and mixing it with source makes the real diff unreadable):
+```
+graphify update .
+git add graphify-out
+git commit -m "chore(graph): update knowledge graph after [session id]"
+```
+
+3. Push both:
+```
+git push
+```
+
+**Use a different message for the graph commit** — identical messages on both is why
+`git log` currently reads as duplicated commits.
+
 STOP. Wait for Hussain to confirm push is done.
 When confirmed: set session status to `done` in SESSION-QUEUE.md **and, in the same
 edit, move the session's entire section (spec + outcome notes, verbatim) from
