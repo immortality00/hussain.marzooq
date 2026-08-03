@@ -1,7 +1,7 @@
 # Graph Report - hussain.marzooq  (2026-08-03)
 
 ## Corpus Check
-- 278 files · ~101,418 words
+- 278 files · ~101,724 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
@@ -10,7 +10,7 @@
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `92fb4711`
+- Built from commit: `1a5ea0a5`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -147,7 +147,7 @@ Nodes (18): Button(), buttonVariants, DialogContent(), DialogDescription(), Dial
 
 ### Community 9 - "public-people.ts"
 Cohesion: 0.09
-Nodes (21): HM Visuals — Session Archive, Phase 0 — Foundation (must complete before any design session), Phase 1 — Navigation & global systems, Phase 2 — Preloader & core experience (completed portion), Phase S — Security & hardening, Session D1 — Preloader — `done`, Session D3 — Photography page: 3-mode viewer — `done`, Session F1 — Remove violations + initialize Lenis — `done` (+13 more)
+Nodes (22): HM Visuals — Session Archive, Phase 0 — Foundation (must complete before any design session), Phase 1 — Navigation & global systems, Phase 2 — Preloader & core experience (completed portion), Phase S — Security & hardening, Session D1 — Preloader — `done`, Session D3 — Photography page: 3-mode viewer — `done`, Session F1 — Remove violations + initialize Lenis — `done` (+14 more)
 
 ### Community 10 - "TS Config Globs"
 Cohesion: 0.06
@@ -187,7 +187,7 @@ Nodes (54): AdminLoginPage(), getClientAddress(), getClientKey(), getSafeNextPat
 
 ### Community 19 - "Contact/Services Pages"
 Cohesion: 0.06
-Nodes (34): Completed so far — full specs + outcomes in SESSION-ARCHIVE.md, Gaps awaiting a decision from Hussain — not sessions yet, do not invent scope, HM Visuals — Session Queue, How to use, Phase 2 — Preloader & core experience, Phase 3 — Content & analytics, Phase 4 — People & launch prep, Phase 5 — NFT smart contract (future) (+26 more)
+Nodes (33): Completed so far — full specs + outcomes in SESSION-ARCHIVE.md, Gaps awaiting a decision from Hussain — not sessions yet, do not invent scope, HM Visuals — Session Queue, How to use, Phase 2 — Preloader & core experience, Phase 3 — Content & analytics, Phase 4 — People & launch prep, Phase 5 — NFT smart contract (future) (+25 more)
 
 ### Community 20 - "Runtime Dependencies"
 Cohesion: 0.04
@@ -302,7 +302,7 @@ Cohesion: 0.50
 Nodes (3): cspDirectives, nextConfig, securityHeaders
 
 ## Knowledge Gaps
-- **337 isolated node(s):** `How to use`, `Status legend`, `Completed so far — full specs + outcomes in SESSION-ARCHIVE.md`, `Gaps awaiting a decision from Hussain — not sessions yet, do not invent scope`, `Session S6 — Remove `unoptimized` from testimonial images — `in-progress`` (+332 more)
+- **337 isolated node(s):** `Who this is for`, `The site`, `Domain`, `Stack`, `Animation stack status` (+332 more)
   These have ≤1 connection - possible missing edges or undocumented components.
 - **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
@@ -310,10 +310,10 @@ Nodes (3): cspDirectives, nextConfig, securityHeaders
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `getDb()` connect `Card Image Fields` to `@dnd-kit/sortable`, `Page Sections Shared`, `Cloudinary Sign/Upload API`, `Home Sections & Media Cards`, `@dnd-kit/utilities`, `Admin Auth & Login`, `Services Admin`, `Interior Public Pages`, `geist`, `Featured Work Cards`, `Public Form Security API`, `NFT Admin & API`, `route.ts`, `cloudinary`?**
-  _High betweenness centrality (0.146) - this node is a cross-community bridge._
-- **Why does `dependencies` connect `Runtime Dependencies` to `Root Layout & Nav Shell`, `Dev Dependencies`?**
-  _High betweenness centrality (0.099) - this node is a cross-community bridge._
-- **What connects `How to use`, `Status legend`, `Completed so far — full specs + outcomes in SESSION-ARCHIVE.md` to the rest of the system?**
+  _High betweenness centrality (0.185) - this node is a cross-community bridge._
+- **Why does `lenis` connect `Root Layout & Nav Shell` to `Runtime Dependencies`?**
+  _High betweenness centrality (0.089) - this node is a cross-community bridge._
+- **What connects `Who this is for`, `The site`, `Domain` to the rest of the system?**
   _337 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Admin Media & People Lists` be split into smaller, more focused modules?**
   _Cohesion score 0.05745814307458143 - nodes in this community are weakly interconnected._
