@@ -999,3 +999,59 @@ Notes:
   `/api/testimonials` on first mount is React 19 StrictMode dev double-invoke (bounded to 2,
   absent in production, and present before this change); `media/list` collapses it to one
   via its debounce `setTimeout` + cleanup.
+
+---
+
+### Session S4 — Work overlay card images: decide the empty state — `done`
+**Symptom:** `/api/work-overlay` returns `imageUrl: null` for all 5 disciplines, so the
+Work overlay — the primary navigation surface, opened from the nav on every visit —
+renders 5 flat `bg-muted` cards.
+
+**Cause, confirmed by git, not a regression:** commit `1862175` (N7) removed the
+auto-pick. Before it, the route ran
+`findOne(buildPublicMediaQuery({type:"image", category}), {sort:{createdAt:-1}})` per
+discipline, so cards silently showed the newest photo in that category. N7 replaced this
+with the admin-picked `page_settings.cardImage` and the rule "empty means empty, hero is
+the only exception."
+
+**HARD CONSTRAINT:** `dancing` and `web-development` have `category: null` — no media
+category, so no "newest photo in category" fallback is possible for 2 of the 5 cards.
+
+Options presented at Gate 1: (a) leave as-is, (b) one global fallback image, (c)
+per-discipline admin warning. (b)/(c) combine.
+
+**Decision (Hussain):** **(a) + (c)** — leave the public behaviour as-is (N7's "empty
+means empty" upheld, no auto-pick), add an admin warning so a visible surface can never
+*silently* go blank.
+
+**Build outcome (2026-08-03):**
+- **Warning system, admin-only, no public behaviour change.** Two new shared components in
+  `app/admin/(protected)/pages/components/`: `RowPill.tsx` (the amber collapsed-row pill,
+  reused for "Unsaved" and "Needs image") and `CardImageWarning.tsx` (the inline amber
+  note, `AlertTriangle` + message).
+- `usePagesAdmin.ts` — added `needsImage(row)`: true when a **visible discipline** has no
+  Work-overlay `cardImage.url`, **or** the homepage **hero** is imageless, **or** any
+  homepage **Featured Work card** is imageless. Row pill ⟺ any inline warning inside the
+  row, so the two stay in lockstep. (Started as `needsCardImage`, broadened + renamed after
+  Hussain flagged the Home row wasn't flagging its empty hero.)
+- Inline `CardImageWarning` wired into `CardImageGroup` (visible discipline, empty),
+  `HomeSectionsForm` hero group (empty), and each Featured Work card (empty).
+- Fixed stale copy in `HomeSectionsForm` ("pulls that discipline's latest image" →
+  "shows the card image you set below — leave it empty for no image").
+- **Hero brought onto the same system (reverses N7's "hero is the one exception").**
+  `HomeHero.tsx` dropped the `firstImage(photos) || firstImage(videos)` auto-fallback —
+  it could resolve to a **video-file URL** rendered through `next/image`, producing the
+  broken-image frame Hussain reported. Hero now uses `heroImage.url` only and renders a
+  flat `bg-muted` base when empty (never a borrowed photo, never a broken frame).
+  `app/page.tsx` no longer fetches `getPhotographyItems()`/`getVideographyItems()` (two
+  fewer homepage DB queries; those results fed only the removed fallback).
+- CLAUDE.md updated: "empty means empty everywhere, no exceptions"; hero fallback removal
+  documented; warning system (pill + hero + featured) recorded.
+- **Verification:** `tsc --noEmit` clean · `npm run lint` 0/0 · dev server `/admin/pages`:
+  "Needs image" pill live on Home (empty hero) and Photography (empty card image); inline
+  warnings fire in the discipline card group, hero group, and featured cards when empty and
+  stay silent when an image is present; draft-clear then reload confirmed **no DB write**.
+  Public homepage with empty hero renders the clean flat hero (bokeh + title + CTAs), no
+  broken image.
+- **Flagged, out of scope:** the D1 preloader appeared to replay/loop across rapid dev
+  navigations — noted for Hussain, not investigated here.

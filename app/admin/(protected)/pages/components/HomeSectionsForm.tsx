@@ -6,6 +6,7 @@ import { FEATURED_CARD_SLUGS, EMPTY_SECTION_IMAGE } from "@/lib/page-sections-sh
 import { TextField, TextAreaField } from "@/components/admin/page-sections/fields";
 import { RepeatingListEditor } from "@/components/admin/page-sections/RepeatingListEditor";
 import { ImageField } from "@/components/admin/media-picker/ImageField";
+import { CardImageWarning } from "./CardImageWarning";
 
 const SLUG_LABELS: Record<FeaturedCardSlug, string> = {
   photography: "Photography",
@@ -49,6 +50,9 @@ function FeaturedCardFields({
         placeholder="Description (optional)"
         className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
       />
+      {!card.image.url && (
+        <CardImageWarning message="No image — this card renders as a blank panel on the homepage." />
+      )}
       <ImageField
         label="Card image"
         value={card.image}
@@ -71,6 +75,9 @@ export function HomeSectionsForm({
         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
           Hero background image
         </p>
+        {!data.hero?.image?.url && (
+          <CardImageWarning message="No image — the homepage hero renders without a background photo." />
+        )}
         <ImageField
           value={data.hero?.image}
           onChange={(image) => onChange({ ...data, hero: { image } })}
@@ -82,8 +89,8 @@ export function HomeSectionsForm({
           Featured work cards
         </p>
         <p className="text-xs text-muted-foreground">
-          Each card links to its discipline page and pulls that discipline’s latest image. Cards
-          for pages turned off under Visibility are hidden automatically.
+          Each card links to its discipline page and shows the card image you set below — leave it
+          empty for no image. Cards for pages turned off under Visibility are hidden automatically.
         </p>
         <RepeatingListEditor
           items={data.featuredCards}

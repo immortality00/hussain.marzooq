@@ -11,6 +11,7 @@ import { VisibilityGroup } from "./VisibilityGroup";
 import { CardImageGroup } from "./CardImageGroup";
 import { SeoPageForm, type SeoDraft } from "./SeoPageForm";
 import { SectionsGroup } from "./SectionsGroup";
+import { RowPill } from "./RowPill";
 
 type SectionsData = PageSectionsMap[PageSectionsSlug];
 
@@ -20,6 +21,7 @@ export function PageRowCard({
   onToggleOpen,
   isActive,
   cardImage,
+  needsImage,
   seo,
   sectionsData,
   dirty,
@@ -37,6 +39,7 @@ export function PageRowCard({
   onToggleOpen: () => void;
   isActive: boolean;
   cardImage: SectionImage | undefined;
+  needsImage: boolean;
   seo: SeoDraft;
   sectionsData: SectionsData | undefined;
   dirty: boolean;
@@ -58,11 +61,8 @@ export function PageRowCard({
       >
         <p className="flex items-center gap-2 text-sm font-medium">
           {row.label}
-          {dirty && (
-            <span className="rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] text-amber-600 dark:text-amber-400">
-              Unsaved
-            </span>
-          )}
+          {needsImage && <RowPill label="Needs image" />}
+          {dirty && <RowPill label="Unsaved" />}
         </p>
         <span className="ml-4 shrink-0 text-xs text-muted-foreground">Edit</span>
       </button>
@@ -87,7 +87,11 @@ export function PageRowCard({
               )}
 
               {row.settingsSlug && cardImage && (
-                <CardImageGroup value={cardImage} onChange={onCardImageChange} />
+                <CardImageGroup
+                  value={cardImage}
+                  onChange={onCardImageChange}
+                  isActive={isActive}
+                />
               )}
 
               {row.seoSlug && (

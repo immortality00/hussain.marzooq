@@ -163,7 +163,18 @@ old `/admin/seo` and `/admin/page-sections` routes are deleted):
    Contact deliberately have no CTA** (own booking flow / is the booking destination).
 Images in sections are `SectionImage {url, publicId}` — picked from the media library or
 uploaded to `hm_visuals/sections` (delete-on-replace for uploads, never for library
-picks). **Empty means empty** — no auto-pick; the hero is the one exception (never blank).
+picks). **Empty means empty everywhere — no auto-pick, no exceptions.** The homepage hero
+followed this too as of S4: its old "fall back to the newest photo/video" auto-pick was
+**removed** (it could resolve to a video-file URL rendered through `next/image` → a broken-image
+frame), so `HomeHero` now uses the admin-picked `hero.image.url` only and renders a flat
+`bg-muted` base when empty — never a borrowed photo, never a broken frame. `app/page.tsx` no
+longer fetches photos/videos for the hero.
+N7's "empty means empty" is **upheld, not reversed** (S4) — the safety net is an admin
+warning, not an auto-fallback: `/admin/pages` flags any active discipline whose Work-overlay
+card image is blank (amber "Needs image" pill on the row + inline note in the group), and the
+homepage Featured Work cards **and the hero** warn per-image when imageless. So no visible
+surface can *silently* go blank; the public surfaces still render a flat `bg-muted` panel when
+empty by design.
 Interim pages (About, Dancing, Web Development, Blog) = header + card grid + booking bar
 until their design passes. Full history: archive §N3–§N7.
 

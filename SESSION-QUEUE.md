@@ -53,43 +53,6 @@ D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ## Phase S — Security & hardening (do S1 before launch)
 
-### Session S4 — Work overlay card images: decide the empty state — `pending`
-**Symptom:** `/api/work-overlay` returns `imageUrl: null` for all 5 disciplines, so the
-Work overlay — the primary navigation surface, opened from the nav on every visit —
-renders 5 flat `bg-muted` cards.
-
-**Cause, confirmed by git, not a regression:** commit `1862175` (N7) removed the
-auto-pick. Before it, the route ran
-`findOne(buildPublicMediaQuery({type:"image", category}), {sort:{createdAt:-1}})` per
-discipline, so cards silently showed the newest photo in that category. N7 replaced this
-with the admin-picked `page_settings.cardImage` and the rule "empty means empty, hero is
-the only exception." Nothing is broken; nothing has been picked.
-
-**Admin capability already exists** — `/admin/pages` → discipline row → "Work layout
-image" (`CardImageGroup` → `ImageField`, library-pick **or** Cloudinary upload). No new
-admin surface is needed for the picking itself.
-
-**HARD CONSTRAINT — read before proposing anything.** A "fall back to newest photo in the
-category" scheme **cannot work**, and was already proposed once and rejected. In the
-pre-N7 route, `dancing` and `web-development` had `category: null` — they have no media
-category at all, so there is no photo to fall back to for 2 of the 5 cards. Any proposal
-must cover all five or explicitly say what those two show.
-
-Options to present at Gate 1 (do not pick silently):
-- **(a) Leave as-is.** N7's decision stands; Hussain picks 5 images once. Zero code.
-- **(b) One admin-set global fallback image** on `page_settings` (or a new settings doc),
-  used by any discipline whose `cardImage` is empty. Works for all five uniformly.
-- **(c) Per-discipline required image** — admin validation warns when a discipline is
-  active but has no card image, so the overlay can never silently go blank again.
-- (b) and (c) combine well. Whatever is chosen, record it in CLAUDE.md as either
-  upholding or reversing N7's "empty means empty" rule.
-
-Same-class check while in here: homepage **Featured Work cards** carry the same N7
-`image` field with the same empty-means-empty rule — confirm they aren't also silently
-blank, and apply whatever decision is made here to them consistently.
-
----
-
 ### Session S5 — `page-settings` PATCH treats partial updates as full replacement — `pending`
 **Latent data-loss bug, not currently firing.** In
 `app/api/admin/page-settings/[slug]/route.ts`:

@@ -7,7 +7,6 @@ import { HomeHero } from "@/components/home/HomeHero";
 import { HomeServicesPreview } from "@/components/home/HomeServicesPreview";
 import { HomeTrust } from "@/components/home/HomeTrust";
 import { StickyCta } from "@/components/site/StickyCta";
-import { getPhotographyItems, getVideographyItems } from "@/lib/server/public-media";
 import { getPublicServicesData } from "@/lib/server/public-services";
 import { getPublicTestimonials } from "@/lib/server/testimonials";
 import { getAllPageSettings } from "@/lib/server/page-settings";
@@ -20,16 +19,13 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [photos, videos, servicesData, testimonials, pageSettings, seo, sections] =
-    await Promise.all([
-      getPhotographyItems(),
-      getVideographyItems(),
-      getPublicServicesData(),
-      getPublicTestimonials(3),
-      getAllPageSettings(),
-      getPageSeo("home"),
-      getPageSections("home"),
-    ]);
+  const [servicesData, testimonials, pageSettings, seo, sections] = await Promise.all([
+    getPublicServicesData(),
+    getPublicTestimonials(3),
+    getAllPageSettings(),
+    getPageSeo("home"),
+    getPageSections("home"),
+  ]);
 
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
@@ -37,8 +33,6 @@ export default async function HomePage() {
     <>
       <main>
         <HomeHero
-          photos={photos}
-          videos={videos}
           activeSet={activeSet}
           heroImage={sections.hero.image}
           headerTitle={seo.headerTitle}

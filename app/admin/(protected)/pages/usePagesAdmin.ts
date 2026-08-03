@@ -3,7 +3,7 @@
 import { useState } from "react";
 import type { PageSettings } from "@/lib/server/page-settings";
 import type { PageSeo } from "@/lib/server/page-seo";
-import type { PageSectionsSlug, PageSectionsMap } from "@/lib/server/page-sections";
+import type { PageSectionsSlug, PageSectionsMap, HomeSections } from "@/lib/server/page-sections";
 import type { SectionImage } from "@/lib/page-sections-shared";
 import { useAdminAction } from "@/hooks/useAdminAction";
 import type { SeoDraft } from "./components/SeoPageForm";
@@ -119,6 +119,21 @@ export function usePagesAdmin({
 
   function cardImageOf(row: PageRow): SectionImage {
     return settingsOf(row).cardImage;
+  }
+
+  // Row-level "Needs image" flag — true whenever any image warning inside the
+  // row would fire, so the pill and the inline notes stay in lockstep:
+  //  • a visible discipline with no Work-overlay card image, and
+  //  • the homepage hero or any Featured Work card left imageless.
+  // "Empty means empty" is upheld everywhere — this only warns, never auto-picks.
+  function needsImage(row: PageRow): boolean {
+    if (row.settingsSlug && isActiveOf(row) && !cardImageOf(row).url) return true;
+    if (row.sectionsSlug === "home") {
+      const home = sectionsOf(row) as HomeSections;
+      if (!home.hero?.image?.url) return true;
+      if (home.featuredCards.some((card) => !card.image?.url)) return true;
+    }
+    return false;
   }
 
   function seoOf(row: PageRow): SeoDraft {
@@ -262,6 +277,7 @@ export function usePagesAdmin({
     feedback,
     isActiveOf,
     cardImageOf,
+    needsImage,
     seoOf,
     sectionsOf,
     isDirty,

@@ -2,40 +2,31 @@ import SmartImage from "@/components/shared/SmartImage";
 import { AnimatedText } from "@/components/shared/AnimatedText";
 import { HeroBokeh } from "@/components/home/HeroBokeh";
 import Link from "next/link";
-import type { PublicMediaItem } from "@/lib/server/media-serializers";
 import type { SectionImage } from "@/lib/server/page-sections";
-
-function firstImage(items: PublicMediaItem[]) {
-  return items.find((item) => item.secureUrl)?.secureUrl ?? null;
-}
 
 const DISCIPLINE_ORDER = ["photography", "videography", "nft", "dancing", "web-development"];
 
 export function HomeHero({
-  photos,
-  videos,
   activeSet,
   heroImage,
   headerTitle,
   headerDescription,
 }: {
-  photos: PublicMediaItem[];
-  videos: PublicMediaItem[];
   activeSet: Set<string>;
   heroImage: SectionImage;
   headerTitle: string;
   headerDescription: string;
 }) {
-  // Admin-picked hero image wins; falls back to the newest photo/video so the
-  // hero is never a blank frame before an image is chosen.
-  const heroImageUrl = heroImage?.url || firstImage(photos) || firstImage(videos);
+  // Admin-picked hero image only — empty means empty, same as every other card
+  // (no auto-pick fallback). The admin warns when a visible hero has no image.
+  const heroImageUrl = heroImage?.url || null;
   const firstActiveSlug = DISCIPLINE_ORDER.find((s) => activeSet.has(s));
   const workHref = firstActiveSlug ? `/${firstActiveSlug}` : null;
 
   return (
     <section className="relative h-svh min-h-[600px] overflow-hidden bg-background">
-      {/* Background image */}
-      {heroImageUrl && (
+      {/* Background image — flat bg-muted when empty, never a broken frame */}
+      {heroImageUrl ? (
         <SmartImage
           src={heroImageUrl}
           alt="HM Visuals"
@@ -44,6 +35,8 @@ export function HomeHero({
           sizes="100vw"
           className="object-cover object-center z-0"
         />
+      ) : (
+        <div className="absolute inset-0 z-0 bg-muted" />
       )}
 
       {/* Cinematic dark overlay — heavy at bottom, light at top */}
