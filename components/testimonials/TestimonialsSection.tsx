@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { PublicTestimonial } from "@/lib/server/testimonials";
 import { type GeoPoint, TestimonialMap } from "./TestimonialMap";
 import { SingleReviewCard } from "./SingleReviewCard";
@@ -37,8 +37,6 @@ function getReviewPoint(item: PublicTestimonial): GeoPoint | null {
 export default function TestimonialsSection({ items }: { items: PublicTestimonial[] }) {
   const [activeIndex, setActiveIndex] = useState(0);
   const [modalItem, setModalItem] = useState<PublicTestimonial | null>(null);
-  const scrollLockRef = useRef(false);
-  const touchStartYRef = useRef<number | null>(null);
 
   const activeItem = items[activeIndex] ?? items[0];
   const activePoint = useMemo(() => (activeItem ? getReviewPoint(activeItem) : null), [activeItem]);
@@ -61,49 +59,6 @@ export default function TestimonialsSection({ items }: { items: PublicTestimonia
   const goNext = useCallback(() => goToIndex(activeIndex + 1), [activeIndex, goToIndex]);
   const goPrevious = useCallback(() => goToIndex(activeIndex - 1), [activeIndex, goToIndex]);
 
-  function handleWheel(event: React.WheelEvent<HTMLDivElement>) {
-    if (Math.abs(event.deltaY) < 16) return;
-
-    const movingDown = event.deltaY > 0;
-    const movingUp = event.deltaY < 0;
-    const canMoveDown = activeIndex < items.length - 1;
-    const canMoveUp = activeIndex > 0;
-
-    if ((movingDown && canMoveDown) || (movingUp && canMoveUp)) {
-      event.preventDefault();
-      event.stopPropagation();
-
-      if (scrollLockRef.current) return;
-
-      scrollLockRef.current = true;
-
-      if (movingDown) goNext();
-      else goPrevious();
-
-      window.setTimeout(() => { scrollLockRef.current = false; }, 650);
-    }
-  }
-
-  function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
-    touchStartYRef.current = event.touches[0]?.clientY ?? null;
-  }
-
-  function handleTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
-    const startY = touchStartYRef.current;
-    const endY = event.changedTouches[0]?.clientY ?? null;
-
-    touchStartYRef.current = null;
-
-    if (startY === null || endY === null) return;
-
-    const difference = startY - endY;
-
-    if (Math.abs(difference) < 40) return;
-
-    if (difference > 0) goNext();
-    else goPrevious();
-  }
-
   if (!activeItem) return null;
 
   return (
@@ -113,12 +68,7 @@ export default function TestimonialsSection({ items }: { items: PublicTestimonia
           <TestimonialMap activePoint={activePoint} />
         </div>
 
-        <div
-          className="relative"
-          onWheel={handleWheel}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
-        >
+        <div className="relative">
           <SingleReviewCard
             item={activeItem}
             activeIndex={activeIndex}
