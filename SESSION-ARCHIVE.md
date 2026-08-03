@@ -866,3 +866,41 @@ exists yet, so every "both environments" and "deployed" step collapsed to local 
   hash login. `.gitignore` covers `.env.local` (never committed).
 
 ---
+
+### Session S6 — Remove `unoptimized` from testimonial images — `done`
+Found 2026-07-31 after the Cloudinary custom loader shipped.
+`components/testimonials/SafeImage.tsx:14` and
+`components/testimonials/review-form/PreviewImage.tsx:6` pass `unoptimized`, which
+bypasses the image loader entirely — the browser downloads the **full original** from
+Cloudinary. Same slowness class as the `/_next/image` timeout bug the loader fixed;
+the flag was likely added to dodge exactly those problems, and is now obsolete.
+
+Fix: remove `unoptimized` from both. Caveat to verify at Gate 2: testimonial photos are
+user-uploaded — confirm all stored srcs are Cloudinary URLs. Non-Cloudinary srcs pass
+through the loader unchanged (no resizing, but nothing breaks). Verify avatars, review
+photo strips, and the review-form preview all still render.
+
+**Build outcome (2026-08-03):** committed on `v2-portfolio`. `unoptimized` removed from
+both components; confirmed all srcs are Cloudinary URLs — `SafeImage` renders stored
+testimonial photos, `PreviewImage` renders the `CldUploadWidget`'s `info.secure_url`
+(never blob previews). Verified live: avatars and review photo strips now load through the
+Cloudinary loader (`.../upload/w_256,c_limit,q_auto,f_auto/...`) with a responsive srcset;
+the custom loader passes any non-Cloudinary src through untouched, so the change is safe
+regardless. `tsc` + eslint clean.
+
+**Two adjacent bugs on the same page found and fixed in the same commit (Hussain
+reported them at Gate 2, approved fixing both):**
+1. **Broken location map — CSP regression from S1.** The `TestimonialMap` OpenStreetMap
+   embed iframe (`www.openstreetmap.org/export/embed.html`) was blocked because S1's CSP
+   set `frame-src` to the Cloudinary upload widget only. Browser refused the iframe (zero
+   network requests). Fix: added `https://www.openstreetmap.org` to `frame-src` in
+   `next.config.ts` (+ a comment documenting the surface). Map renders again.
+2. **Scroll-jacking on the testimonials page.** Two sources: (a) the map iframe captured
+   the wheel — added a transparent `absolute inset-0` shield over it in `TestimonialMap.tsx`
+   so the page scrolls instead of the map panning; (b) the real complaint — the review
+   carousel's `handleWheel`/`handleTouchStart`/`handleTouchEnd` in `TestimonialsSection.tsx`
+   (introduced in commit `c037d85`) called `preventDefault()` and flipped reviews on scroll.
+   Removed all three handlers + their refs. Reviews now navigate only via the up/down
+   chevrons and dot indicators (both pre-existing). Matches Hussain's standing "no
+   scroll-jacking" rule. Verified: wheel over reviews scrolls the page and does not change
+   the active review; chevrons + dots still navigate.

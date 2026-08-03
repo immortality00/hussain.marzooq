@@ -214,6 +214,11 @@ in use in production. Both were invisible because no session ever had security i
   repo — keep it that way.
 - **Never commit `.env*`.** Verified gitignored. If a secret is ever exposed, rotating it
   is mandatory, not optional — the leaked value stays valid until rotated.
+- **CSP `frame-src` in `next.config.ts` legitimately carries `www.openstreetmap.org`** —
+  the testimonials location map is an OSM embed iframe. S1's CSP omitted it and silently
+  broke the map (found in S6, archive §S6). Do not strip it in a future security pass;
+  any new external iframe/CDN needs its origin added to the right CSP directive **and**
+  an in-browser check that the surface still renders.
 
 **Gate 1 must explicitly answer, in one line each, whenever a session touches auth,
 API routes, cookies, env vars, or user input:** does this add a new trust boundary? does

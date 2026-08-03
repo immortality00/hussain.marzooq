@@ -47,21 +47,6 @@ D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ## Phase S — Security & hardening (do S1 before launch)
 
-### Session S6 — Remove `unoptimized` from testimonial images — `in-progress`
-Found 2026-07-31 after the Cloudinary custom loader shipped.
-`components/testimonials/SafeImage.tsx:14` and
-`components/testimonials/review-form/PreviewImage.tsx:6` pass `unoptimized`, which
-bypasses the image loader entirely — the browser downloads the **full original** from
-Cloudinary. Same slowness class as the `/_next/image` timeout bug the loader fixed;
-the flag was likely added to dodge exactly those problems, and is now obsolete.
-
-Fix: remove `unoptimized` from both. Caveat to verify at Gate 2: testimonial photos are
-user-uploaded — confirm all stored srcs are Cloudinary URLs. Non-Cloudinary srcs pass
-through the loader unchanged (no resizing, but nothing breaks). Verify avatars, review
-photo strips, and the review-form preview all still render.
-
----
-
 ### Session S3 — Automated test baseline — `pending`
 There is no test script in `package.json` and no CI. Verification today is
 `tsc --noEmit` + eslint + Gate-2 manual checks. That has already let real gaps ship
