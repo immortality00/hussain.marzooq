@@ -1,16 +1,16 @@
-# Graph Report - hussain.marzooq  (2026-08-03)
+# Graph Report - hussain.marzooq  (2026-08-01)
 
 ## Corpus Check
-- 278 files · ~101,418 words
+- 278 files · ~101,504 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 1352 nodes · 3253 edges · 64 communities (52 shown, 12 thin omitted)
+- 1352 nodes · 3259 edges · 75 communities (52 shown, 23 thin omitted)
 - Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 12 edges (avg confidence: 0.61)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `92fb4711`
+- Built from commit: `a94e1488`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -50,6 +50,7 @@
 - @dnd-kit/sortable
 - Page Sections Shared
 - Home Hero & Bokeh
+- Admin Protected Layout
 - @dnd-kit/utilities
 - CMS Collections & Sessions
 - geist
@@ -59,17 +60,27 @@
 - Navigation & Work Overlay
 - Featured Work Cards
 - Card Image Fields
+- gsap
 - graphify Skill Internals
 - Design Tokens & Reusables
+- next
 - graphify Query Engine
+- next-themes
 - Auth Proxy Middleware
 - Mongo Index Setup
+- framer-motion
+- geist
 - GeoNames Import
+- @dnd-kit/utilities
 - Next.js Framework
 - Admin Password Hash
+- Route Handler
 - react-globe.gl
 - cloudinary-image-loader.ts
+- next
 - ESLint Config
+- react
+- tailwind-merge
 - Next Config
 - PostCSS Config
 - Starter UI Icons
@@ -107,15 +118,15 @@
 - **Next.js Starter Template Boilerplate Logos** — public_next_logo, public_vercel_logo [INFERRED 0.85]
 - **Next.js Starter Template UI Icons** — public_file_icon, public_globe_icon, public_window_icon [INFERRED 0.75]
 
-## Communities (64 total, 12 thin omitted)
+## Communities (75 total, 23 thin omitted)
 
 ### Community 0 - "Admin Media & People Lists"
 Cohesion: 0.06
 Nodes (43): formatNftQuantity(), MediaItem, MediaListItem(), NftData, statusClasses(), AdminMediaListPage(), AdminMediaListResponse, buildAdminMediaUrl() (+35 more)
 
 ### Community 1 - "Home Sections & Media Cards"
-Cohesion: 0.18
-Nodes (16): HomeTestimonialCard(), HomeTrust(), Avatar(), getInitials(), getIdentityLine(), renderStars(), ReviewModal(), ReviewPhotoStrip() (+8 more)
+Cohesion: 0.14
+Nodes (22): HomeTestimonialCard(), HomeTrust(), Avatar(), getInitials(), getIdentityLine(), renderStars(), ReviewModal(), ReviewPhotoStrip() (+14 more)
 
 ### Community 2 - "Cloudinary Sign/Upload API"
 Cohesion: 0.08
@@ -190,24 +201,24 @@ Cohesion: 0.06
 Nodes (34): Completed so far — full specs + outcomes in SESSION-ARCHIVE.md, Gaps awaiting a decision from Hussain — not sessions yet, do not invent scope, HM Visuals — Session Queue, How to use, Phase 2 — Preloader & core experience, Phase 3 — Content & analytics, Phase 4 — People & launch prep, Phase 5 — NFT smart contract (future) (+26 more)
 
 ### Community 20 - "Runtime Dependencies"
-Cohesion: 0.04
-Nodes (45): class-variance-authority, cloudinary, clsx, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, framer-motion, geist (+37 more)
+Cohesion: 0.09
+Nodes (23): class-variance-authority, clsx, @dnd-kit/core, framer-motion, lucide-react, mongodb, next-cloudinary, next-themes (+15 more)
 
 ### Community 21 - "package.json"
 Cohesion: 0.05
 Nodes (36): downloadCloudinaryFile(), toCloudinaryAttachmentUrl(), AppearanceBlock(), MediaFilterBar(), MediaSurface(), MediaTagChips(), SmartMediaPreviewFit, SmartMediaPreviewMode (+28 more)
 
 ### Community 22 - "Dev Dependencies"
-Cohesion: 0.05
-Nodes (38): eslint, eslint-config-next, allowScripts, sharp@0.34.5, unrs-resolver@1.11.1, devDependencies, eslint, eslint-config-next (+30 more)
+Cohesion: 0.09
+Nodes (23): eslint, eslint-config-next, devDependencies, eslint, eslint-config-next, tailwindcss, @tailwindcss/postcss, @tsconfig/recommended (+15 more)
 
 ### Community 23 - "GroupCard.tsx"
 Cohesion: 0.33
 Nodes (5): GroupCard(), GroupTint, ICON_TINTS, TINTS, VisibilityGroup()
 
 ### Community 24 - "Media Search/Cursor API"
-Cohesion: 0.43
-Nodes (6): GeoPoint, getMapEmbedUrl(), TestimonialMap(), getReviewPoint(), normalizeLocationKey(), TestimonialsSection()
+Cohesion: 0.12
+Nodes (15): allowScripts, sharp@0.34.5, unrs-resolver@1.11.1, name, overrides, postcss, private, scripts (+7 more)
 
 ### Community 25 - "README.md"
 Cohesion: 0.50
@@ -302,24 +313,24 @@ Cohesion: 0.50
 Nodes (3): cspDirectives, nextConfig, securityHeaders
 
 ## Knowledge Gaps
-- **337 isolated node(s):** `How to use`, `Status legend`, `Completed so far — full specs + outcomes in SESSION-ARCHIVE.md`, `Gaps awaiting a decision from Hussain — not sessions yet, do not invent scope`, `Session S6 — Remove `unoptimized` from testimonial images — `in-progress`` (+332 more)
+- **337 isolated node(s):** `InquiryStatus`, `nav`, `SelectedPerson`, `currencies`, `NftMeta` (+332 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **12 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **23 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
 - **Why does `getDb()` connect `Card Image Fields` to `@dnd-kit/sortable`, `Page Sections Shared`, `Cloudinary Sign/Upload API`, `Home Sections & Media Cards`, `@dnd-kit/utilities`, `Admin Auth & Login`, `Services Admin`, `Interior Public Pages`, `geist`, `Featured Work Cards`, `Public Form Security API`, `NFT Admin & API`, `route.ts`, `cloudinary`?**
-  _High betweenness centrality (0.146) - this node is a cross-community bridge._
-- **Why does `dependencies` connect `Runtime Dependencies` to `Root Layout & Nav Shell`, `Dev Dependencies`?**
-  _High betweenness centrality (0.099) - this node is a cross-community bridge._
-- **What connects `How to use`, `Status legend`, `Completed so far — full specs + outcomes in SESSION-ARCHIVE.md` to the rest of the system?**
+  _High betweenness centrality (0.157) - this node is a cross-community bridge._
+- **Why does `dependencies` connect `Runtime Dependencies` to `Admin Protected Layout`, `next`, `react`, `Root Layout & Nav Shell`, `gsap`, `tailwind-merge`, `next`, `next-themes`, `framer-motion`, `geist`, `Media Search/Cursor API`, `@dnd-kit/utilities`, `Route Handler`?**
+  _High betweenness centrality (0.075) - this node is a cross-community bridge._
+- **What connects `InquiryStatus`, `nav`, `SelectedPerson` to the rest of the system?**
   _337 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `Admin Media & People Lists` be split into smaller, more focused modules?**
   _Cohesion score 0.05745814307458143 - nodes in this community are weakly interconnected._
+- **Should `Home Sections & Media Cards` be split into smaller, more focused modules?**
+  _Cohesion score 0.13709677419354838 - nodes in this community are weakly interconnected._
 - **Should `Cloudinary Sign/Upload API` be split into smaller, more focused modules?**
   _Cohesion score 0.07645687645687646 - nodes in this community are weakly interconnected._
 - **Should `Media Detail Sections` be split into smaller, more focused modules?**
   _Cohesion score 0.07305669199298656 - nodes in this community are weakly interconnected._
-- **Should `Private Galleries Admin` be split into smaller, more focused modules?**
-  _Cohesion score 0.11764705882352941 - nodes in this community are weakly interconnected._
