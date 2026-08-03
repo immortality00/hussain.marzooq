@@ -53,7 +53,7 @@ export function ReviewModal({
               <div className="text-xl text-amber-500">{renderStars(item.rating)}</div>
 
               <blockquote className="rounded-[1.5rem] border border-border/60 bg-muted/25 p-5 text-xl leading-9 tracking-[-0.02em] sm:text-2xl sm:leading-10">
-                "{item.review}"
+                &quot;{item.review}&quot;
               </blockquote>
             </div>
 

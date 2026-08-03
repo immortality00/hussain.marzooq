@@ -157,7 +157,7 @@ export function TestimonialInspectModal({
             <div className="space-y-5">
               <section className="rounded-[1.6rem] border border-border/60 bg-muted/20 p-5">
                 <blockquote className="whitespace-pre-wrap text-2xl leading-10 tracking-[-0.04em] text-foreground">
-                  "{item.review}"
+                  &quot;{item.review}&quot;
                 </blockquote>
               </section>
               <section>

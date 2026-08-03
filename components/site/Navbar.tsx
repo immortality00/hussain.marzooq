@@ -14,6 +14,10 @@ export function Navbar() {
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  // next-themes hydration guard: the resolved theme is unknown during SSR, so we
+  // render a stable placeholder until mounted. The one-shot setState on mount is the
+  // documented pattern for this and is intentional.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
   function toggleTheme() {

@@ -75,7 +75,7 @@ export function SingleReviewCard({
           key={item.id}
           className="mt-5 text-balance text-xl font-medium leading-[1.12] tracking-[-0.045em] sm:text-2xl lg:text-3xl"
         >
-          "{item.review}"
+          &quot;{item.review}&quot;
         </blockquote>
 
         <ReviewPhotoStrip item={item} />
