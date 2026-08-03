@@ -47,7 +47,7 @@ D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ## Phase S — Security & hardening (do S1 before launch)
 
-### Session S6 — Remove `unoptimized` from testimonial images — `pending`
+### Session S6 — Remove `unoptimized` from testimonial images — `in-progress`
 Found 2026-07-31 after the Cloudinary custom loader shipped.
 `components/testimonials/SafeImage.tsx:14` and
 `components/testimonials/review-form/PreviewImage.tsx:6` pass `unoptimized`, which

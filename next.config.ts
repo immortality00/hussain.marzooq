@@ -10,6 +10,8 @@ const isDev = process.env.NODE_ENV !== "production";
  * - Cloudinary upload widget: script + iframe from upload-widget.cloudinary.com,
  *   signed-upload POSTs to api.cloudinary.com, image polling to res.cloudinary.com.
  *   Used on public pages too (testimonial review form), not just admin.
+ * - OpenStreetMap embed: read-only map iframe (www.openstreetmap.org) on the
+ *   testimonials page showing each reviewer's city — needs frame-src.
  * - Fonts are self-hosted (geist via next/font) — no external font origin.
  *
  * `script-src` keeps 'unsafe-inline': Next's App Router injects inline hydration
@@ -25,7 +27,7 @@ const cspDirectives = [
   "img-src 'self' data: blob: https://res.cloudinary.com",
   "font-src 'self' data:",
   `connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com https://upload-widget.cloudinary.com${isDev ? " ws: http://localhost:*" : ""}`,
-  "frame-src https://upload-widget.cloudinary.com",
+  "frame-src https://upload-widget.cloudinary.com https://www.openstreetmap.org",
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",

@@ -11,5 +11,5 @@ export function SafeImage({
   className?: string;
   sizes?: string;
 }) {
-  return <Image src={src} alt={alt} fill unoptimized className={className} sizes={sizes} />;
+  return <Image src={src} alt={alt} fill className={className} sizes={sizes} />;
 }
