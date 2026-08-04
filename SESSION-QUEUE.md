@@ -90,6 +90,55 @@ Repo: https://github.com/pbakaus/impeccable — Apache 2.0, by Paul Bakaus. 1 sk
 23 commands, 59 deterministic detector rules, standalone CLI that needs no LLM or API key.
 Docs: impeccable.style
 
+**The stack, and what each part is for** — these are complementary, not competing:
+
+| Layer | Tool | Session |
+|---|---|---|
+| **Direction** — what this should look like and why | `frontend-design` (Anthropic) | DS0 |
+| **Audit** — what is wrong with what exists | `redesign-existing-projects` (taste-skill) | DS0 |
+| **Detection** — deterministic, offline, no LLM | Impeccable CLI (59 rules) | DS1 |
+| **Motion** — the whole remaining D-phase | Emil Kowalski's skills | DS0 |
+| **Execution** — Impeccable's 23 commands | Impeccable skill | DS2 |
+
+Run order matters: **DS0 → DS1 → DS2 → D-sessions.** Skills before diagnosis before
+adoption before building, so each step informs the next instead of duplicating it.
+Full routing table + conflict rules: CLAUDE.md → "Design & motion skills".
+
+---
+
+### Session DS0 — Install the design + motion skill stack — `pending`
+**Do this first.** All three are prompt-only skills (SKILL.md files, no scripts, no
+hooks, no runtime) — the lowest-risk item in this phase. They shape how every later
+design session thinks, so installing them before DS1/DS2 and D4–D13 is the whole point.
+
+Run from the project root, in a Code tab:
+
+```
+# 1. Anthropic's frontend-design — the upstream reference Impeccable was built from.
+#    Single SKILL.md, no installer. Copy into .claude/skills/frontend-design/
+#    Source: https://github.com/anthropics/skills/tree/main/skills/frontend-design
+
+# 2. taste-skill — ONLY the redesign variant. Do not install the whole set.
+npx skills add https://github.com/Leonxlnx/taste-skill --skill "redesign-existing-projects"
+
+# 3. Emil Kowalski's motion skills (Vercel/Linear; author of Sonner + Vaul)
+npx skills@latest add emilkowalski/skills
+```
+
+**Report before finishing:** every file each installer wrote, and whether any of them
+added a hook or a script (they should not — flag it if they do). Add the routing table
+from CLAUDE.md ("Design & motion skills — which to load, when") to your Gate 1 report so
+Hussain can confirm the mapping is right.
+
+**Do not install `ui-ux-pro-max`** — evaluated and rejected 2026-08-04. It generates a
+design system by matching an industry template (161 product types → preset palette,
+typography, section pattern). This project already has a design language, OKLCH tokens,
+and named references; template selection is the opposite of the target. Reasoning
+recorded in CLAUDE.md.
+
+**Verify after install:** the skills appear in the harness (restart the Code tab if not),
+and `hm-visuals-voice` still fires for copy — the new skills must not shadow it.
+
 ---
 
 ### Session DS1 — Evaluate the detector (no install, no hooks) — `pending`
@@ -161,11 +210,18 @@ Input for `init` — do not let it guess:
 **3. Apply commands where the queue is actually missing design direction.**
 The highest-value targets are the two acknowledged gaps at the top of this file, not the
 pages that already have sessions:
-- **Homepage** — has no design session at all since D2 was deleted. Use
-  `/impeccable shape` then `/impeccable craft` to produce a real direction.
+- **Homepage** — has no design session at all since D2 was deleted. Combine:
+  `frontend-design` (DS0) for the direction and signature element, `/impeccable shape`
+  then `craft` for structure, and `prototype` (DS0) to put 2–3 hero directions behind a
+  switcher before committing to one.
 - **About** — has no rebuild session. Same treatment.
-- Then, per page: `/impeccable critique <page>` → triage → fix. Prefer `critique`
-  (diagnosis) over `polish` (auto-changes) so Hussain sees the reasoning before code moves.
+- Then, per page: `redesign-existing-projects` (DS0) for the audit, or
+  `/impeccable critique <page>` → triage → fix. Prefer diagnosis (`critique`,
+  `redesign-existing-projects`) over auto-mutation (`polish`, `bolder`) so Hussain sees
+  reasoning before code moves.
+- **One direction skill at a time.** `frontend-design`, `redesign-existing-projects` and
+  Impeccable's commands all give aesthetic direction; running them together produces
+  mush. Pick one per pass and say which in the Gate 1 report.
 
 **4. Feed the results back into the queue.** Findings become concrete tasks inside the
 existing design sessions (D4–D13), not a parallel workstream. Impeccable is the diagnosis
@@ -203,6 +259,19 @@ Transitions to implement in this session:
 - Propose the complete transition architecture and timing for each route.
 - Wait for approval before writing any code.
 
+**Skills to use here (installed in DS0):**
+- `find-animation-opportunities` **first** — it also says what *not* to animate. Six
+  bespoke route transitions is a large motion budget; confirm each one earns its place
+  before speccing it.
+- `animation-vocabulary` when writing the Gate 1 spec — durations, easings and
+  choreography stated precisely, so Gate 2 has an objective target instead of "feels off".
+- `prototype` for the two hardest transitions (Videography glass-shard, Dancing wave) —
+  variants behind a switcher. D3's cylinder needed four rejected geometries before it
+  landed (archive §D3); cheap exploration is how that cost drops.
+- `review-animations` at Gate 2, before declaring done.
+- **Conflict:** the Dancing transition's elastic wave physics is deliberate and survives
+  Impeccable's "no bounce/elastic" rule. See CLAUDE.md → Skill conflicts.
+
 ---
 
 ### Session D5 — Cursor enhancements — `pending`
@@ -216,6 +285,13 @@ Additions to the existing dot + ring cursor:
 5. **mix-blend-mode: difference:** Applied to both dot and ring for automatic inversion on any background.
 
 Read CustomCursor.tsx fully before writing. Verify cursor is applied correctly to every public page via AppShell.
+
+**Skills to use here (installed in DS0):**
+- `prototype` — spring physics is pure feel. Build 3 variants (stiffness/damping sets)
+  behind a switcher and pick by eye rather than guessing constants in the dark.
+- `animation-vocabulary` for the Gate 1 spec; `review-animations` at Gate 2.
+- **Conflict:** spring overshoot is deliberate here and survives Impeccable's
+  "no bounce/elastic easing" rule. Ignore the rule with a reason, don't remove the motion.
 
 ---
 
@@ -239,6 +315,11 @@ Globe behavior:
 - Color palette: dark charcoal from design tokens. Warm atmospheric glow.
 
 Read: app/page.tsx, lib/server/public-media.ts, lib/server/geocoding.ts, components/media/types.ts. Propose globe layout and data approach. Wait for approval.
+
+**Skills to use here (installed in DS0):** `pick-ui-library` before committing to
+react-globe.gl — it is already in package.json but unused, so this is the last cheap
+moment to confirm it beats a raw Three.js globe for this use. `animation-vocabulary` to
+spec the auto-rotate / drag / resume choreography precisely.
 
 ---
 
@@ -264,6 +345,11 @@ Implementation: custom hook `useMagneticHover`, applied via `data-magnetic` attr
 Targets: all primary CTA buttons, StickyCta.tsx, nav Book button.
 
 Read every file that renders a primary CTA button before writing.
+
+**Skills to use here (installed in DS0):** `find-animation-opportunities` to confirm
+magnetic hover belongs on *every* primary CTA rather than only the highest-intent ones
+(nav Book, StickyCta) — sitewide magnetism can read as gimmick. `review-animations` at
+Gate 2.
 
 ---
 
@@ -404,6 +490,12 @@ Check and fix:
 - Lenis scroll feels correct on all pages.
 
 Read all public page components. Report every inconsistency before fixing anything.
+
+**Skills to use here (installed in DS0):** `improve-animations` for a repo-wide motion
+audit with prioritised, self-contained fix plans — this is the right session for it,
+once all the motion work (D4–D8) has landed. Re-run `npx impeccable detect` too and
+compare against DS1's triage table: anything in the "Real" column that is still present
+is unfinished work.
 
 ---
 

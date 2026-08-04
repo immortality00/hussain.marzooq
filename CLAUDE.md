@@ -307,6 +307,48 @@ session touches none of those, say "no security surface" and move on.
   `contact/page.tsx` (max-w-4xl), `g/[slug]/GalleryPasswordForm.tsx` (max-w-xl),
   `testimonials/page.tsx` (max-w-7xl).
 
+## Design & motion skills — which to load, when
+Installed in Session DS0 (install commands: archive §DS0). **Load per task, never all at
+once.** Several design skills firing together bloat context and blur each other's
+direction. Name the skill explicitly in the session prompt so the right one fires.
+
+| Task | Skill | Source |
+|---|---|---|
+| Any new UI, or reshaping a page | `frontend-design` | anthropics/skills — the upstream reference |
+| Auditing/fixing an existing page's design | `redesign-existing-projects` | Leonxlnx/taste-skill |
+| Deterministic anti-pattern scan (no LLM) | `npx impeccable detect` | pbakaus/impeccable — see DS1 |
+| Reviewing motion that already exists | `review-animations` | emilkowalski/skills |
+| Deciding **where** motion belongs (and where not) | `find-animation-opportunities` | emilkowalski/skills |
+| Auditing all animations → prioritised fix plans | `improve-animations` | emilkowalski/skills |
+| Writing a precise motion spec at Gate 1 | `animation-vocabulary` | emilkowalski/skills |
+| Exploring several UI variants before committing | `prototype` | emilkowalski/skills |
+| Choosing a library instead of hand-rolling | `pick-ui-library` | emilkowalski/skills |
+
+**Why the motion skills matter here:** every remaining design session (D4 transitions,
+D5 cursor, D6 globe, D8 magnetic buttons) is motion work. `prototype` exists to make
+exploration cheap — the D3 cylinder took four rejected geometries before landing
+(archive §D3); variants-behind-a-switcher is how that cost drops.
+
+### Skill conflicts — this project wins, always
+Third-party skills encode *their* authors' taste. Where they disagree with a decision
+recorded in this file, **CLAUDE.md wins.** Known conflicts, do not silently "fix" these:
+
+- **taste-skill v2 bans em-dashes.** The `hm-visuals-voice` skill *prescribes* them as a
+  core rhythm device ("Atmosphere. Precision. — built with restraint"). Brand voice wins
+  for all public copy. The ban may apply to UI microcopy only — decide per case, never
+  rewrite brand copy to satisfy it.
+- **Impeccable bans bounce/elastic easing as dated.** D5 specs spring overshoot on the
+  cursor; D4 specs GSAP elastic wave physics for the Dancing transition. Both deliberate.
+  Add to `detector.ignoreRules` with a reason rather than removing the motion.
+- **Impeccable/taste-skill may suggest gradients, eyebrows, or card-in-card.** All three
+  are banned here (see "What is NOT in the design" and "Reusable components").
+- **taste-skill v2 is marked experimental.** If it misbehaves, pin
+  `design-taste-frontend-v1` instead.
+- Deliberately **not installed:** `ui-ux-pro-max`. It generates a design system from
+  industry templates (161 product types → preset palette/type). This project already has
+  a documented design language and OKLCH tokens; template selection is the opposite of
+  the target. Do not add it.
+
 ## Claude tooling for this project
 - **Claude Code Desktop (Code tab):** all development sessions. Triggered by "Continue queue".
 - **Cowork:** copy writing (always hm-visuals-voice skill), docs/queue maintenance,
