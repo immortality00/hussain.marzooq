@@ -53,23 +53,28 @@ D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ## Phase S — Security & hardening (do S1 before launch)
 
-### Session S2 — Reuse audit against the real code rule — `pending`
-**Run after S3 — a refactor this wide must be covered by the test baseline first.**
+### Session S2b — API `[id]`-route boilerplate extraction — `pending`
+Follow-up slice from the S2 reuse audit (S2's classification + slice S2a are done —
+archive §S2).
 
-The primary rule is reuse-over-repetition; file length is the symptom, not the rule.
-**91 source files currently exceed 100 lines.** Largest: `lib/server/cloudinary-assets.ts`
-(382), `components/testimonials/PublicReviewForm.tsx` (367), `app/api/media/[id]/route.ts`
-(363), `hooks/useServicesAdmin.ts` (333), `components/contact/useContactFormState.ts` (286),
-`components/photography/PhotographyCylinder.tsx` (285), `lib/server/page-sections.ts` (280).
+The S2 audit found the codebase's reuse infrastructure (`useAdminAction`/
+`AdminActionFeedback`, `app/api/_lib/common.ts` parsers, `requireAdminOr401`,
+`deleteManagedCloudinaryAsset`, `useMediaSearch`, media-picker, `PageHeader`/
+`PortfolioCard`) already exists and is mostly used — real duplication is narrow. The one
+remaining extraction worth doing is the shared boilerplate across the seven admin `[id]`
+mutation routes (1537 lines total): `app/api/media/[id]/route.ts` (363),
+`testimonials/[id]` (273), `services/[id]` (273), `people/[id]` (198),
+`private-galleries/[id]` (157), `service-categories/[id]` (143), `inquiries/[id]` (130).
 
-Do NOT blind-split by line count. For each file over ~150 lines, classify it:
-- **Extractable duplication** — the same shape appears elsewhere → extract a shared
-  component/hook/util. This is the actual work.
-- **Cohesive and unavoidable** — e.g. a single Three.js scene, one API route's full
-  CRUD surface. Leave it and add a one-line comment stating why.
+Shared shape to extract (leave each route's domain-specific field-mapping in place):
+- the `requireAdminOr401 → validate ObjectId → findOne → 404` preamble, and
+- the DELETE `soft-archive vs hard-delete + deleteManagedCloudinaryAsset + revalidatePath`
+  pattern where present.
 
-Report the classification for every file before changing any of them. Expect this to be
-several sessions, not one — propose a split at Gate 1.
+Modest per-file win but HIGH blast radius — it touches every admin mutation. Gate 1 must
+confirm each route still enforces auth + input validation + rate limiting after
+extraction, and every route is re-verified in the browser. Do NOT collapse routes that
+only superficially resemble each other. Covered by the S3 import-smoke test baseline.
 
 ---
 

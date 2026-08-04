@@ -907,6 +907,51 @@ reported them at Gate 2, approved fixing both):**
 
 ---
 
+### Session S2 — Reuse audit against the real code rule — `done` (audit + slice S2a)
+**Spec (as queued):** The primary rule is reuse-over-repetition; file length is the
+symptom, not the rule. 91 source files exceeded 100 lines. For each file over ~150 lines,
+classify: **Extractable duplication** (same shape appears elsewhere → extract a shared
+component/hook/util — the actual work) vs **Cohesive and unavoidable** (a single Three.js
+scene, one API route's full CRUD surface — leave it). Report the classification for every
+file before changing any; expect several sessions; propose a split at Gate 1.
+
+**Audit outcome (2026-08-04):** Classified all 43 source files >150 lines. Key finding:
+the reuse infrastructure the rule worries about already exists and is mostly used —
+`useAdminAction`/`AdminActionFeedback` (F5), `app/api/_lib/common.ts` parsers,
+`requireAdminOr401`, `deleteManagedCloudinaryAsset`, `useMediaSearch`, the media-picker,
+`PageHeader`/`PortfolioCard`. Real duplication is **narrow**, not the wide refactor the
+"91 files" number implied. Three.js scenes (`PhotographyCylinder`, `PhotographyHorizontal`,
+`HeroBokeh`), server data/logic modules (`cloudinary-assets`, `page-sections`, `page-seo`,
+`media-serializers`, …), data modules (`testimonial-locations`), and single cohesive
+components (`WorkOverlay`, `Navbar`, `NftModal`, `PublicReviewForm`, `useContactFormState`)
+were all classified **Cohesive** — left untouched (Hussain requested no explanatory code
+comments, so none were added). Split into two slices: S2a (done here), S2b (carved into
+the queue).
+
+**S2a — services-admin feedback consolidation (executed):**
+- `app/admin/(protected)/services/lib/ui.ts`: the local `Banner` type was byte-identical
+  to `AdminActionFeedbackState`; replaced with an alias (one source of truth).
+- `hooks/useServicesAdmin.ts`: feedback state now comes from the shared `useAdminAction`
+  (matching `usePeopleAdmin`, satisfying F5). The 8 duplicated
+  `busy + info + try/catch/finally` handler blocks collapsed into one hook-internal
+  `withBusy` runner (auto-dismiss timer + custom `CATEGORY_INACTIVE`/`SERVICE_ARCHIVED`
+  messages preserved). `ServiceEditorModal` left as-is — its local `busy` is a Save-button
+  guard, not the feedback pattern.
+- Removed the redundant `scrollIntoView` from `showBanner` (the banner is `sticky top-3`,
+  always visible) — this fixed a page-self-scroll-on-save that predated the session.
+- Two pre-existing `ServiceEditorModal` bugs fixed in passing (both surfaced during Gate 2
+  verification): guarded `open?.()` on the Cloudinary upload button (undefined until the
+  widget script loads), and the Starting Price input now strips non-numeric characters on
+  entry (`inputMode="decimal"`) instead of silently discarding typed letters on save.
+- Verified: `tsc` 0 errors, `eslint --max-warnings 0` clean, 79/79 tests, live admin CRUD
+  confirmed by Hussain. **No CLAUDE.md impact** — S2a brings code into compliance with the
+  existing F5 rule rather than changing any rule.
+
+**S2b (remaining):** extract the shared preamble + DELETE pattern across the seven admin
+`[id]` routes. Left as a `pending` session in SESSION-QUEUE.md.
+
+---
+
 ### Session S3 — Automated test baseline — `done`
 **Spec (as queued):** No test script in `package.json` and no CI; verification was
 `tsc --noEmit` + eslint + Gate-2 manual checks, which had already let real gaps ship

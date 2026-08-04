@@ -17,8 +17,8 @@ import {
   findCategoryById,
   findOthersCategory,
   isCreateServiceResponse,
-  type Banner,
 } from "@/app/admin/(protected)/services/lib/ui";
+import { useAdminAction } from "@/hooks/useAdminAction";
 
 export function useServicesAdmin(
   initialServices: Service[],
@@ -33,7 +33,7 @@ export function useServicesAdmin(
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const [banner, setBanner] = useState<Banner>(null);
+  const { feedback: banner, setFeedback: setBanner } = useAdminAction();
   const bannerRef = useRef<HTMLDivElement | null>(null);
   const bannerTimerRef = useRef<number | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -51,10 +51,6 @@ export function useServicesAdmin(
     clearBannerTimer();
     setBanner({ type, text });
 
-    setTimeout(() => {
-      bannerRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 0);
-
     if (type !== "info") {
       const ms = type === "ok" ? 4000 : 7000;
       bannerTimerRef.current = window.setTimeout(() => setBanner(null), ms);
@@ -64,6 +60,32 @@ export function useServicesAdmin(
   useEffect(() => {
     return () => clearBannerTimer();
   }, []);
+
+  async function withBusy(
+    infoText: string,
+    fn: () => Promise<void>,
+    opts?: {
+      successText?: string;
+      errorFallback?: string;
+      formatError?: (message: string) => string;
+    }
+  ) {
+    if (busy) return;
+
+    setBusy(true);
+    showBanner("info", infoText);
+
+    try {
+      await fn();
+      if (opts?.successText) showBanner("ok", opts.successText);
+    } catch (e: unknown) {
+      const message =
+        e instanceof Error ? e.message : opts?.errorFallback ?? "Action failed.";
+      showBanner("err", opts?.formatError ? opts.formatError(message) : message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   const active = useMemo(
     () => services.filter((s) => s.isActive && !s.isArchived).sort((a, b) => a.order - b.order),
@@ -99,36 +121,27 @@ export function useServicesAdmin(
   }
 
   async function handleSaveOrder() {
-    if (busy) return;
-
-    setBusy(true);
-    showBanner("info", "Saving service order…");
-
-    try {
-      await saveOrder(active);
-      showBanner("ok", "✅ Order saved.");
-    } catch (e: unknown) {
-      showBanner("err", e instanceof Error ? e.message : "Save order failed.");
-    } finally {
-      setBusy(false);
-    }
+    await withBusy(
+      "Saving service order…",
+      async () => {
+        await saveOrder(active);
+      },
+      { successText: "✅ Order saved.", errorFallback: "Save order failed." }
+    );
   }
 
   async function handleSyncInquiryCounts() {
-    if (busy) return;
-
-    setBusy(true);
-    showBanner("info", "Syncing inquiry counts…");
-
-    try {
-      await syncInquiryCounts();
-      router.refresh();
-      showBanner("ok", "✅ Inquiry counts synced from actual inquiries.");
-    } catch (e: unknown) {
-      showBanner("err", e instanceof Error ? e.message : "Sync inquiry counts failed.");
-    } finally {
-      setBusy(false);
-    }
+    await withBusy(
+      "Syncing inquiry counts…",
+      async () => {
+        await syncInquiryCounts();
+        router.refresh();
+      },
+      {
+        successText: "✅ Inquiry counts synced from actual inquiries.",
+        errorFallback: "Sync inquiry counts failed.",
+      }
+    );
   }
 
   async function handleArchive(svc: Service) {
@@ -139,39 +152,29 @@ export function useServicesAdmin(
     );
     if (!ok) return;
 
-    setBusy(true);
-    showBanner("info", `Archiving "${svc.name}"…`);
-
-    try {
-      await archiveService(svc.id);
-      setServices((prev) =>
-        prev.map((p) => (p.id === svc.id ? { ...p, isArchived: true, isActive: false } : p))
-      );
-      showBanner("ok", `✅ Archived "${svc.name}".`);
-    } catch (e: unknown) {
-      showBanner("err", e instanceof Error ? e.message : "Archive failed.");
-    } finally {
-      setBusy(false);
-    }
+    await withBusy(
+      `Archiving "${svc.name}"…`,
+      async () => {
+        await archiveService(svc.id);
+        setServices((prev) =>
+          prev.map((p) => (p.id === svc.id ? { ...p, isArchived: true, isActive: false } : p))
+        );
+      },
+      { successText: `✅ Archived "${svc.name}".`, errorFallback: "Archive failed." }
+    );
   }
 
   async function handleRestore(svc: Service) {
-    if (busy) return;
-
-    setBusy(true);
-    showBanner("info", `Restoring "${svc.name}"…`);
-
-    try {
-      await patchService(svc.id, { isArchived: false });
-      setServices((prev) =>
-        prev.map((p) => (p.id === svc.id ? { ...p, isArchived: false } : p))
-      );
-      showBanner("ok", `✅ Restored "${svc.name}".`);
-    } catch (e: unknown) {
-      showBanner("err", e instanceof Error ? e.message : "Restore failed.");
-    } finally {
-      setBusy(false);
-    }
+    await withBusy(
+      `Restoring "${svc.name}"…`,
+      async () => {
+        await patchService(svc.id, { isArchived: false });
+        setServices((prev) =>
+          prev.map((p) => (p.id === svc.id ? { ...p, isArchived: false } : p))
+        );
+      },
+      { successText: `✅ Restored "${svc.name}".`, errorFallback: "Restore failed." }
+    );
   }
 
   async function handleDeleteForever(svc: Service) {
@@ -185,124 +188,110 @@ export function useServicesAdmin(
     const ok = confirm(`Delete "${svc.name}" FOREVER?\n\nThis cannot be undone.`);
     if (!ok) return;
 
-    setBusy(true);
-    showBanner("info", `Deleting "${svc.name}" forever…`);
-
-    try {
-      await deleteServiceForever(svc.id);
-      setServices((prev) => prev.filter((p) => p.id !== svc.id));
-      showBanner("ok", `✅ Deleted "${svc.name}" forever.`);
-    } catch (e: unknown) {
-      showBanner("err", e instanceof Error ? e.message : "Delete failed.");
-    } finally {
-      setBusy(false);
-    }
+    await withBusy(
+      `Deleting "${svc.name}" forever…`,
+      async () => {
+        await deleteServiceForever(svc.id);
+        setServices((prev) => prev.filter((p) => p.id !== svc.id));
+      },
+      { successText: `✅ Deleted "${svc.name}" forever.`, errorFallback: "Delete failed." }
+    );
   }
 
   async function handleToggleActive(svc: Service) {
-    if (busy) return;
-
-    setBusy(true);
     const next = !svc.isActive;
-    showBanner("info", next ? `Activating "${svc.name}"…` : `Deactivating "${svc.name}"…`);
 
-    try {
-      await patchService(svc.id, { isActive: next });
-      setServices((prev) =>
-        prev.map((p) => (p.id === svc.id ? { ...p, isActive: next } : p))
-      );
-      showBanner("ok", next ? `✅ Activated "${svc.name}".` : `✅ Deactivated "${svc.name}".`);
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : "Update failed.";
-
-      if (String(message).includes("CATEGORY_INACTIVE")) {
-        showBanner("err", `❌ Can't activate "${svc.name}" because its category is inactive. Activate the category first.`);
-      } else if (String(message).includes("SERVICE_ARCHIVED")) {
-        showBanner("err", `❌ Can't activate "${svc.name}" because it's archived. Restore it first.`);
-      } else {
-        showBanner("err", `❌ ${message}`);
+    await withBusy(
+      next ? `Activating "${svc.name}"…` : `Deactivating "${svc.name}"…`,
+      async () => {
+        await patchService(svc.id, { isActive: next });
+        setServices((prev) =>
+          prev.map((p) => (p.id === svc.id ? { ...p, isActive: next } : p))
+        );
+      },
+      {
+        successText: next ? `✅ Activated "${svc.name}".` : `✅ Deactivated "${svc.name}".`,
+        errorFallback: "Update failed.",
+        formatError: (message) => {
+          if (String(message).includes("CATEGORY_INACTIVE")) {
+            return `❌ Can't activate "${svc.name}" because its category is inactive. Activate the category first.`;
+          }
+          if (String(message).includes("SERVICE_ARCHIVED")) {
+            return `❌ Can't activate "${svc.name}" because it's archived. Restore it first.`;
+          }
+          return `❌ ${message}`;
+        },
       }
-    } finally {
-      setBusy(false);
-    }
+    );
   }
 
   async function handleCreateSave(patch: Partial<Service>) {
-    if (busy) return;
+    await withBusy(
+      "Creating service…",
+      async () => {
+        const raw = await createService(patch);
+        if (!isCreateServiceResponse(raw) || raw.ok !== true) throw new Error("Create failed");
 
-    setBusy(true);
-    showBanner("info", "Creating service…");
+        const nextCategoryId =
+          typeof patch.categoryId === "string" && patch.categoryId
+            ? patch.categoryId
+            : findOthersCategory(categories)?.id ?? null;
 
-    try {
-      const raw = await createService(patch);
-      if (!isCreateServiceResponse(raw) || raw.ok !== true) throw new Error("Create failed");
+        const nextCategory = findCategoryById(categories, nextCategoryId)?.slug ?? "others";
 
-      const nextCategoryId =
-        typeof patch.categoryId === "string" && patch.categoryId
-          ? patch.categoryId
-          : findOthersCategory(categories)?.id ?? null;
+        setServices((prev) => [
+          ...prev,
+          {
+            id: raw.id,
+            name: String(patch.name ?? ""),
+            slug: String(patch.slug ?? ""),
+            category: nextCategory,
+            categoryId: nextCategoryId,
+            description: String(patch.description ?? ""),
+            startingPrice: patch.startingPrice ?? null,
+            currency: String(patch.currency ?? "AED"),
+            imageUrl: String(patch.imageUrl ?? ""),
+            isActive: patch.isActive ?? true,
+            isArchived: false,
+            order: 0,
+            inquiriesCount: 0,
+          },
+        ]);
 
-      const nextCategory = findCategoryById(categories, nextCategoryId)?.slug ?? "others";
-
-      setServices((prev) => [
-        ...prev,
-        {
-          id: raw.id,
-          name: String(patch.name ?? ""),
-          slug: String(patch.slug ?? ""),
-          category: nextCategory,
-          categoryId: nextCategoryId,
-          description: String(patch.description ?? ""),
-          startingPrice: patch.startingPrice ?? null,
-          currency: String(patch.currency ?? "AED"),
-          imageUrl: String(patch.imageUrl ?? ""),
-          isActive: patch.isActive ?? true,
-          isArchived: false,
-          order: 0,
-          inquiriesCount: 0,
-        },
-      ]);
-
-      setCreating(false);
-      showBanner("ok", "✅ Service created.");
-    } catch (e: unknown) {
-      showBanner("err", e instanceof Error ? e.message : "Create failed.");
-    } finally {
-      setBusy(false);
-    }
+        setCreating(false);
+      },
+      { successText: "✅ Service created.", errorFallback: "Create failed." }
+    );
   }
 
   async function handleEditSave(patch: Partial<Service>) {
-    if (!editing || busy) return;
+    if (!editing) return;
+    const current = editing;
 
-    setBusy(true);
-    showBanner("info", `Updating "${editing.name}"…`);
+    await withBusy(
+      `Updating "${current.name}"…`,
+      async () => {
+        await patchService(current.id, patch);
 
-    try {
-      await patchService(editing.id, patch);
+        const nextCategoryId =
+          typeof patch.categoryId === "string" ? patch.categoryId : current.categoryId;
 
-      const nextCategoryId =
-        typeof patch.categoryId === "string" ? patch.categoryId : editing.categoryId;
+        const nextCategory =
+          findCategoryById(categories, nextCategoryId)?.slug ??
+          (nextCategoryId ? current.category : "others");
 
-      const nextCategory =
-        findCategoryById(categories, nextCategoryId)?.slug ??
-        (nextCategoryId ? editing.category : "others");
+        setServices((prev) =>
+          prev.map((p) =>
+            p.id === current.id
+              ? { ...p, ...patch, categoryId: nextCategoryId ?? null, category: nextCategory }
+              : p
+          )
+        );
 
-      setServices((prev) =>
-        prev.map((p) =>
-          p.id === editing.id
-            ? { ...p, ...patch, categoryId: nextCategoryId ?? null, category: nextCategory }
-            : p
-        )
-      );
-
-      setEditing(null);
-      showBanner("ok", "✅ Service updated.");
-    } catch (e: unknown) {
-      showBanner("err", e instanceof Error ? e.message : "Save failed.");
-    } finally {
-      setBusy(false);
-    }
+        setEditing(null);
+      },
+      { successText: "✅ Service updated.", errorFallback: "Save failed." }
+    );
   }
 
   return {
