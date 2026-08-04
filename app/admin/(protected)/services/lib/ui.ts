@@ -1,8 +1,9 @@
 import type { ServiceCategory } from "./types";
+import type { AdminActionFeedbackState } from "@/components/admin/action-feedback/AdminActionFeedback";
 
 export type CreateServiceResponse = { ok: true; id: string } | { ok: false; error: string };
 
-export type Banner = { type: "ok" | "err" | "info"; text: string } | null;
+export type Banner = AdminActionFeedbackState;
 
 export function isCreateServiceResponse(v: unknown): v is CreateServiceResponse {
   if (typeof v !== "object" || v === null) return false;

@@ -138,8 +138,8 @@ export default function ServiceEditorModal({
               <div className="mb-1 text-muted-foreground">Starting Price</div>
               <input
                 value={startingPrice}
-                onChange={(e) => setStartingPrice(e.target.value)}
-                inputMode="numeric"
+                onChange={(e) => setStartingPrice(e.target.value.replace(/[^0-9.]/g, ""))}
+                inputMode="decimal"
                 className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Leave empty for null"
               />
@@ -162,7 +162,7 @@ export default function ServiceEditorModal({
                   {({ open }) => (
                     <button
                       type="button"
-                      onClick={() => open()}
+                      onClick={() => open?.()}
                       className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent"
                     >
                       Upload Image
