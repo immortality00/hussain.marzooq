@@ -202,6 +202,12 @@ testimonials. Required for the globe (queue §C4).
   scroll-triggered.** No char/line modes — don't assume they exist.
 - `useAdminAction` hook + `AdminActionFeedback` — all admin loading/fetch/feedback
   flows (F5). Never hand-roll the try/catch+setFeedback pattern.
+- `app/api/_lib/admin-route.ts` — every admin `[id]` mutation route's preamble
+  (S2b). `requireAdminObjectId(ctx)` runs the admin guard **then** validates the
+  `:id` ObjectId (auth-before-parse ordering lives here, don't re-inline it);
+  `findByIdOr404(db, collection, oid, options?)` for the findOne→404 lookup;
+  `wantsHardDelete(req)` for the `?hard=1` soft-vs-hard delete flag. Domain
+  field-mapping and cleanup stay in each route.
 - `components/admin/media-picker/MediaPickerModal.tsx` + `ImageField.tsx` — all admin
   image pick/upload flows (N7). Don't build another picker.
 - `components/services/ServiceCard.tsx` — all service cards (`preview` variant for the

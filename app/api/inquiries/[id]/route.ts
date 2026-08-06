@@ -1,6 +1,10 @@
 import { Db, ObjectId } from "mongodb";
-import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
+import {
+  findByIdOr404,
+  requireAdminObjectId,
+  wantsHardDelete,
+} from "@/app/api/_lib/admin-route";
 import { asString, isRecord, noStoreJson } from "@/app/api/_lib/common";
 
 export const dynamic = "force-dynamic";
@@ -37,14 +41,10 @@ async function decrementServiceInquiriesCount(db: Db, serviceId: string): Promis
   );
 }
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny;
-
-  const { id } = await params;
-  if (!ObjectId.isValid(id)) {
-    return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
-  }
+export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { oid } = gate;
 
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
   const body = isRecord(bodyUnknown) ? bodyUnknown : {};
@@ -56,8 +56,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const db = await getDb();
 
-  const existing = await db.collection("inquiries").findOne({ _id: new ObjectId(id) });
-  if (!existing) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  const found = await findByIdOr404(db, "inquiries", oid);
+  if (found instanceof Response) return found;
+  const existing = found.doc;
 
   const patch: Record<string, unknown> = { updatedAt: new Date() };
 
@@ -71,7 +72,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (adminNotes !== null) patch.adminNotes = adminNotes;
   if (nextArchived !== null) patch.isArchived = nextArchived;
 
-  await db.collection("inquiries").updateOne({ _id: new ObjectId(id) }, { $set: patch });
+  await db.collection("inquiries").updateOne({ _id: oid }, { $set: patch });
 
   const serviceId = existing.serviceId;
   const prevArchived = existing.isArchived === true;
@@ -87,22 +88,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   return noStoreJson({ ok: true });
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny;
+export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { oid } = gate;
 
-  const { id } = await params;
-  if (!ObjectId.isValid(id)) {
-    return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
-  }
-
-  const url = new URL(req.url);
-  const hard = url.searchParams.get("hard") === "1";
+  const hard = wantsHardDelete(req);
 
   const db = await getDb();
 
-  const inquiry = await db.collection("inquiries").findOne({ _id: new ObjectId(id) });
-  if (!inquiry) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  const found = await findByIdOr404(db, "inquiries", oid);
+  if (found instanceof Response) return found;
+  const inquiry = found.doc;
 
   const serviceId = inquiry.serviceId;
   const alreadyArchived = inquiry.isArchived === true;
@@ -110,7 +107,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
   if (!hard) {
     await db.collection("inquiries").updateOne(
-      { _id: new ObjectId(id) },
+      { _id: oid },
       { $set: { isArchived: true, updatedAt: new Date() } }
     );
 
@@ -121,7 +118,7 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return noStoreJson({ ok: true, mode: "archived" });
   }
 
-  await db.collection("inquiries").deleteOne({ _id: new ObjectId(id) });
+  await db.collection("inquiries").deleteOne({ _id: oid });
 
   if (shouldDecrement) {
     await decrementServiceInquiriesCount(db, serviceId);

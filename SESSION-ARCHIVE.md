@@ -948,7 +948,56 @@ the queue).
   existing F5 rule rather than changing any rule.
 
 **S2b (remaining):** extract the shared preamble + DELETE pattern across the seven admin
-`[id]` routes. Left as a `pending` session in SESSION-QUEUE.md.
+`[id]` routes. Executed — see §S2b below.
+
+---
+
+### Session S2b — API `[id]`-route boilerplate extraction — `done`
+**Spec (as queued):** Follow-up slice from the S2 reuse audit. The one remaining
+extraction worth doing is the shared boilerplate across the seven admin `[id]` mutation
+routes (1537 lines): `media/[id]` (363), `testimonials/[id]` (273), `services/[id]` (273),
+`people/[id]` (198), `private-galleries/[id]` (157), `service-categories/[id]` (143),
+`inquiries/[id]` (130). Extract (leaving domain field-mapping in place): the
+`requireAdminOr401 → validate ObjectId → findOne → 404` preamble, and the DELETE
+`soft-archive vs hard-delete` pattern where present. HIGH blast radius — touches every
+admin mutation. Gate 1 must confirm each route still enforces auth + input validation +
+rate limiting; every route re-verified in the browser. Do NOT collapse routes that only
+superficially resemble each other.
+
+**Outcome — shipped 2026-08-06:**
+- **New `app/api/_lib/admin-route.ts`** with three helpers:
+  - `requireAdminObjectId(ctx)` → `Response | { id, oid }`. Runs `requireAdminOr401`
+    **first**, then `parseObjectId` — the auth-before-parse ordering now lives in one
+    place. Returns both the raw `id` string and parsed `oid` so routes needing either
+    don't re-parse (removes the repeated `new ObjectId(id)` allocations in the
+    `ObjectId.isValid`-style routes).
+  - `findByIdOr404(db, collection, oid, options?)` → `Response | { doc }`. The
+    findOne→404 lookup; `options` forwards projections. Uses `.findOne<WithId<Document>>`
+    so the returned doc types correctly.
+  - `wantsHardDelete(req)` → the `?hard=1` soft-vs-hard delete flag (services, inquiries).
+- **All 7 routes converted.** Call sites use the `if (gate instanceof Response) return gate`
+  narrowing idiom (`noStoreJson` returns `NextResponse extends Response`, so the guard
+  works). `inquiries/[id]` also had its `{ params }`-destructured handler signatures
+  normalized to `ctx`. Every route's domain logic (cloudinary cleanup, count
+  increment/decrement, private-gallery + inquiry blockers, `revalidatePath`) left
+  untouched.
+- **Behavior:** no auth/validation/rate-limiting semantics changed (these routes are
+  admin-cookie-gated, not rate-limited by design — that's the public POST routes).
+  Only cosmetic change: `testimonials` + `private-galleries` error strings `"Invalid id."`
+  / `"Not found."` lost their trailing period (standardized). Verified zero client
+  coupling to those strings via grep before changing.
+- **Test:** `test/api/admin-route.test.ts` (7 tests) — mocks `requireAdminOr401` to cover
+  `requireAdminObjectId`'s deny / bad-id-400 / valid-id branches, `findByIdOr404`
+  doc-vs-404 + projection forwarding with a fake db, and `wantsHardDelete` flag parsing.
+  The 7 routes stay covered by the existing `app/api/**/route.ts` import-smoke glob.
+- **Verification:** `tsc --noEmit` 0, `eslint --max-warnings 0` 0, `npm test` 86 pass.
+  All 7 routes probed unauthenticated → PATCH+DELETE 401 "Unauthorized"; malformed-id
+  also 401 (confirms auth precedes id-parse). No server errors. Hussain confirmed the full
+  authenticated CRUD round-trip (edit/delete/archive across media, testimonials, services,
+  service-categories, people, private-galleries, inquiries).
+- **CLAUDE.md impact:** added `app/api/_lib/admin-route.ts` to the "Reusable components —
+  always use, never reinvent" list so future admin `[id]` routes use the helpers instead
+  of re-inlining the preamble. Same commit as the code.
 
 ---
 

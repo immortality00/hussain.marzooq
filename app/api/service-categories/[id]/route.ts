@@ -1,7 +1,6 @@
-import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
-import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
+import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import {
   asFiniteNumber,
   isRecord,
@@ -12,24 +11,18 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const guard = await requireAdminOr401();
-  if (guard) return guard;
-
-  const { id } = await ctx.params;
-  if (!ObjectId.isValid(id)) {
-    return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
-  }
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { id, oid } = gate;
 
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
   const body = isRecord(bodyUnknown) ? bodyUnknown : {};
 
   const db = await getDb();
-  const categoryObjectId = new ObjectId(id);
 
-  const existing = await db.collection("service_categories").findOne({ _id: categoryObjectId });
-  if (!existing) {
-    return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
-  }
+  const found = await findByIdOr404(db, "service_categories", oid);
+  if (found instanceof Response) return found;
+  const existing = found.doc;
 
   const existingSlug = typeof existing.slug === "string" ? normalizeSlug(existing.slug) : "others";
   const isSystem = existingSlug === "others" || existing.isSystem === true;
@@ -70,7 +63,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
     const conflict = await db.collection("service_categories").findOne({
       slug: nextSlug,
-      _id: { $ne: categoryObjectId },
+      _id: { $ne: oid },
     });
 
     if (conflict) {
@@ -83,7 +76,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const willDeactivate =
     typeof patch.isActive === "boolean" && patch.isActive === false && existing.isActive !== false;
 
-  await db.collection("service_categories").updateOne({ _id: categoryObjectId }, { $set: patch });
+  await db.collection("service_categories").updateOne({ _id: oid }, { $set: patch });
 
   const servicePatch: Record<string, unknown> = {
     category: nextSlug,
@@ -103,20 +96,15 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const guard = await requireAdminOr401();
-  if (guard) return guard;
-
-  const { id } = await ctx.params;
-  if (!ObjectId.isValid(id)) {
-    return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
-  }
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { id, oid } = gate;
 
   const db = await getDb();
 
-  const cat = await db.collection("service_categories").findOne({ _id: new ObjectId(id) });
-  if (!cat) {
-    return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
-  }
+  const found = await findByIdOr404(db, "service_categories", oid);
+  if (found instanceof Response) return found;
+  const cat = found.doc;
 
   const slug = typeof cat.slug === "string" ? normalizeSlug(cat.slug) : "";
 
@@ -136,7 +124,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
     );
   }
 
-  await db.collection("service_categories").deleteOne({ _id: new ObjectId(id) });
+  await db.collection("service_categories").deleteOne({ _id: oid });
 
   revalidatePath("/services", "layout");
 

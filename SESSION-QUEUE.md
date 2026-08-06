@@ -51,33 +51,6 @@ D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
 
-## Phase S — Security & hardening (do S1 before launch)
-
-### Session S2b — API `[id]`-route boilerplate extraction — `pending`
-Follow-up slice from the S2 reuse audit (S2's classification + slice S2a are done —
-archive §S2).
-
-The S2 audit found the codebase's reuse infrastructure (`useAdminAction`/
-`AdminActionFeedback`, `app/api/_lib/common.ts` parsers, `requireAdminOr401`,
-`deleteManagedCloudinaryAsset`, `useMediaSearch`, media-picker, `PageHeader`/
-`PortfolioCard`) already exists and is mostly used — real duplication is narrow. The one
-remaining extraction worth doing is the shared boilerplate across the seven admin `[id]`
-mutation routes (1537 lines total): `app/api/media/[id]/route.ts` (363),
-`testimonials/[id]` (273), `services/[id]` (273), `people/[id]` (198),
-`private-galleries/[id]` (157), `service-categories/[id]` (143), `inquiries/[id]` (130).
-
-Shared shape to extract (leave each route's domain-specific field-mapping in place):
-- the `requireAdminOr401 → validate ObjectId → findOne → 404` preamble, and
-- the DELETE `soft-archive vs hard-delete + deleteManagedCloudinaryAsset + revalidatePath`
-  pattern where present.
-
-Modest per-file win but HIGH blast radius — it touches every admin mutation. Gate 1 must
-confirm each route still enforces auth + input validation + rate limiting after
-extraction, and every route is re-verified in the browser. Do NOT collapse routes that
-only superficially resemble each other. Covered by the S3 import-smoke test baseline.
-
----
-
 ## Phase DS — Design system rescue (Impeccable)
 
 **Context, in Hussain's words:** the design target (aikawakenichi.com, igloo.inc,

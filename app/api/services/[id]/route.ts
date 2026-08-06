@@ -1,7 +1,11 @@
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
-import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
+import {
+  findByIdOr404,
+  requireAdminObjectId,
+  wantsHardDelete,
+} from "@/app/api/_lib/admin-route";
 import {
   asFiniteNumber,
   asNumberOrNull,
@@ -19,23 +23,18 @@ import { CLOUDINARY_SERVICES_FOLDER } from "@/lib/cloudinary-folders";
 export const dynamic = "force-dynamic";
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const guard = await requireAdminOr401();
-  if (guard) return guard;
-
-  const { id } = await ctx.params;
-  if (!ObjectId.isValid(id)) {
-    return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
-  }
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { oid } = gate;
 
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
   const body = isRecord(bodyUnknown) ? bodyUnknown : {};
 
   const db = await getDb();
 
-  const existing = await db.collection("services").findOne({ _id: new ObjectId(id) });
-  if (!existing) {
-    return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
-  }
+  const found = await findByIdOr404(db, "services", oid);
+  if (found instanceof Response) return found;
+  const existing = found.doc;
 
   const patch: Record<string, unknown> = { updatedAt: new Date() };
 
@@ -182,7 +181,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
     const conflict = await db.collection("services").findOne({
       slug,
-      _id: { $ne: new ObjectId(id) },
+      _id: { $ne: oid },
     });
     if (conflict) {
       return noStoreJson({ ok: false, error: "Slug already exists" }, { status: 409 });
@@ -193,7 +192,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const nextImageUrl =
     typeof patch.imageUrl === "string" ? patch.imageUrl : previousImageUrl;
 
-  await db.collection("services").updateOne({ _id: new ObjectId(id) }, { $set: patch });
+  await db.collection("services").updateOne({ _id: oid }, { $set: patch });
 
   if (previousImageUrl && previousImageUrl !== nextImageUrl) {
     await deleteManagedCloudinaryAsset(
@@ -214,29 +213,23 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 }
 
 export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const guard = await requireAdminOr401();
-  if (guard) return guard;
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { id, oid } = gate;
 
-  const { id } = await ctx.params;
-  if (!ObjectId.isValid(id)) {
-    return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
-  }
-
-  const url = new URL(req.url);
-  const hard = url.searchParams.get("hard") === "1";
+  const hard = wantsHardDelete(req);
 
   const db = await getDb();
 
-  const service = await db.collection("services").findOne({ _id: new ObjectId(id) });
-  if (!service) {
-    return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
-  }
+  const found = await findByIdOr404(db, "services", oid);
+  if (found instanceof Response) return found;
+  const service = found.doc;
 
   const serviceSlug = typeof service.slug === "string" ? service.slug : null;
 
   if (!hard) {
     await db.collection("services").updateOne(
-      { _id: new ObjectId(id) },
+      { _id: oid },
       { $set: { isArchived: true, isActive: false, updatedAt: new Date() } }
     );
 
@@ -257,7 +250,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
 
   const imageUrl = typeof service.imageUrl === "string" ? service.imageUrl : "";
 
-  await db.collection("services").deleteOne({ _id: new ObjectId(id) });
+  await db.collection("services").deleteOne({ _id: oid });
 
   if (imageUrl) {
     await deleteManagedCloudinaryAsset(
