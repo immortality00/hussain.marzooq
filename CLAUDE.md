@@ -323,12 +323,26 @@ direction. Name the skill explicitly in the session prompt so the right one fire
 | Any new UI, or reshaping a page | `frontend-design` | anthropics/skills — the upstream reference |
 | Auditing/fixing an existing page's design | `redesign-existing-projects` | Leonxlnx/taste-skill |
 | Deterministic anti-pattern scan (no LLM) | `npx impeccable detect` | pbakaus/impeccable — see DS1 |
+| **Building a motion spec / animation from decisions at Gate 1** | `animate` | emilkowalski/skills |
+| Naming an effect you can describe but not name ("the bouncy popover thing" → term) | `animation-vocabulary` | emilkowalski/skills |
 | Reviewing motion that already exists | `review-animations` | emilkowalski/skills |
 | Deciding **where** motion belongs (and where not) | `find-animation-opportunities` | emilkowalski/skills |
 | Auditing all animations → prioritised fix plans | `improve-animations` | emilkowalski/skills |
-| Writing a precise motion spec at Gate 1 | `animation-vocabulary` | emilkowalski/skills |
+| Spring/gesture feel, physical motion, translucent materials | `apple-design` | emilkowalski/skills |
+| UI-polish philosophy, component-design decisions | `emil-design-eng` | emilkowalski/skills |
 | Exploring several UI variants before committing | `prototype` | emilkowalski/skills |
 | Choosing a library instead of hand-rolling | `pick-ui-library` | emilkowalski/skills |
+
+**Mapping correction (DS0, 2026-08-06):** the Gate-1 "write a precise motion spec" step
+is **`animate`**, not `animation-vocabulary`. The installed `animation-vocabulary` is only
+a reverse-lookup glossary (turns a described effect into its exact term); it does not spec
+durations/easings/choreography. D4/D5/D8 Gate-1 specs should load `animate`.
+
+**Install layout (DS0):** `npx skills` (v1.5.x) writes real skill files to `.agents/skills/`
+and symlinks them into `.claude/skills/`; `skills-lock.json` at repo root is its manifest.
+`frontend-design` is a manual copy (real dir in `.claude/skills/`, no symlink). No installer
+added a hook or any script — every skill is `.md`-only. Emil's set ships 3 skills beyond the
+motion core (`animate`, `apple-design`, `emil-design-eng`) — kept, mapped above.
 
 **Why the motion skills matter here:** every remaining design session (D4 transitions,
 D5 cursor, D6 globe, D8 magnetic buttons) is motion work. `prototype` exists to make

@@ -1200,3 +1200,69 @@ Strictly a safety change, no behaviour change to the current UI.
   rule/constraint/architecture change).
 - Gate 1 security line: no new trust boundary (same admin-gated PATCH routes); no secret into
   client; this session *adds* input validation; no rate-limit change (admin-authed, not public).
+
+---
+
+## Phase DS — Design system rescue (Impeccable)
+
+### Session DS0 — Install the design + motion skill stack — `done`
+**Do this first.** All three are prompt-only skills (SKILL.md files, no scripts, no
+hooks, no runtime) — the lowest-risk item in this phase. They shape how every later
+design session thinks, so installing them before DS1/DS2 and D4–D13 is the whole point.
+
+Run from the project root, in a Code tab:
+
+```
+# 1. Anthropic's frontend-design — the upstream reference Impeccable was built from.
+#    Single SKILL.md, no installer. Copy into .claude/skills/frontend-design/
+#    Source: https://github.com/anthropics/skills/tree/main/skills/frontend-design
+
+# 2. taste-skill — ONLY the redesign variant. Do not install the whole set.
+npx skills add https://github.com/Leonxlnx/taste-skill --skill "redesign-existing-projects"
+
+# 3. Emil Kowalski's motion skills (Vercel/Linear; author of Sonner + Vaul)
+npx skills@latest add emilkowalski/skills
+```
+
+**Report before finishing:** every file each installer wrote, and whether any of them
+added a hook or a script (they should not — flag it if they do). Add the routing table
+from CLAUDE.md ("Design & motion skills — which to load, when") to your Gate 1 report so
+Hussain can confirm the mapping is right.
+
+**Do not install `ui-ux-pro-max`** — evaluated and rejected 2026-08-04. It generates a
+design system by matching an industry template (161 product types → preset palette,
+typography, section pattern). This project already has a design language, OKLCH tokens,
+and named references; template selection is the opposite of the target. Reasoning
+recorded in CLAUDE.md.
+
+**Verify after install:** the skills appear in the harness (restart the Code tab if not),
+and `hm-visuals-voice` still fires for copy — the new skills must not shadow it.
+
+**Build outcome (2026-08-06):**
+- All three installed. `frontend-design` fetched manually via curl from anthropics/skills
+  → `.claude/skills/frontend-design/` (real dir: `SKILL.md` + `LICENSE.txt`, no scripts,
+  no bundled references).
+- `npx skills` (CLI v1.5.18) does **not** write into `.claude/skills/` directly — it writes
+  real skill files to `.agents/skills/<name>/` and symlinks each into `.claude/skills/`
+  (and 16 other agent tools). `skills-lock.json` at repo root is its manifest. All three
+  (`.agents/`, the symlinks, `skills-lock.json`) are committed.
+- `redesign-existing-projects` installed alone from Leonxlnx/taste-skill (the repo has 13
+  skills; only the one variant was selected, per spec).
+- Emil's `emilkowalski/skills` installed **9** skills, not the 6 the routing table assumed:
+  the core motion set (`review-animations`, `find-animation-opportunities`,
+  `improve-animations`, `animation-vocabulary`, `prototype`, `pick-ui-library`) **plus 3
+  extras kept**: `animate`, `apple-design`, `emil-design-eng`.
+- **Routing-table mapping corrected in CLAUDE.md (same commit):** the Gate-1 "write a
+  precise motion spec" step is **`animate`**, not `animation-vocabulary`. The installed
+  `animation-vocabulary` is only a reverse-lookup glossary (described effect → term); it
+  does not spec durations/easings/choreography. Added `apple-design` (spring/gesture feel,
+  materials) and `emil-design-eng` (UI-polish philosophy) rows too.
+- **Hook/script audit (DS0's key check):** no installer added a hook or any script.
+  `.claude/settings.json` byte-identical to baseline; no `.claude/settings.local.json`
+  created; no `.gitignore` block written; every installed skill is `.md`-only.
+- Harness picked up all skills live this session (`frontend-design`,
+  `redesign-existing-projects`, Emil's set all resolved via the Skill tool). `hm-visuals-voice`
+  remains a plugin skill (`anthropic-skills:` namespace) — no name collision, un-shadowed.
+- `ui-ux-pro-max` deliberately not installed.
+- No source code changed → no graphify update / graph commit. No security surface
+  (skills are prompt-only `.md`; no auth/API/cookie/env/input touched).

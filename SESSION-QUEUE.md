@@ -79,41 +79,6 @@ Full routing table + conflict rules: CLAUDE.md → "Design & motion skills".
 
 ---
 
-### Session DS0 — Install the design + motion skill stack — `pending`
-**Do this first.** All three are prompt-only skills (SKILL.md files, no scripts, no
-hooks, no runtime) — the lowest-risk item in this phase. They shape how every later
-design session thinks, so installing them before DS1/DS2 and D4–D13 is the whole point.
-
-Run from the project root, in a Code tab:
-
-```
-# 1. Anthropic's frontend-design — the upstream reference Impeccable was built from.
-#    Single SKILL.md, no installer. Copy into .claude/skills/frontend-design/
-#    Source: https://github.com/anthropics/skills/tree/main/skills/frontend-design
-
-# 2. taste-skill — ONLY the redesign variant. Do not install the whole set.
-npx skills add https://github.com/Leonxlnx/taste-skill --skill "redesign-existing-projects"
-
-# 3. Emil Kowalski's motion skills (Vercel/Linear; author of Sonner + Vaul)
-npx skills@latest add emilkowalski/skills
-```
-
-**Report before finishing:** every file each installer wrote, and whether any of them
-added a hook or a script (they should not — flag it if they do). Add the routing table
-from CLAUDE.md ("Design & motion skills — which to load, when") to your Gate 1 report so
-Hussain can confirm the mapping is right.
-
-**Do not install `ui-ux-pro-max`** — evaluated and rejected 2026-08-04. It generates a
-design system by matching an industry template (161 product types → preset palette,
-typography, section pattern). This project already has a design language, OKLCH tokens,
-and named references; template selection is the opposite of the target. Reasoning
-recorded in CLAUDE.md.
-
-**Verify after install:** the skills appear in the harness (restart the Code tab if not),
-and `hm-visuals-voice` still fires for copy — the new skills must not shadow it.
-
----
-
 ### Session DS1 — Evaluate the detector (no install, no hooks) — `pending`
 Cheap, reversible, high information. **Do not install into the harness in this session.**
 Run the CLI standalone — it writes nothing to the repo:
