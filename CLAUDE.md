@@ -338,6 +338,18 @@ is **`animate`**, not `animation-vocabulary`. The installed `animation-vocabular
 a reverse-lookup glossary (turns a described effect into its exact term); it does not spec
 durations/easings/choreography. D4/D5/D8 Gate-1 specs should load `animate`.
 
+**Impeccable detector — URL-only on this codebase (DS1, 2026-08-06):** `npx impeccable
+detect app/ components/` is **inert** here. On non-HTML files (TSX/CSS) the detector falls
+back to regex matching — a tiny rule subset — and this repo has no static HTML, so a source
+scan returns ~0 real findings. The full 59-rule set (contrast, layout, type hierarchy,
+occlusion) runs **only against rendered URLs** via Puppeteer. Correct invocation, dev server
+up: `npx impeccable detect http://localhost:3000/<page> --json`. Consequences: **the
+edit-time hook DS2 would have installed is worthless** (fires on TSX saves → regex-empty,
+can't scan a URL on save) — so DS2 was re-scoped to *not* install it. DS1's 259 URL findings
+triaged to ~5 Real (all in shared components: `SiteFooter`/`StickyCta` glass-text contrast,
+`WorkOverlay` 9px labels, a `width/height` transition, 3 nested-cards, long line-lengths) →
+folded into **D13**. Full triage: archive §DS1.
+
 **Install layout (DS0):** `npx skills` (v1.5.x) writes real skill files to `.agents/skills/`
 and symlinks them into `.claude/skills/`; `skills-lock.json` at repo root is its manifest.
 `frontend-design` is a manual copy (real dir in `.claude/skills/`, no symlink). No installer

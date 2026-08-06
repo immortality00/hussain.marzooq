@@ -35,11 +35,13 @@ D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
    homepage's own transition "to the homepage's design pass" — which no longer exists
    anywhere in this queue. Decide: schedule a homepage design session, or declare the
    homepage final as-is and re-scope D4's homepage line.
-   → **Candidate answer:** Session DS2 step 3 proposes filling this with
-   `/impeccable shape` + `craft`. If that is accepted, this gap closes there.
+   → **Candidate answer (updated 2026-08-06):** DS2 step 3 (re-scoped) routes this to the
+   DS0 skills — `frontend-design` for direction + `prototype` for 2–3 hero variants behind
+   a switcher. Still needs Hussain's call on whether to schedule it as a session.
 2. **About rebuild unscheduled.** Flagged twice in N5's notes ("About still has no
    rebuild session in the queue"). Dancing = D10, Web Development = D11, About = nothing.
-   → Same candidate answer as (1) — DS2 step 3.
+   → Same candidate answer as (1) — DS2 step 3 (`redesign-existing-projects` then
+   `frontend-design`).
 3. **Radius scale decision.** 83 arbitrary `rounded-[Xrem]` uses vs the 3-token rule
    (details in CLAUDE.md, Design tokens). (a) codify the de-facto scale as the rule, or
    (b) a deliberate scoped conversion pass. Waiting on the call — do not quietly pick.
@@ -79,95 +81,52 @@ Full routing table + conflict rules: CLAUDE.md → "Design & motion skills".
 
 ---
 
-### Session DS1 — Evaluate the detector (no install, no hooks) — `pending`
-Cheap, reversible, high information. **Do not install into the harness in this session.**
-Run the CLI standalone — it writes nothing to the repo:
-
-```
-npx impeccable detect app/ components/ --json > /tmp/impeccable-report.json
-npx impeccable detect app/ components/
-```
-
-Then produce a triage table. Every finding goes in exactly one column:
-
-| Column | Meaning |
-|---|---|
-| **Real** | Genuine quality problem → becomes work in a design session |
-| **Intentional** | Conflicts with a documented decision in CLAUDE.md → goes in `detector.ignoreRules` / `ignoreValues` with a stated reason |
-| **Wrong** | Detector misfire on this codebase → ignore and note why |
-
-**Known conflicts to expect — do not silently "fix" these:**
-- Impeccable bans **bounce/elastic easing** as dated. Session D5 explicitly specs spring
-  overshoot on the cursor, and D4 specs GSAP elastic wave physics for the Dancing
-  transition. Both are deliberate. Classify as **Intentional** unless Hussain changes his
-  mind on seeing the argument.
-- Impeccable bans **gray text on colored backgrounds** and **pure black/gray, always
-  tint**. Cross-check against the OKLCH tokens in globals.css before treating any of
-  these as real.
-- CLAUDE.md's own rules (no decorative gradients, flat `bg-muted` fallbacks, no eyebrow
-  chips, grain texture at 3–5%) take precedence where they conflict. **CLAUDE.md wins.**
-
-Deliverable: the triage table + a recommendation on whether DS2 is worth doing. If the
-"Real" column is thin, say so and stop — that is a valid outcome, not a failed session.
+### Session DS1 — Evaluate the detector (no install, no hooks) — `done`
+Moved to SESSION-ARCHIVE.md (spec + full triage outcome). One-line result: the source
+scan Impeccable was told to run is inert on this codebase (regex mode, TSX/CSS → 0
+findings); only URL scans surface anything. 259 URL findings triaged → ~5 Real, all in
+shared components, folded into D13. Recommendation accepted: **trim DS2** (below).
 
 ---
 
-### Session DS2 — Adopt Impeccable and rescue the design — `pending`
-**Blocked by DS1.** Only run if DS1's "Real" column justifies it.
+### Session DS2 — Fold Impeccable findings in; skills for the design gaps — `pending`
+**Re-scoped 2026-08-06 after DS1.** The original "install + hook + `DESIGN.md`" plan is
+**dropped** — DS1 showed it isn't justified: the file-save hook is worthless here (fires
+on TSX edits, which are regex-empty; can't scan a URL on save), and generating `DESIGN.md`
+risks a second source of truth that conflicts with CLAUDE.md (the exact mechanism behind
+the old eyebrow/gradient contradictions). CLAUDE.md stays the single design language; the
+DS0 direction skills cover direction. What remains of DS2:
 
-**1. Install, project-scoped, and understand what it writes.**
-`npx impeccable install` writes: `.impeccable/` (working files), a `.gitignore` block
-between `# impeccable-ignore-start/end` markers, and — on Claude Code — a design hook in
-`.claude/settings.local.json` that runs the detector on UI file edits.
-- Report every file it touched before continuing.
-- **The hook is opt-in — decide deliberately.** It runs automatically on edits, which is
-  useful for catching regressions, but it is a tool that writes during builds. Use
-  `--no-hooks` if Hussain prefers manual runs. Ask; do not assume.
-- Keep tracked: `.impeccable/config.json`, `.impeccable/design.json`,
-  `.impeccable/critique/*.md`. The supplied gitignore block already handles the rest.
+**1. The 5 Real findings are already captured in D13** (see D13's checklist). No separate
+workstream — the queue stays the plan of record. Nothing to install to act on them.
 
-**2. Run `/impeccable init` — and protect the existing docs.**
-`init` writes `PRODUCT.md` and offers `DESIGN.md` at repo root. It will ask whether the
-surface is **brand** (marketing, landing, portfolio) or **product** (app UI, dashboard).
-This is a **portfolio → brand**.
+**2. Keep the detector install-free.** Use it as an occasional **manual** accessibility
+spot-check, run against the **dev-server URLs** (never `detect app/ components/`, which is
+inert). Reference invocation, dev server up on :3000:
+```
+npx impeccable detect http://localhost:3000/<page> --json
+```
+Do **not** `npx impeccable install`, do **not** add the hook, do **not** generate
+`DESIGN.md`. If a future session ever does install it, the DS1 **Intentional** rules go
+straight into `detector.ignoreRules` with reasons (`image-hover-transform`,
+`gpt-thin-border-wide-shadow`, `extreme-negative-tracking`, `oversized-h1`,
+`kicker-above-heading` for the footer brand lockup, and `bounce-easing`/elastic for D4/D5).
 
-**Critical:** the design rules currently live in `CLAUDE.md`. Do not let `DESIGN.md`
-become a second, conflicting source of truth — that is how the eyebrow/gradient
-contradictions happened before. Resolve explicitly at Gate 1, propose both:
-- (a) `DESIGN.md` holds the visual language; CLAUDE.md's design sections shrink to a
-  pointer. One source of truth, more churn.
-- (b) `DESIGN.md` is generated but explicitly subordinate — CLAUDE.md wins on conflict,
-  stated at the top of both files. Less churn, two files to keep in sync.
+**3. The homepage and About design gaps are skill-driven, not detector-driven.** These are
+queue Gaps #1 and #2 at the top of this file. The detector cannot judge aesthetic ambition
+(igloo/aikawakenichi vs generic template) — that's what the DS0 skills are for:
+- **Homepage** (no design session since D2 was deleted): `frontend-design` (DS0) for
+  direction + signature element, `prototype` (DS0) to put 2–3 hero directions behind a
+  switcher before committing. Sequence this with the homepage design decision in Gap #1 —
+  don't start it blind.
+- **About** (no rebuild session): `redesign-existing-projects` (DS0) for the audit, then
+  `frontend-design` for the rebuild.
+- **One direction skill at a time** — running `frontend-design` and
+  `redesign-existing-projects` together produces mush. Pick one per pass, name it in the
+  Gate 1 report.
 
-Input for `init` — do not let it guess:
-- Audience: galleries, collectors, luxury brands, agencies, international booking
-- Anti-references: generic photographer-portfolio templates, SaaS-template look
-- References: aikawakenichi.com, ten.375.studio, igloo.inc
-- Voice: the `hm-visuals-voice` skill already defines this — feed it, don't reinvent it
-
-**3. Apply commands where the queue is actually missing design direction.**
-The highest-value targets are the two acknowledged gaps at the top of this file, not the
-pages that already have sessions:
-- **Homepage** — has no design session at all since D2 was deleted. Combine:
-  `frontend-design` (DS0) for the direction and signature element, `/impeccable shape`
-  then `craft` for structure, and `prototype` (DS0) to put 2–3 hero directions behind a
-  switcher before committing to one.
-- **About** — has no rebuild session. Same treatment.
-- Then, per page: `redesign-existing-projects` (DS0) for the audit, or
-  `/impeccable critique <page>` → triage → fix. Prefer diagnosis (`critique`,
-  `redesign-existing-projects`) over auto-mutation (`polish`, `bolder`) so Hussain sees
-  reasoning before code moves.
-- **One direction skill at a time.** `frontend-design`, `redesign-existing-projects` and
-  Impeccable's commands all give aesthetic direction; running them together produces
-  mush. Pick one per pass and say which in the Gate 1 report.
-
-**4. Feed the results back into the queue.** Findings become concrete tasks inside the
-existing design sessions (D4–D13), not a parallel workstream. Impeccable is the diagnosis
-tool; this queue stays the plan of record.
-
-**Guardrail for the whole session:** commands like `polish`, `bolder`, and `overdrive`
-change code. This project's standard applies unchanged — Gate 1 report, Hussain approves,
-then execute. Do not run a mutating command on a page without showing the plan first.
+**Guardrail unchanged:** any code-moving pass goes through Gate 1 → Hussain approves →
+execute. Show the plan before touching a page.
 
 ---
 
@@ -426,6 +385,21 @@ Check and fix:
 - No placeholder or internal copy visible to visitors.
 - Mobile layout works on all pages.
 - Lenis scroll feels correct on all pages.
+
+**From DS1's Impeccable URL scan (2026-08-06) — 5 Real findings, all in shared components:**
+- **Glass-panel text contrast.** `SiteFooter.tsx` + `StickyCta.tsx` render text over
+  `backdrop-filter` glass; min pixel contrast falls to 1.1–1.4:1 over bright image regions
+  (CTA-subtext medians 2.6–3.4:1). Add a scrim / darken the glass behind the text, or raise
+  weight/size — verify against the real imagery, not a flat background.
+- **Undersized functional text.** `WorkOverlay.tsx` discipline sublabels are 9px and the
+  logo mark is 10px — below the 11px legibility floor. Bump to ≥11px (design call on the
+  micro-labels; no CLAUDE.md rule permits <11px).
+- **`transition: width, height`** on a shared element (all pages) — animate `transform`
+  instead to avoid layout thrash. Find the one component and fix.
+- **Nested cards** on home / contact / videography (card-in-card is banned — CLAUDE.md).
+  Testimonials' nested card is its deliberate hero-card layout — leave it.
+- **Line length** 96–112 ch on body copy across 8 pages — tighten prose measure toward <80ch.
+- Re-run the URL scan after fixing and confirm these drop out (invocation in DS2 step 2).
 
 Read all public page components. Report every inconsistency before fixing anything.
 

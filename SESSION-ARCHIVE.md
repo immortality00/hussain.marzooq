@@ -1266,3 +1266,80 @@ and `hm-visuals-voice` still fires for copy — the new skills must not shadow i
 - `ui-ux-pro-max` deliberately not installed.
 - No source code changed → no graphify update / graph commit. No security surface
   (skills are prompt-only `.md`; no auth/API/cookie/env/input touched).
+
+---
+
+### Session DS1 — Evaluate the detector (no install, no hooks) — `done`
+Cheap, reversible, high information. **Do not install into the harness in this session.**
+Run the CLI standalone — it writes nothing to the repo:
+
+```
+npx impeccable detect app/ components/ --json > /tmp/impeccable-report.json
+npx impeccable detect app/ components/
+```
+
+Then produce a triage table. Every finding goes in exactly one column:
+
+| Column | Meaning |
+|---|---|
+| **Real** | Genuine quality problem → becomes work in a design session |
+| **Intentional** | Conflicts with a documented decision in CLAUDE.md → goes in `detector.ignoreRules` / `ignoreValues` with a stated reason |
+| **Wrong** | Detector misfire on this codebase → ignore and note why |
+
+**Known conflicts to expect — do not silently "fix" these:**
+- Impeccable bans **bounce/elastic easing** as dated. Session D5 explicitly specs spring
+  overshoot on the cursor, and D4 specs GSAP elastic wave physics for the Dancing
+  transition. Both are deliberate. Classify as **Intentional** unless Hussain changes his
+  mind on seeing the argument.
+- Impeccable bans **gray text on colored backgrounds** and **pure black/gray, always
+  tint**. Cross-check against the OKLCH tokens in globals.css before treating any of
+  these as real.
+- CLAUDE.md's own rules (no decorative gradients, flat `bg-muted` fallbacks, no eyebrow
+  chips, grain texture at 3–5%) take precedence where they conflict. **CLAUDE.md wins.**
+
+Deliverable: the triage table + a recommendation on whether DS2 is worth doing. If the
+"Real" column is thin, say so and stop — that is a valid outcome, not a failed session.
+
+**Build outcome (2026-08-06):**
+- **Key discovery — the prescribed command is the wrong one for this codebase.**
+  `detect app/ components/` returns **zero** findings on real source, because Impeccable
+  uses **regex matching on non-HTML files** (a tiny rule subset: it caught a planted
+  `cubic-bezier` bounce but ignored a gradient, `#000`, and `9px` font in the same test
+  file). The full 59-rule set (contrast, layout, type hierarchy, occlusion) runs **only
+  against rendered HTML/URLs (Puppeteer)**. This repo is 100% TSX/CSS with no static HTML,
+  so the source scan is inert. The only 3 whole-tree findings were on
+  `graphify-out/graph.html` — a generated artifact, not a site surface.
+- **Real signal came from URL scans.** Ran `npx impeccable detect <url>` against all **11
+  rendered public pages** → **259 findings**. Nothing installed, nothing written to the
+  repo; dev server stopped after.
+- **Triage of 259 findings:**
+  - **Real (thin, concentrated in shared components):** glass-panel low-contrast text over
+    backdrop-filter (footer `SiteFooter.tsx` + `StickyCta.tsx`, min pixel contrast 1.1–1.4:1,
+    CTA-subtext medians 2.6–3.4:1, ~50 findings); undersized functional text 9–10px
+    (`WorkOverlay.tsx` discipline sublabels ×5 + logo mark, 69 findings, really 2 sources);
+    `transition: width, height` layout animation (1 shared element, 11); 3 genuine
+    nested-cards (home/contact/videography); long line-length 96–112ch on body copy (8).
+    → **~5 fixes total**, all in shared global components.
+  - **Wrong (misfires):** low-contrast `#ffffff on #ffffff` 1.0:1 (~55) — text over
+    full-bleed images / WebGL canvas / video the detector can't sample, resolves both
+    layers to white; text-occlusion on contact "Website" (1) — it's an `sr-only`
+    `aria-hidden` `tabIndex=-1` **spam honeypot**, deliberately hidden, not a bug.
+  - **Intentional (→ `ignoreRules` with reason if DS2 ever installs):** `image-hover-transform`
+    (PortfolioCard hover zoom, documented); `gpt-thin-border-wide-shadow` (glass-card
+    aesthetic, advisory); `extreme-negative-tracking` -0.06em (display tracking);
+    `oversized-h1` 88px homepage hero (title, revisit in homepage design pass);
+    `kicker-above-heading` "HM VISUALS" (footer **brand lockup**, not a page eyebrow — N4's
+    ban targeted `PageHeader` content eyebrows); plus pre-registered `bounce-easing`/elastic
+    for D4/D5.
+- **Recommendation (accepted by Hussain 2026-08-06): trimmed DS2, not the full install.**
+  The detector earns an install-free keep as an occasional **manual `npx impeccable detect
+  <url>`** accessibility spot-check. The auto-hook is worthless here (fires on TSX saves →
+  regex-empty; can't scan a URL on save). `DESIGN.md` generation is skipped (second
+  source-of-truth conflict risk; CLAUDE.md is the design language, DS0 skills cover
+  direction). The 5 Real findings were **folded into D13** as concrete tasks. Detector does
+  **not** diagnose the "generic AI-template vs igloo/aikawakenichi ambition" gap DS exists
+  for — its rules are accessibility/slop-signature checks, not aesthetic-ambition judgment.
+- No source code changed → no graphify update / graph commit. No security surface (ran a
+  read-only offline CLI + local dev server; no auth/API/cookie/env/input touched).
+  CLAUDE.md updated (impeccable routing note: detector is URL-only on this codebase).
+  DS2 re-scoped in the queue accordingly.
