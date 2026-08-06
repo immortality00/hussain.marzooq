@@ -1,14 +1,13 @@
 import { v2 as cloudinary } from "cloudinary";
 import { revalidatePath } from "next/cache";
-import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { toAdminTestimonialItem } from "@/lib/server/testimonial-serializers";
+import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import {
   asBooleanOrNull,
   asNumberOrNull,
   isRecord,
   noStoreJson,
-  parseObjectId,
 } from "@/app/api/_lib/common";
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
 import {
@@ -149,39 +148,24 @@ async function cleanupTestimonialCloudinary(doc: Record<string, unknown>) {
 }
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny;
-
-  const { id } = await ctx.params;
-  const oid = parseObjectId(id);
-
-  if (!oid) {
-    return noStoreJson({ ok: false, error: "Invalid id." }, { status: 400 });
-  }
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { oid } = gate;
 
   const db = await getDb();
-  const doc = await db.collection("testimonials").findOne({ _id: oid });
-
-  if (!doc) {
-    return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
-  }
+  const found = await findByIdOr404(db, "testimonials", oid);
+  if (found instanceof Response) return found;
 
   return noStoreJson({
     ok: true,
-    item: toAdminTestimonialItem(doc as Record<string, unknown>),
+    item: toAdminTestimonialItem(found.doc as Record<string, unknown>),
   });
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny;
-
-  const { id } = await ctx.params;
-  const oid = parseObjectId(id);
-
-  if (!oid) {
-    return noStoreJson({ ok: false, error: "Invalid id." }, { status: 400 });
-  }
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { oid } = gate;
 
   const body = (await req.json().catch(() => null)) as unknown;
 
@@ -232,22 +216,14 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny;
-
-  const { id } = await ctx.params;
-  const oid = parseObjectId(id);
-
-  if (!oid) {
-    return noStoreJson({ ok: false, error: "Invalid id." }, { status: 400 });
-  }
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { oid } = gate;
 
   const db = await getDb();
-  const doc = await db.collection("testimonials").findOne({ _id: oid });
-
-  if (!doc) {
-    return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
-  }
+  const found = await findByIdOr404(db, "testimonials", oid);
+  if (found instanceof Response) return found;
+  const doc = found.doc;
 
   try {
     await cleanupTestimonialCloudinary(doc as Record<string, unknown>);

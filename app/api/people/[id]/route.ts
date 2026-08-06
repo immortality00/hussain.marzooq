@@ -1,11 +1,10 @@
 import { revalidatePath } from "next/cache";
-import { requireAdminOr401 } from "@/lib/auth/admin";
+import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import {
   asBooleanOrNull,
   asNullableString,
   isRecord,
   noStoreJson,
-  parseObjectId,
 } from "@/app/api/_lib/common";
 import { getDb } from "@/lib/server/db";
 import {
@@ -41,17 +40,14 @@ async function ensureUniqueSlug(baseSlug: string, excludeId?: string) {
 }
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny;
-
-  const { id } = await ctx.params;
-  const oid = parseObjectId(id);
-  if (!oid) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { oid } = gate;
 
   const db = await getDb();
-  const doc = await db.collection("people_profiles").findOne({ _id: oid });
-
-  if (!doc) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  const found = await findByIdOr404(db, "people_profiles", oid);
+  if (found instanceof Response) return found;
+  const { doc } = found;
 
   return noStoreJson({
     ok: true,
@@ -67,12 +63,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny;
-
-  const { id } = await ctx.params;
-  const oid = parseObjectId(id);
-  if (!oid) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { id, oid } = gate;
 
   const body = (await req.json().catch(() => null)) as unknown;
   if (!isRecord(body)) return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
@@ -97,11 +90,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   const db = await getDb();
 
-  const existing = await db.collection("people_profiles").findOne(
-    { _id: oid },
-    { projection: { name: 1, slug: 1, avatarUrl: 1 } }
-  );
-  if (!existing) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  const found = await findByIdOr404(db, "people_profiles", oid, {
+    projection: { name: 1, slug: 1, avatarUrl: 1 },
+  });
+  if (found instanceof Response) return found;
+  const existing = found.doc;
 
   const previousName = typeof existing.name === "string" ? existing.name : "";
   const previousSlug = typeof existing.slug === "string" ? existing.slug : null;
@@ -149,19 +142,16 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny;
-
-  const { id } = await ctx.params;
-  const oid = parseObjectId(id);
-  if (!oid) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { id, oid } = gate;
 
   const db = await getDb();
-  const person = await db.collection("people_profiles").findOne(
-    { _id: oid },
-    { projection: { name: 1, slug: 1, avatarUrl: 1 } }
-  );
-  if (!person) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  const found = await findByIdOr404(db, "people_profiles", oid, {
+    projection: { name: 1, slug: 1, avatarUrl: 1 },
+  });
+  if (found instanceof Response) return found;
+  const person = found.doc;
 
   const personName = typeof person.name === "string" ? person.name : "";
   const personSlug = typeof person.slug === "string" ? person.slug : null;

@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
-import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
+import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import {
   asBooleanOrNull,
   asNullableString,
@@ -8,7 +8,6 @@ import {
   asStringArray,
   isRecord,
   noStoreJson,
-  parseObjectId,
 } from "@/app/api/_lib/common";
 import {
   getMediaLists,
@@ -35,17 +34,14 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny;
-
-  const { id } = await ctx.params;
-  const oid = parseObjectId(id);
-  if (!oid) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { oid } = gate;
 
   const db = await getDb();
-  const doc = await db.collection("media").findOne({ _id: oid });
-
-  if (!doc) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  const found = await findByIdOr404(db, "media", oid);
+  if (found instanceof Response) return found;
+  const { doc } = found;
 
   const rawPeopleIds = asStringArray(doc.peopleIds);
   const rawPeople = asStringArray(doc.people);
@@ -78,12 +74,9 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny;
-
-  const { id } = await ctx.params;
-  const oid = parseObjectId(id);
-  if (!oid) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { oid } = gate;
 
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
   if (!isRecord(bodyUnknown)) {
@@ -144,8 +137,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }
 
   const db = await getDb();
-  const existingMedia = await db.collection("media").findOne({ _id: oid });
-  if (!existingMedia) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  const existingFound = await findByIdOr404(db, "media", oid);
+  if (existingFound instanceof Response) return existingFound;
+  const existingMedia = existingFound.doc;
 
   const oldAsset = getStoredMediaAsset(existingMedia);
   const resolvedPeople = await resolvePeopleSelection(db, { peopleIds });
@@ -323,16 +317,14 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny;
-
-  const { id } = await ctx.params;
-  const oid = parseObjectId(id);
-  if (!oid) return noStoreJson({ ok: false, error: "Invalid id" }, { status: 400 });
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { oid } = gate;
 
   const db = await getDb();
-  const media = await db.collection("media").findOne({ _id: oid });
-  if (!media) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  const found = await findByIdOr404(db, "media", oid);
+  if (found instanceof Response) return found;
+  const media = found.doc;
 
   const mediaAsset = getStoredMediaAsset(media);
   const galleryDocs = await findPrivateGalleriesUsingMedia(db, String(oid));

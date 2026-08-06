@@ -1,13 +1,12 @@
 import { revalidatePath } from "next/cache";
-import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
+import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import {
   asBooleanOrNull,
   asNullableString,
   asStringArray,
   isRecord,
   noStoreJson,
-  parseObjectId,
 } from "@/app/api/_lib/common";
 import {
   MIN_PRIVATE_GALLERY_PASSWORD_LENGTH,
@@ -26,27 +25,21 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny;
-
-  const { id } = await ctx.params;
-  const oid = parseObjectId(id);
-  if (!oid) return noStoreJson({ ok: false, error: "Invalid id." }, { status: 400 });
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { oid } = gate;
 
   const db = await getDb();
-  const doc = await db.collection("private_galleries").findOne({ _id: oid });
-  if (!doc) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
+  const found = await findByIdOr404(db, "private_galleries", oid);
+  if (found instanceof Response) return found;
 
-  return noStoreJson({ ok: true, item: serializePrivateGalleryAdminItem(doc) });
+  return noStoreJson({ ok: true, item: serializePrivateGalleryAdminItem(found.doc) });
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny;
-
-  const { id } = await ctx.params;
-  const oid = parseObjectId(id);
-  if (!oid) return noStoreJson({ ok: false, error: "Invalid id." }, { status: 400 });
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { id, oid } = gate;
 
   const body = (await req.json().catch(() => null)) as unknown;
   if (!isRecord(body)) {
@@ -83,8 +76,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }
 
   const db = await getDb();
-  const existing = await db.collection("private_galleries").findOne({ _id: oid });
-  if (!existing) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
+  const found = await findByIdOr404(db, "private_galleries", oid);
+  if (found instanceof Response) return found;
+  const existing = found.doc;
 
   const previousSlug = typeof existing.slug === "string" ? existing.slug : null;
 
@@ -132,20 +126,17 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-  const deny = await requireAdminOr401();
-  if (deny) return deny;
-
-  const { id } = await ctx.params;
-  const oid = parseObjectId(id);
-  if (!oid) return noStoreJson({ ok: false, error: "Invalid id." }, { status: 400 });
+  const gate = await requireAdminObjectId(ctx);
+  if (gate instanceof Response) return gate;
+  const { oid } = gate;
 
   const db = await getDb();
 
-  const existing = await db.collection("private_galleries").findOne(
-    { _id: oid },
-    { projection: { slug: 1 } }
-  );
-  if (!existing) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
+  const found = await findByIdOr404(db, "private_galleries", oid, {
+    projection: { slug: 1 },
+  });
+  if (found instanceof Response) return found;
+  const existing = found.doc;
 
   const slug = typeof existing.slug === "string" ? existing.slug : null;
 
