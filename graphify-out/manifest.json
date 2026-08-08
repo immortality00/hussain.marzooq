@@ -1320,9 +1320,9 @@
     "semantic_hash": "c698309979460d0f02ba616417844399"
   },
   "CLAUDE.md": {
-    "mtime": 1786035654.1084523,
-    "ast_hash": "e52ed4baea73c0ef1bb4966b73f5f0de",
-    "semantic_hash": ""
+    "mtime": 1786037373.8458047,
+    "ast_hash": "e8480c67d776a9679fe72aed3af18940",
+    "semantic_hash": "e8480c67d776a9679fe72aed3af18940"
   },
   "README.md": {
     "mtime": 1767717951.7182589,
@@ -1330,9 +1330,9 @@
     "semantic_hash": "f15aaa42d5d299d091b1171097ea56ad"
   },
   "SESSION-QUEUE.md": {
-    "mtime": 1786035738.4283817,
-    "ast_hash": "6866ecc76cd40e13dc538261c9ec93fa",
-    "semantic_hash": ""
+    "mtime": 1786037355.6435754,
+    "ast_hash": "4849c9e1068e69ff1b3065fbdca5b35d",
+    "semantic_hash": "4849c9e1068e69ff1b3065fbdca5b35d"
   },
   "public/file.svg": {
     "mtime": 1767717951.7198257,
@@ -1400,9 +1400,9 @@
     "semantic_hash": "a2bdee4fb2783ac465076738c25ce3e0"
   },
   "SESSION-ARCHIVE.md": {
-    "mtime": 1786035758.6012564,
-    "ast_hash": "8cbe8f2d618c24864433c3bac3d0e04e",
-    "semantic_hash": ""
+    "mtime": 1786037274.9080997,
+    "ast_hash": "b61a34f1e2ac14aa96b22ec936a5e1fb",
+    "semantic_hash": "b61a34f1e2ac14aa96b22ec936a5e1fb"
   },
   "lib/auth/session-token.ts": {
     "mtime": 1785490458.2333324,
@@ -1467,91 +1467,91 @@
   "skills-lock.json": {
     "mtime": 1786035430.7022817,
     "ast_hash": "6d458252b966115444851b38c48b05c7",
-    "semantic_hash": ""
+    "semantic_hash": "6d458252b966115444851b38c48b05c7"
   },
   ".agents/skills/animate/RECIPES.md": {
     "mtime": 1786035430.541638,
     "ast_hash": "5611b99e7e081e39ac52a2929149fecf",
-    "semantic_hash": ""
+    "semantic_hash": "5611b99e7e081e39ac52a2929149fecf"
   },
   ".agents/skills/animate/SKILL.md": {
     "mtime": 1786035430.5414877,
     "ast_hash": "9a50a1ccee47543f7226b7b13e98f583",
-    "semantic_hash": ""
+    "semantic_hash": "9a50a1ccee47543f7226b7b13e98f583"
   },
   ".agents/skills/animation-vocabulary/SKILL.md": {
     "mtime": 1786035430.5633936,
     "ast_hash": "1cd9536b992be3fbe337bf663487342a",
-    "semantic_hash": ""
+    "semantic_hash": "1cd9536b992be3fbe337bf663487342a"
   },
   ".agents/skills/apple-design/SKILL.md": {
     "mtime": 1786035430.5831735,
     "ast_hash": "7ae1e8f9032a2d0bb66e4524cc907b5d",
-    "semantic_hash": ""
+    "semantic_hash": "7ae1e8f9032a2d0bb66e4524cc907b5d"
   },
   ".agents/skills/emil-design-eng/SKILL.md": {
     "mtime": 1786035430.6001737,
     "ast_hash": "621990baaaaa8c929d6b8e8e82374eb8",
-    "semantic_hash": ""
+    "semantic_hash": "621990baaaaa8c929d6b8e8e82374eb8"
   },
   ".agents/skills/find-animation-opportunities/SKILL.md": {
     "mtime": 1786035430.6160507,
     "ast_hash": "6947093c01d37998aa30177bd3f89093",
-    "semantic_hash": ""
+    "semantic_hash": "6947093c01d37998aa30177bd3f89093"
   },
   ".agents/skills/improve-animations/AUDIT.md": {
     "mtime": 1786035430.6374912,
     "ast_hash": "22538e0a761282f3009b09101745cf96",
-    "semantic_hash": ""
+    "semantic_hash": "22538e0a761282f3009b09101745cf96"
   },
   ".agents/skills/improve-animations/PLAN-TEMPLATE.md": {
     "mtime": 1786035430.6374946,
     "ast_hash": "3441575bd9e87cd92f003cdee66a52a1",
-    "semantic_hash": ""
+    "semantic_hash": "3441575bd9e87cd92f003cdee66a52a1"
   },
   ".agents/skills/improve-animations/SKILL.md": {
     "mtime": 1786035430.637497,
     "ast_hash": "f987a87f73e9b0d0a8e57cbb7cd20a1f",
-    "semantic_hash": ""
+    "semantic_hash": "f987a87f73e9b0d0a8e57cbb7cd20a1f"
   },
   ".agents/skills/pick-ui-library/SKILL.md": {
     "mtime": 1786035430.652821,
     "ast_hash": "77966ce04258271790c9b8a23fe91cfe",
-    "semantic_hash": ""
+    "semantic_hash": "77966ce04258271790c9b8a23fe91cfe"
   },
   ".agents/skills/prototype/PICKER.md": {
     "mtime": 1786035430.6721241,
     "ast_hash": "94d42e699d2076e5e010bc0b48645494",
-    "semantic_hash": ""
+    "semantic_hash": "94d42e699d2076e5e010bc0b48645494"
   },
   ".agents/skills/prototype/SKILL.md": {
     "mtime": 1786035430.6721482,
     "ast_hash": "ddd327ace27eb4796802fb25c3ab5d88",
-    "semantic_hash": ""
+    "semantic_hash": "ddd327ace27eb4796802fb25c3ab5d88"
   },
   ".agents/skills/redesign-existing-projects/SKILL.md": {
     "mtime": 1786035409.2694108,
     "ast_hash": "31d802d02ccb9f5da82d99156af36317",
-    "semantic_hash": ""
+    "semantic_hash": "31d802d02ccb9f5da82d99156af36317"
   },
   ".agents/skills/review-animations/SKILL.md": {
     "mtime": 1786035430.6901543,
     "ast_hash": "40d4473e0d4ecac446d98496f9548403",
-    "semantic_hash": ""
+    "semantic_hash": "40d4473e0d4ecac446d98496f9548403"
   },
   ".agents/skills/review-animations/STANDARDS.md": {
     "mtime": 1786035430.6901636,
     "ast_hash": "716d393c408aa5199960ef3791438314",
-    "semantic_hash": ""
+    "semantic_hash": "716d393c408aa5199960ef3791438314"
   },
   ".claude/skills/frontend-design/LICENSE.txt": {
     "mtime": 1786035546.8716378,
     "ast_hash": "2ee41112a44fe7014dce33e26468ba93",
-    "semantic_hash": ""
+    "semantic_hash": "2ee41112a44fe7014dce33e26468ba93"
   },
   ".claude/skills/frontend-design/SKILL.md": {
     "mtime": 1786035546.454011,
     "ast_hash": "31c633612585bf2dd4e6d1103afc9f33",
-    "semantic_hash": ""
+    "semantic_hash": "31c633612585bf2dd4e6d1103afc9f33"
   }
 }
