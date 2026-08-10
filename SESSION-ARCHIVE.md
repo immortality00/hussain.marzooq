@@ -1343,3 +1343,52 @@ Deliverable: the triage table + a recommendation on whether DS2 is worth doing. 
   read-only offline CLI + local dev server; no auth/API/cookie/env/input touched).
   CLAUDE.md updated (impeccable routing note: detector is URL-only on this codebase).
   DS2 re-scoped in the queue accordingly.
+
+---
+
+### Session DS2 — Fold Impeccable findings in; skills for the design gaps — `done`
+**Re-scoped 2026-08-06 after DS1.** The original "install + hook + `DESIGN.md`" plan is
+**dropped** — DS1 showed it isn't justified: the file-save hook is worthless here (fires
+on TSX edits, which are regex-empty; can't scan a URL on save), and generating `DESIGN.md`
+risks a second source of truth that conflicts with CLAUDE.md (the exact mechanism behind
+the old eyebrow/gradient contradictions). CLAUDE.md stays the single design language; the
+DS0 direction skills cover direction. What remained of DS2:
+
+**1. The 5 Real findings are already captured in D13** (see D13's checklist). No separate
+workstream — the queue stays the plan of record. Nothing to install to act on them.
+
+**2. Keep the detector install-free.** Use it as an occasional **manual** accessibility
+spot-check, run against the **dev-server URLs** (never `detect app/ components/`, which is
+inert). Reference invocation, dev server up on :3000:
+```
+npx impeccable detect http://localhost:3000/<page> --json
+```
+Do **not** `npx impeccable install`, do **not** add the hook, do **not** generate
+`DESIGN.md`. If a future session ever does install it, the DS1 **Intentional** rules go
+straight into `detector.ignoreRules` with reasons (`image-hover-transform`,
+`gpt-thin-border-wide-shadow`, `extreme-negative-tracking`, `oversized-h1`,
+`kicker-above-heading` for the footer brand lockup, and `bounce-easing`/elastic for D4/D5).
+
+**3. The homepage and About design gaps are skill-driven, not detector-driven.** These are
+queue Gaps #1 and #2. The detector cannot judge aesthetic ambition (igloo/aikawakenichi vs
+generic template) — that's what the DS0 skills are for:
+- **Homepage** (no design session since D2 was deleted): `frontend-design` (DS0) for
+  direction + signature element, `prototype` (DS0) to put 2–3 hero directions behind a
+  switcher before committing.
+- **About** (no rebuild session): `redesign-existing-projects` (DS0) for the audit, then
+  `frontend-design` for the rebuild.
+- **One direction skill at a time** — running `frontend-design` and
+  `redesign-existing-projects` together produces mush. Pick one per pass, name it in the
+  Gate 1 report.
+
+**DS2 outcome (2026-08-08):** confirmed as a **no-code session** — zero source files
+touched. Parts 1–2 verified in place: the 5 Real findings are already D13 checklist items,
+and the detector is still install-free (not in `package.json`, no config file, no hook in
+`.claude/settings*.json`, no `DESIGN.md`). Part 3 resolved at Hussain's direction ("why
+would you keep them open if that's what needs to be done") — the two design gaps are now
+**scheduled** as Phase 2a sessions in the queue: **D2b — Homepage design pass** (resolves
+Gap #1; `frontend-design` + `prototype`; also re-scopes D4's deferred homepage-transition
+line) and **D2c — About page rebuild** (resolves Gap #2; `redesign-existing-projects` audit
+→ `frontend-design` rebuild). Both run before D4, D2b first. No CLAUDE.md impact (the DS2
+re-scope was already recorded there in DS1). No security surface. No source change → the
+graph commit carries only the queue/archive doc edits.

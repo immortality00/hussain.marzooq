@@ -31,17 +31,13 @@ D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ## Gaps awaiting a decision from Hussain — not sessions yet, do not invent scope
 
-1. **Homepage design session missing.** D2 was deleted, but D4 still defers the
-   homepage's own transition "to the homepage's design pass" — which no longer exists
-   anywhere in this queue. Decide: schedule a homepage design session, or declare the
-   homepage final as-is and re-scope D4's homepage line.
-   → **Candidate answer (updated 2026-08-06):** DS2 step 3 (re-scoped) routes this to the
-   DS0 skills — `frontend-design` for direction + `prototype` for 2–3 hero variants behind
-   a switcher. Still needs Hussain's call on whether to schedule it as a session.
-2. **About rebuild unscheduled.** Flagged twice in N5's notes ("About still has no
-   rebuild session in the queue"). Dancing = D10, Web Development = D11, About = nothing.
-   → Same candidate answer as (1) — DS2 step 3 (`redesign-existing-projects` then
-   `frontend-design`).
+1. **Homepage design session — RESOLVED (2026-08-08), scheduled as Session D2b.** D2 was
+   deleted; Hussain's call at DS2 was to schedule the homepage design pass, not leave it
+   open. See Phase 2a → D2b (`frontend-design` + `prototype`). D2b also re-scopes D4's
+   deferred homepage transition line.
+2. **About rebuild — RESOLVED (2026-08-08), scheduled as Session D2c.** Flagged twice in
+   N5. Now scheduled: Phase 2a → D2c (`redesign-existing-projects` audit → `frontend-design`
+   rebuild).
 3. **Radius scale decision.** 83 arbitrary `rounded-[Xrem]` uses vs the 3-token rule
    (details in CLAUDE.md, Design tokens). (a) codify the de-facto scale as the rule, or
    (b) a deliberate scoped conversion pass. Waiting on the call — do not quietly pick.
@@ -85,48 +81,61 @@ Full routing table + conflict rules: CLAUDE.md → "Design & motion skills".
 Moved to SESSION-ARCHIVE.md (spec + full triage outcome). One-line result: the source
 scan Impeccable was told to run is inert on this codebase (regex mode, TSX/CSS → 0
 findings); only URL scans surface anything. 259 URL findings triaged → ~5 Real, all in
-shared components, folded into D13. Recommendation accepted: **trim DS2** (below).
+shared components, folded into D13. Recommendation accepted: **trim DS2** (done — archived).
 
 ---
 
-### Session DS2 — Fold Impeccable findings in; skills for the design gaps — `pending`
-**Re-scoped 2026-08-06 after DS1.** The original "install + hook + `DESIGN.md`" plan is
-**dropped** — DS1 showed it isn't justified: the file-save hook is worthless here (fires
-on TSX edits, which are regex-empty; can't scan a URL on save), and generating `DESIGN.md`
-risks a second source of truth that conflicts with CLAUDE.md (the exact mechanism behind
-the old eyebrow/gradient contradictions). CLAUDE.md stays the single design language; the
-DS0 direction skills cover direction. What remains of DS2:
+## Phase 2a — Design direction (runs before D4)
 
-**1. The 5 Real findings are already captured in D13** (see D13's checklist). No separate
-workstream — the queue stays the plan of record. Nothing to install to act on them.
+These are the two skill-driven design sessions DS2 routed here. They run **before D4–D13**
+because they produce the design context those sessions read (same rationale as Phase DS).
+**Order: D2b first, then D2c** — D4's homepage transition depends on D2b's output.
+Each session loads **one** direction skill at a time (named in its Gate 1), never two at once.
 
-**2. Keep the detector install-free.** Use it as an occasional **manual** accessibility
-spot-check, run against the **dev-server URLs** (never `detect app/ components/`, which is
-inert). Reference invocation, dev server up on :3000:
-```
-npx impeccable detect http://localhost:3000/<page> --json
-```
-Do **not** `npx impeccable install`, do **not** add the hook, do **not** generate
-`DESIGN.md`. If a future session ever does install it, the DS1 **Intentional** rules go
-straight into `detector.ignoreRules` with reasons (`image-hover-transform`,
-`gpt-thin-border-wide-shadow`, `extreme-negative-tracking`, `oversized-h1`,
-`kicker-above-heading` for the footer brand lockup, and `bounce-easing`/elastic for D4/D5).
+### Session D2b — Homepage design pass — `pending`
+Resolves Gap #1. D2 (the homepage WebGL scene) was deleted, leaving the homepage with no
+dedicated design session. It reads closer to generic template than to the target
+(igloo.inc / aikawakenichi.com / ten.375.studio). This session sets the homepage's
+direction + one signature element, and defines the homepage in/out transition that D4
+currently defers.
 
-**3. The homepage and About design gaps are skill-driven, not detector-driven.** These are
-queue Gaps #1 and #2 at the top of this file. The detector cannot judge aesthetic ambition
-(igloo/aikawakenichi vs generic template) — that's what the DS0 skills are for:
-- **Homepage** (no design session since D2 was deleted): `frontend-design` (DS0) for
-  direction + signature element, `prototype` (DS0) to put 2–3 hero directions behind a
-  switcher before committing. Sequence this with the homepage design decision in Gap #1 —
-  don't start it blind.
-- **About** (no rebuild session): `redesign-existing-projects` (DS0) for the audit, then
-  `frontend-design` for the rebuild.
-- **One direction skill at a time** — running `frontend-design` and
-  `redesign-existing-projects` together produces mush. Pick one per pass, name it in the
-  Gate 1 report.
+**Skills (DS0):**
+- `frontend-design` — direction + the signature element. This is the one direction skill
+  for this pass; name it in Gate 1.
+- `prototype` — put 2–3 hero directions behind a switcher before committing. The D3
+  cylinder took four rejected geometries (archive §D3); cheap exploration is how that cost
+  drops.
+- `find-animation-opportunities` — decide where motion belongs on the homepage and, just
+  as important, where it does not.
 
-**Guardrail unchanged:** any code-moving pass goes through Gate 1 → Hussain approves →
-execute. Show the plan before touching a page.
+**Before writing any code:** read `app/page.tsx`, `HomeHero.tsx`, every homepage section
+component, `HeroBokeh.tsx`, and `AppShell.tsx`. Present 2–3 hero directions; Hussain picks
+before build.
+
+**Constraints that still bind (do not "fix" these):** hero renders the admin-picked
+`hero.image.url` only, flat `bg-muted` when empty (S4 — the auto-pick was removed, do not
+reintroduce it). No decorative gradients. No scroll-jacking. Grain-texture rules unchanged.
+`.section-shell` for containers. Empty means empty.
+
+**Deliverable:** the chosen homepage direction built + a stated homepage in/out transition
+spec. This **re-scopes D4's "Homepage → any: deferred" line** — once D2b lands, D4 (or D2b
+itself, if it fits) implements that transition instead of deferring it.
+
+### Session D2c — About page rebuild — `pending`
+Resolves Gap #2. About has never had a rebuild session (flagged twice in N5). It is still
+an interim page (header + card grid + booking bar).
+
+**Skills (DS0) — one at a time:**
+- `redesign-existing-projects` — audit the current About page **first**. Report findings.
+- `frontend-design` — the rebuild pass, after the audit. Do not run both skills in one
+  pass (produces mush — CLAUDE.md).
+
+**Before writing any code:** read `app/about/page.tsx` and all its imports, `PageHeader.tsx`,
+the About `page_sections` content and the About header/SEO fields. Report the audit before
+rebuilding anything.
+
+**Constraints:** `PageHeader` component (no `eyebrow` prop), `.section-shell`, no gradient
+fallbacks, `AnimatedText` on the h1, empty means empty.
 
 ---
 
@@ -147,9 +156,10 @@ Transitions to implement in this session:
 - **→ Dancing:** Images distort with wave physics (GSAP elastic), dancing page fades in.
 - **→ About:** Single portrait expands full-screen, about content fades over it.
 - **→ Web Development:** Brief terminal-style effect, page assembles.
-- **Homepage → any:** deferred. There is no dedicated homepage-scene session in the
-  queue, so the homepage's in/out transition is out of scope for D4 and will be defined
-  alongside the homepage's own design pass. The six routes above are what D4 builds.
+- **Homepage → any:** deferred to **Session D2b** (Phase 2a), which now owns the homepage's
+  own design pass and defines its in/out transition. D2b runs before D4, so by the time D4
+  is reached the homepage transition spec exists — D4 implements it (or D2b already did).
+  The six routes above are what D4 builds regardless.
 
 **Before writing any code:**
 - Read AppShell.tsx, layout.tsx, every public page.tsx, every public page's primary image source.
