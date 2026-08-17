@@ -26,7 +26,8 @@ only when a pending session or CLAUDE.md references it.
 Phase 0: F1–F5 (foundation, refactors, cleanup) · Phase 1: N1–N8 (nav, CMS, admin
 consolidation, card images) · Phase 2: D1 (preloader), D3 (photography 3-view viewer) ·
 Phase S: S1–S7 (security, tests, reuse audit) · Phase DS: DS0–DS2 (skills, detector eval) ·
-Phase 2a: D2b (homepage section pass + the shared `Button` two-look system).
+Phase 2a: D2b (homepage section pass + the shared `Button` two-look system) ·
+Phase 3: C4 (validated media locations + stored coordinates).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -334,53 +335,6 @@ Read CustomCursor.tsx fully before writing. Verify cursor is applied correctly t
 - `animation-vocabulary` for the Gate 1 spec; `review-animations` at Gate 2.
 - **Conflict:** spring overshoot is deliberate here and survives Impeccable's
   "no bounce/elastic easing" rule. Ignore the rule with a reason, don't remove the motion.
-
----
-
-### Session C4 — Media locations: validated city + stored coordinates — `pending`
-**Runs before D6 and directly after D2b. D6 is unbuildable without it** — full evidence in CLAUDE.md →
-"Appearances admin". Short version: `city`/`country` are free text, there are no
-coordinates stored anywhere, the resolver is an exact match that returns `null` silently,
-and the two label formats in the repo (`"Dubai, AE"` vs `"Dubai, United Arab Emirates"`)
-do not agree with each other.
-
-**Hussain, 2026-08-17:** *"for the cities in the globe, the source is the media, so the
-location in the media form need to follow the same system in the testimonials, so the globe
-will fetch correct data."*
-
-The media form has **two** free-text location surfaces, and both are in scope:
-- `appearances[].city` / `.country` (`MediaAppearancesSection.tsx:70-81`) — **this is what
-  the globe reads**, filtered to `kind === "exhibited"`.
-- the media document's own `location` field (`MediaDetailsSection.tsx`) — free text today,
-  shown on public media detail and searched by `/api/media/list-public`.
-
-Both move to the validated selector so they cannot disagree with each other. The globe's
-source stays `appearances` where `kind === "exhibited"` — unchanged from the original D6
-spec and from CLAUDE.md → Globe. **Confirm this one line with Hussain at Gate 1** before
-building the aggregation: exhibited appearances only, not every media item's `location`.
-
-Scope:
-1. Replace the two free-text inputs in `MediaAppearancesSection.tsx:70-81` **and the
-   `location` input in `MediaDetailsSection.tsx`** with the existing validated city selector
-   — reuse `components/testimonials/review-form/LocationSearch.tsx` and
-   `/api/testimonials/location-search`, do not build a second one.
-2. Extend the `Appearance` type with `locationId`, `lat`, `lon` and **persist them at save
-   time**, so nothing geocodes at render time. Update `sanitizeAppearances`
-   (`app/api/_lib/media.ts:36-63`) to validate and carry them. The type is currently declared
-   in four places with no shared import — collapse to one and import it everywhere
-   (`_lib/media.ts`, `media-serializers.ts`, `components/media/types.ts`,
-   `admin/media/lib/types.ts`).
-3. `lib/server/public-nfts.ts:42-44` uses its own weaker `isAppearance` check — replace it
-   with the shared sanitiser so NFT appearances get the same validation.
-4. **No backfill script.** Hussain is deleting the existing media and re-entering it through
-   the new form (2026-08-17). Do not write a migration. Do not attempt to resolve legacy
-   free-text values. The new selector is the only path in.
-5. Admin warning: flag any saved appearance with no resolved coordinates, using the same
-   pattern as the "Needs image" pill (`usePagesAdmin.ts:129-137`).
-
-Read before writing: `MediaAppearancesSection.tsx`, `useMediaAppearancesState.ts`,
-`app/api/_lib/media.ts`, `lib/server/location-search.ts`, `lib/locations/testimonial-locations.ts`,
-`scripts/import-geonames-cities.mjs`, `components/testimonials/review-form/LocationSearch.tsx`.
 
 ---
 
@@ -722,14 +676,13 @@ Check and fix:
   truthy-gate them so an empty string reverts to a hardcoded default, while
   `.description`/`.headerDescription`/`.ogImageUrl` in the same form pass empty through.
   Inconsistent with "empty means empty" and inconsistent within one form.
-- **Duplicated types/logic to collapse:** the same appearance shape declared 4× — three
-  named `Appearance` (`_lib/media.ts:4-14`, `components/media/types.ts:1-11`,
-  `admin/media/lib/types.ts:11-21`) and one named `PublicAppearance`
-  (`media-serializers.ts:4-14`) — note C4 also touches this, coordinate; dead+drifted `toPublicTestimonial` in
-  `testimonial-serializers.ts:3-17,39-57`; two independent discipline matchers
-  (`public-services.ts:37-51` vs `HomeServicesPreview.tsx:15-23`); appearances formatting
-  forked between `media/utils.ts:3-5` and `NftModal.tsx:155-186`; IP extraction reimplemented
-  in 5 places instead of importing `getClientAddress` (`_lib/public-form-security.ts:1-5`).
+- **Duplicated types/logic to collapse:** ~~the same appearance shape declared 4×~~ and
+  ~~appearances date formatting forked into `NftModal`~~ were **both fixed in C4** (2026-08-18):
+  `Appearance` is one shared type in `_lib/media.ts` and `NftModal` now calls `formatDates`.
+  Remaining: dead+drifted `toPublicTestimonial` in `testimonial-serializers.ts:3-17,39-57`;
+  two independent discipline matchers (`public-services.ts:37-51` vs
+  `HomeServicesPreview.tsx:15-23`); IP extraction reimplemented in 5 places instead of
+  importing `getClientAddress` (`_lib/public-form-security.ts:1-5`).
 - **Discipline display names hardcoded in 4 places**, none reading the admin-editable
   `page_seo.headerTitle`: `api/work-overlay/route.ts:6-12`, `SiteFooter.tsx:14-23`,
   `HomeCreativeSystem.tsx:5-10`, `HomeServicesPreview.tsx:6-13`. Rename a page in admin and

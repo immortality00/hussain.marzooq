@@ -22,6 +22,10 @@ export function buildMediaPayload(args: {
   title: string;
   description: string;
   location: string;
+  locationId: string | null;
+  locationLat: number | null;
+  locationLon: number | null;
+  locationCountryCode: string | null;
   event: string;
   year: string;
   tags: string[];
@@ -66,6 +70,10 @@ export function buildMediaPayload(args: {
     title: args.title.trim(),
     description: args.description.trim() || null,
     location: args.location.trim() || null,
+    locationId: args.locationId,
+    locationLat: args.locationLat,
+    locationLon: args.locationLon,
+    locationCountryCode: args.locationCountryCode,
     event: args.event.trim() || null,
     year: yearValue,
     tags: args.tags,

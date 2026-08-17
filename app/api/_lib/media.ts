@@ -1,5 +1,12 @@
 import { ObjectId, type Db } from "mongodb";
-import { asNumberOrNull, asString, asStringArray, isRecord } from "./common";
+import {
+  asFiniteLatitude,
+  asFiniteLongitude,
+  asNumberOrNull,
+  asString,
+  asStringArray,
+  isRecord,
+} from "./common";
 
 export type Appearance = {
   kind: "featured" | "exhibited";
@@ -7,6 +14,9 @@ export type Appearance = {
   venue: string;
   city: string;
   country: string;
+  locationId: string | null;
+  lat: number | null;
+  lon: number | null;
   dateFrom: string;
   dateTo: string;
   notes: string;
@@ -48,6 +58,9 @@ export function sanitizeAppearances(v: unknown): Appearance[] {
     const venue = asString(item.venue).trim().slice(0, 160);
     const city = asString(item.city).trim().slice(0, 120);
     const country = asString(item.country).trim().slice(0, 120);
+    const locationId = asString(item.locationId).trim().slice(0, 120) || null;
+    const lat = asFiniteLatitude(item.lat);
+    const lon = asFiniteLongitude(item.lon);
     const dateFrom = asString(item.dateFrom).trim().slice(0, 32);
     const dateTo = asString(item.dateTo).trim().slice(0, 32);
     const notes = asString(item.notes).trim().slice(0, 2000);
@@ -55,11 +68,38 @@ export function sanitizeAppearances(v: unknown): Appearance[] {
 
     if (!title && !venue) continue;
 
-    out.push({ kind, title, venue, city, country, dateFrom, dateTo, notes, link });
+    out.push({ kind, title, venue, city, country, locationId, lat, lon, dateFrom, dateTo, notes, link });
     if (out.length >= 50) break;
   }
 
   return out;
+}
+
+export type MediaLocation = {
+  location: string | null;
+  locationId: string | null;
+  locationLat: number | null;
+  locationLon: number | null;
+  locationCountryCode: string | null;
+};
+
+// Parses the media document's own validated `location` selector fields
+// (mirrors the testimonials location shape) from an admin request body.
+// Coordinates come from the validated selector and the caller is an
+// authenticated admin, so we sanitise-and-store rather than re-geocode.
+export function parseMediaLocation(v: Record<string, unknown>): MediaLocation {
+  const location = asString(v.location).trim().slice(0, 120) || null;
+  const lat = asFiniteLatitude(v.locationLat);
+  const lon = asFiniteLongitude(v.locationLon);
+  const hasCoords = lat !== null && lon !== null;
+
+  return {
+    location,
+    locationId: hasCoords ? asString(v.locationId).trim().slice(0, 120) || null : null,
+    locationLat: lat,
+    locationLon: lon,
+    locationCountryCode: hasCoords ? asString(v.locationCountryCode).trim().slice(0, 8) || null : null,
+  };
 }
 
 export function isCloudinarySecureUrl(url: string): boolean {

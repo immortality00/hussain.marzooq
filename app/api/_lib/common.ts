@@ -32,6 +32,16 @@ export function asFiniteNumber(v: unknown): number | null {
   return null;
 }
 
+export function asFiniteLatitude(v: unknown): number | null {
+  const n = asFiniteNumber(v);
+  return n !== null && n >= -90 && n <= 90 ? n : null;
+}
+
+export function asFiniteLongitude(v: unknown): number | null {
+  const n = asFiniteNumber(v);
+  return n !== null && n >= -180 && n <= 180 ? n : null;
+}
+
 export function asBooleanOrNull(v: unknown): boolean | null {
   return typeof v === "boolean" ? v : null;
 }

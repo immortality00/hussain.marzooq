@@ -272,7 +272,8 @@ react-globe.gl **directly under the hero** (homepage section 2), in its own
 `.section-shell`: a compact ranked city index on the left, the globe taking the rest. Data: `appearances.kind === "exhibited"` only.
 Auto-rotate, drag, resume. Hover links list↔marker both ways. Click city → existing
 `MediaLightbox` with that city's works. Texture served from `/public/globe/`, never a CDN.
-**D6 is blocked by C4** — see "Appearances" below. Spec: SESSION-QUEUE.md §D6.
+**C4 shipped 2026-08-18, so D6 is unblocked** — appearances now carry stored coordinates.
+See "Media locations" below. Spec: SESSION-QUEUE.md §D6.
 
 ## People page (D12, pending)
 Public by default; per-person private toggle (password-gated); removal-request flow
@@ -327,37 +328,42 @@ Plausible, one script tag, public pages only (Phase 3, queue §C3).
 Visual consistency with the portfolio (dark theme, same typography/tokens/shadcn styling).
 Not a layout rebuild (queue §D9).
 
-## Appearances admin — blocking the globe (queue §C4, must run before §D6)
-`appearances[].city` / `.country` are **unvalidated free text** (`MediaAppearancesSection.tsx:70-81`;
-server-side `sanitizeAppearances` only trims and caps at 120 chars, `app/api/_lib/media.ts:49-50`).
-There are **no coordinates stored at all** — `appearances` has no `lat`/`lon` field.
+## Media locations — validated + coordinate-carrying (C4, shipped 2026-08-18)
+The old free-text location inputs are **gone**. Both media location surfaces now use the
+same validated selector as testimonials (`components/testimonials/review-form/LocationSearch.tsx`
+→ `/api/testimonials/location-search`) and store coordinates at save time, so nothing
+geocodes at render time:
+- **`appearances[].city`/`.country`** — the globe's source, filtered to `kind === "exhibited"`.
+  The `Appearance` type now carries `locationId`, `lat`, `lon`; `sanitizeAppearances`
+  (`app/api/_lib/media.ts`) validates and persists them (lat/lon range-checked via
+  `asFiniteLatitude`/`asFiniteLongitude` in `_lib/common.ts`). Picking a city fills
+  `city`/`country` (split from the selector label) plus the coordinates.
+- **the media document's own `location` field** — now stores `location` (canonical label),
+  `locationId`, `locationLat`, `locationLon`, `locationCountryCode` via the shared
+  `parseMediaLocation()` (`_lib/media.ts`). Parsed identically in `media/create` and
+  `media/[id]` PATCH; returned by the GET for rehydration.
 
-`geocodeLocation()` (`lib/server/geocoding.ts` → `resolveTestimonialLocationByLabel`,
-`lib/server/location-search.ts:138-158`) does an **exact** match — `findOne({ searchNames:
-normalizedLabel })`, line 150 — not the prefix/contains search the interactive UI uses. On
-no match it returns `null`, silently.
+**Admin, not public → sanitise-and-store, don't re-geocode.** Unlike the public testimonials
+form (which re-resolves by id for authority), the media form is admin-gated, so coordinates
+from the validated selector are trusted and stored as-is (no per-save DB round-trip, no
+per-item resolve across up to 50 appearances). No new trust boundary.
 
-And the two label formats in the repo disagree: the GeoNames importer writes
-`"${name}, ${countryCode}"` → `"Dubai, AE"` (`scripts/import-geonames-cities.mjs:61`), while
-the hardcoded fallback list writes full country names → `"Dubai, United Arab Emirates"`
-(`lib/locations/testimonial-locations.ts:26`). Typing "UAE" or "United Arab Emirates" into
-the appearances form matches neither, so a real exhibition city resolves to `null` and
-**disappears from the globe with no error and no admin warning.**
+**`Appearance` is now one shared type** in `app/api/_lib/media.ts`, imported everywhere
+(`media-serializers.ts`, `components/media/types.ts`, `admin/media/lib/types.ts` all
+`import type`; `public-nfts.ts` uses the shared `sanitizeAppearances`, replacing its old
+weak `isAppearance` check). The four separate declarations are collapsed.
 
-There is also **no aggregation by city anywhere** (grep `kind === "exhibited"` returns a
-label string and one per-item filter, nothing collection-wide) and **no `getAllMedia()`** —
-every fetcher is category-scoped and capped at 60 (`lib/server/public-media.ts:29-45`), so a
-globe built on any existing fetcher silently under-reports.
+**Appearance dates** are month+year only: `<input type="month">` in the form (stored as
+`YYYY-MM`), rendered as "Month YYYY" by `formatMonthYear` in `components/media/utils.ts`
+(used by `formatDates`, and by `NftModal`). Legacy/non-matching values pass through unchanged.
 
-C4 fixes the input side. Hussain, 2026-08-17: *"the location in the media form need to
-follow the same system in the testimonials, so the globe will fetch correct data."* Both
-media location surfaces move to the validated selector — `appearances[].city`/`.country`
-**and** the media document's own `location` field — with coordinates stored at save time.
-The globe's source stays `appearances` where `kind === "exhibited"`.
+**Admin warning:** an exhibited appearance with no resolved `lat`/`lon` shows an inline amber
+note in `MediaAppearancesSection.tsx` — it will not appear on the globe.
 
-**No backfill.** Existing media is being deleted and re-entered by hand; do not write a
-migration. **C4 must ship before D6**, and both run in the first block (see the queue's
-Run order).
+**No backfill** — existing media is being deleted and re-entered by hand; no migration was
+written and none should be. The globe (D6) reads `appearances` where `kind === "exhibited"`,
+groups by `locationId`. There is still **no `getAllMedia()`** and no collection-wide city
+aggregation — D6 must query `media` directly and aggregate in Mongo (see queue §D6).
 
 ## Reusable components — always use, never reinvent
 - `components/shared/PageHeader.tsx` — all public page headers. Props: `title`,
@@ -556,7 +562,6 @@ Do not "discover" these again; do not fix them outside their session.
 | N+1 query on `/people` (one `media.find()` per person) | `lib/server/public-people.ts:76-114` | §P1 |
 | `SmartMediaPreview`'s default empty state is a gradient, violating the no-gradient rule | `SmartMediaPreview.tsx:32,93` | §D13 |
 | `page_seo.title` / `.headerTitle` silently revert to defaults when blanked, unlike every other field in the same form | `lib/server/page-seo.ts:144,146-149` | §D13 |
-| The same appearance shape is declared four times with no shared import (three named `Appearance`, one named `PublicAppearance`) | `_lib/media.ts:4-14`, `media-serializers.ts:4-14` (`PublicAppearance`), `components/media/types.ts:1-11`, `admin/media/lib/types.ts:11-21` | §D13 |
 | Dead, drifted `toPublicTestimonial` in `testimonial-serializers.ts` (nothing imports it) | `lib/server/testimonial-serializers.ts:3-17,39-57` | §D13 |
 | `README.md` is unedited create-next-app boilerplate telling the reader to deploy on Vercel | `README.md:32-36` | §L1 |
 

@@ -10,6 +10,7 @@ import {
 } from "@/app/api/_lib/common";
 import {
   getMediaLists,
+  parseMediaLocation,
   parseNftMeta,
   resolvePeopleSelection,
   sanitizeAppearances,
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
 
   const title = (asNullableString(bodyUnknown.title) ?? "").trim().slice(0, 160);
   const description = (asNullableString(bodyUnknown.description) ?? "").trim().slice(0, 2000);
-  const location = (asNullableString(bodyUnknown.location) ?? "").trim().slice(0, 120);
+  const mediaLocation = parseMediaLocation(bodyUnknown);
   const event = (asNullableString(bodyUnknown.event) ?? "").trim().slice(0, 120);
 
   const yearNum = asNumberOrNull(bodyUnknown.year);
@@ -127,7 +128,11 @@ export async function POST(req: Request) {
     type: normalizedAsset?.type ?? type,
     title,
     description: description || null,
-    location: location || null,
+    location: mediaLocation.location,
+    locationId: mediaLocation.locationId,
+    locationLat: mediaLocation.locationLat,
+    locationLon: mediaLocation.locationLon,
+    locationCountryCode: mediaLocation.locationCountryCode,
     event: event || null,
     year,
     tags,

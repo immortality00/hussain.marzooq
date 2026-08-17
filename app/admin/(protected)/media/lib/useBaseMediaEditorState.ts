@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import type { LocationOption } from "@/components/testimonials/review-form/types";
 import type { MediaCategory, MediaItem, Uploaded } from "./types";
 import { toList } from "./utils";
 
@@ -12,6 +13,10 @@ export function useBaseMediaEditorState() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
+  const [locationId, setLocationId] = useState<string | null>(null);
+  const [locationLat, setLocationLat] = useState<number | null>(null);
+  const [locationLon, setLocationLon] = useState<number | null>(null);
+  const [locationCountryCode, setLocationCountryCode] = useState<string | null>(null);
   const [event, setEvent] = useState("");
   const [year, setYear] = useState("");
   const [tagsText, setTagsText] = useState("");
@@ -25,6 +30,37 @@ export function useBaseMediaEditorState() {
   const people = useMemo(() => selectedPeopleNames.slice(0, 60), [selectedPeopleNames]);
   const primaryCategory = categories[0] ?? null;
   const isNft = primaryCategory === "nft" || categories.includes("nft");
+
+  const selectedLocation = useMemo<LocationOption | null>(() => {
+    if (!location || locationId === null || locationLat === null || locationLon === null) {
+      return null;
+    }
+    return {
+      id: locationId,
+      label: location,
+      lat: locationLat,
+      lon: locationLon,
+      countryCode: locationCountryCode,
+      population: null,
+      source: "dataset",
+    };
+  }, [location, locationId, locationLat, locationLon, locationCountryCode]);
+
+  function setLocationFromOption(loc: LocationOption) {
+    setLocation(loc.label);
+    setLocationId(loc.id);
+    setLocationLat(loc.lat);
+    setLocationLon(loc.lon);
+    setLocationCountryCode(loc.countryCode);
+  }
+
+  function clearLocation() {
+    setLocation("");
+    setLocationId(null);
+    setLocationLat(null);
+    setLocationLon(null);
+    setLocationCountryCode(null);
+  }
 
   function toggleCategory(key: MediaCategory) {
     setCategories((prev) => {
@@ -50,7 +86,7 @@ export function useBaseMediaEditorState() {
     setEmbedUrl("");
     setTitle("");
     setDescription("");
-    setLocation("");
+    clearLocation();
     setEvent("");
     setYear("");
     setTagsText("");
@@ -84,6 +120,10 @@ export function useBaseMediaEditorState() {
     setTitle(m.title ?? "");
     setDescription(m.description ?? "");
     setLocation(m.location ?? "");
+    setLocationId(m.locationId ?? null);
+    setLocationLat(typeof m.locationLat === "number" ? m.locationLat : null);
+    setLocationLon(typeof m.locationLon === "number" ? m.locationLon : null);
+    setLocationCountryCode(m.locationCountryCode ?? null);
     setEvent(m.event ?? "");
     setYear(m.year ? String(m.year) : "");
     setTagsText((m.tags ?? []).join(", "));
@@ -108,6 +148,13 @@ export function useBaseMediaEditorState() {
     setDescription,
     location,
     setLocation,
+    locationId,
+    locationLat,
+    locationLon,
+    locationCountryCode,
+    selectedLocation,
+    setLocationFromOption,
+    clearLocation,
     event,
     setEvent,
     year,

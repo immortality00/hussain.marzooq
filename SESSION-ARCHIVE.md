@@ -1515,3 +1515,73 @@ Book is a solid white pill, Featured card 0 emits an image-preload link (LCP), t
 `.premium-panel`/`.surface-3`, and each section opens with a `1px border-border` hairline.
 `tsc --noEmit` + `eslint` clean. ServiceCard's own buttons (non-preview, `/services` only) and
 the tag chips were left for a later pass — no tag data flows until T1/T2.
+
+---
+
+## Phase 3 — Content & analytics
+
+### Session C4 — Media locations: validated city + stored coordinates — `done`
+**Runs before D6 and directly after D2b. D6 is unbuildable without it** — full evidence in CLAUDE.md →
+"Appearances admin". Short version: `city`/`country` are free text, there are no
+coordinates stored anywhere, the resolver is an exact match that returns `null` silently,
+and the two label formats in the repo (`"Dubai, AE"` vs `"Dubai, United Arab Emirates"`)
+do not agree with each other.
+
+**Hussain, 2026-08-17:** *"for the cities in the globe, the source is the media, so the
+location in the media form need to follow the same system in the testimonials, so the globe
+will fetch correct data."*
+
+The media form has **two** free-text location surfaces, and both are in scope:
+- `appearances[].city` / `.country` (`MediaAppearancesSection.tsx:70-81`) — **this is what
+  the globe reads**, filtered to `kind === "exhibited"`.
+- the media document's own `location` field (`MediaDetailsSection.tsx`) — free text today,
+  shown on public media detail and searched by `/api/media/list-public`.
+
+Both move to the validated selector so they cannot disagree with each other. The globe's
+source stays `appearances` where `kind === "exhibited"` — unchanged from the original D6
+spec and from CLAUDE.md → Globe. **Confirm this one line with Hussain at Gate 1** before
+building the aggregation: exhibited appearances only, not every media item's `location`.
+
+Scope:
+1. Replace the two free-text inputs in `MediaAppearancesSection.tsx:70-81` **and the
+   `location` input in `MediaDetailsSection.tsx`** with the existing validated city selector
+   — reuse `components/testimonials/review-form/LocationSearch.tsx` and
+   `/api/testimonials/location-search`, do not build a second one.
+2. Extend the `Appearance` type with `locationId`, `lat`, `lon` and **persist them at save
+   time**, so nothing geocodes at render time. Update `sanitizeAppearances`
+   (`app/api/_lib/media.ts:36-63`) to validate and carry them. The type is currently declared
+   in four places with no shared import — collapse to one and import it everywhere
+   (`_lib/media.ts`, `media-serializers.ts`, `components/media/types.ts`,
+   `admin/media/lib/types.ts`).
+3. `lib/server/public-nfts.ts:42-44` uses its own weaker `isAppearance` check — replace it
+   with the shared sanitiser so NFT appearances get the same validation.
+4. **No backfill script.** Hussain is deleting the existing media and re-entering it through
+   the new form (2026-08-17). Do not write a migration. Do not attempt to resolve legacy
+   free-text values. The new selector is the only path in.
+5. Admin warning: flag any saved appearance with no resolved coordinates, using the same
+   pattern as the "Needs image" pill (`usePagesAdmin.ts:129-137`).
+
+Read before writing: `MediaAppearancesSection.tsx`, `useMediaAppearancesState.ts`,
+`app/api/_lib/media.ts`, `lib/server/location-search.ts`, `lib/locations/testimonial-locations.ts`,
+`scripts/import-geonames-cities.mjs`, `components/testimonials/review-form/LocationSearch.tsx`.
+
+**Build outcome (2026-08-18):** All five scope items shipped, plus a date-format addition
+Hussain requested during Gate 2. Both location surfaces now use the shared `LocationSearch`
+against `/api/testimonials/location-search`. `Appearance` gained `locationId`/`lat`/`lon`,
+carried by `sanitizeAppearances`; the four duplicate declarations collapsed to one canonical
+type in `_lib/media.ts` (`media-serializers.ts` dropped `PublicAppearance`; the two client
+type files and `public-nfts.ts` import it — the last also replacing its weak `isAppearance`).
+The media doc's `location` field now stores `location`/`locationId`/`locationLat`/`locationLon`/
+`locationCountryCode` via a shared `parseMediaLocation()` used by both `media/create` and
+`media/[id]` PATCH, returned by GET for rehydration. Coordinates are **sanitised-and-stored,
+not re-geocoded** — the media form is admin-gated (unlike the public testimonials form), so no
+new trust boundary and no per-save DB resolve across up to 50 appearances; lat/lon range-checked
+via new `asFiniteLatitude`/`asFiniteLongitude` in `_lib/common.ts`. Unresolved exhibited
+appearances show an inline amber warning. **Date fields** became month+year pickers
+(`<input type="month">`, stored `YYYY-MM`), rendered "Month YYYY" by a new `formatMonthYear`
+in `components/media/utils.ts` (used by `formatDates`; `NftModal`'s forked inline date join was
+routed through `formatDates` too). New unit test `test/api/sanitize-appearances.test.ts` (6
+cases) covers coord validation/carry-through. **No backfill written.** `tsc --noEmit` + `eslint`
+(0 warnings) + `npm test` (92 pass) all clean; dev server compiled with no errors. Interactive
+form check done by Hussain (admin-gated). The globe itself is D6 — Hussain noted he wants to see
+it live, which is exactly D6's job now that C4 unblocked it.
