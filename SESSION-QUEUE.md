@@ -25,7 +25,8 @@ only when a pending session or CLAUDE.md references it.
 ## Completed so far — full specs + outcomes in SESSION-ARCHIVE.md
 Phase 0: F1–F5 (foundation, refactors, cleanup) · Phase 1: N1–N8 (nav, CMS, admin
 consolidation, card images) · Phase 2: D1 (preloader), D3 (photography 3-view viewer) ·
-Phase S: S1–S7 (security, tests, reuse audit) · Phase DS: DS0–DS2 (skills, detector eval).
+Phase S: S1–S7 (security, tests, reuse audit) · Phase DS: DS0–DS2 (skills, detector eval) ·
+Phase 2a: D2b (homepage section pass + the shared `Button` two-look system).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -247,94 +248,6 @@ because they produce the design context those sessions read (same rationale as P
 **Order: D2b first, then D2c** — D4's homepage transition depends on D2b's output.
 Each session loads **one** direction skill at a time (named in its Gate 1), never two at once.
 
-### Session D2b — Homepage section pass — `pending`
-**Not blocked. The old "blocked by DS2 until `DESIGN.md` exists" line is deleted** — DS2 is
-archived `done` and explicitly declined to write `DESIGN.md` (archive §DS2), so that
-precondition could never be met and this session sat frozen. CLAUDE.md → "Design direction"
-is the spec now.
-
-**THE HERO IS OUT OF SCOPE.** `HomeHero.tsx` and `HeroBokeh.tsx` are not to be redesigned
-(Hussain, 2026-08-17). The only permitted hero touch in this session is adding `priority`
-to the hero image if it is not already set. No layout, scrim, bokeh or CTA changes. Do not
-propose any.
-
-**Skill: `frontend-design` only.** One direction skill per pass (archive §DS2). Do not also
-load `redesign-existing-projects`.
-
-**Before writing any code:** read `app/page.tsx`, every `components/home/*` file,
-`PortfolioCard.tsx`, `ServiceCard.tsx`, `SingleReviewCard.tsx`, `StickyCta.tsx`,
-`SiteFooter.tsx`, and CLAUDE.md → "Design direction" (the style census table). Report the
-plan against that table — every new class must already appear in it.
-
-**Homepage section order (approved 2026-08-17) — build in this order:**
-
-| # | Section | Component |
-|---|---|---|
-| 1 | Hero | `HomeHero.tsx` — **untouched** |
-| 2 | **Exhibition globe** | new, §D6 — D2b creates the section shell only |
-| 3 | Featured Work | `HomeFeaturedWork.tsx` + `PortfolioCard.tsx` |
-| 4 | Creative System + Services Preview (side by side) | `HomeCreativeSystem.tsx`, `HomeServicesPreview.tsx` |
-| 5 | Trust | `HomeTrust.tsx` |
-| 6 | Sticky CTA | `StickyCta.tsx` |
-
-The globe sits **directly under the hero** — Hussain's call — so the exhibition record is
-the first thing a visitor meets after the opening frame. Until D6 ships, D2b renders that
-section as nothing at all (not a placeholder, not a panel): empty means empty.
-
-**Scope, section by section:**
-
-1. **Featured Work** (`HomeFeaturedWork.tsx`, `PortfolioCard.tsx`)
-   - Give the grid a deliberate hierarchy: the first visible card spans both columns.
-     Today the *last* card spans both only when the count is odd (`HomeFeaturedWork.tsx:22`)
-     — an accident, not a decision.
-   - `PortfolioCard` gains a `priority?: boolean` prop; `HomeFeaturedWork` passes
-     `priority={index === 0}`. **This is the LCP warning Hussain is seeing** — `PortfolioCard`
-     currently never sets priority (`PortfolioCard.tsx:29-35`).
-   - `PortfolioCard` gains an optional `tags?: {label, href}[]` row rendered under the
-     description, in the chip style from CLAUDE.md's table. Links to the T2 subpages.
-     **A card that contains tag links cannot itself be one `<a>`** — nested anchors are
-     invalid and the browser un-nests them. Restructure as a `div` + an absolutely
-     positioned cover link + the title/chips/CTA as real links above it in z-order.
-   - Everything else about the card is unchanged: `rounded-[2.25rem]`, the bottom scrim
-     (functional contrast, not decoration — keep it), the hover zoom, the on-image pill.
-2. **Creative System** (`HomeCreativeSystem.tsx`) — unchanged shape. Only the nested-anchor
-   restructure above, since it also carries links inside the card.
-3. **Services Preview** (`HomeServicesPreview.tsx`) — **delete the outer
-   `div.premium-panel` wrapper.** That single change removes a card-in-card, which CLAUDE.md
-   bans and DS1's Impeccable scan flagged on this exact block. The heading moves onto the
-   page; `ServiceCard` is untouched. The "View services" pill stays.
-4. **Trust** (`HomeTrust.tsx`) — same: **delete the outer `div.premium-panel`.** Second
-   card-in-card. `HomeTestimonialCard` / `SingleReviewCard` untouched.
-5. **The button system** — unify all three CTA shapes onto the single geometry, variant set
-   and motion signature in CLAUDE.md → "The button system". One shared `Button` component
-   (or one `cva` recipe) used by `PortfolioCard`, `HomeServicesPreview`, `HomeTrust`,
-   `HomeCreativeSystem`, `StickyCta`, `ServiceCard` and the tag chips. Adds the press state
-   (`active:scale-[0.975]`), the focus ring and the sliding `→` that none of them have
-   today. **The hero's two pills are excluded** — they keep `px-6`; the hero is fixed.
-6. **The section system** — every section opens with a full-width hairline inside its
-   `.section-shell`; switch the rhythm from `py-12 sm:py-16` to `pt-12 sm:pt-16` with no
-   bottom padding except on the last section. See CLAUDE.md → "The section system" for why.
-7. **Sticky CTA** (`StickyCta.tsx`) and **`SiteFooter.tsx`** — swap `surface-3` /
-   `surface-1` glass for `bg-card`, drop the `backdrop-filter`. Fixes the 1.1–1.4:1 minimum
-   pixel contrast DS1 measured. Same radius, same layout, same copy, same admin fields, same
-   modal-hide behaviour.
-
-**Constraints that still bind (do not "fix" these):** hero renders the admin-picked
-`hero.image.url` only, flat `bg-muted` when empty (S4). **No eyebrows, kickers or stat
-strips** — no small uppercase label above a section heading, no tally blocks (CLAUDE.md →
-"What is NOT in the design"). No decorative gradients — the image scrims on work cards are
-functional and stay. No scroll-jacking. Grain unchanged.
-`.section-shell` for containers. Empty means empty. Every string still comes from
-`page_sections` / `page_seo` — no new admin field in this session.
-
-**Gate 2 verification:** open `/` and confirm — the LCP warning for the Featured Work image
-is gone; no `premium-panel` wraps another bordered card anywhere on the page; tag chips
-navigate to the T2 routes; the page renders correctly with every section image blank.
-
-**Deliverable:** the five section changes above, plus the globe section shell (empty until
-D6). The homepage in/out transition spec is **already written into §D4** ("Homepage → any:
-the contact-sheet move") — D2b does not need to produce it and must not re-spec it. If the
-build shows the spec is wrong, correct §D4 in the same commit.
 
 ### Session D2c — About page rebuild — `pending`
 About has never had a rebuild session (flagged twice in N5). It is still
@@ -756,10 +669,10 @@ Check and fix:
 - Lenis scroll feels correct on all pages.
 
 **From DS1's Impeccable URL scan (2026-08-06) — 5 Real findings, all in shared components:**
-- **Glass-panel text contrast.** `SiteFooter.tsx` + `StickyCta.tsx` render text over
-  `backdrop-filter` glass; min pixel contrast falls to 1.1–1.4:1 over bright image regions
-  (CTA-subtext medians 2.6–3.4:1). Add a scrim / darken the glass behind the text, or raise
-  weight/size — verify against the real imagery, not a flat background.
+- **Glass-panel text contrast — RESOLVED in D2b.** `SiteFooter.tsx` and `StickyCta.tsx`
+  were swapped from `backdrop-filter` glass (`surface-1`/`surface-3` / `bg-background/70
+  backdrop-blur`) to solid `bg-card`, so the 1.1–1.4:1 pixel contrast is gone. No action in
+  D13 unless a re-scan flags a regression.
 - **Undersized functional text.** Two sources, re-verified 2026-08-17 — the old entry put
   both in one file. `WorkOverlay.tsx:237` discipline sublabels are `text-[9px]`; the 10px
   "HM" logo mark is `Navbar.tsx:69`, **not** WorkOverlay. Both still unfixed. Bump to ≥11px

@@ -87,7 +87,7 @@ the rule. When adding UI, use one of these; do not introduce a new variant.
 
 | Role | Value | Already lives at |
 |---|---|---|
-| **Button — one system, three variants** (see below) | `inline-flex items-center gap-2 rounded-full px-5 py-[0.6875rem] text-sm` + an inline `→` | today: `HomeServicesPreview.tsx:68`, `HomeTrust.tsx:30`, `PortfolioCard.tsx:51` — three different geometries; **unified in D2b** |
+| **Button — one component, two looks** (see below) | `components/shared/Button.tsx` — `.hm-btn` geometry (`rounded-full px-5 py-[0.6875rem] text-sm`), `ghost` \| `solid` variant | unified in D2b; every public button except the hero's two pills |
 | Tag / filter chip | `rounded-full border px-3.5 py-1.5 text-xs`, active inverts to `bg-foreground text-background` | `MediaTagChips.tsx` |
 | **Section rule** | every section opens with a full-width `border-t border-border` inside its `.section-shell`, then the heading block | **new in D2b** — it is what makes the sections read as one page instead of stacked pieces |
 | Full-bleed work card | `rounded-[2.25rem] border bg-muted overflow-hidden`, image `group-hover:scale-[1.04]` 700ms | `PortfolioCard.tsx:26,34` |
@@ -99,31 +99,46 @@ the rule. When adding UI, use one of these; do not introduce a new variant.
 | Body over an image | `text-sm leading-6 text-white/70` | `PortfolioCard.tsx:48` |
 | Micro-label | Geist Mono, `text-[11px] tracking-[0.2em]`, muted. **11px is the floor.** Only for functional metadata *inside* a component — a count, a price, a `01 / 03` position. **Never as a kicker above a heading, and never as a stat strip.** | D13 |
 
-### The button system — decided 2026-08-17
-Hussain: *"why the buttons are not the same? and where is the buttons design / animation /
-effects?"* Today the three call-to-action shapes have three different paddings and three
-unrelated hover effects (`opacity-90`, `bg-accent`, `bg-white`), and no press or focus
-state at all. One system replaces them:
+### The button system — decided 2026-08-17, re-decided 2026-08-18
+The 2026-08-17 draft was a three-variant system (`primary` / `secondary` / `on-image`) with
+a sliding `→` arrow. **Hussain rejected it on sight in D2b** — the primary/secondary split
+on the page read as two mismatched weights, and nothing matched the hero. His replacement,
+2026-08-18: *"all the other buttons follow the hero section book button style"* and *"the
+book button in the bar should be white."* **Every public button is now one of the two looks
+already living in the hero, and there is no arrow.** Do not reintroduce the three-variant
+table or the `→`.
 
-**Geometry, identical for all variants:** `inline-flex items-center gap-2 rounded-full
-px-5 py-[0.6875rem] text-sm leading-none whitespace-nowrap border border-transparent`.
-Only colour changes between variants.
+**Component: `components/shared/Button.tsx`** — the only public button. Renders a `<Link>`
+when given `href`, else a `<button>`. `variant` is `ghost` (default) or `solid`. Geometry +
+motion live in `globals.css` → `.hm-btn`. `buttonClasses(variant, className)` is exported so
+a non-interactive styled `<span>` can reuse the look (the `PortfolioCard` CTA is a span
+because the card's cover `<Link>` does the navigating — a real button there would nest anchors).
 
-| Variant | Rest | Hover |
-|---|---|---|
-| `primary` | `bg-foreground text-background` | `bg-[oklch(0.88_0.004_286)]` |
-| `secondary` | `border-border text-foreground` | `bg-accent`, border to `oklch(1 0 0 / .22)` |
-| `on-image` | `border-white/28 bg-white/10 backdrop-blur-[10px] text-white` | `bg-white text-black border-white` (also fires on parent card hover) |
+**Geometry (`.hm-btn`, both looks):** `inline-flex items-center gap-2 rounded-full px-5
+py-[0.6875rem] text-sm leading-none whitespace-nowrap`. **The `border` shorthand is NOT in
+`.hm-btn`** — it lived there once and its `@apply border` silently overrode each variant's
+`border-white/30` to transparent (the outline vanished). Border width **and** colour must
+sit together on the variant, exactly like the hero's inline `border border-white/30`.
 
-**Motion — one signature, used by every button and chip:**
-- transition `220ms cubic-bezier(.2,.7,.2,1)` on background, border and colour.
-- an inline `→` inside the label that translates `3px` on hover over `300ms`, same easing.
-- `:active { transform: scale(.975) }` at `160ms` — the press feedback that is missing today.
-- `:focus-visible { outline: 2px solid var(--foreground); outline-offset: 3px }`.
-- chips use the same transition and `:active` scale, one size down.
+| Variant | Rest | Hover | Used by |
+|---|---|---|---|
+| `ghost` (default) | `border border-white/30 text-white`, transparent fill | **inverts**: `bg-white text-black border-white` | the hero "Book", every Featured-Work / discipline / section button |
+| `solid` | `bg-white text-black`, no border | softens `bg-neutral-200` | the hero "See the work", the sticky-bar "Book" |
 
-**The hero keeps its own `px-6` pills** — `HomeHero.tsx:68,74`. The hero is fixed, so that
-2px padding difference stays until Hussain asks for it. It is the one deliberate exception.
+Both are hard-coded white (not tokens) because they are lifted from the hero pills and the
+whole non-hero surface is dark; this is a dark-first choice. The `PortfolioCard` CTA span
+inverts on **card** hover (`group-hover:*`), not its own, since the cover link eats pointer
+events.
+
+**Motion (`.hm-btn`):** `220ms cubic-bezier(.2,.7,.2,1)` on background/border/colour;
+`:active { scale(.975) }` at `160ms`; `:focus-visible { outline: 2px solid var(--foreground);
+outline-offset: 3px }`. No arrow. Chips (`.hm-chip`, T2) reuse the transition + press scale,
+one size down.
+
+**The hero is still the exception, but its two hovers were improved in D2b** at Hussain's
+explicit request (2026-08-18) — "See the work" now softens to `bg-neutral-200`, "Book"
+inverts to white. Geometry (`px-6 py-3`, `HomeHero.tsx:66,73`) is untouched and the hero
+stays inline (not routed through `Button`), so it keeps its own padding. No other hero change.
 
 ### The section system — decided 2026-08-17
 Hussain: *"why sections look like pieces put together? there should be something that show
@@ -349,7 +364,13 @@ Run order).
   `description?`, `className?`, `titleClassName?`. **No `eyebrow` prop — removed
   sitewide in N4, do not reintroduce** (history: archive §N4). Exception:
   `testimonials/page.tsx` keeps its own hero-card layout deliberately.
-- `components/shared/PortfolioCard.tsx` — all full-bleed image cards with overlay.
+- `components/shared/Button.tsx` — the only public button (D2b). `variant` `ghost`
+  (default) or `solid`; renders `<Link>` with `href`, else `<button>`. `buttonClasses()`
+  exported for styled non-interactive spans. See "The button system". The hero's two pills
+  are the sole exception and stay inline.
+- `components/shared/PortfolioCard.tsx` — all full-bleed image cards with overlay. Not an
+  `<a>` itself: a `div` + absolute cover `<Link>` + `pointer-events` layering, so its tag
+  chips and CTA don't nest anchors (D2b). Props include `priority?` (LCP) and `tags?`.
 - `components/shared/AnimatedText.tsx` — all text reveals. **Word-mode only,
   scroll-triggered.** No char/line modes — don't assume they exist.
 - `useAdminAction` hook + `AdminActionFeedback` — all admin loading/fetch/feedback
