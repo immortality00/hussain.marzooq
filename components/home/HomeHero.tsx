@@ -65,14 +65,14 @@ export function HomeHero({
           {workHref && (
             <Link
               href={workHref}
-              className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition-opacity hover:opacity-85"
+              className="rounded-full bg-white px-6 py-3 text-sm font-medium text-black transition-colors hover:bg-neutral-200"
             >
               See the work
             </Link>
           )}
           <Link
             href="/contact"
-            className="rounded-full border border-white/30 px-6 py-3 text-sm text-white transition-colors hover:bg-white/10"
+            className="rounded-full border border-white/30 px-6 py-3 text-sm text-white transition-colors hover:border-white hover:bg-white hover:text-black"
           >
             Book
           </Link>

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Button } from "@/components/shared/Button";
 import { ServiceCard } from "@/components/services/ServiceCard";
 import type { PublicServiceItem } from "@/lib/server/public-services";
 import type { HomeSections } from "@/lib/server/page-sections";
@@ -40,11 +41,12 @@ export function HomeServicesPreview({
     (d) => d.slug === null || activeSet.has(d.slug),
   );
 
-  // Renders a bare panel: app/page.tsx places this and HomeCreativeSystem
-  // side by side inside one shared section-shell grid, so the service cards
+  // No panel wrapper: app/page.tsx places this and HomeCreativeSystem side by
+  // side inside one shared section-shell grid. The heading sits directly on the
+  // page (the card-in-card panel was removed in D2b), and the service cards
   // stack in a single column instead of a 3-column row.
   return (
-    <div className="premium-panel p-6 sm:p-8">
+    <div>
       <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">{content.heading}</h2>
 
       <div className="mt-8 grid gap-6">
@@ -63,12 +65,9 @@ export function HomeServicesPreview({
             ))}
       </div>
 
-      <Link
-        href="/services"
-        className="mt-8 inline-flex rounded-full bg-foreground px-5 py-3 text-sm text-background hover:opacity-90"
-      >
+      <Button href="/services" className="mt-8">
         View services
-      </Link>
+      </Button>
     </div>
   );
 }

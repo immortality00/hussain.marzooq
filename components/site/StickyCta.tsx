@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Button } from "@/components/shared/Button";
 
 export function StickyCta({
   title = "Ready to book?",
@@ -43,19 +43,16 @@ export function StickyCta({
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-40 mx-auto max-w-4xl">
-      <div className="surface-3 flex items-center justify-between gap-4 rounded-[1.75rem] border px-4 py-3">
+      <div className="flex items-center justify-between gap-4 rounded-[1.75rem] border bg-card px-4 py-3 shadow-[var(--shadow-elevated)]">
         <div className="min-w-0">
           <div className="text-sm font-semibold tracking-tight">{title}</div>
           <div className="mt-1 text-xs text-muted-foreground">{description}</div>
         </div>
 
         <div className="flex shrink-0 gap-2">
-          <Link
-            href={href}
-            className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90"
-          >
+          <Button href={href} variant="solid">
             {buttonLabel}
-          </Link>
+          </Button>
         </div>
       </div>
     </div>

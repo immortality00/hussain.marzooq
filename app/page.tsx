@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { getPageSections } from "@/lib/server/page-sections";
 import { HomeCreativeSystem } from "@/components/home/HomeCreativeSystem";
+import { HomeExhibitionGlobe } from "@/components/home/HomeExhibitionGlobe";
 import { HomeFeaturedWork } from "@/components/home/HomeFeaturedWork";
 import { HomeHero } from "@/components/home/HomeHero";
 import { HomeServicesPreview } from "@/components/home/HomeServicesPreview";
@@ -38,14 +39,18 @@ export default async function HomePage() {
           headerTitle={seo.headerTitle}
           headerDescription={seo.headerDescription}
         />
+        {/* Section 2 — exhibition globe (directly under the hero). Empty until D6. */}
+        <HomeExhibitionGlobe />
         <HomeFeaturedWork activeSet={activeSet} cards={sections.featuredCards} />
-        <section className="section-shell grid gap-5 py-8 lg:grid-cols-2">
-          <HomeCreativeSystem activeSet={activeSet} content={sections.creativeSystem} />
-          <HomeServicesPreview
-            services={servicesData.services.slice(0, 3)}
-            activeSet={activeSet}
-            content={sections.servicesPreview}
-          />
+        <section className="section-shell border-t border-border pt-12 sm:pt-16">
+          <div className="grid gap-5 lg:grid-cols-2">
+            <HomeCreativeSystem activeSet={activeSet} content={sections.creativeSystem} />
+            <HomeServicesPreview
+              services={servicesData.services.slice(0, 3)}
+              activeSet={activeSet}
+              content={sections.servicesPreview}
+            />
+          </div>
         </section>
         <HomeTrust testimonials={testimonials.items} content={sections.trust} />
       </main>

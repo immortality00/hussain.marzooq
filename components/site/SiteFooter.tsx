@@ -35,7 +35,7 @@ export async function SiteFooter() {
     ...ALWAYS_ON_SECONDARY,
   ];
   return (
-    <footer className="border-t bg-background/70 backdrop-blur">
+    <footer className="border-t bg-card">
       <div className="section-shell py-12">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div className="max-w-md">

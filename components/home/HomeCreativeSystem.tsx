@@ -1,5 +1,5 @@
-import Link from "next/link";
 import SmartImage from "@/components/shared/SmartImage";
+import { Button } from "@/components/shared/Button";
 import type { HomeSections } from "@/lib/server/page-sections";
 
 const DISCIPLINE_LINKS = [
@@ -49,13 +49,9 @@ export function HomeCreativeSystem({
         {creativeLinks.length > 0 && (
           <div className="mt-6 flex flex-wrap gap-2">
             {creativeLinks.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="rounded-full border border-white/25 bg-white/10 px-4 py-2 text-sm text-white backdrop-blur transition hover:bg-white hover:text-black"
-              >
+              <Button key={item.href} href={item.href}>
                 {item.label}
-              </Link>
+              </Button>
             ))}
           </div>
         )}

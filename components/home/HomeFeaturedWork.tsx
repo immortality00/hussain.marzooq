@@ -16,21 +16,22 @@ export function HomeFeaturedWork({
 
   if (visibleCards.length === 0) return null;
 
-  const lastSpansBoth = visibleCards.length % 2 === 1;
-
   return (
-    <section className="section-shell grid gap-5 py-8 lg:grid-cols-2">
-      {visibleCards.map((card, index) => (
-        <PortfolioCard
-          key={`${card.slug}-${index}`}
-          href={`/${card.slug}`}
-          title={card.title}
-          description={card.description || undefined}
-          imageUrl={card.image?.url || null}
-          ctaLabel={CTA_LABELS[card.slug]}
-          className={lastSpansBoth && index === visibleCards.length - 1 ? "lg:col-span-2" : undefined}
-        />
-      ))}
+    <section className="section-shell border-t border-border pt-12 sm:pt-16">
+      <div className="grid gap-5 lg:grid-cols-2">
+        {visibleCards.map((card, index) => (
+          <PortfolioCard
+            key={`${card.slug}-${index}`}
+            href={`/${card.slug}`}
+            title={card.title}
+            description={card.description || undefined}
+            imageUrl={card.image?.url || null}
+            ctaLabel={CTA_LABELS[card.slug]}
+            priority={index === 0}
+            className={index === 0 ? "lg:col-span-2" : undefined}
+          />
+        ))}
+      </div>
     </section>
   );
 }
