@@ -65,9 +65,9 @@
     "semantic_hash": "5da2e56e27cd6a3c747174aa13cd8378"
   },
   "app/admin/(protected)/media/components/MediaAppearancesSection.tsx": {
-    "mtime": 1777186156.6218634,
-    "ast_hash": "43dc9a886e1a814813b7c1846905712b",
-    "semantic_hash": "43dc9a886e1a814813b7c1846905712b"
+    "mtime": 1787008790.4732509,
+    "ast_hash": "a8889252df194c268b686dfec41efa06",
+    "semantic_hash": ""
   },
   "app/admin/(protected)/media/components/MediaAssetSection.tsx": {
     "mtime": 1780677800.5984719,
@@ -75,9 +75,9 @@
     "semantic_hash": "8748b3018c36ad1afdc88c65aeaaafc6"
   },
   "app/admin/(protected)/media/components/MediaDetailsSection.tsx": {
-    "mtime": 1779781061.1456335,
-    "ast_hash": "2a4dbedfc3698f19aee9de2f0e7eae95",
-    "semantic_hash": "2a4dbedfc3698f19aee9de2f0e7eae95"
+    "mtime": 1787006755.987673,
+    "ast_hash": "4a1b3e01b54cbbf498b51ff1decfd0ec",
+    "semantic_hash": ""
   },
   "app/admin/(protected)/media/components/MediaNftSection.tsx": {
     "mtime": 1778683494.695704,
@@ -90,9 +90,9 @@
     "semantic_hash": "17260582ed7c3fb0d0dd0fa3f2b000d2"
   },
   "app/admin/(protected)/media/lib/editor-actions.ts": {
-    "mtime": 1781975442.6935897,
-    "ast_hash": "470efba69ed886cae1065bcc60256ecc",
-    "semantic_hash": "470efba69ed886cae1065bcc60256ecc"
+    "mtime": 1787006769.300184,
+    "ast_hash": "664f0303851ba496ad96e97d106112d2",
+    "semantic_hash": ""
   },
   "app/admin/(protected)/media/lib/editor-state.ts": {
     "mtime": 1778863415.5821083,
@@ -100,24 +100,24 @@
     "semantic_hash": "3c425b3ceff86308f1508c4197c07d94"
   },
   "app/admin/(protected)/media/lib/types.ts": {
-    "mtime": 1779779221.444528,
-    "ast_hash": "c12820d30d7eacab99960007c2a41d96",
-    "semantic_hash": "c12820d30d7eacab99960007c2a41d96"
+    "mtime": 1787006788.6990964,
+    "ast_hash": "e2534cee5d6c8486101ae8b6cc1f4254",
+    "semantic_hash": ""
   },
   "app/admin/(protected)/media/lib/useBaseMediaEditorState.ts": {
-    "mtime": 1779779271.622356,
-    "ast_hash": "1d84d34b1441f68e398da1f7fe38d1ec",
-    "semantic_hash": "1d84d34b1441f68e398da1f7fe38d1ec"
+    "mtime": 1787006791.8500035,
+    "ast_hash": "3438c31312a7a413b36a5e9875e273ba",
+    "semantic_hash": ""
   },
   "app/admin/(protected)/media/lib/useMediaAppearancesState.ts": {
-    "mtime": 1778863400.8222752,
-    "ast_hash": "dffe2e17df1ca8b3b204122ee66f21ee",
-    "semantic_hash": "dffe2e17df1ca8b3b204122ee66f21ee"
+    "mtime": 1787006665.3287022,
+    "ast_hash": "d4bd1c579ae98400431e529e606b2b51",
+    "semantic_hash": ""
   },
   "app/admin/(protected)/media/lib/useMediaEditorController.ts": {
-    "mtime": 1781891205.7992504,
-    "ast_hash": "6c336ceeaeb02e279fab9d4bb2c481fb",
-    "semantic_hash": "6c336ceeaeb02e279fab9d4bb2c481fb"
+    "mtime": 1787006773.206049,
+    "ast_hash": "2e64d42a0a53a3d0dd1e986cf9ddec4b",
+    "semantic_hash": ""
   },
   "app/admin/(protected)/media/lib/useNftEditorState.ts": {
     "mtime": 1778863382.5560074,
@@ -145,9 +145,9 @@
     "semantic_hash": "9d363218518bf21fe6d33ea3835925bd"
   },
   "app/admin/(protected)/media/page.tsx": {
-    "mtime": 1781975420.3788245,
-    "ast_hash": "884ccd7f004e45ac6906d6f3d2029de7",
-    "semantic_hash": "884ccd7f004e45ac6906d6f3d2029de7"
+    "mtime": 1787006760.0392418,
+    "ast_hash": "74bab42622cf537160f46c285b4b1519",
+    "semantic_hash": ""
   },
   "app/admin/(protected)/nfts/page.tsx": {
     "mtime": 1782068143.290372,
@@ -385,14 +385,14 @@
     "semantic_hash": "adee5f620c7fa0a87a0ec49ecd0c3c63"
   },
   "app/api/_lib/common.ts": {
-    "mtime": 1777300028.2989078,
-    "ast_hash": "85a5f025ee78b8591dcd1d6fdcb6739a",
-    "semantic_hash": "85a5f025ee78b8591dcd1d6fdcb6739a"
+    "mtime": 1787006607.0787077,
+    "ast_hash": "f582218c429aae4a5ea5b182746548ee",
+    "semantic_hash": ""
   },
   "app/api/_lib/media.ts": {
-    "mtime": 1780682122.3338706,
-    "ast_hash": "3218c64b92679040d3b1fe7ac8a428eb",
-    "semantic_hash": "3218c64b92679040d3b1fe7ac8a428eb"
+    "mtime": 1787006808.1956897,
+    "ast_hash": "72377a4052e97eb6f07e617e1203903d",
+    "semantic_hash": ""
   },
   "app/api/_lib/public-form-security.ts": {
     "mtime": 1780155317.156769,
@@ -425,9 +425,9 @@
     "semantic_hash": "838b5698f807a8292069175d6e17d72f"
   },
   "app/api/media/[id]/route.ts": {
-    "mtime": 1785919565.1486793,
-    "ast_hash": "aa0b8ae3d169305b2f1ef465e7db68ce",
-    "semantic_hash": "aa0b8ae3d169305b2f1ef465e7db68ce"
+    "mtime": 1787006846.782415,
+    "ast_hash": "02e20d21d7bff08523494dbeeb507571",
+    "semantic_hash": ""
   },
   "app/api/media/admin-list/route.ts": {
     "mtime": 1782890360.050545,
@@ -435,9 +435,9 @@
     "semantic_hash": "0fc2d645af3661363e9c6d949cabf4d3"
   },
   "app/api/media/create/route.ts": {
-    "mtime": 1782890360.0428736,
-    "ast_hash": "e9f22a07e5bd9613357f49450ab847a5",
-    "semantic_hash": "e9f22a07e5bd9613357f49450ab847a5"
+    "mtime": 1787006826.0874138,
+    "ast_hash": "ebdab3fb00f8813beda95ea6ab7c7e2b",
+    "semantic_hash": ""
   },
   "app/api/media/list-public/route.ts": {
     "mtime": 1780942354.5178406,
@@ -830,9 +830,9 @@
     "semantic_hash": "5217e24e923a306553a74e02ea7727c4"
   },
   "components/media/types.ts": {
-    "mtime": 1777363832.6456554,
-    "ast_hash": "a55b18c17b1b567672575157203dbfdf",
-    "semantic_hash": "a55b18c17b1b567672575157203dbfdf"
+    "mtime": 1787006638.0906498,
+    "ast_hash": "d273eccbb0940fbdc4f2ef96eb285016",
+    "semantic_hash": ""
   },
   "components/media/useModalNavbarLock.ts": {
     "mtime": 1780681420.044847,
@@ -840,9 +840,9 @@
     "semantic_hash": "68e1c94e5cfe656be44f0217e190737d"
   },
   "components/media/utils.ts": {
-    "mtime": 1778082231.1797707,
-    "ast_hash": "0fa853343736dd132bafccd4a3670a82",
-    "semantic_hash": "0fa853343736dd132bafccd4a3670a82"
+    "mtime": 1787008798.2220435,
+    "ast_hash": "f36703ac904b769ae759d9edee23057d",
+    "semantic_hash": ""
   },
   "components/nft/NftCard.tsx": {
     "mtime": 1780681468.6871352,
@@ -860,9 +860,9 @@
     "semantic_hash": "0ac8f5a630fa55045f75d98b27ef2973"
   },
   "components/nft/NftModal.tsx": {
-    "mtime": 1782754654.8868234,
-    "ast_hash": "d3ac93524f9e0592d431ceb27f815851",
-    "semantic_hash": "d3ac93524f9e0592d431ceb27f815851"
+    "mtime": 1787008813.8064392,
+    "ast_hash": "d7c13205883ef18edb56832c54c196a7",
+    "semantic_hash": ""
   },
   "components/nft/lib.ts": {
     "mtime": 1778781535.320659,
@@ -1155,9 +1155,9 @@
     "semantic_hash": "581fafe57e156b4eb4a35046206b111a"
   },
   "lib/server/media-serializers.ts": {
-    "mtime": 1781456018.7433035,
-    "ast_hash": "03a19e1e2e7729c2f09fc743971fa251",
-    "semantic_hash": "03a19e1e2e7729c2f09fc743971fa251"
+    "mtime": 1787006619.7567148,
+    "ast_hash": "92dfd395df257d7b48fb69091e20b0f6",
+    "semantic_hash": ""
   },
   "lib/server/page-sections.ts": {
     "mtime": 1783509829.254391,
@@ -1190,9 +1190,9 @@
     "semantic_hash": "3ba87c4c29bb4509f232ec432e2c4bc6"
   },
   "lib/server/public-nfts.ts": {
-    "mtime": 1779771647.2719426,
-    "ast_hash": "02ec30f25338bebd0e1402c4d5c26aee",
-    "semantic_hash": "02ec30f25338bebd0e1402c4d5c26aee"
+    "mtime": 1787006861.2037954,
+    "ast_hash": "2187efa6fd6b2fd9e136bb8751d886a6",
+    "semantic_hash": ""
   },
   "lib/server/public-people.ts": {
     "mtime": 1779781334.7536623,
@@ -1320,8 +1320,8 @@
     "semantic_hash": "c698309979460d0f02ba616417844399"
   },
   "CLAUDE.md": {
-    "mtime": 1786999844.1475198,
-    "ast_hash": "56bc5944c293f2e52fbe1d56356cec38",
+    "mtime": 1787009339.1200364,
+    "ast_hash": "d8573fa906b42c824b11c888851d8bc2",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1330,8 +1330,8 @@
     "semantic_hash": "f15aaa42d5d299d091b1171097ea56ad"
   },
   "SESSION-QUEUE.md": {
-    "mtime": 1786999986.4219754,
-    "ast_hash": "340a8987ce1f83b042269114c7c15431",
+    "mtime": 1787009429.100403,
+    "ast_hash": "7a0c8e2647eae16dd600b82349880572",
     "semantic_hash": ""
   },
   "public/file.svg": {
@@ -1400,8 +1400,8 @@
     "semantic_hash": "a2bdee4fb2783ac465076738c25ce3e0"
   },
   "SESSION-ARCHIVE.md": {
-    "mtime": 1786999933.5536265,
-    "ast_hash": "9a4d271387ab9f2d2a0bd6044f2f02fc",
+    "mtime": 1787009422.0570536,
+    "ast_hash": "fa8f226b915ed213a2801816f1239589",
     "semantic_hash": ""
   },
   "lib/auth/session-token.ts": {
@@ -1562,6 +1562,11 @@
   "components/shared/Button.tsx": {
     "mtime": 1786998602.5240903,
     "ast_hash": "d6b2c03871dafc3ebd72d26658dec601",
+    "semantic_hash": ""
+  },
+  "test/api/sanitize-appearances.test.ts": {
+    "mtime": 1787006873.49593,
+    "ast_hash": "52494c9641ca68320c9435708ebccc8c",
     "semantic_hash": ""
   }
 }
