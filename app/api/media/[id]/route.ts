@@ -11,6 +11,7 @@ import {
 } from "@/app/api/_lib/common";
 import {
   getMediaLists,
+  parseMediaLocation,
   parseNftMeta,
   resolvePeopleSelection,
   sanitizeAppearances,
@@ -53,6 +54,10 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     title: typeof doc.title === "string" ? doc.title : "",
     description: typeof doc.description === "string" ? doc.description : null,
     location: typeof doc.location === "string" ? doc.location : null,
+    locationId: typeof doc.locationId === "string" ? doc.locationId : null,
+    locationLat: typeof doc.locationLat === "number" ? doc.locationLat : null,
+    locationLon: typeof doc.locationLon === "number" ? doc.locationLon : null,
+    locationCountryCode: typeof doc.locationCountryCode === "string" ? doc.locationCountryCode : null,
     event: typeof doc.event === "string" ? doc.event : null,
     year: typeof doc.year === "number" ? doc.year : null,
     tags: asStringArray(doc.tags),
@@ -87,7 +92,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (!title) return noStoreJson({ ok: false, error: "Title required" }, { status: 400 });
 
   const description = (asNullableString(bodyUnknown.description) ?? "").trim().slice(0, 2000);
-  const location = (asNullableString(bodyUnknown.location) ?? "").trim().slice(0, 120);
+  const mediaLocation = parseMediaLocation(bodyUnknown);
   const event = (asNullableString(bodyUnknown.event) ?? "").trim().slice(0, 120);
 
   const yearNum = asNumberOrNull(bodyUnknown.year);
@@ -147,7 +152,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const set: Record<string, unknown> = {
     title,
     description: description || null,
-    location: location || null,
+    location: mediaLocation.location,
+    locationId: mediaLocation.locationId,
+    locationLat: mediaLocation.locationLat,
+    locationLon: mediaLocation.locationLon,
+    locationCountryCode: mediaLocation.locationCountryCode,
     event: event || null,
     year,
     tags,

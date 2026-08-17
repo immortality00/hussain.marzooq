@@ -1,6 +1,7 @@
 import SmartImage from "@/components/shared/SmartImage";
 import Link from "next/link";
 import type { PublicNftItem } from "@/lib/server/public-nfts";
+import { formatDates } from "@/components/media/utils";
 import {
   buildInquiryHref,
   displayStatus,
@@ -171,11 +172,7 @@ export default function NftModal({
                                 .filter(Boolean)
                                 .join(" • ")}
                             </div>
-                            <div className="mt-1">
-                              {[appearance.dateFrom, appearance.dateTo]
-                                .filter(Boolean)
-                                .join(" → ")}
-                            </div>
+                            <div className="mt-1">{formatDates(appearance)}</div>
                             {appearance.notes ? (
                               <div className="mt-2 whitespace-pre-wrap">{appearance.notes}</div>
                             ) : null}

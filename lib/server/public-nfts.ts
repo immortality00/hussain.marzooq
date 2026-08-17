@@ -1,4 +1,5 @@
 import { getDb } from "@/lib/server/db";
+import { sanitizeAppearances, type Appearance } from "@/app/api/_lib/media";
 
 export type PublicNftItem = {
   id: string;
@@ -10,17 +11,7 @@ export type PublicNftItem = {
   tags: string[];
   people: string[];
   categories: string[];
-  appearances: Array<{
-    kind: "featured" | "exhibited";
-    title: string;
-    venue: string;
-    city: string;
-    country: string;
-    dateFrom: string;
-    dateTo: string;
-    notes: string;
-    link: string;
-  }>;
+  appearances: Appearance[];
   mediaUrl: string | null;
   mediaType: "image" | "video";
   nft: {
@@ -37,10 +28,6 @@ export type PublicNftItem = {
 
 function normalizeStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((x): x is string => typeof x === "string") : [];
-}
-
-function isAppearance(value: unknown): value is PublicNftItem["appearances"][number] {
-  return typeof value === "object" && value !== null;
 }
 
 export async function getPublicNfts(): Promise<PublicNftItem[]> {
@@ -67,7 +54,7 @@ export async function getPublicNfts(): Promise<PublicNftItem[]> {
       tags: normalizeStringArray(d.tags),
       people: normalizeStringArray(d.people),
       categories: normalizeStringArray(d.categories),
-      appearances: Array.isArray(d.appearances) ? d.appearances.filter(isAppearance) : [],
+      appearances: sanitizeAppearances(d.appearances),
       mediaUrl: typeof d.secureUrl === "string" ? d.secureUrl : null,
       mediaType: d.type === "video" ? "video" : "image",
       nft:

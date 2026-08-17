@@ -1,17 +1,5 @@
 import { asNullableString, asNumberOrNull, asStringArray, isRecord } from "@/app/api/_lib/common";
-import { sanitizeAppearances, type NftMeta } from "@/app/api/_lib/media";
-
-export type PublicAppearance = {
-  kind: "featured" | "exhibited";
-  title: string;
-  venue: string;
-  city: string;
-  country: string;
-  dateFrom: string;
-  dateTo: string;
-  notes: string;
-  link: string;
-};
+import { sanitizeAppearances, type Appearance, type NftMeta } from "@/app/api/_lib/media";
 
 export type PublicMediaItem = {
   id: string;
@@ -24,7 +12,7 @@ export type PublicMediaItem = {
   tags: string[];
   categories: string[];
   people: string[];
-  appearances: PublicAppearance[];
+  appearances: Appearance[];
   secureUrl: string | null;
   publicId: string | null;
   embedUrl: string | null;

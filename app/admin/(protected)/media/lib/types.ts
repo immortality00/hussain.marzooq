@@ -1,3 +1,7 @@
+import type { Appearance } from "@/app/api/_lib/media";
+
+export type { Appearance };
+
 export type Uploaded = {
   secureUrl: string;
   publicId: string;
@@ -7,18 +11,6 @@ export type Uploaded = {
 export type WidgetResult = { info?: unknown };
 
 export type MediaCategory = "photography" | "videography" | "showreel" | "nft" | "art";
-
-export type Appearance = {
-  kind: "featured" | "exhibited";
-  title: string;
-  venue: string;
-  city: string;
-  country: string;
-  dateFrom: string;
-  dateTo: string;
-  notes: string;
-  link: string;
-};
 
 export type CryptoCurrency = "ETH" | "SOL" | "XTZ" | "BTC";
 export type NftEditionType = "1/1" | "limited" | "open";
@@ -43,6 +35,10 @@ export type MediaItem = {
   title: string;
   description: string | null;
   location: string | null;
+  locationId: string | null;
+  locationLat: number | null;
+  locationLon: number | null;
+  locationCountryCode: string | null;
   event: string | null;
   year: number | null;
   tags: string[];

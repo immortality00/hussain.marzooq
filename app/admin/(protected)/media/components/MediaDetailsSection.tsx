@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { LocationSearch } from "@/components/testimonials/review-form/LocationSearch";
+import type { LocationOption } from "@/components/testimonials/review-form/types";
 import type { PersonProfileOption } from "../lib/types";
 
 type SelectedPerson = {
@@ -17,8 +19,9 @@ export default function MediaDetailsSection({
   setYear,
   description,
   setDescription,
-  location,
-  setLocation,
+  selectedLocation,
+  setLocationFromOption,
+  clearLocation,
   event,
   setEvent,
   tagsText,
@@ -33,8 +36,9 @@ export default function MediaDetailsSection({
   setYear: (value: string) => void;
   description: string;
   setDescription: (value: string) => void;
-  location: string;
-  setLocation: (value: string) => void;
+  selectedLocation: LocationOption | null;
+  setLocationFromOption: (loc: LocationOption) => void;
+  clearLocation: () => void;
   event: string;
   setEvent: (value: string) => void;
   tagsText: string;
@@ -169,11 +173,10 @@ export default function MediaDetailsSection({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Location</label>
-          <input
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          <LocationSearch
+            selectedLocation={selectedLocation}
+            onSelect={setLocationFromOption}
+            onClear={clearLocation}
           />
         </div>
 

@@ -105,8 +105,9 @@ export default function AdminMediaPage() {
           setYear={editor.setYear}
           description={editor.description}
           setDescription={editor.setDescription}
-          location={editor.location}
-          setLocation={editor.setLocation}
+          selectedLocation={editor.selectedLocation}
+          setLocationFromOption={editor.setLocationFromOption}
+          clearLocation={editor.clearLocation}
           event={editor.event}
           setEvent={editor.setEvent}
           tagsText={editor.tagsText}

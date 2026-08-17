@@ -1,14 +1,6 @@
-export type Appearance = {
-  kind: "featured" | "exhibited";
-  title: string;
-  venue: string;
-  city: string;
-  country: string;
-  dateFrom: string;
-  dateTo: string;
-  notes: string;
-  link: string;
-};
+import type { Appearance } from "@/app/api/_lib/media";
+
+export type { Appearance };
 
 export type MediaItem = {
   id: string;
