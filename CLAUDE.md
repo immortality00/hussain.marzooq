@@ -11,12 +11,17 @@ international market: galleries, collectors, luxury brands, agencies, global boo
 
 ## The site
 Full rebrand replacing a landing page. Admin works. Content ready to upload.
-Every week without it is a missed booking. Design must match igloo.inc,
-aikawakenichi.com, and ten.375.studio in creative ambition and execution level.
+Every week without it is a missed booking.
 
-## Domain
-hussain-marzooq.com (live on Netlify). Target: hussain.art when ready.
-Launch does not wait for hussain.art.
+## Domain & deployment status
+hussain-marzooq.com. Target: hussain.art when ready. Launch does not wait for hussain.art.
+
+**Deployment status — confirm at Gate 1 of any launch-prep session, do not assume.**
+Last recorded state (S1, 2026-08-01, archive §S1): *no Netlify env and no deployed build of
+this rebuild exist* — the domain serves the previous landing page. "Live on Netlify"
+previously appeared here without qualification and was read both ways by different
+sessions. If the rebuild has since been deployed, update this line in the same commit and
+run the S1 deferred items (queue §L1).
 
 ## Stack
 Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4
@@ -42,8 +47,10 @@ Consequences for any session touching images:
 - URLs that already carry a transform are left alone (the loader checks).
 - WebGL textures use a separate helper, `components/photography/lib.ts`
   (`cloudinaryTextureUrl`), with its own smaller width budget. Two paths, same idea.
-- `img-src` in the CSP allows `res.cloudinary.com` only — a new image host needs a CSP
-  edit too.
+- `img-src` in the CSP is `'self' data: blob: https://res.cloudinary.com` —
+  `res.cloudinary.com` is the only *remote* host. A new remote image host needs a CSP edit.
+  Assets served from `/public` are covered by `'self'` and need **no** CSP change — that is
+  how the globe's earth texture ships (queue §D6).
 
 ## Animation stack status
 - Lenis: initialized in `AppShell.tsx` (public pages only, not admin). Synced to
@@ -51,19 +58,123 @@ Consequences for any session touching images:
 - GSAP ScrollTrigger: used in `AnimatedText.tsx` scroll reveals — still underused
   elsewhere, core of scroll design.
 - Three.js: `HeroBokeh.tsx` (180-point shader system) and
-  `components/photography/PhotographyCylinder.tsx` (D3 viewer).
-- react-globe.gl: installed, not yet built (Session D6).
+  `components/photography/PhotographyCylinder.tsx` (D3 viewer). The photography viewers are
+  `next/dynamic({ssr:false})`; **`HeroBokeh` is statically imported by `HomeHero.tsx:3`, so
+  `three` is in the homepage's initial bundle.** Recorded as a fact, not a change request —
+  the hero is not to be modified (see "The hero is fixed").
+- react-globe.gl 2.38 + three-globe 2.45: installed, unused, built in D6. Their example
+  assets ship inside the package — `node_modules/three-globe/example/img/earth-dark.jpg`
+  (95 KB), `earth-topology.png`, and `country-polygons/ne_110m_admin_0_countries.geojson`.
+  Copy what D6 needs into `/public/globe/` and serve same-origin. **Never point
+  `globeImageUrl` at unpkg or any CDN** — CSP blocks it and the globe ships as a black ball.
 - Framer Motion: installed, used minimally.
 
-## Design direction — the standard
-Match the creative and technical level of:
-- **aikawakenichi.com** — Three.js 3D cylinder, glass shard transitions, photography as the primary visual element
-- **ten.375.studio** — panel-based transitions using content; content IS the animation material
-- **igloo.inc** — full 3D WebGL environment as the primary layer
+## Design direction — SPECIFIED. This section is the spec.
 
-This means: page transitions use the actual photos/videos on each page as the animation
-material; every page has a unique transition in and out; no generic overlays; the work IS
-the design.
+**There is no `DESIGN.md` and there will not be one.** DS2 decided against generating one
+(a second source of truth is what produced the old contradictions — archive §DS2). This
+file is the design language. The previous wording here pointed at a `DESIGN.md` that DS2
+had already declined to write, which left D2b blocked on a file nobody would ever create
+and every design session either frozen at Gate 1 or guessing. That dependency is deleted.
+
+**There is no reference-site list.** Pointing at other studios' sites was never a
+specification. Do not reintroduce reference URLs in place of the rules below.
+
+### The style is not invented — it is measured from the code
+The site already has a consistent style. It was never written down, so sessions kept
+re-inventing it. The table below is a census of what the repo actually does, and it is now
+the rule. When adding UI, use one of these; do not introduce a new variant.
+
+| Role | Value | Already lives at |
+|---|---|---|
+| **Button — one system, three variants** (see below) | `inline-flex items-center gap-2 rounded-full px-5 py-[0.6875rem] text-sm` + an inline `→` | today: `HomeServicesPreview.tsx:68`, `HomeTrust.tsx:30`, `PortfolioCard.tsx:51` — three different geometries; **unified in D2b** |
+| Tag / filter chip | `rounded-full border px-3.5 py-1.5 text-xs`, active inverts to `bg-foreground text-background` | `MediaTagChips.tsx` |
+| **Section rule** | every section opens with a full-width `border-t border-border` inside its `.section-shell`, then the heading block | **new in D2b** — it is what makes the sections read as one page instead of stacked pieces |
+| Full-bleed work card | `rounded-[2.25rem] border bg-muted overflow-hidden`, image `group-hover:scale-[1.04]` 700ms | `PortfolioCard.tsx:26,34` |
+| Panel | `.premium-panel` = `rounded-[2rem] border` + `--surface-1` + `--shadow-soft` | `globals.css:223-227` |
+| Container | `.section-shell` = `mx-auto max-w-6xl px-4` | `globals.css:209-211` |
+| Section rhythm | `py-12 sm:py-16` | 10 of 15 public routes |
+| Section h2 | `text-3xl sm:text-4xl font-semibold tracking-tight` | `HomeTrust.tsx:16` |
+| Card h2 | `text-3xl font-semibold tracking-[-0.045em] leading-[1.02]` | `PortfolioCard.tsx:43` |
+| Body over an image | `text-sm leading-6 text-white/70` | `PortfolioCard.tsx:48` |
+| Micro-label | Geist Mono, `text-[11px] tracking-[0.2em]`, muted. **11px is the floor.** Only for functional metadata *inside* a component — a count, a price, a `01 / 03` position. **Never as a kicker above a heading, and never as a stat strip.** | D13 |
+
+### The button system — decided 2026-08-17
+Hussain: *"why the buttons are not the same? and where is the buttons design / animation /
+effects?"* Today the three call-to-action shapes have three different paddings and three
+unrelated hover effects (`opacity-90`, `bg-accent`, `bg-white`), and no press or focus
+state at all. One system replaces them:
+
+**Geometry, identical for all variants:** `inline-flex items-center gap-2 rounded-full
+px-5 py-[0.6875rem] text-sm leading-none whitespace-nowrap border border-transparent`.
+Only colour changes between variants.
+
+| Variant | Rest | Hover |
+|---|---|---|
+| `primary` | `bg-foreground text-background` | `bg-[oklch(0.88_0.004_286)]` |
+| `secondary` | `border-border text-foreground` | `bg-accent`, border to `oklch(1 0 0 / .22)` |
+| `on-image` | `border-white/28 bg-white/10 backdrop-blur-[10px] text-white` | `bg-white text-black border-white` (also fires on parent card hover) |
+
+**Motion — one signature, used by every button and chip:**
+- transition `220ms cubic-bezier(.2,.7,.2,1)` on background, border and colour.
+- an inline `→` inside the label that translates `3px` on hover over `300ms`, same easing.
+- `:active { transform: scale(.975) }` at `160ms` — the press feedback that is missing today.
+- `:focus-visible { outline: 2px solid var(--foreground); outline-offset: 3px }`.
+- chips use the same transition and `:active` scale, one size down.
+
+**The hero keeps its own `px-6` pills** — `HomeHero.tsx:68,74`. The hero is fixed, so that
+2px padding difference stays until Hussain asks for it. It is the one deliberate exception.
+
+### The section system — decided 2026-08-17
+Hussain: *"why sections look like pieces put together? there should be something that show
+they are a section"* and *"why is there a huge padding between sections?"*
+
+- **Every section opens with a full-width hairline** (`border-t border-border`) as the first
+  child of its `.section-shell`, followed by the heading block. That single repeated device
+  is what binds the page together.
+- **One rhythm, not two.** Sections carry `pt-12 sm:pt-16` and **no bottom padding** — only
+  the last section closes with `pb-12 sm:pb-16`. The old `py-12 sm:py-16` on every section
+  doubled at every boundary, which is the "huge padding" (8rem between neighbours instead
+  of 4rem).
+- Heading-to-content gap is `2rem` everywhere. Section headings sit left, with any
+  section-level action right-aligned on the same baseline.
+
+**Typefaces are decided: Geist Sans for everything, Geist Mono for micro-labels and
+numerics.** Both are already self-hosted via `next/font`, so `font-src 'self'` stays
+unchanged. Cormorant Garamond stays preloader-only. Do not add a webfont.
+
+**The palette is achromatic; all colour comes from the work.** The OKLCH tokens carry
+neutral surface/text roles only. Do not add a brand accent colour — the photography is
+saturated gel lighting (orange/purple, teal/gold, pink/yellow, red on black) and any UI
+accent fights it. The only non-neutral token is `--destructive`, admin-only.
+
+**What IS decided, and is binding:**
+- Page transitions use the actual photos/videos on each page as the animation material.
+- Every page has a unique transition in and out. No generic overlays.
+- The work is the design — photography and film are the primary visual element, not
+  decoration around a layout.
+- Everything in "What is NOT in the design" below.
+
+### Homepage section order — approved 2026-08-17
+1. Hero (`HomeHero.tsx`) — untouched · 2. **Exhibition globe** (D6) · 3. Featured Work ·
+4. Creative System + Services Preview side by side · 5. Trust · 6. Sticky CTA.
+
+The globe sits **directly under the hero**, so the exhibition record is the first thing
+after the opening frame. Its city index is a compact column (`minmax(170px,208px)`, city
+name + bare count, no index number, no "WORKS" suffix, ellipsis on overflow) with the globe
+taking the remaining width. **No kicker above the heading and no stat line under the
+list** — see "What is NOT in the design". Until D6 ships, that section renders nothing —
+not a placeholder. Spec: SESSION-QUEUE.md §D2b, §D6.
+
+### The hero is fixed
+`components/home/HomeHero.tsx` and `components/home/HeroBokeh.tsx` are **not to be
+redesigned.** Hussain's decision, stated 2026-08-17. Bug fixes only (e.g. adding
+`priority` to a genuinely-LCP image). No session proposes hero layout, scrim, bokeh or
+CTA changes unless Hussain asks for them by name.
+
+### Still open — a session must ask, not guess
+Only one item remains, and it is scoped: **the signature element / motion vocabulary of
+each individual page** (D4–D13 own these per page). Everything else above is decided.
 
 ## What is NOT in the design
 - No viewport-scale decorative typography (existing title animations are kept)
@@ -76,6 +187,17 @@ the design.
 - No decorative gradients anywhere, including missing-image fallback divs — always flat
   `bg-muted`. Applies sitewide; re-check on every session that touches a fallback state
   (violations were reintroduced once and cleaned in F4 — archive §F4).
+- **No eyebrows, kickers or label-above-heading.** N4 removed the `eyebrow` prop from
+  `PageHeader` sitewide; the ban is broader than that prop. Do not put a small
+  uppercase/mono word above a section heading ("SERVICES", "TESTIMONIALS", "EXHIBITED") —
+  the heading says it already. Hussain, 2026-08-17, on seeing them reintroduced in a
+  mockup: *"remove these and stop adding these stupid comments."* The `.eyebrow` class in
+  `globals.css:205-207` is a leftover and its one remaining use (`SiteFooter.tsx:42`) is
+  removed in D13.
+- **No stat strips.** No `12 CITIES / 12 COUNTRIES / 64 WORKS / SINCE 2019` blocks, and no
+  equivalent anywhere else. The work and the index carry the credibility; a tally reads as
+  marketing. Counts are allowed only as inline metadata on the thing they count (a city row
+  showing `14`, a service row showing its price).
 - No page-vignette, no site-grid-bg (removed in F1)
 - Grain texture: active, uniform CSS noise only, fixed position, 3–5% opacity, above
   backgrounds, below all content. No oval. No vignette. Does not bleed into cards.
@@ -127,13 +249,15 @@ front plane fits narrow viewports (`fov` is vertical, so phones crop horizontall
 
 ## Page transitions — content-as-animation (D4, pending)
 Every transition uses the actual photos/videos of origin/destination as material.
-Per-route specs live in SESSION-QUEUE.md §D4. Homepage in/out transition is explicitly
-deferred — see "Gaps awaiting a decision" in the queue.
+Per-route specs live in SESSION-QUEUE.md §D4, including the homepage in/out transition
+(the old "deferred to a future session" note is gone — the spec is in §D4 now).
 
 ## Globe (D6, pending)
-react-globe.gl on the homepage. Data: `appearances.kind === "exhibited"` only, dynamic.
-Auto-rotate, drag, resume. Click city → existing popup/lightbox with that city's works.
-Dark charcoal tokens. Spec: SESSION-QUEUE.md §D6.
+react-globe.gl **directly under the hero** (homepage section 2), in its own
+`.section-shell`: a compact ranked city index on the left, the globe taking the rest. Data: `appearances.kind === "exhibited"` only.
+Auto-rotate, drag, resume. Hover links list↔marker both ways. Click city → existing
+`MediaLightbox` with that city's works. Texture served from `/public/globe/`, never a CDN.
+**D6 is blocked by C4** — see "Appearances" below. Spec: SESSION-QUEUE.md §D6.
 
 ## People page (D12, pending)
 Public by default; per-person private toggle (password-gated); removal-request flow
@@ -188,9 +312,37 @@ Plausible, one script tag, public pages only (Phase 3, queue §C3).
 Visual consistency with the portfolio (dark theme, same typography/tokens/shadcn styling).
 Not a layout rebuild (queue §D9).
 
-## Appearances admin — update needed
-Location field is free text; must become the validated searchable city selector used in
-testimonials. Required for the globe (queue §C4).
+## Appearances admin — blocking the globe (queue §C4, must run before §D6)
+`appearances[].city` / `.country` are **unvalidated free text** (`MediaAppearancesSection.tsx:70-81`;
+server-side `sanitizeAppearances` only trims and caps at 120 chars, `app/api/_lib/media.ts:49-50`).
+There are **no coordinates stored at all** — `appearances` has no `lat`/`lon` field.
+
+`geocodeLocation()` (`lib/server/geocoding.ts` → `resolveTestimonialLocationByLabel`,
+`lib/server/location-search.ts:138-158`) does an **exact** match — `findOne({ searchNames:
+normalizedLabel })`, line 150 — not the prefix/contains search the interactive UI uses. On
+no match it returns `null`, silently.
+
+And the two label formats in the repo disagree: the GeoNames importer writes
+`"${name}, ${countryCode}"` → `"Dubai, AE"` (`scripts/import-geonames-cities.mjs:61`), while
+the hardcoded fallback list writes full country names → `"Dubai, United Arab Emirates"`
+(`lib/locations/testimonial-locations.ts:26`). Typing "UAE" or "United Arab Emirates" into
+the appearances form matches neither, so a real exhibition city resolves to `null` and
+**disappears from the globe with no error and no admin warning.**
+
+There is also **no aggregation by city anywhere** (grep `kind === "exhibited"` returns a
+label string and one per-item filter, nothing collection-wide) and **no `getAllMedia()`** —
+every fetcher is category-scoped and capped at 60 (`lib/server/public-media.ts:29-45`), so a
+globe built on any existing fetcher silently under-reports.
+
+C4 fixes the input side. Hussain, 2026-08-17: *"the location in the media form need to
+follow the same system in the testimonials, so the globe will fetch correct data."* Both
+media location surfaces move to the validated selector — `appearances[].city`/`.country`
+**and** the media document's own `location` field — with coordinates stored at save time.
+The globe's source stays `appearances` where `kind === "exhibited"`.
+
+**No backfill.** Existing media is being deleted and re-entered by hand; do not write a
+migration. **C4 must ship before D6**, and both run in the first block (see the queue's
+Run order).
 
 ## Reusable components — always use, never reinvent
 - `components/shared/PageHeader.tsx` — all public page headers. Props: `title`,
@@ -215,8 +367,12 @@ testimonials. Required for the globe (queue §C4).
 - `components/media/useMediaSearch.ts` / `MediaGridResults` / `MediaTagChips` — all
   media search/filter surfaces (D3). `MediaGrid` composes them.
 - `components/search/SearchInput.tsx` · `components/site/PortfolioFallbackPanel.tsx` ·
-  `components/site/Navbar.tsx` · `components/site/AppShell.tsx` (Lenis + all global
-  elements live here).
+  `components/site/Navbar.tsx` · `components/site/AppShell.tsx`.
+  **Correction:** AppShell holds Lenis, Navbar, Preloader and the grain overlay, all behind
+  its `if (isAdmin) return <>{children}</>` gate (`AppShell.tsx:14-15,31-33`). It does **not**
+  hold every global element: `CustomCursor` and `SiteFooter` are mounted as siblings in
+  `app/layout.tsx:30,32`, outside that gate, so they currently render on every `/admin/*`
+  page including the login screen. Fixed in queue §N9.
 
 ## Code quality rules
 - **Any code that can become a reusable component must be refactored into one.** Reuse
@@ -233,7 +389,7 @@ testimonials. Required for the globe (queue §C4).
   (F2 and N1 both shipped gaps that were only caught by later audits — archive §F2, §N1.)
 
 ## Testing & CI (S3, shipped 2026-08-03 — archive §S3)
-- **Runner: Vitest.** `npm test` (= `vitest run`), `npm test:watch` for the loop. Config in
+- **Runner: Vitest.** `npm test` (= `vitest run`), `npm run test:watch` for the loop. Config in
   `vitest.config.ts` (node env, `@/*` alias, dummy `MONGODB_URI`/`RESEND_API_KEY` so
   import-time reads don't throw or hit the network). Tests live in `test/`.
 - **Never run `next build` to verify.** The verification chain is `tsc --noEmit` + `eslint`
@@ -303,15 +459,85 @@ session touches none of those, say "no security surface" and move on.
 - Colors: OKLCH tokens in globals.css. Use variables, never hardcode hex. (The old
   HomeHero raw-hex violation is resolved — verified 2026-07-31, zero hardcoded hex in
   app/ and components/ outside components/ui/.)
-- Radius: **open decision** — the documented 3-token rule (rounded-xl/2xl/3xl) does not
-  match the codebase (83 arbitrary `rounded-[Xrem]` uses, `rounded-[2rem]` ×47, incl.
-  `PortfolioCard.tsx`). Either codify the de-facto scale or run a scoped conversion pass.
-  Waiting on Hussain — listed in the queue's "Gaps awaiting a decision." Until decided:
-  match the surrounding file's existing radius, don't "fix" either direction.
+- Radius: **DECIDED 2026-08-17 — the de-facto scale is codified.** The old wording here
+  ("83 arbitrary uses, `rounded-[2rem]` ×47, incl. `PortfolioCard.tsx`") was wrong on all
+  three counts. The measured census — **public surfaces only: `app/` + `components/`,
+  excluding `app/admin/`, `components/admin/` and `components/ui/`** — is **192 `rounded-*`
+  instances over 14 distinct values**, and `PortfolioCard.tsx:26` is `rounded-[2.25rem]`.
+  `components/ui/` holds untouched shadcn primitives and is deliberately out of scope; do
+  not "fix" radii in there.
+
+  **The scale is five values. Use one of these and nothing else:**
+
+  | Token | Count today | Use for |
+  |---|---|---|
+  | `rounded-full` | 61 | every action, chip, pill, avatar |
+  | `rounded-xl` | 41 | inputs, small controls, thumbnails |
+  | `rounded-2xl` | 32 | inner cards, media tiles, modals |
+  | `rounded-[2rem]` | 18 | panels (`.premium-panel`), sticky bars, large surfaces |
+  | `rounded-[2.25rem]` | 4 | full-bleed work cards only (`PortfolioCard`) |
+
+  Those five already cover **156 of 192** uses. The remaining **36 uses across nine
+  values** get converted in D13: `rounded-[1.5rem]` ×9 → `[2rem]`, `rounded-[1.25rem]` ×8 →
+  `2xl`, `rounded-lg` ×8 → `xl` (a 4px difference, invisible), `rounded-3xl` ×3 → `[2rem]`,
+  `rounded-[1rem]` ×2, `rounded-[0.85rem]` ×2, `rounded-[1.75rem]` ×2, `rounded-[1.2rem]` ×1,
+  `rounded-[0.95rem]` ×1 → nearest token. Most sit in `components/testimonials/` and
+  `components/site/Navbar.tsx`. Reject any new value in review.
 - Section container: use `.section-shell` (`mx-auto max-w-6xl px-4`) — never write it
   inline. Adopted sitewide in F4. Three intentional exceptions keep their own width:
   `contact/page.tsx` (max-w-4xl), `g/[slug]/GalleryPasswordForm.tsx` (max-w-xl),
   `testimonials/page.tsx` (max-w-7xl).
+
+## Tag taxonomy & discipline subpages (T1 + T2, pending)
+`media.tags` is today an unvalidated comma-separated free-text field
+(`MediaDetailsSection.tsx:190-197` → `toList()` in `media/lib/utils.ts:19-25`: split, trim,
+drop empties, cap 60). No lowercasing, no dedupe, no canonical list. Server-side
+`asStringArray` (`app/api/_lib/common.ts:39-46`) does the same and no more, so `"Fashion"`
+and `"fashion"` are two different tags today.
+
+T1 introduces a `media_tags` collection and an admin at `/admin/tags`, modelled on
+`service_categories` — the existing precedent for an admin-managed taxonomy with
+cascade-on-rename (`app/api/service-categories/[id]/route.ts:81-90`). `media.tags` stores
+**slugs**; labels come from the taxonomy. T2 builds `/photography/[tag]` and
+`/videography/[tag]` on it, modelled on `/people/[slug]`.
+
+**No migration.** Hussain's call, 2026-08-17: he is deleting the existing media and
+re-entering it through the new form. Do not write a migration script and do not add
+legacy-free-text handling to the read path — a surviving legacy value simply matches
+nothing, which is intentional.
+
+Facts a session must not re-derive:
+- There is already a compound index `{ tags: 1, isPublic: 1, createdAt: -1 }` on `media`
+  (`scripts/ensure-indexes.mjs:65`) — it fits the tag-page query exactly. Do not add another.
+- `/api/media/list-public` already supports `?tag=` as an **exact, case-sensitive** match
+  (`route.ts:83-84`) with keyset pagination and a 60-item cap. Tag pages reuse it.
+- `app/videography/videos/page.tsx` is a **static** child segment that redirects to
+  `/videography#videos`. Next resolves static before dynamic, so a literal tag named
+  `videos` would be unreachable under `/videography/[tag]`. Reserve the slug.
+- `/photography` has no child segments today — no collision there.
+Full spec: SESSION-QUEUE.md §T1, §T2.
+
+## Known defects — logged, each owns a session
+Do not "discover" these again; do not fix them outside their session.
+
+| Defect | Evidence | Session |
+|---|---|---|
+| `AppShell` never cancels its Lenis rAF loop; loops stack on every admin↔public crossing | `AppShell.tsx:17-29` | §S8 |
+| `WorkOverlay` document pointer listeners leak when the pointer is released off-viewport | `WorkOverlay.tsx:96-120` | §S8 |
+| `/web-development` is fully static and is missing from `AFFECTED_PATHS`, so deactivating it never revalidates | `app/api/admin/page-settings/[slug]/route.ts:53` | §S9 |
+| Admin login rate limiter keys on `ip\|userAgent`, so a UA change resets the lockout | `app/admin/page.tsx:32-34` | §S10 |
+| Public form fields are interpolated raw into notification email HTML | `lib/server/email.ts:19-29,45-55` | §S10 |
+| `/admin/pages` has no unsaved-work guard anywhere in the repo | zero `beforeunload` matches repo-wide | §S11 |
+| A partly-failed `/admin/pages` save commits some PATCHes and reports only "Failed to save" | `usePagesAdmin.ts:207-269` | §S11 |
+| `SiteFooter` + `CustomCursor` render on every admin route | `app/layout.tsx:30,32` | §N9 |
+| `POST /api/testimonials/reorder` is fully built and called from nowhere; testimonials cannot be reordered | `app/api/testimonials/reorder/route.ts` | §D9b |
+| Public media search has no supporting index; `ensure-indexes.mjs` creates a dead `{status:1}` index and misses `approvedAt` | `ensure-indexes.mjs:89,90` | §P1 |
+| N+1 query on `/people` (one `media.find()` per person) | `lib/server/public-people.ts:76-114` | §P1 |
+| `SmartMediaPreview`'s default empty state is a gradient, violating the no-gradient rule | `SmartMediaPreview.tsx:32,93` | §D13 |
+| `page_seo.title` / `.headerTitle` silently revert to defaults when blanked, unlike every other field in the same form | `lib/server/page-seo.ts:144,146-149` | §D13 |
+| The same appearance shape is declared four times with no shared import (three named `Appearance`, one named `PublicAppearance`) | `_lib/media.ts:4-14`, `media-serializers.ts:4-14` (`PublicAppearance`), `components/media/types.ts:1-11`, `admin/media/lib/types.ts:11-21` | §D13 |
+| Dead, drifted `toPublicTestimonial` in `testimonial-serializers.ts` (nothing imports it) | `lib/server/testimonial-serializers.ts:3-17,39-57` | §D13 |
+| `README.md` is unedited create-next-app boilerplate telling the reader to deploy on Vercel | `README.md:32-36` | §L1 |
 
 ## Design & motion skills — which to load, when
 Installed in Session DS0 (install commands: archive §DS0). **Load per task, never all at
