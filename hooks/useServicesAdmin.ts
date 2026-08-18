@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { arrayMove } from "@dnd-kit/sortable";
-import type { DragEndEvent } from "@dnd-kit/core";
 import type { Service, ServiceCategory } from "@/app/admin/(protected)/services/lib/types";
 import {
   createService,
@@ -36,10 +35,6 @@ export function useServicesAdmin(
   const { feedback: banner, setFeedback: setBanner } = useAdminAction();
   const bannerRef = useRef<HTMLDivElement | null>(null);
   const bannerTimerRef = useRef<number | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
-
   function clearBannerTimer() {
     if (bannerTimerRef.current) {
       window.clearTimeout(bannerTimerRef.current);
@@ -102,15 +97,11 @@ export function useServicesAdmin(
     [services]
   );
 
-  function onDragEnd(event: DragEndEvent) {
+  function onReorder(activeId: string, overId: string) {
     if (busy) return;
 
-    const { active: a, over } = event;
-    if (!over) return;
-    if (a.id === over.id) return;
-
-    const oldIndex = active.findIndex((s) => s.id === a.id);
-    const newIndex = active.findIndex((s) => s.id === over.id);
+    const oldIndex = active.findIndex((s) => s.id === activeId);
+    const newIndex = active.findIndex((s) => s.id === overId);
     if (oldIndex < 0 || newIndex < 0) return;
 
     const reordered = arrayMove(active, oldIndex, newIndex).map((s, idx) => ({ ...s, order: idx }));
@@ -305,11 +296,10 @@ export function useServicesAdmin(
     banner,
     setBanner,
     bannerRef,
-    mounted,
     active,
     inactive,
     archived,
-    onDragEnd,
+    onReorder,
     handleSaveOrder,
     handleSyncInquiryCounts,
     handleArchive,

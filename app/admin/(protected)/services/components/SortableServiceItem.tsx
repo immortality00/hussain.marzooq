@@ -1,8 +1,7 @@
 "use client";
 
 import SmartImage from "@/components/shared/SmartImage";
-import { CSS } from "@dnd-kit/utilities";
-import { useSortable } from "@dnd-kit/sortable";
+import { useSortableRow } from "@/components/admin/sortable/SortableList";
 import type { Service } from "../lib/types";
 
 export default function SortableServiceItem({
@@ -18,15 +17,7 @@ export default function SortableServiceItem({
   onToggleActive: (s: Service) => void;
   onDeleteForever: (s: Service) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: service.id,
-  });
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.85 : 1,
-  };
+  const { setNodeRef, style, handleProps } = useSortableRow(service.id);
 
   return (
     <div
@@ -36,8 +27,7 @@ export default function SortableServiceItem({
     >
       <button
         type="button"
-        {...attributes}
-        {...listeners}
+        {...handleProps}
         className="cursor-grab rounded-xl border px-2 py-1 text-xs opacity-80 hover:opacity-100"
         aria-label="Drag"
         title="Drag"

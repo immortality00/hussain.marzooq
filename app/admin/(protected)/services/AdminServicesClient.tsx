@@ -1,18 +1,10 @@
 "use client";
 
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-} from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableList } from "@/components/admin/sortable/SortableList";
 
 import type { Service, ServiceCategory } from "./lib/types";
 import SortableServiceItem from "./components/SortableServiceItem";
 import ServiceEditorModal from "./components/ServiceEditorModal";
-import ServiceStaticRow from "./components/ServiceStaticRow";
 import ServiceSimpleSection from "./components/ServiceSimpleSection";
 import ServicesBanner from "./components/ServicesBanner";
 import ServicesToolbar from "./components/ServicesToolbar";
@@ -25,8 +17,6 @@ export default function AdminServicesClient({
   initialServices: Service[];
   initialCategories: ServiceCategory[];
 }) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-
   const {
     editing,
     setEditing,
@@ -36,12 +26,11 @@ export default function AdminServicesClient({
     banner,
     setBanner,
     bannerRef,
-    mounted,
     active,
     inactive,
     archived,
     categories,
-    onDragEnd,
+    onReorder,
     handleSaveOrder,
     handleSyncInquiryCounts,
     handleArchive,
@@ -66,37 +55,20 @@ export default function AdminServicesClient({
       />
 
       <h2 className="mt-6 text-lg font-semibold">Active</h2>
-      <div className="mt-3 space-y-3">
-        {!mounted ? (
-          active.map((s) => (
-            <ServiceStaticRow
-              key={s.id}
-              service={s}
-              onEdit={(service) => {
-                if (!busy) setEditing(service);
-              }}
-              onArchive={(x) => void handleArchive(x)}
-            />
-          ))
-        ) : (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-            <SortableContext items={active.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-              {active.map((s, i) => (
-                <SortableServiceItem
-                  key={s.id}
-                  service={s}
-                  index={i}
-                  onEdit={(x) => {
-                    if (!busy) setEditing(x);
-                  }}
-                  onToggleActive={(x) => void handleToggleActive(x)}
-                  onDeleteForever={(x) => void handleArchive(x)}
-                />
-              ))}
-            </SortableContext>
-          </DndContext>
-        )}
-      </div>
+      <SortableList ids={active.map((s) => s.id)} onReorder={onReorder} className="mt-3 space-y-3">
+        {active.map((s, i) => (
+          <SortableServiceItem
+            key={s.id}
+            service={s}
+            index={i}
+            onEdit={(x) => {
+              if (!busy) setEditing(x);
+            }}
+            onToggleActive={(x) => void handleToggleActive(x)}
+            onDeleteForever={(x) => void handleArchive(x)}
+          />
+        ))}
+      </SortableList>
 
       <ServiceSimpleSection
         title="Inactive"

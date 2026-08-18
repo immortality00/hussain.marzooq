@@ -1,35 +1,22 @@
 "use client";
 
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { SortableList } from "@/components/admin/sortable/SortableList";
 import type { Category, CategoryPatch } from "../lib/types";
-import CategoryRowSortable from "./CategoryRowSortable";
-import CategoryRowStatic from "./CategoryRowStatic";
+import CategoryRow from "./CategoryRow";
 
 export default function CategoriesTable({
-  mounted,
   ordered,
-  onDragEnd,
+  onReorder,
   onEdit,
   onToggle,
   onDelete,
 }: {
-  mounted: boolean;
   ordered: Category[];
-  onDragEnd: (e: DragEndEvent) => void;
+  onReorder: (activeId: string, overId: string) => void;
   onEdit: (id: string, patch: CategoryPatch) => void;
   onToggle: (id: string, value: boolean) => void;
   onDelete: (cat: Category) => void;
 }) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-
   return (
     <div className="mt-8 overflow-hidden rounded-2xl border">
       <div className="grid grid-cols-12 gap-2 border-b px-4 py-3 text-xs font-medium text-muted-foreground">
@@ -42,31 +29,17 @@ export default function CategoriesTable({
         <div className="col-span-1 text-right">Actions</div>
       </div>
 
-      {!mounted ? (
-        ordered.map((c) => (
-          <CategoryRowStatic
+      <SortableList ids={ordered.map((c) => c.id)} onReorder={onReorder}>
+        {ordered.map((c) => (
+          <CategoryRow
             key={c.id}
             category={c}
             onEdit={onEdit}
             onToggle={onToggle}
             onDelete={onDelete}
           />
-        ))
-      ) : (
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-          <SortableContext items={ordered.map((c) => c.id)} strategy={verticalListSortingStrategy}>
-            {ordered.map((c) => (
-              <CategoryRowSortable
-                key={c.id}
-                category={c}
-                onEdit={onEdit}
-                onToggle={onToggle}
-                onDelete={onDelete}
-              />
-            ))}
-          </SortableContext>
-        </DndContext>
-      )}
+        ))}
+      </SortableList>
     </div>
   );
 }

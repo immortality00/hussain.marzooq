@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
 import type { LocationOption } from "@/components/testimonials/review-form/types";
 import type { MediaCategory, MediaItem, Uploaded } from "./types";
-import { toList } from "./utils";
 
 export function useBaseMediaEditorState() {
   const [editingId, setEditingId] = useState<string>("");
@@ -19,13 +18,13 @@ export function useBaseMediaEditorState() {
   const [locationCountryCode, setLocationCountryCode] = useState<string | null>(null);
   const [event, setEvent] = useState("");
   const [year, setYear] = useState("");
-  const [tagsText, setTagsText] = useState("");
+  const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([]);
   const [selectedPeopleIds, setSelectedPeopleIds] = useState<string[]>([]);
   const [selectedPeopleNames, setSelectedPeopleNames] = useState<string[]>([]);
   const [categories, setCategories] = useState<MediaCategory[]>([]);
   const [isPublic, setIsPublic] = useState(true);
 
-  const tags = useMemo(() => toList(tagsText), [tagsText]);
+  const tags = useMemo(() => selectedTagSlugs.slice(0, 60), [selectedTagSlugs]);
   const peopleIds = useMemo(() => selectedPeopleIds.slice(0, 60), [selectedPeopleIds]);
   const people = useMemo(() => selectedPeopleNames.slice(0, 60), [selectedPeopleNames]);
   const primaryCategory = categories[0] ?? null;
@@ -79,6 +78,14 @@ export function useBaseMediaEditorState() {
     setSelectedPeopleNames(next.names.slice(0, 60));
   }
 
+  function addTag(slug: string) {
+    setSelectedTagSlugs((prev) => (prev.includes(slug) ? prev : [...prev, slug].slice(0, 60)));
+  }
+
+  function removeTag(slug: string) {
+    setSelectedTagSlugs((prev) => prev.filter((s) => s !== slug));
+  }
+
   function resetBaseFields() {
     setEditingId("");
     setMode("upload");
@@ -89,7 +96,7 @@ export function useBaseMediaEditorState() {
     clearLocation();
     setEvent("");
     setYear("");
-    setTagsText("");
+    setSelectedTagSlugs([]);
     setSelectedPeopleIds([]);
     setSelectedPeopleNames([]);
     setCategories([]);
@@ -126,7 +133,7 @@ export function useBaseMediaEditorState() {
     setLocationCountryCode(m.locationCountryCode ?? null);
     setEvent(m.event ?? "");
     setYear(m.year ? String(m.year) : "");
-    setTagsText((m.tags ?? []).join(", "));
+    setSelectedTagSlugs(m.tags ?? []);
     setSelectedPeopleIds(m.peopleIds ?? []);
     setSelectedPeopleNames(m.people ?? []);
     setCategories((m.categories ?? []) as MediaCategory[]);
@@ -159,8 +166,9 @@ export function useBaseMediaEditorState() {
     setEvent,
     year,
     setYear,
-    tagsText,
-    setTagsText,
+    selectedTagSlugs,
+    addTag,
+    removeTag,
     selectedPeopleIds,
     selectedPeopleNames,
     setSelectedPeople,

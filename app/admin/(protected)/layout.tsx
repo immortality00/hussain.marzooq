@@ -9,6 +9,7 @@ export const revalidate = 0;
 const nav = [
   { href: "/admin/inquiries", label: "Inquiries" },
   { href: "/admin/media/list", label: "Media" },
+  { href: "/admin/tags", label: "Tags" },
   { href: "/admin/people", label: "People" },
   { href: "/admin/services", label: "Services" },
   { href: "/admin/service-categories", label: "Service Categories" },
