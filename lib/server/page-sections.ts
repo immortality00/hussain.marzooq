@@ -120,22 +120,22 @@ const DEFAULTS: PageSectionsMap = {
     disciplines: [
       {
         title: "Photography",
-        text: "Portraits, fashion, events, and cinematic still work shaped around atmosphere, presence, and strong visual identity.",
+        text: "Portraits, fashion, weddings, and events, shot with a cinematic eye for light, mood, and presence — internationally exhibited, always chasing the frame that holds you.",
         image: EMPTY_SECTION_IMAGE,
       },
       {
-        title: "Film",
-        text: "Movement, performance, weddings, festivals, and brand-led stories built with rhythm, emotion, and visual direction.",
+        title: "Videography",
+        text: "Film built on motion and rhythm — dance, fashion films, weddings, and events shaped into stories that move.",
         image: EMPTY_SECTION_IMAGE,
       },
       {
-        title: "Digital craft",
-        text: "Interfaces, portfolios, Web3-ready presentation systems, and custom tools that connect creative work with a refined online experience.",
+        title: "NFT",
+        text: "Digital work released as collectible editions — photography and art carried onto the chain and presented for collectors.",
         image: EMPTY_SECTION_IMAGE,
       },
       {
-        title: "Movement",
-        text: "Dance and performance influence the way the camera reads posture, timing, energy, and the space around the subject.",
+        title: "Dancing",
+        text: "Movement is where much of this starts. Dance trains how I read posture, timing, and energy — on stage and behind the camera.",
         image: EMPTY_SECTION_IMAGE,
       },
     ],

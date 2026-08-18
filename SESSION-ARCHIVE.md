@@ -1518,6 +1518,47 @@ the tag chips were left for a later pass — no tag data flows until T1/T2.
 
 ---
 
+### Session D2c — About page rebuild — `done`
+About had never had a rebuild session (flagged twice in N5) — it was still the interim
+page (header + generic 4-card glass grid + booking bar).
+
+**Skills:** `redesign-existing-projects` for the Gate 1 audit, then the rebuild grounded in
+CLAUDE.md's measured house design language (the D2b section system + card census).
+
+**Original spec (constraints):** `PageHeader` (no `eyebrow`), `.section-shell`, no gradient
+fallbacks, `AnimatedText` on the h1, empty means empty. Presentation-only — no admin or
+data-model change.
+
+**Build outcome (2026-08-18):**
+- **Two files rebuilt, one new.** `app/about/page.tsx` moved to the D2b section system:
+  `<main>` (no padding) → intro section (`section-shell pt-12 sm:pt-16`, `PageHeader` on
+  `headerTitle`/`headerDescription`, `max-w-3xl`, **`lg:text-6xl` removed** — the D13-flagged
+  override) → disciplines section opening with `border-t border-border` and `pb-28 sm:pb-32`
+  for the sticky bar. The grid mirrors `HomeFeaturedWork` exactly (`grid gap-5 lg:grid-cols-2`,
+  first tile `lg:col-span-2`).
+- **New `components/about/AboutDisciplineCard.tsx`** — full-bleed photo + scrim + bottom-
+  overlaid title/text in the house card language (`rounded-[2.25rem]`, `text-3xl
+  tracking-[-0.045em]`, `text-white/70`); flat `bg-muted` + foreground text when imageless
+  (no gradient). Renders a `next/link` root when given `href`, else an `<article>`.
+- **Two changes requested by Hussain mid-session (2026-08-18), both approved via
+  AskUserQuestion:**
+  1. **Copy rewritten as Hussain Marzooq, first person** ("it's not H visual brand, it's
+     hussain marzooq as a photographer, videographer, nft artist and dancer") — updated the
+     code defaults in `page-seo.ts` (`about.headerTitle`/`headerDescription`) and
+     `page-sections.ts` (`about.disciplines` retitled to **Photography / Videography / NFT /
+     Dancing**, replacing the old Film / Digital craft / Movement set). No fabricated specifics.
+  2. **Tiles are clickable, auto-linked by position** — `DISCIPLINE_HREFS` in `about/page.tsx`
+     maps index 0–3 → `/photography`, `/videography`, `/nft`, `/dancing`. Hussain chose
+     auto-link over a per-card admin field ("four fixed disciplines, i don't think i will add
+     any more"). **Keep the four cards in that order in admin** — reordering reshuffles links.
+- **Verification:** `tsc --noEmit` + `eslint --max-warnings 0` clean. In-browser render check
+  could not run in the Code sandbox (no network route to MongoDB Atlas — TLS handshake refused,
+  unrelated to the change); Hussain verified `/about` on his own machine ("done .. all working").
+- **Doc sync:** CLAUDE.md gained an "About page — rebuilt (D2c)" section, the "interim pages"
+  line dropped About, and the D13 `lg:text-6xl` note (CLAUDE.md + queue §D13) was cleared.
+
+---
+
 ## Phase 3 — Content & analytics
 
 ### Session C4 — Media locations: validated city + stored coordinates — `done`

@@ -26,7 +26,7 @@ only when a pending session or CLAUDE.md references it.
 Phase 0: F1–F5 (foundation, refactors, cleanup) · Phase 1: N1–N8 (nav, CMS, admin
 consolidation, card images) · Phase 2: D1 (preloader), D3 (photography 3-view viewer) ·
 Phase S: S1–S7 (security, tests, reuse audit) · Phase DS: DS0–DS2 (skills, detector eval) ·
-Phase 2a: D2b (homepage section pass + the shared `Button` two-look system) ·
+Phase 2a: D2b (homepage section pass + the shared `Button` two-look system), D2c (About rebuild) ·
 Phase 3: C4 (validated media locations + stored coordinates) ·
 Phase 2: D6 (exhibition globe — full spec + outcome in SESSION-ARCHIVE.md).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
@@ -43,8 +43,8 @@ longer top-to-bottom — take sessions in exactly this order.
 1. **D2b** — homepage sections. The globe section is part of this design; D2b builds the
    section shell and it renders nothing until D6 fills it (empty means empty).
 2. **C4** — validated location on the media form. Prerequisite for D6, nothing else.
-3. **D6** — exhibition globe.
-4. **D2c** — About rebuild.
+3. **D6** — exhibition globe. ✓ done
+4. **D2c** — About rebuild. ✓ done — Block 1 complete.
 
 **Block 2 — Security.**
 5. **S10** — admin login rate-limit bypass + email HTML injection.
@@ -250,22 +250,8 @@ because they produce the design context those sessions read (same rationale as P
 **Order: D2b first, then D2c** — D4's homepage transition depends on D2b's output.
 Each session loads **one** direction skill at a time (named in its Gate 1), never two at once.
 
-
-### Session D2c — About page rebuild — `pending`
-About has never had a rebuild session (flagged twice in N5). It is still
-an interim page (header + card grid + booking bar).
-
-**Skills (DS0) — one at a time:**
-- `redesign-existing-projects` — audit the current About page **first**. Report findings.
-- `frontend-design` — the rebuild pass, after the audit. Do not run both skills in one
-  pass (produces mush — CLAUDE.md).
-
-**Before writing any code:** read `app/about/page.tsx` and all its imports, `PageHeader.tsx`,
-the About `page_sections` content and the About header/SEO fields. Report the audit before
-rebuilding anything.
-
-**Constraints:** `PageHeader` component (no `eyebrow` prop), `.section-shell`, no gradient
-fallbacks, `AnimatedText` on the h1, empty means empty.
+**Both D2b and D2c are done** — full specs + outcomes in SESSION-ARCHIVE.md. This phase is
+complete.
 
 ---
 
@@ -597,7 +583,7 @@ Check and fix:
   `PeopleIndex.tsx:32`. `PortfolioFallbackPanel` covers none of them.
 - **H1 has 6 size/weight/tracking combinations across 15 routes**; H2 has 7 across 12 files.
   `photography/page.tsx:36` overrides `PageHeader` to `text-2xl! sm:text-3xl!` — visibly
-  smaller than every other page. `about/page.tsx:26` adds a `lg:text-6xl` no other page has.
+  smaller than every other page. (About's old `lg:text-6xl` override was removed in D2c.)
 - **Section padding** is `py-12 sm:py-16` on 10 of 15 routes; videography, contact,
   `GalleryPasswordForm`, photography and testimonials each deviate differently.
 - **`page_seo.title` / `.headerTitle` cannot be blanked** — `lib/server/page-seo.ts:144,146-149`

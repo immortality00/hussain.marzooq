@@ -28,11 +28,11 @@ const DEFAULTS: Record<string, SeoDefaults> = {
   about: {
     title: "About — HM Visuals",
     description:
-      "The creative practice of Hussain Marzooq — internationally exhibited photographer, videographer, NFT artist, and dance teacher based in Dubai.",
+      "Hussain Marzooq — internationally exhibited photographer, videographer, NFT artist, and dancer based in Dubai, working with clients and galleries worldwide.",
     headerTitle:
-      "Cinematic visual work across photography, film, movement, and digital experience.",
+      "Hussain Marzooq — photographer, videographer, NFT artist, and dancer based in Dubai.",
     headerDescription:
-      "HM Visuals is the creative practice of Hussain Marzooq, built around portraits, fashion, events, dance, web experiences, and Web3-ready artwork. The work connects camera craft, movement, atmosphere, and strong presentation systems into one visual identity.",
+      "I'm a photographer and filmmaker based in Dubai, working with clients and galleries around the world. My work moves between stills, film, digital art, and dance — the same eye for light, atmosphere, and timing runs through all of it. A portrait, a wedding, a fashion film, a minted edition, a moment on stage: every time, I'm after the same thing — an image with presence.",
   },
   photography: {
     title: "Photography — HM Visuals",

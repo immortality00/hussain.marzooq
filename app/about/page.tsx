@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import SmartImage from "@/components/shared/SmartImage";
+import { AboutDisciplineCard } from "@/components/about/AboutDisciplineCard";
 import { StickyCta } from "@/components/site/StickyCta";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { getPageSections } from "@/lib/server/page-sections";
+
+const DISCIPLINE_HREFS = ["/photography", "/videography", "/nft", "/dancing"];
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("about");
@@ -18,36 +20,30 @@ export default async function AboutPage() {
 
   return (
     <>
-      <main className="section-shell py-12 sm:py-16">
-        <PageHeader
-          title={seo.headerTitle}
-          description={seo.headerDescription}
-          className="max-w-4xl"
-          titleClassName="lg:text-6xl"
-        />
-
-        <section className="mt-14 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {sections.disciplines.map((item, i) => (
-            <article
-              key={i}
-              className="rounded-[2rem] border bg-background/60 p-5 shadow-sm backdrop-blur"
-            >
-              {item.image?.url ? (
-                <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-2xl">
-                  <SmartImage
-                    src={item.image.url}
-                    alt=""
-                    fill
-                    sizes="(max-width: 768px) 100vw, 25vw"
-                    className="object-cover"
-                  />
-                </div>
-              ) : null}
-              <h2 className="text-lg font-semibold tracking-tight">{item.title}</h2>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.text}</p>
-            </article>
-          ))}
+      <main>
+        <section className="section-shell pt-12 sm:pt-16">
+          <PageHeader
+            title={seo.headerTitle}
+            description={seo.headerDescription}
+            className="max-w-3xl"
+          />
         </section>
+
+        {sections.disciplines.length > 0 && (
+          <section className="section-shell border-t border-border pb-28 pt-12 sm:pb-32 sm:pt-16">
+            <div className="grid gap-5 lg:grid-cols-2">
+              {sections.disciplines.map((card, i) => (
+                <AboutDisciplineCard
+                  key={i}
+                  card={card}
+                  href={DISCIPLINE_HREFS[i]}
+                  priority={i === 0}
+                  className={i === 0 ? "lg:col-span-2" : undefined}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
       <StickyCta

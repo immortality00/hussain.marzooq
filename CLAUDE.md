@@ -285,6 +285,28 @@ too dark). The globe opens facing **Dubai** (his base) and marks it with a disti
 beacon (radar ping + home glyph) that is the origin of every arc. No stat line under the list
 (that part of the spec was correctly dropped). See "Media locations" below.
 
+## About page — rebuilt (D2c, shipped 2026-08-18)
+`app/about/page.tsx` is no longer the interim card grid. Structure now follows the D2b
+section system: an intro section (`PageHeader` on `headerTitle`/`headerDescription`, no size
+override — the old `lg:text-6xl` D13 flagged is gone), then a `border-t border-border`
+disciplines section whose grid mirrors `HomeFeaturedWork` exactly — `grid gap-5
+lg:grid-cols-2`, first tile `lg:col-span-2`. Cards render through the new
+`components/about/AboutDisciplineCard.tsx` (full-bleed photo + scrim + bottom-overlaid
+title/text in the house card language; flat `bg-muted` + foreground text when imageless —
+empty means empty, no gradient). `StickyCta` unchanged.
+
+**Content stays admin-driven** (`page_seo.about` header + `page_sections.about.disciplines`
++ CTA) — D2c changed presentation only, no admin/data-model change. Copy was rewritten to
+read as **Hussain Marzooq** first-person across four disciplines (photography, videography,
+NFT, dancing), not "HM Visuals the brand" (his steer, 2026-08-18).
+
+**The four tiles are auto-linked by position** — `DISCIPLINE_HREFS` in `about/page.tsx` maps
+index 0–3 → `/photography`, `/videography`, `/nft`, `/dancing`. There is **no per-card link
+field** (Hussain's call: four fixed disciplines, never more). Keep the four discipline cards
+in that order in admin — reordering reshuffles the links. Adding/removing a card is possible
+in admin but leaves extra cards unlinked / shifts the mapping; the default set is exactly
+these four.
+
 ## People page (D12, pending)
 Public by default; per-person private toggle (password-gated); removal-request flow
 (approve in admin → content hidden behind password, not deleted). Spec: queue §D12.
@@ -325,8 +347,9 @@ card image is blank (amber "Needs image" pill on the row + inline note in the gr
 homepage Featured Work cards **and the hero** warn per-image when imageless. So no visible
 surface can *silently* go blank; the public surfaces still render a flat `bg-muted` panel when
 empty by design.
-Interim pages (About, Dancing, Web Development, Blog) = header + card grid + booking bar
-until their design passes. Full history: archive §N3–§N7.
+Interim pages (Dancing, Web Development, Blog) = header + card grid + booking bar
+until their design passes. **About had its design pass (D2c) and is no longer interim** —
+see "About page" below. Full history: archive §N3–§N7.
 
 ## Open Graph images
 Per-page OG images from actual photography (Phase 3, queue §C2).
