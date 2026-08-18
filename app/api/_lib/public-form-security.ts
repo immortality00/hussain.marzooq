@@ -1,6 +1,9 @@
-export function getClientAddress(request: Request) {
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = request.headers.get("x-real-ip")?.trim();
+type HeaderGetter = { get(name: string): string | null };
+
+export function getClientAddress(source: Request | HeaderGetter) {
+  const headers: HeaderGetter = "get" in source ? source : source.headers;
+  const forwardedFor = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  const realIp = headers.get("x-real-ip")?.trim();
   return forwardedFor || realIp || "anonymous";
 }
 

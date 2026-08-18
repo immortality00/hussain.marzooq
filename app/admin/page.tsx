@@ -10,6 +10,7 @@ import {
   consumeFixedWindowRateLimit,
   getFixedWindowRateLimitStatus,
 } from "@/lib/server/request-guards";
+import { getClientAddress } from "@/app/api/_lib/public-form-security";
 
 type SearchParams = {
   [key: string]: string | string[] | undefined;
@@ -20,17 +21,6 @@ const MAX_LOGIN_ATTEMPTS = 5;
 
 function getSearchParamValue(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] ?? "" : value ?? "";
-}
-
-function getClientAddress(headerList: Awaited<ReturnType<typeof headers>>) {
-  const forwardedFor = headerList.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = headerList.get("x-real-ip")?.trim();
-
-  return forwardedFor || realIp || "anonymous";
-}
-
-function getClientKey(headerList: Awaited<ReturnType<typeof headers>>) {
-  return `${getClientAddress(headerList)}|${headerList.get("user-agent") ?? "unknown-agent"}`;
 }
 
 function getSafeNextPath(nextPath: string) {
@@ -52,7 +42,7 @@ async function login(formData: FormData) {
   }
 
   const headerList = await headers();
-  const clientKey = getClientKey(headerList);
+  const clientKey = getClientAddress(headerList);
 
   const currentLimit = await getFixedWindowRateLimitStatus({
     bucket: "admin-login",
