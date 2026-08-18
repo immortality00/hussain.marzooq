@@ -1,4 +1,4 @@
-import type { MediaCategory } from "./types";
+import type { Appearance, MediaCategory } from "./types";
 
 export const MEDIA_CATEGORIES: Array<{ key: MediaCategory; label: string }> = [
   { key: "photography", label: "Photography" },
@@ -22,6 +22,21 @@ export function toList(csv: string): string[] {
     .map((t) => t.trim())
     .filter(Boolean)
     .slice(0, 60);
+}
+
+export function appearanceError(a: Appearance): string | null {
+  if (!a.title.trim()) return "Add a name (Title) — required to save this entry.";
+  return null;
+}
+
+export function findFirstAppearanceError(
+  appearances: Appearance[]
+): { index: number; kind: Appearance["kind"]; message: string } | null {
+  for (let i = 0; i < appearances.length; i++) {
+    const message = appearanceError(appearances[i]);
+    if (message) return { index: i, kind: appearances[i].kind, message };
+  }
+  return null;
 }
 
 export function validateEmbed(url: string) {

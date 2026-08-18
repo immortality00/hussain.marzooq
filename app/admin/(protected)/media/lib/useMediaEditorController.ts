@@ -11,6 +11,7 @@ import {
 } from "./editor-actions";
 import { useMediaEditorState } from "./editor-state";
 import type { MediaCategory, MediaItem } from "./types";
+import { findFirstAppearanceError } from "./utils";
 
 const allowedCategories: MediaCategory[] = [
   "photography",
@@ -98,6 +99,16 @@ export function useMediaEditorController() {
 
     if (editor.categories.length === 0) {
       setBanner({ type: "err", text: "Choose a category first." });
+      return;
+    }
+
+    const appearanceError = findFirstAppearanceError(editor.appearances);
+    if (appearanceError) {
+      const label = appearanceError.kind === "exhibited" ? "Exhibition" : "Feature";
+      setBanner({
+        type: "err",
+        text: `${label} #${appearanceError.index + 1}: ${appearanceError.message}`,
+      });
       return;
     }
 

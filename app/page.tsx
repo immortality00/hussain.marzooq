@@ -11,6 +11,7 @@ import { StickyCta } from "@/components/site/StickyCta";
 import { getPublicServicesData } from "@/lib/server/public-services";
 import { getPublicTestimonials } from "@/lib/server/testimonials";
 import { getAllPageSettings } from "@/lib/server/page-settings";
+import { getExhibitionCities } from "@/lib/server/public-media";
 
 export const revalidate = 300;
 
@@ -20,13 +21,15 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [servicesData, testimonials, pageSettings, seo, sections] = await Promise.all([
-    getPublicServicesData(),
-    getPublicTestimonials(3),
-    getAllPageSettings(),
-    getPageSeo("home"),
-    getPageSections("home"),
-  ]);
+  const [servicesData, testimonials, pageSettings, seo, sections, exhibitionCities] =
+    await Promise.all([
+      getPublicServicesData(),
+      getPublicTestimonials(3),
+      getAllPageSettings(),
+      getPageSeo("home"),
+      getPageSections("home"),
+      getExhibitionCities(),
+    ]);
 
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
@@ -39,8 +42,7 @@ export default async function HomePage() {
           headerTitle={seo.headerTitle}
           headerDescription={seo.headerDescription}
         />
-        {/* Section 2 — exhibition globe (directly under the hero). Empty until D6. */}
-        <HomeExhibitionGlobe />
+        <HomeExhibitionGlobe cities={exhibitionCities} />
         <HomeFeaturedWork activeSet={activeSet} cards={sections.featuredCards} />
         <section className="section-shell border-t border-border pt-12 sm:pt-16">
           <div className="grid gap-5 lg:grid-cols-2">
