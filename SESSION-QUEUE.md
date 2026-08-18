@@ -28,7 +28,8 @@ consolidation, card images) · Phase 2: D1 (preloader), D3 (photography 3-view v
 Phase S: S1–S7 (security, tests, reuse audit) · Phase DS: DS0–DS2 (skills, detector eval) ·
 Phase 2a: D2b (homepage section pass + the shared `Button` two-look system), D2c (About rebuild) ·
 Phase 3: C4 (validated media locations + stored coordinates) ·
-Phase 2: D6 (exhibition globe — full spec + outcome in SESSION-ARCHIVE.md).
+Phase 2: D6 (exhibition globe) · Phase S2: S10 (security fixes) ·
+Phase T: T1 (tag taxonomy `media_tags` + `/admin/tags` + shared admin `SortableList`).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -50,8 +51,8 @@ longer top-to-bottom — take sessions in exactly this order.
 5. **S10** — admin login rate-limit bypass + email HTML injection. ✓ done
 
 **Block 3 — Tags and subpages.**
-6. **T1** — tag taxonomy + `/admin/tags`.
-7. **T2** — `/photography/[tag]` and `/videography/[tag]`. Blocked by T1.
+6. **T1** — tag taxonomy + `/admin/tags`. ✓ done
+7. **T2** — `/photography/[tag]` and `/videography/[tag]`. Blocked by T1 (now unblocked).
 
 **Block 4 — Everything else,** in this order:
 8. **S8, S9, S11, N9** — small live bugs and admin work-loss. Each is under an hour; take
@@ -609,76 +610,6 @@ separate admin page, just like the people. So if a user goes to photography/fash
 media with the fashion tag will appear there."*
 
 **T1 before T2.** T2 cannot be built on today's tag data — see T1's first paragraph.
-
-### Session T1 — Tag taxonomy: `media_tags` + `/admin/tags` — `in-progress`
-
-**Why the data has to change first.** `media.tags` is a comma-separated free-text field
-(`MediaDetailsSection.tsx:190-197` → `toList()` in `admin/media/lib/utils.ts:19-25`: split
-on comma, trim, drop empties, cap 60). Server-side `asStringArray`
-(`app/api/_lib/common.ts:39-46`) does exactly the same and no more. **No lowercasing, no
-dedupe, no canonical list** — so `"Fashion"`, `"fashion"` and `"fashion "` are three
-different tags today, and `/api/media/list-public?tag=` matches **exactly and
-case-sensitively** (`route.ts:83-84`). A subpage built on that would silently show a subset.
-
-**Precedent to follow: `service_categories`.** It is the existing admin-managed taxonomy
-with ordering, an `isActive` flag, cascade-on-rename
-(`app/api/service-categories/[id]/route.ts:81-90`), a delete guard when still referenced
-(`CATEGORY_HAS_SERVICES`, line 98-132), and a reserved system row
-(`lib/db/ensureSystemCategories.ts`). Mirror it; do not invent a new pattern.
-
-**1. Collection `media_tags`**
-```
-{ _id, label, slug, description, disciplines: string[],
-  isActive: boolean, order: number, createdAt, updatedAt }
-```
-- `slug` is lowercase, `[a-z0-9-]`, unique. `label` is what a visitor sees.
-- `disciplines` limits which discipline pages may produce a subpage for this tag
-  (e.g. `["photography","videography"]` for "fashion", `["photography"]` for "portrait").
-  A tag with an empty `disciplines` is still usable as a filter but produces no subpage.
-- `description` is optional and feeds the subpage header + SEO in T2.
-- **Reserved slugs:** `videos` — `app/videography/videos/page.tsx` is a static child segment
-  and Next resolves static before dynamic, so a tag with that slug would be unreachable
-  under `/videography/[tag]`. Reject it in validation, the same way `others` is reserved for
-  service categories.
-
-**2. `media.tags` stores slugs, not labels.** This keeps the existing compound index
-`{ tags: 1, isPublic: 1, createdAt: -1 }` (`scripts/ensure-indexes.mjs:65`) working exactly
-as it does now — **do not add another index.** Display labels are resolved from `media_tags`.
-
-**3. No migration script.** Hussain's call, 2026-08-17: *"no migration script for the tags,
-i will delete existing media and update them manually."* Do not write one, do not propose
-one, and do not add legacy-value handling to the read path. `media.tags` is assumed to
-contain slugs from the taxonomy only. If any legacy free-text value survives, it simply
-matches nothing — that is acceptable and intentional.
-
-**4. `/admin/tags`** — list + create/edit/delete, matching the service-categories surface:
-- Row shows label, slug, disciplines, active state, and **live media count** per tag.
-- Reorder via dnd-kit — but extract the shared sortable-list primitive first, because it is
-  currently reimplemented three times (see §D9b) and this would be the fourth.
-- Rename cascades: `media.updateMany({ tags: oldSlug }, { $set: { "tags.$": newSlug } })`.
-- Delete blocked while any media references the tag; offer "detach from N items" explicitly.
-- Deactivating a tag hides its subpage and its chips but does not touch media.
-
-**5. Media form** — replace the comma-separated input in `MediaDetailsSection.tsx:190-197`
-with a multi-select against `media_tags`. Creating a new tag inline is allowed but must go
-through `POST /api/media-tags` so it lands in the taxonomy; never write a raw string.
-
-**6. API** — `app/api/media-tags/route.ts` + `[id]/route.ts`, using
-`app/api/_lib/admin-route.ts` for the `[id]` preamble (CLAUDE.md: don't re-inline it).
-Public GET must be rate-limited and return active tags only.
-
-Read before writing: `MediaDetailsSection.tsx`, `useBaseMediaEditorState.ts`,
-`admin/media/lib/utils.ts`, `app/api/_lib/common.ts`, `app/api/_lib/media.ts`,
-the whole `service-categories` admin + API, `lib/db/ensureSystemCategories.ts`,
-`scripts/ensure-indexes.mjs`, `components/media/MediaTagChips.tsx`, `useMediaSearch.ts`.
-
-**Gate 1 must include:** confirmation that no migration is being written, and the list of
-places that read `media.tags` today (`MediaTagChips`, `useMediaSearch`, `list-public`'s
-`?tag=`, `admin-list` search, `MediaDetailsSections` pills, `MediaListItem` pills,
-`NftCollection`, `NftModal`) with a one-line statement of how each behaves once tags are
-slugs and labels come from the taxonomy.
-
----
 
 ### Session T2 — `/photography/[tag]` and `/videography/[tag]` — `pending`
 **Blocked by T1.**

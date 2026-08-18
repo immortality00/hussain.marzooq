@@ -1736,3 +1736,100 @@ browser-verifiable (email send + IP keying; sandbox can't reach Atlas), so no de
 No CLAUDE.md impact. Out-of-scope note left un-fixed: the config-error copy at
 `app/admin/page.tsx` still mentions the deleted `ADMIN_PASSWORD` fallback (doc drift, not a
 security bug).
+
+## Phase T — Tag taxonomy & discipline subpages
+
+### Session T1 — Tag taxonomy: `media_tags` + `/admin/tags` — `done`
+
+**Why the data has to change first.** `media.tags` is a comma-separated free-text field
+(`MediaDetailsSection.tsx:190-197` → `toList()` in `admin/media/lib/utils.ts:19-25`: split
+on comma, trim, drop empties, cap 60). Server-side `asStringArray`
+(`app/api/_lib/common.ts:39-46`) does exactly the same and no more. **No lowercasing, no
+dedupe, no canonical list** — so `"Fashion"`, `"fashion"` and `"fashion "` are three
+different tags today, and `/api/media/list-public?tag=` matches **exactly and
+case-sensitively** (`route.ts:83-84`). A subpage built on that would silently show a subset.
+
+**Precedent to follow: `service_categories`.** It is the existing admin-managed taxonomy
+with ordering, an `isActive` flag, cascade-on-rename
+(`app/api/service-categories/[id]/route.ts:81-90`), a delete guard when still referenced
+(`CATEGORY_HAS_SERVICES`, line 98-132), and a reserved system row
+(`lib/db/ensureSystemCategories.ts`). Mirror it; do not invent a new pattern.
+
+**1. Collection `media_tags`**
+```
+{ _id, label, slug, description, disciplines: string[],
+  isActive: boolean, order: number, createdAt, updatedAt }
+```
+- `slug` is lowercase, `[a-z0-9-]`, unique. `label` is what a visitor sees.
+- `disciplines` limits which discipline pages may produce a subpage for this tag
+  (e.g. `["photography","videography"]` for "fashion", `["photography"]` for "portrait").
+  A tag with an empty `disciplines` is still usable as a filter but produces no subpage.
+- `description` is optional and feeds the subpage header + SEO in T2.
+- **Reserved slugs:** `videos` — `app/videography/videos/page.tsx` is a static child segment
+  and Next resolves static before dynamic, so a tag with that slug would be unreachable
+  under `/videography/[tag]`. Reject it in validation, the same way `others` is reserved for
+  service categories.
+
+**2. `media.tags` stores slugs, not labels.** This keeps the existing compound index
+`{ tags: 1, isPublic: 1, createdAt: -1 }` (`scripts/ensure-indexes.mjs:65`) working exactly
+as it does now — **do not add another index.** Display labels are resolved from `media_tags`.
+
+**3. No migration script.** Hussain's call, 2026-08-17: *"no migration script for the tags,
+i will delete existing media and update them manually."* Do not write one, do not propose
+one, and do not add legacy-value handling to the read path. `media.tags` is assumed to
+contain slugs from the taxonomy only. If any legacy free-text value survives, it simply
+matches nothing — that is acceptable and intentional.
+
+**4. `/admin/tags`** — list + create/edit/delete, matching the service-categories surface:
+- Row shows label, slug, disciplines, active state, and **live media count** per tag.
+- Reorder via dnd-kit — but extract the shared sortable-list primitive first, because it is
+  currently reimplemented three times (see §D9b) and this would be the fourth.
+- Rename cascades: `media.updateMany({ tags: oldSlug }, { $set: { "tags.$": newSlug } })`.
+- Delete blocked while any media references the tag; offer "detach from N items" explicitly.
+- Deactivating a tag hides its subpage and its chips but does not touch media.
+
+**5. Media form** — replace the comma-separated input in `MediaDetailsSection.tsx:190-197`
+with a multi-select against `media_tags`. Creating a new tag inline is allowed but must go
+through `POST /api/media-tags` so it lands in the taxonomy; never write a raw string.
+
+**6. API** — `app/api/media-tags/route.ts` + `[id]/route.ts`, using
+`app/api/_lib/admin-route.ts` for the `[id]` preamble (CLAUDE.md: don't re-inline it).
+Public GET must be rate-limited and return active tags only.
+
+Read before writing: `MediaDetailsSection.tsx`, `useBaseMediaEditorState.ts`,
+`admin/media/lib/utils.ts`, `app/api/_lib/common.ts`, `app/api/_lib/media.ts`,
+the whole `service-categories` admin + API, `lib/db/ensureSystemCategories.ts`,
+`scripts/ensure-indexes.mjs`, `components/media/MediaTagChips.tsx`, `useMediaSearch.ts`.
+
+**Gate 1 must include:** confirmation that no migration is being written, and the list of
+places that read `media.tags` today (`MediaTagChips`, `useMediaSearch`, `list-public`'s
+`?tag=`, `admin-list` search, `MediaDetailsSections` pills, `MediaListItem` pills,
+`NftCollection`, `NftModal`) with a one-line statement of how each behaves once tags are
+slugs and labels come from the taxonomy.
+
+**Build outcome (2026-08-19).** Shipped as specced, with two additions Hussain approved at
+Gate 1: (a) the shared sortable primitive was extracted **and** all three existing hand-rolled
+dnd-kit copies migrated onto it (not just the new tags page); (b) no `ensureSystemCategories`
+equivalent — `media_tags` has no system row (unlike service categories' "others").
+- **New:** `lib/server/media-tags.ts` (slug/discipline/reserved validation, `TAG_DISCIPLINES`);
+  `app/api/media-tags/route.ts` (public GET rate-limited & active-only; `?scope=admin` gated
+  → all + live counts; POST) + `[id]/route.ts` (PATCH with arrayFilters rename cascade; DELETE
+  guard `TAG_IN_USE` + `?detach=1` `$pull`); `/admin/tags/*` (page + client + lib + components);
+  `components/admin/sortable/SortableList.tsx` (`SortableList` + `useSortableRow`);
+  `app/admin/(protected)/media/components/TagMultiSelect.tsx`; `test/media-tags.test.ts`.
+- **Changed:** media form (`useBaseMediaEditorState` holds `selectedTagSlugs`, `toList` deleted;
+  `MediaDetailsSection` → multi-select); nav (`Tags` item); `ensure-indexes.mjs` (+3 media_tags
+  indexes); service-categories/services/page-sections migrated to the primitive (their per-page
+  `mounted` hydration guards + `CategoryRowStatic`/`ServiceStaticRow` deleted).
+- **Sortable primitive has no mount gate** — the React-Compiler lint (`react-hooks/set-state-in-effect`,
+  `react-hooks/refs`) rejected both the effect and a render-prop `handle`; rows call the
+  `useSortableRow(id)` hook directly and dnd-kit's `useId` is hydration-safe (as the pre-existing
+  gate-less `RepeatingListEditor` already proved).
+- **Read-site behaviour:** filtering stays correct end-to-end (slug===slug, exact `?tag=`);
+  public chips (`MediaTagChips`, NFT) render the slug as label text — slug→label polish for
+  public surfaces is deferred to T2.
+- `tsc --noEmit` + `eslint --max-warnings 0` + `npm test` (116 pass, +10 new) clean. Admin
+  pages need Atlas (sandbox can't reach it) — Hussain verified rendering, reorder across all
+  four surfaces, tag multi-select + inline create, and rename cascade on his machine.
+- **CLAUDE.md updated same commit:** rewrote the "Tag taxonomy" section (T1 shipped), added
+  `SortableList` to reusable components, marked the §D9b dnd-kit-reimplementation note resolved.
