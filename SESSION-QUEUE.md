@@ -27,7 +27,8 @@ Phase 0: F1–F5 (foundation, refactors, cleanup) · Phase 1: N1–N8 (nav, CMS,
 consolidation, card images) · Phase 2: D1 (preloader), D3 (photography 3-view viewer) ·
 Phase S: S1–S7 (security, tests, reuse audit) · Phase DS: DS0–DS2 (skills, detector eval) ·
 Phase 2a: D2b (homepage section pass + the shared `Button` two-look system) ·
-Phase 3: C4 (validated media locations + stored coordinates).
+Phase 3: C4 (validated media locations + stored coordinates) ·
+Phase 2: D6 (exhibition globe — full spec + outcome in SESSION-ARCHIVE.md).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -335,79 +336,6 @@ Read CustomCursor.tsx fully before writing. Verify cursor is applied correctly t
 - `animation-vocabulary` for the Gate 1 spec; `review-animations` at Gate 2.
 - **Conflict:** spring overshoot is deliberate here and survives Impeccable's
   "no bounce/elastic easing" rule. Ignore the rule with a reason, don't remove the motion.
-
----
-
-### Session D6 — Exhibition globe — `pending`
-**Blocked by C4.** Do not start until appearances carry stored coordinates.
-
-A standalone `.section-shell` section **directly under the hero** (homepage section 2 — see
-the order table in §D2b). Layout: a **compact** ranked city index on the left, the globe
-taking the remaining width.
-
-**The globe is the primary element; the index is secondary.** Hussain, 2026-08-17.
-
-Desktop (≥1024px): `grid-template-columns: minmax(150px,180px) 1fr` — a narrow index on the
-left, the globe taking the rest and vertically centred against it.
-
-Below 1024px the order **inverts**: the globe comes first at full width, and the index
-follows as a **two-column table** (single column under 360px). A twelve-row list stacked
-above a globe is the layout Hussain rejected — use `order` on the two grid children, not a
-DOM reorder, so the markup stays index-then-globe for screen readers.
-
-Index row: `grid-template-columns: minmax(0,auto) minmax(.75rem,1fr) auto` — city name,
-a **dotted leader rule**, then the count. The leader is what makes a bare number read as an
-index entry instead of looking orphaned; without it the count needs a "WORKS" suffix, and
-that suffix is banned. Name at `0.78rem` with `text-overflow: ellipsis`; count in Geist Mono
-at `0.625rem` with `font-variant-numeric: tabular-nums`. Hairline between rows.
-
-**No "Browse the archive" button.** Every city row is already a link into the archive; a
-second entry point beside them is noise. Removed 2026-08-17.
-
-**No kicker above the heading and no stat strip.** An earlier draft had an `EXHIBITED`
-label above the h2 and a `12 CITIES / 12 COUNTRIES / 64 WORKS / SINCE 2019` block under the
-list. Hussain rejected both, 2026-08-17: *"remove these and stop adding these stupid
-comments."* See CLAUDE.md → "What is NOT in the design".
-
-Data — none of this exists yet, write it:
-- `getExhibitionCities()` in `lib/server/public-media.ts`. **There is no `getAllMedia()`** —
-  every existing fetcher is category-scoped and capped at 60 (`public-media.ts:29-45`), so
-  writing this on top of one of them will silently under-report. Query `media` directly:
-  public + `appearances.kind === "exhibited"`, and aggregate in Mongo, not in JS.
-- Group by the `locationId` C4 stores (never by the free-text label). Return
-  `Array<{ city, country, lat, lon, workCount, mediaIds }>`.
-- Cache with the page's existing `revalidate = 300`. No per-request geocoding — C4 removed
-  the need for it.
-
-Globe:
-- `react-globe.gl` (already in `package.json`, unused). Load with
-  `next/dynamic({ ssr:false })` behind an `IntersectionObserver` so it costs the homepage
-  nothing until scrolled into view.
-- **Texture: copy `node_modules/three-globe/example/img/earth-dark.jpg` (95 KB) and
-  `earth-topology.png` into `/public/globe/` and point `globeImageUrl` / `bumpImageUrl`
-  there.** Same-origin, so `img-src 'self'` already covers it — **no CSP edit**. Never
-  reference unpkg or any CDN; CSP blocks it and the globe ships as a black ball.
-- Markers: white dot + a hairline ring whose radius encodes `workCount`. No arcs — arcs
-  imply travel between cities, which is not what happened.
-- Auto-rotate 0.35°/s when idle; drag to rotate; resume 2.5s after release. Markers fade by
-  distance from the limb.
-- Hover a list row → its marker highlights, and vice versa. Click a city → the existing
-  `MediaLightbox` with that city's exhibited works.
-- Palette: existing OKLCH tokens only, no accent colour (CLAUDE.md → Design direction).
-- Under the list: `N cities · M countries · K exhibited works` in the mono micro-label style.
-
-**Do not re-derive:** `three-globe` rotates the globe mesh `rotation.y = -Math.PI/2` and
-places markers with `phi=(90-lat)`, `theta=(90-lng)`, `x=r·sinφ·cosθ, y=r·cosφ, z=r·sinφ·sinθ`
-(`three-globe/dist/three-globe.mjs:450-460,651`). Use react-globe.gl's own `pointsData`
-API and this problem does not arise; only hand-placed meshes need it.
-
-Read: `app/page.tsx`, `lib/server/public-media.ts`, `lib/server/media-serializers.ts`,
-`components/media/MediaLightbox.tsx`, `components/media/types.ts`, `next.config.ts` (CSP).
-Propose the aggregation query and the section layout. Wait for approval.
-
-**Skills:** `pick-ui-library` to confirm react-globe.gl beats a raw Three.js globe here
-(it is already installed, so this is the last cheap moment). `animate` for the
-auto-rotate / drag / resume choreography spec.
 
 ---
 

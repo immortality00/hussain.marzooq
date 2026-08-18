@@ -62,11 +62,11 @@ Consequences for any session touching images:
   `next/dynamic({ssr:false})`; **`HeroBokeh` is statically imported by `HomeHero.tsx:3`, so
   `three` is in the homepage's initial bundle.** Recorded as a fact, not a change request —
   the hero is not to be modified (see "The hero is fixed").
-- react-globe.gl 2.38 + three-globe 2.45: installed, unused, built in D6. Their example
-  assets ship inside the package — `node_modules/three-globe/example/img/earth-dark.jpg`
-  (95 KB), `earth-topology.png`, and `country-polygons/ne_110m_admin_0_countries.geojson`.
-  Copy what D6 needs into `/public/globe/` and serve same-origin. **Never point
-  `globeImageUrl` at unpkg or any CDN** — CSP blocks it and the globe ships as a black ball.
+- react-globe.gl 2.38 + three-globe 2.45: **used by the D6 exhibition globe (shipped).**
+  Textures live in `/public/globe/` (`earth-day.jpg` + `earth-topology.png`), copied from
+  `node_modules/three-globe/example/img/` and served same-origin (`img-src 'self'` already
+  covers them — no CSP edit). **Never point `globeImageUrl` at unpkg or any CDN** — CSP blocks
+  it and the globe ships as a black ball.
 - Framer Motion: installed, used minimally.
 
 ## Design direction — SPECIFIED. This section is the spec.
@@ -267,13 +267,23 @@ Every transition uses the actual photos/videos of origin/destination as material
 Per-route specs live in SESSION-QUEUE.md §D4, including the homepage in/out transition
 (the old "deferred to a future session" note is gone — the spec is in §D4 now).
 
-## Globe (D6, pending)
-react-globe.gl **directly under the hero** (homepage section 2), in its own
-`.section-shell`: a compact ranked city index on the left, the globe taking the rest. Data: `appearances.kind === "exhibited"` only.
-Auto-rotate, drag, resume. Hover links list↔marker both ways. Click city → existing
-`MediaLightbox` with that city's works. Texture served from `/public/globe/`, never a CDN.
-**C4 shipped 2026-08-18, so D6 is unblocked** — appearances now carry stored coordinates.
-See "Media locations" below. Spec: SESSION-QUEUE.md §D6.
+## Globe (D6, shipped 2026-08-18)
+`components/home/HomeExhibitionGlobe.tsx` + `components/home/exhibition/*` render react-globe.gl
+**directly under the hero** (homepage section 2), in its own `.section-shell`: a ranked city
+index (dotted-leader rows) on the left, the globe on the right; below 1024px the globe moves
+above the index. Data from `getExhibitionCities()` (`lib/server/public-media.ts`) — a direct,
+uncapped `media` query for public docs with an `appearances.kind === "exhibited"` entry carrying
+C4 coordinates, grouped by `locationId`, returning full works per city (not just ids). Auto-rotate,
+drag, resume 2.5s after release. Two-way hover list↔marker. Click a city → a popup grid of that
+location's works → click one → existing `MediaLightbox`. Loaded `dynamic({ssr:false})` behind an
+IntersectionObserver so it costs the homepage nothing until scrolled into view.
+
+**Two deliberate overrides of the original §D6 spec, at Hussain's request 2026-08-18 — do not
+"revert" them:** (1) **arcs** run from Dubai to each exhibition city (the spec said "no arcs");
+(2) the brighter **`earth-day.jpg`** texture is used (the spec said `earth-dark.jpg`, which read
+too dark). The globe opens facing **Dubai** (his base) and marks it with a distinct "Home base"
+beacon (radar ping + home glyph) that is the origin of every arc. No stat line under the list
+(that part of the spec was correctly dropped). See "Media locations" below.
 
 ## People page (D12, pending)
 Public by default; per-person private toggle (password-gated); removal-request flow
@@ -360,6 +370,14 @@ weak `isAppearance` check). The four separate declarations are collapsed.
 **Admin warning:** an exhibited appearance with no resolved `lat`/`lon` shows an inline amber
 note in `MediaAppearancesSection.tsx` — it will not appear on the globe.
 
+**Appearance requires a name to save (D6, 2026-08-18).** The media editor now blocks save when
+any Featured/Exhibition entry has no Title — inline red field + a banner naming the entry.
+Previously `sanitizeAppearances` silently dropped a nameless entry, so a location-only
+exhibition looked saved but was gone. The rule lives once in
+`appearanceError`/`findFirstAppearanceError` (`app/admin/(protected)/media/lib/utils.ts`),
+shared by the form and the save-gate (`useMediaEditorController.ts`); the server sanitise
+stays as a backstop.
+
 **No backfill** — existing media is being deleted and re-entered by hand; no migration was
 written and none should be. The globe (D6) reads `appearances` where `kind === "exhibited"`,
 groups by `locationId`. There is still **no `getAllMedia()`** and no collection-wide city
@@ -409,6 +427,9 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
 - No duplicated patterns — extract to shared components
 - No inline styles when a token exists
 - No dead code, no duplicated logic
+- **No explanatory or narrative code comments.** Hussain's standing rule — keep source clean;
+  rationale goes in CLAUDE.md / session docs, never inline. Leave pre-existing comments unless
+  asked to change them.
 - Before every session: audit connected files, report what changes and what could break
 - Never touch admin pages unless the session is specifically for admin
 - **Before marking a session `done`: re-read that session's own task list against the

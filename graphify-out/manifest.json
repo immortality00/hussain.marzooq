@@ -65,8 +65,8 @@
     "semantic_hash": "5da2e56e27cd6a3c747174aa13cd8378"
   },
   "app/admin/(protected)/media/components/MediaAppearancesSection.tsx": {
-    "mtime": 1787008790.4732509,
-    "ast_hash": "a8889252df194c268b686dfec41efa06",
+    "mtime": 1787055520.3823402,
+    "ast_hash": "b02718189f852018fccd385498971366",
     "semantic_hash": ""
   },
   "app/admin/(protected)/media/components/MediaAssetSection.tsx": {
@@ -115,8 +115,8 @@
     "semantic_hash": ""
   },
   "app/admin/(protected)/media/lib/useMediaEditorController.ts": {
-    "mtime": 1787006773.206049,
-    "ast_hash": "2e64d42a0a53a3d0dd1e986cf9ddec4b",
+    "mtime": 1787056343.6754763,
+    "ast_hash": "851f964ada329530f22c19ea84ce639a",
     "semantic_hash": ""
   },
   "app/admin/(protected)/media/lib/useNftEditorState.ts": {
@@ -125,9 +125,9 @@
     "semantic_hash": "396e6f84885ea831765b95d9abec5690"
   },
   "app/admin/(protected)/media/lib/utils.ts": {
-    "mtime": 1782068097.0431542,
-    "ast_hash": "0c047ce7ddd515cbff345241fae54507",
-    "semantic_hash": "0c047ce7ddd515cbff345241fae54507"
+    "mtime": 1787056339.0980146,
+    "ast_hash": "4a8431932a6dfdd93c8062aa4347579c",
+    "semantic_hash": ""
   },
   "app/admin/(protected)/media/list/components/MediaListFilterBar.tsx": {
     "mtime": 1782753819.2038016,
@@ -585,8 +585,8 @@
     "semantic_hash": "116b93677c7eb98e75d735562dee38ce"
   },
   "app/page.tsx": {
-    "mtime": 1786992704.1942072,
-    "ast_hash": "8e3a29135114d6984753a8b615f914db",
+    "mtime": 1787056330.85665,
+    "ast_hash": "05248d8e598a6a3fe1b46b0d3cdec9d3",
     "semantic_hash": ""
   },
   "app/people/[slug]/page.tsx": {
@@ -1185,9 +1185,9 @@
     "semantic_hash": "5d6c26c3269b3ebc446b402599bc34c2"
   },
   "lib/server/public-media.ts": {
-    "mtime": 1783070177.8258824,
-    "ast_hash": "3ba87c4c29bb4509f232ec432e2c4bc6",
-    "semantic_hash": "3ba87c4c29bb4509f232ec432e2c4bc6"
+    "mtime": 1787056263.3093967,
+    "ast_hash": "3825c00f44f61cd8b5ded0d109e6ff37",
+    "semantic_hash": ""
   },
   "lib/server/public-nfts.ts": {
     "mtime": 1787006861.2037954,
@@ -1320,8 +1320,8 @@
     "semantic_hash": "c698309979460d0f02ba616417844399"
   },
   "CLAUDE.md": {
-    "mtime": 1787009339.1200364,
-    "ast_hash": "d8573fa906b42c824b11c888851d8bc2",
+    "mtime": 1787056636.5303843,
+    "ast_hash": "38f596e216fd190de718d7fe513f7dff",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1330,8 +1330,8 @@
     "semantic_hash": "f15aaa42d5d299d091b1171097ea56ad"
   },
   "SESSION-QUEUE.md": {
-    "mtime": 1787009429.100403,
-    "ast_hash": "7a0c8e2647eae16dd600b82349880572",
+    "mtime": 1787009628.03071,
+    "ast_hash": "11aa3cee099014549ee683b78ab6cbcb",
     "semantic_hash": ""
   },
   "public/file.svg": {
@@ -1555,8 +1555,8 @@
     "semantic_hash": "31c633612585bf2dd4e6d1103afc9f33"
   },
   "components/home/HomeExhibitionGlobe.tsx": {
-    "mtime": 1786992693.0212553,
-    "ast_hash": "8c2146515534a450b2b935c327d3b70b",
+    "mtime": 1787056275.637592,
+    "ast_hash": "bb24116fe37e4b42f700561adcb81c41",
     "semantic_hash": ""
   },
   "components/shared/Button.tsx": {
@@ -1567,6 +1567,36 @@
   "test/api/sanitize-appearances.test.ts": {
     "mtime": 1787006873.49593,
     "ast_hash": "52494c9641ca68320c9435708ebccc8c",
+    "semantic_hash": ""
+  },
+  "components/home/exhibition/ExhibitionCityIndex.tsx": {
+    "mtime": 1787056283.9601958,
+    "ast_hash": "350e0e90ced67341155b4e8bf52c4af0",
+    "semantic_hash": ""
+  },
+  "components/home/exhibition/ExhibitionCityModal.tsx": {
+    "mtime": 1787056291.836046,
+    "ast_hash": "1506ee4ced7e3525043cb3e7d27c0240",
+    "semantic_hash": ""
+  },
+  "components/home/exhibition/ExhibitionGlobe.tsx": {
+    "mtime": 1787056326.136352,
+    "ast_hash": "2e9076043af24be0d88173ecbabe3ce8",
+    "semantic_hash": ""
+  },
+  "test/admin/appearance-validation.test.ts": {
+    "mtime": 1787056349.0889194,
+    "ast_hash": "bb3a7b3c01d862db6c5fc01f49617bd5",
+    "semantic_hash": ""
+  },
+  "public/globe/earth-day.jpg": {
+    "mtime": 1787053987.9717336,
+    "ast_hash": "590a808ab4229608c2de0dbaaf4e454b",
+    "semantic_hash": ""
+  },
+  "public/globe/earth-topology.png": {
+    "mtime": 1787011622.3832479,
+    "ast_hash": "56e5c0687430c9eff705e6ffbd82ce31",
     "semantic_hash": ""
   }
 }

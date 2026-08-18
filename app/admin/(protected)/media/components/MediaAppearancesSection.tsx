@@ -3,6 +3,7 @@
 import { LocationSearch } from "@/components/testimonials/review-form/LocationSearch";
 import type { LocationOption } from "@/components/testimonials/review-form/types";
 import type { Appearance } from "../lib/types";
+import { appearanceError } from "../lib/utils";
 
 function splitLocationLabel(label: string): { city: string; country: string } {
   const trimmed = label.trim();
@@ -41,7 +42,14 @@ export default function MediaAppearancesSection({
   return (
     <section className="rounded-3xl border p-5 space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <div className="text-sm font-medium">Featured / Exhibitions</div>
+        <div>
+          <div className="text-sm font-medium">Featured / Exhibitions</div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Each entry needs a <span className="font-medium text-foreground">name</span> to save.
+            Add a <span className="font-medium text-foreground">location</span> for an exhibition to
+            show on the globe.
+          </p>
+        </div>
         <div className="flex gap-2">
           <button
             type="button"
@@ -66,6 +74,7 @@ export default function MediaAppearancesSection({
         <div className="space-y-3">
           {appearances.map((a, idx) => {
             const needsLocation = a.lat === null || a.lon === null;
+            const titleError = appearanceError(a);
 
             return (
               <div key={idx} className="rounded-2xl border p-4 space-y-3">
@@ -83,18 +92,30 @@ export default function MediaAppearancesSection({
                 </div>
 
                 <div className="grid gap-3 md:grid-cols-2">
-                  <input
-                    value={a.title}
-                    onChange={(e) => updateAppearance(idx, { title: e.target.value })}
-                    className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Title"
-                  />
-                  <input
-                    value={a.venue}
-                    onChange={(e) => updateAppearance(idx, { venue: e.target.value })}
-                    className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Venue"
-                  />
+                  <label className="space-y-1.5">
+                    <span className="text-xs text-muted-foreground">
+                      Name / Title <span className="text-red-500">*</span>
+                    </span>
+                    <input
+                      value={a.title}
+                      onChange={(e) => updateAppearance(idx, { title: e.target.value })}
+                      aria-invalid={titleError ? true : undefined}
+                      className={`w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring ${
+                        titleError ? "border-red-500/70 focus:ring-red-500" : ""
+                      }`}
+                      placeholder={a.kind === "exhibited" ? "e.g. Solo Exhibition" : "e.g. Featured in…"}
+                    />
+                    {titleError ? <span className="block text-xs text-red-500">{titleError}</span> : null}
+                  </label>
+                  <label className="space-y-1.5">
+                    <span className="text-xs text-muted-foreground">Venue (optional)</span>
+                    <input
+                      value={a.venue}
+                      onChange={(e) => updateAppearance(idx, { venue: e.target.value })}
+                      className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      placeholder="Gallery, museum, event…"
+                    />
+                  </label>
 
                   <div className="md:col-span-2">
                     <LocationSearch
@@ -119,9 +140,10 @@ export default function MediaAppearancesSection({
                         })
                       }
                     />
-                    {needsLocation ? (
+                    {needsLocation && a.kind === "exhibited" ? (
                       <p className="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-600 dark:text-amber-400">
-                        No resolved location — this entry will not appear on the globe.
+                        Pick a location to place this exhibition on the globe. It still saves without
+                        one, but it won&apos;t appear there.
                       </p>
                     ) : null}
                   </div>

@@ -1585,3 +1585,76 @@ cases) covers coord validation/carry-through. **No backfill written.** `tsc --no
 (0 warnings) + `npm test` (92 pass) all clean; dev server compiled with no errors. Interactive
 form check done by Hussain (admin-gated). The globe itself is D6 — Hussain noted he wants to see
 it live, which is exactly D6's job now that C4 unblocked it.
+
+---
+
+### Session D6 — Exhibition globe — `done`
+**Blocked by C4.** Do not start until appearances carry stored coordinates.
+
+A standalone `.section-shell` section **directly under the hero** (homepage section 2 — see
+the order table in §D2b). Layout: a **compact** ranked city index on the left, the globe
+taking the remaining width.
+
+**The globe is the primary element; the index is secondary.** Hussain, 2026-08-17.
+
+Desktop (≥1024px): `grid-template-columns: minmax(150px,180px) 1fr` — a narrow index on the
+left, the globe taking the rest and vertically centred against it.
+
+Below 1024px the order **inverts**: the globe comes first at full width, and the index
+follows as a **two-column table** (single column under 360px). A twelve-row list stacked
+above a globe is the layout Hussain rejected — use `order` on the two grid children, not a
+DOM reorder, so the markup stays index-then-globe for screen readers.
+
+Index row: `grid-template-columns: minmax(0,auto) minmax(.75rem,1fr) auto` — city name,
+a **dotted leader rule**, then the count. The leader is what makes a bare number read as an
+index entry instead of looking orphaned; without it the count needs a "WORKS" suffix, and
+that suffix is banned. Name at `0.78rem` with `text-overflow: ellipsis`; count in Geist Mono
+at `0.625rem` with `font-variant-numeric: tabular-nums`. Hairline between rows.
+
+**No "Browse the archive" button.** Every city row is already a link into the archive; a
+second entry point beside them is noise. Removed 2026-08-17.
+
+**No kicker above the heading and no stat strip.** An earlier draft had an `EXHIBITED`
+label above the h2 and a `12 CITIES / 12 COUNTRIES / 64 WORKS / SINCE 2019` block under the
+list. Hussain rejected both, 2026-08-17.
+
+Data — none of this exists yet, write it:
+- `getExhibitionCities()` in `lib/server/public-media.ts`. **There is no `getAllMedia()`** —
+  every existing fetcher is category-scoped and capped at 60, so writing this on top of one of
+  them will silently under-report. Query `media` directly: public +
+  `appearances.kind === "exhibited"`, and aggregate.
+- Group by the `locationId` C4 stores (never by the free-text label).
+- Cache with the page's existing `revalidate = 300`. No per-request geocoding.
+
+Globe: `react-globe.gl` via `next/dynamic({ ssr:false })` behind an `IntersectionObserver`.
+Texture from `/public/globe/`, same-origin, no CSP edit, never a CDN. Markers: white dot +
+hairline ring whose radius encodes `workCount`. Auto-rotate, drag, resume 2.5s. Two-way hover
+list↔marker. Click a city → that city's exhibited works. Palette: OKLCH tokens only, no accent.
+
+**Build outcome (shipped 2026-08-18):** `getExhibitionCities()` written as a direct, uncapped
+`media` query grouped by `locationId` in JS (grouping is inseparable from `toPublicMediaItem`
+serialization), returning **full `works: PublicMediaItem[]` per city** rather than the spec's
+`{workCount, mediaIds}` — the click flow needs the items client-side and there is no
+by-location endpoint. Components: `components/home/HomeExhibitionGlobe.tsx` (client wrapper,
+IntersectionObserver gate, returns null when no cities) + `components/home/exhibition/`
+(`ExhibitionCityIndex`, `ExhibitionGlobe`, `ExhibitionCityModal`). Clicking a city opens a
+**popup grid** of that location's works (reusing `MediaCardGrid`) → clicking a card opens the
+existing `MediaLightbox` — `MediaLightbox` left untouched. Homepage passes `cities` from
+`app/page.tsx`'s `Promise.all`. **Two deliberate spec overrides at Hussain's request:**
+(1) **arcs** from Dubai to each city (spec said "no arcs"); (2) **`earth-day.jpg`** texture
+(spec said `earth-dark.jpg` — too dark), with even `AmbientLight` so no hemisphere reads dark.
+Globe opens facing **Dubai** (`onGlobeReady` `pointOfView`) and marks it with a distinct
+"Home base" beacon (CSS radar-ping `@keyframes hm-globe-ping` in `globals.css` + home glyph),
+the origin of all arcs. City names render as labels on the globe. Height cap 640, altitude 2.0
+("make it bigger"). No stat line under the list (spec self-contradicted; CLAUDE.md's ban won).
+**Also fixed in-session (Hussain-reported, same data path):** the exhibitions form silently
+lost entries — `save()` never validated appearances and `sanitizeAppearances` dropped any
+nameless entry, so a location-only exhibition reported "saved" but vanished. Added shared
+`appearanceError`/`findFirstAppearanceError` (`app/admin/(protected)/media/lib/utils.ts`) used
+by both the form (`MediaAppearancesSection.tsx` — required-name label, live red field, globe
+hint) and the save-gate (`useMediaEditorController.ts` — blocks + names the entry). New test
+`test/admin/appearance-validation.test.ts` (5 cases). `tsc` + `eslint` (0 warnings) + `npm test`
+(97 pass) clean. Globe's live WebGL could not be auto-verified (the preview pane runs as a
+hidden tab, which freezes rAF/IO/RO); Hussain verified the globe and form visually. Comment
+cleanup: all explanatory code comments were stripped at Hussain's insistence — new standing rule
+recorded in CLAUDE.md → Code quality rules.

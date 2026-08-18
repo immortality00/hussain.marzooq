@@ -371,3 +371,19 @@
     background-repeat: repeat;
   }
 }
+
+@keyframes hm-globe-ping {
+  0% {
+    transform: translate(-50%, -50%) scale(0.6);
+    opacity: 0.9;
+  }
+  70%,
+  100% {
+    transform: translate(-50%, -50%) scale(2.4);
+    opacity: 0;
+  }
+}
+
+.hm-globe-ping {
+  animation: hm-globe-ping 2.6s ease-out infinite;
+}
