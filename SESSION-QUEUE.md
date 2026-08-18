@@ -47,7 +47,7 @@ longer top-to-bottom — take sessions in exactly this order.
 4. **D2c** — About rebuild. ✓ done — Block 1 complete.
 
 **Block 2 — Security.**
-5. **S10** — admin login rate-limit bypass + email HTML injection.
+5. **S10** — admin login rate-limit bypass + email HTML injection. ✓ done
 
 **Block 3 — Tags and subpages.**
 6. **T1** — tag taxonomy + `/admin/tags`.
@@ -186,25 +186,6 @@ action that should invalidate it**, then fix the gaps — do not just patch the 
 `about`, `blog` and `dancing` have the same missing-directive shape and must be checked.
 Consider deriving `AFFECTED_PATHS` from the page registry instead of hardcoding it, so the
 next page added cannot silently repeat this.
-
----
-
-### Session S10 — Two security fixes — `pending`
-1. **Admin login lockout is bypassable.** `app/admin/page.tsx:32-34` keys the rate-limit
-   bucket on `${ip}|${userAgent}`. `User-Agent` is attacker-controlled, so varying it resets
-   the 5-attempts/15-min lockout on every guess. Every other limiter in the repo keys on IP
-   alone (`app/api/_lib/public-form-security.ts:1-5`,
-   `app/api/private-galleries/access/route.ts:21-26`). Key on IP, and import the shared
-   `getClientAddress` instead of the fifth local copy of that helper.
-2. **Email HTML injection.** `lib/server/email.ts:19-29,45-55` interpolate `data.name`,
-   `data.email`, `data.serviceName`, `data.category`, `data.about` and the message/review
-   body straight into the Resend `html:` template with no entity encoding (the body only
-   gets a `<br>` replace). A public submitter can put live markup — a phishing link — into
-   the email Hussain reads. Add an `escapeHtml` helper, apply it to every interpolated
-   field, and unit-test it in the same session (CLAUDE.md: new pure logic gets a test).
-
-Gate 1 security line: no new trust boundary; no secret crosses to the client; both changes
-tighten existing validation.
 
 ---
 

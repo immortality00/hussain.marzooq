@@ -1699,3 +1699,40 @@ hint) and the save-gate (`useMediaEditorController.ts` — blocks + names the en
 hidden tab, which freezes rAF/IO/RO); Hussain verified the globe and form visually. Comment
 cleanup: all explanatory code comments were stripped at Hussain's insistence — new standing rule
 recorded in CLAUDE.md → Code quality rules.
+
+---
+
+## Phase S2 — Defects from the 2026-08-17 full-repo audit
+
+### Session S10 — Two security fixes — `done`
+1. **Admin login lockout is bypassable.** `app/admin/page.tsx:32-34` keys the rate-limit
+   bucket on `${ip}|${userAgent}`. `User-Agent` is attacker-controlled, so varying it resets
+   the 5-attempts/15-min lockout on every guess. Every other limiter in the repo keys on IP
+   alone (`app/api/_lib/public-form-security.ts:1-5`,
+   `app/api/private-galleries/access/route.ts:21-26`). Key on IP, and import the shared
+   `getClientAddress` instead of the fifth local copy of that helper.
+2. **Email HTML injection.** `lib/server/email.ts:19-29,45-55` interpolate `data.name`,
+   `data.email`, `data.serviceName`, `data.category`, `data.about` and the message/review
+   body straight into the Resend `html:` template with no entity encoding (the body only
+   gets a `<br>` replace). A public submitter can put live markup — a phishing link — into
+   the email Hussain reads. Add an `escapeHtml` helper, apply it to every interpolated
+   field, and unit-test it in the same session (CLAUDE.md: new pure logic gets a test).
+
+Gate 1 security line: no new trust boundary; no secret crosses to the client; both changes
+tighten existing validation.
+
+**Outcome (2026-08-18).** Both fixes shipped. Fix 1: the shared `getClientAddress`
+(`app/api/_lib/public-form-security.ts`) was widened to accept a `Request` **or** any
+headers object (`{ get(name): string | null }`) via `"get" in source` narrowing, so the
+`next/headers` server action and the four `Request`-based route callers share one helper.
+`app/admin/page.tsx` dropped its two local helpers (`getClientAddress`, `getClientKey`) and
+now keys the limiter on IP alone (`getClientAddress(headerList)`) — a spoofed User-Agent no
+longer resets the lockout. Fix 2: new `lib/server/escape-html.ts` (`escapeHtml`, escapes
+`& < > " '`, ampersand first); `lib/server/email.ts` applies it to every interpolated user
+field in both notification emails including the `mailto:` value. `stars`/`rating` stay raw
+(internally computed); subjects stay raw (mail headers, not HTML). New `test/escape-html.test.ts`
+(5 cases). `tsc --noEmit` + `eslint --max-warnings 0` + `npm test` (103 pass) clean. Not
+browser-verifiable (email send + IP keying; sandbox can't reach Atlas), so no dev-server check.
+No CLAUDE.md impact. Out-of-scope note left un-fixed: the config-error copy at
+`app/admin/page.tsx` still mentions the deleted `ADMIN_PASSWORD` fallback (doc drift, not a
+security bug).
