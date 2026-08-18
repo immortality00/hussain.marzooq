@@ -46,7 +46,7 @@ longer top-to-bottom — take sessions in exactly this order.
 3. **D6** — exhibition globe. ✓ done
 4. **D2c** — About rebuild. ✓ done — Block 1 complete.
 
-**Block 2 — Security.**
+**Block 2 — Security.** ✓ complete
 5. **S10** — admin login rate-limit bypass + email HTML injection. ✓ done
 
 **Block 3 — Tags and subpages.**
@@ -410,9 +410,12 @@ Specific things to evaluate — propose, do not assume:
   wrapper with its own 4s/7s auto-dismiss that nothing else has. Image picker (CLAUDE.md:
   "don't build another picker"): three exist — `ImageField.tsx`, plus hand-rolled
   `CldUploadWidget` blocks in `ServiceEditorModal.tsx:58-199` and `PeopleAdminClient.tsx:171-216`.
-  dnd-kit sortable is reimplemented three times with its own boilerplate each. Eight files
+  ~~dnd-kit sortable is reimplemented three times~~ **RESOLVED in T1** — extracted to
+  `components/admin/sortable/SortableList.tsx` (`SortableList` + `useSortableRow`); service-categories,
+  services and page-sections now consume it. Eight files
   hand-roll the same `text-2xl font-semibold tracking-tight` page header — the admin has no
-  `PageHeader` equivalent. Three separate hydration guards do the same thing.
+  `PageHeader` equivalent. (The per-page `mounted` hydration guards on service-categories and
+  services are also gone — the primitive needs none.)
 - **Silent failures.** `MediaDetailsSection.tsx:52-64` `loadPeople()` is `catch {}` with no
   feedback. `CategoryRowSortable.tsx:36-44` / `CategoryRowStatic.tsx:22-32` are uncontrolled
   (`defaultValue`) inputs autosaving on blur — on failure only the page-top banner fires and
@@ -607,7 +610,7 @@ media with the fashion tag will appear there."*
 
 **T1 before T2.** T2 cannot be built on today's tag data — see T1's first paragraph.
 
-### Session T1 — Tag taxonomy: `media_tags` + `/admin/tags` — `pending`
+### Session T1 — Tag taxonomy: `media_tags` + `/admin/tags` — `in-progress`
 
 **Why the data has to change first.** `media.tags` is a comma-separated free-text field
 (`MediaDetailsSection.tsx:190-197` → `toList()` in `admin/media/lib/utils.ts:19-25`: split

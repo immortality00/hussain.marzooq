@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { LocationSearch } from "@/components/testimonials/review-form/LocationSearch";
 import type { LocationOption } from "@/components/testimonials/review-form/types";
 import type { PersonProfileOption } from "../lib/types";
+import TagMultiSelect from "./TagMultiSelect";
 
 type SelectedPerson = {
   id: string;
@@ -24,8 +25,9 @@ export default function MediaDetailsSection({
   clearLocation,
   event,
   setEvent,
-  tagsText,
-  setTagsText,
+  selectedTagSlugs,
+  addTag,
+  removeTag,
   selectedPeopleIds,
   selectedPeopleNames,
   setSelectedPeople,
@@ -41,8 +43,9 @@ export default function MediaDetailsSection({
   clearLocation: () => void;
   event: string;
   setEvent: (value: string) => void;
-  tagsText: string;
-  setTagsText: (value: string) => void;
+  selectedTagSlugs: string[];
+  addTag: (slug: string) => void;
+  removeTag: (slug: string) => void;
   selectedPeopleIds: string[];
   selectedPeopleNames: string[];
   setSelectedPeople: (next: { ids: string[]; names: string[] }) => void;
@@ -189,15 +192,7 @@ export default function MediaDetailsSection({
           />
         </div>
 
-        <div className="space-y-2 md:col-span-2">
-          <label className="text-sm font-medium">Tags (comma-separated)</label>
-          <input
-            value={tagsText}
-            onChange={(e) => setTagsText(e.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            placeholder="portrait, fashion, studio"
-          />
-        </div>
+        <TagMultiSelect selectedSlugs={selectedTagSlugs} addTag={addTag} removeTag={removeTag} />
 
         <div className="space-y-3 md:col-span-2">
           <label className="text-sm font-medium">People</label>

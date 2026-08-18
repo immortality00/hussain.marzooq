@@ -1,21 +1,8 @@
 "use client";
 
 import type { ReactNode } from "react";
-import {
-  DndContext,
-  closestCenter,
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragEndEvent,
-} from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-  arrayMove,
-} from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { arrayMove } from "@dnd-kit/sortable";
+import { SortableList, useSortableRow } from "@/components/admin/sortable/SortableList";
 import { EMPTY_SECTION_IMAGE, type TextCard } from "@/lib/page-sections-shared";
 import { ImageField } from "@/components/admin/media-picker/ImageField";
 
@@ -28,17 +15,13 @@ function SortableRow({
   children: ReactNode;
   onRemove: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id,
-  });
-  const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.85 : 1 };
+  const { setNodeRef, style, handleProps } = useSortableRow(id);
 
   return (
     <div ref={setNodeRef} style={style} className="flex gap-3 rounded-2xl border p-3">
       <button
         type="button"
-        {...attributes}
-        {...listeners}
+        {...handleProps}
         className="h-fit shrink-0 cursor-grab rounded-xl border px-2 py-1 text-xs opacity-80 hover:opacity-100"
         aria-label="Drag"
         title="Drag"
@@ -70,26 +53,21 @@ export function RepeatingListEditor<T>({
   makeNew: () => T;
   renderFields: (item: T, onItemChange: (item: T) => void) => ReactNode;
 }) {
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
   const ids = items.map((_, i) => String(i));
 
-  function onDragEnd(event: DragEndEvent) {
-    const { active, over } = event;
-    if (!over || active.id === over.id) return;
-    onChange(arrayMove(items, Number(active.id), Number(over.id)));
+  function onReorder(activeId: string, overId: string) {
+    onChange(arrayMove(items, Number(activeId), Number(overId)));
   }
 
   return (
     <div className="space-y-2">
-      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-        <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-          {items.map((item, i) => (
-            <SortableRow key={ids[i]} id={ids[i]} onRemove={() => onChange(items.filter((_, idx) => idx !== i))}>
-              {renderFields(item, (next) => onChange(items.map((c, idx) => (idx === i ? next : c))))}
-            </SortableRow>
-          ))}
-        </SortableContext>
-      </DndContext>
+      <SortableList ids={ids} onReorder={onReorder} className="space-y-2">
+        {items.map((item, i) => (
+          <SortableRow key={ids[i]} id={ids[i]} onRemove={() => onChange(items.filter((_, idx) => idx !== i))}>
+            {renderFields(item, (next) => onChange(items.map((c, idx) => (idx === i ? next : c))))}
+          </SortableRow>
+        ))}
+      </SortableList>
 
       <button
         type="button"

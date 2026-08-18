@@ -430,6 +430,14 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   field-mapping and cleanup stay in each route.
 - `components/admin/media-picker/MediaPickerModal.tsx` + `ImageField.tsx` — all admin
   image pick/upload flows (N7). Don't build another picker.
+- `components/admin/sortable/SortableList.tsx` — **all** admin drag-to-reorder (T1).
+  `<SortableList ids onReorder(activeId,overId) className>` owns the sensors + `DndContext`
+  (closestCenter) + vertical `SortableContext`; each row calls the `useSortableRow(id)` hook
+  and spreads `{ setNodeRef, style, handleProps }`. Adopted by service-categories, services,
+  page-sections `RepeatingListEditor`, and `/admin/tags` — the three hand-rolled dnd-kit
+  copies are gone. **Do not re-inline `useSortable`/`DndContext`; reorder via this.** No
+  mount gate (React-Compiler lint bans `setState`-in-effect; dnd-kit's `useId` is
+  hydration-safe, as `RepeatingListEditor` already proved).
 - `components/services/ServiceCard.tsx` — all service cards (`preview` variant for the
   homepage).
 - `components/media/useMediaSearch.ts` / `MediaGridResults` / `MediaTagChips` — all
@@ -559,34 +567,50 @@ session touches none of those, say "no security surface" and move on.
   `contact/page.tsx` (max-w-4xl), `g/[slug]/GalleryPasswordForm.tsx` (max-w-xl),
   `testimonials/page.tsx` (max-w-7xl).
 
-## Tag taxonomy & discipline subpages (T1 + T2, pending)
-`media.tags` is today an unvalidated comma-separated free-text field
-(`MediaDetailsSection.tsx:190-197` → `toList()` in `media/lib/utils.ts:19-25`: split, trim,
-drop empties, cap 60). No lowercasing, no dedupe, no canonical list. Server-side
-`asStringArray` (`app/api/_lib/common.ts:39-46`) does the same and no more, so `"Fashion"`
-and `"fashion"` are two different tags today.
+## Tag taxonomy & discipline subpages — T1 shipped 2026-08-19, T2 pending
+`media.tags` is now a validated **slug array** drawn from the `media_tags` taxonomy (T1).
+The old comma-separated free-text field and `toList()` are gone; the media form uses a
+multi-select (`app/admin/(protected)/media/components/TagMultiSelect.tsx`) that picks slugs
+from the taxonomy and can create a tag inline via `POST /api/media-tags`. Server-side
+`asStringArray` still stores whatever slug array it's given — validation of the *slugs
+themselves* now lives in the taxonomy, not the media route.
 
-T1 introduces a `media_tags` collection and an admin at `/admin/tags`, modelled on
-`service_categories` — the existing precedent for an admin-managed taxonomy with
-cascade-on-rename (`app/api/service-categories/[id]/route.ts:81-90`). `media.tags` stores
-**slugs**; labels come from the taxonomy. T2 builds `/photography/[tag]` and
-`/videography/[tag]` on it, modelled on `/people/[slug]`.
+**Collection `media_tags`** `{ label, slug, description, disciplines[], isActive, order,
+createdAt, updatedAt }`, modelled on `service_categories`:
+- `slug` lowercase `[a-z0-9-]`, unique. `label` is what a visitor sees. Validation +
+  reserved-slug + discipline logic live once in `lib/server/media-tags.ts`
+  (`slugifyTag`, `isValidTagSlug`, `isReservedTagSlug`, `sanitizeDisciplines`,
+  `TAG_DISCIPLINES`) — shared by the API and the client picker.
+- `disciplines` ⊆ {photography, videography, nft, dancing, web-development}; limits which
+  discipline pages get a subpage (T2). Empty = usable filter, no subpage.
+- **Reserved slug `videos`** is rejected (collides with the static `/videography/videos`
+  segment), same shape as `others` for service categories.
 
-**No migration.** Hussain's call, 2026-08-17: he is deleting the existing media and
-re-entering it through the new form. Do not write a migration script and do not add
-legacy-free-text handling to the read path — a surviving legacy value simply matches
-nothing, which is intentional.
+**API** `app/api/media-tags/route.ts` + `[id]/route.ts` (the `[id]` preamble uses
+`app/api/_lib/admin-route.ts`):
+- `GET` — **public: rate-limited (60/60s), active-only, no counts.** `?scope=admin` is
+  admin-gated and returns all tags + live media counts (drives `/admin/tags`).
+- `POST`/`PATCH`/`DELETE` — admin-gated. Rename **cascades** to `media.tags` via arrayFilters;
+  delete is **blocked while referenced** (`TAG_IN_USE` + count) unless `?detach=1`, which
+  `$pull`s the slug from every media doc first.
+
+**Admin `/admin/tags`** (sidebar, between Media and People) — list + create/edit/delete,
+per-tag live media count, dnd-kit reorder, disciplines picker. Deactivating hides the tag's
+subpage + chips but leaves it on media.
+
+**No migration.** Hussain's call, 2026-08-17: existing media is deleted and re-entered
+through the new form. A surviving legacy free-text value simply matches nothing — intentional.
 
 Facts a session must not re-derive:
-- There is already a compound index `{ tags: 1, isPublic: 1, createdAt: -1 }` on `media`
-  (`scripts/ensure-indexes.mjs:65`) — it fits the tag-page query exactly. Do not add another.
-- `/api/media/list-public` already supports `?tag=` as an **exact, case-sensitive** match
-  (`route.ts:83-84`) with keyset pagination and a 60-item cap. Tag pages reuse it.
-- `app/videography/videos/page.tsx` is a **static** child segment that redirects to
-  `/videography#videos`. Next resolves static before dynamic, so a literal tag named
-  `videos` would be unreachable under `/videography/[tag]`. Reserve the slug.
-- `/photography` has no child segments today — no collision there.
-Full spec: SESSION-QUEUE.md §T1, §T2.
+- The compound index `{ tags: 1, isPublic: 1, createdAt: -1 }` on `media`
+  (`scripts/ensure-indexes.mjs:65`) already fits the tag-page query. T1 added only the three
+  `media_tags` indexes (`{slug:1}` unique, `{order:1,createdAt:-1}`, `{isActive:1,order:1}`).
+  **Do not add another `media` index.**
+- `/api/media/list-public` supports `?tag=` as an **exact** match (`route.ts:83-84`), now
+  slug===slug — filtering works end-to-end. Public chips (`MediaTagChips`, NFT) currently
+  render the **slug** as label text; resolving slug→label for public surfaces is **T2's** job.
+- `/photography` has no child segments — no collision there.
+Full T2 spec: SESSION-QUEUE.md §T2.
 
 ## Known defects — logged, each owns a session
 Do not "discover" these again; do not fix them outside their session.

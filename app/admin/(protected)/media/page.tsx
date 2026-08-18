@@ -110,8 +110,9 @@ export default function AdminMediaPage() {
           clearLocation={editor.clearLocation}
           event={editor.event}
           setEvent={editor.setEvent}
-          tagsText={editor.tagsText}
-          setTagsText={editor.setTagsText}
+          selectedTagSlugs={editor.selectedTagSlugs}
+          addTag={editor.addTag}
+          removeTag={editor.removeTag}
           selectedPeopleIds={editor.selectedPeopleIds}
           selectedPeopleNames={editor.selectedPeopleNames}
           setSelectedPeople={editor.setSelectedPeople}

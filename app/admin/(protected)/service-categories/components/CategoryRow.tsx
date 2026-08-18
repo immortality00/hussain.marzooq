@@ -1,8 +1,9 @@
 "use client";
 
+import { useSortableRow } from "@/components/admin/sortable/SortableList";
 import type { Category, CategoryPatch } from "../lib/types";
 
-export default function CategoryRowStatic({
+export default function CategoryRow({
   category,
   onEdit,
   onToggle,
@@ -13,10 +14,23 @@ export default function CategoryRowStatic({
   onToggle: (id: string, value: boolean) => void;
   onDelete: (cat: Category) => void;
 }) {
+  const { setNodeRef, style, handleProps } = useSortableRow(category.id);
+
   return (
-    <div className="grid grid-cols-12 gap-2 border-b px-4 py-3 text-sm">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="grid grid-cols-12 gap-2 border-b px-4 py-3 text-sm"
+    >
       <div className="col-span-1 flex items-center">
-        <span className="rounded-lg border px-2 py-1 text-xs opacity-70">⠿</span>
+        <button
+          type="button"
+          {...handleProps}
+          className="cursor-grab rounded-lg border px-2 py-1 text-xs opacity-80 hover:opacity-100"
+          title="Drag"
+        >
+          ⠿
+        </button>
       </div>
 
       <div className="col-span-3">

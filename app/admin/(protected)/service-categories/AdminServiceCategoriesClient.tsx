@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import type { DragEndEvent } from "@dnd-kit/core";
+import { useMemo, useState } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useAdminAction } from "@/hooks/useAdminAction";
@@ -19,13 +18,8 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
   const [creating, setCreating] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
   const { feedback, setFeedback } = useAdminAction();
-  const [mounted, setMounted] = useState(false);
 
   const actionBusy = creating || savingOrder;
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const ordered = useMemo(() => [...items].sort((a, b) => a.order - b.order), [items]);
 
@@ -131,15 +125,11 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
     }
   }
 
-  function onDragEnd(e: DragEndEvent) {
+  function onReorder(activeId: string, overId: string) {
     if (actionBusy) return;
 
-    const { active, over } = e;
-    if (!over) return;
-    if (active.id === over.id) return;
-
-    const oldIndex = ordered.findIndex((c) => c.id === active.id);
-    const newIndex = ordered.findIndex((c) => c.id === over.id);
+    const oldIndex = ordered.findIndex((c) => c.id === activeId);
+    const newIndex = ordered.findIndex((c) => c.id === overId);
     if (oldIndex < 0 || newIndex < 0) return;
 
     const moved = arrayMove(ordered, oldIndex, newIndex).map((c, idx) => ({ ...c, order: idx }));
@@ -183,9 +173,8 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
       />
 
       <CategoriesTable
-        mounted={mounted}
         ordered={ordered}
-        onDragEnd={onDragEnd}
+        onReorder={onReorder}
         onEdit={editCategory}
         onToggle={toggleCategory}
         onDelete={deleteCategory}

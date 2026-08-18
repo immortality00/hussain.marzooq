@@ -16,14 +16,6 @@ export function getString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
 
-export function toList(csv: string): string[] {
-  return csv
-    .split(",")
-    .map((t) => t.trim())
-    .filter(Boolean)
-    .slice(0, 60);
-}
-
 export function appearanceError(a: Appearance): string | null {
   if (!a.title.trim()) return "Add a name (Title) — required to save this entry.";
   return null;
