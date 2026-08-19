@@ -20,12 +20,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     // Keep GSAP ScrollTrigger in sync with Lenis's smoothed scroll position,
     // otherwise pinned/scrubbed sections (e.g. photography horizontal mode) drift.
     lenis.on("scroll", ScrollTrigger.update);
+    let rafId = 0;
     const raf = (time: number) => {
       lenis.raf(time);
-      requestAnimationFrame(raf);
+      rafId = requestAnimationFrame(raf);
     };
-    requestAnimationFrame(raf);
-    return () => lenis.destroy();
+    rafId = requestAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(rafId);
+      lenis.destroy();
+    };
   }, [isAdmin]);
 
   if (isAdmin) {
