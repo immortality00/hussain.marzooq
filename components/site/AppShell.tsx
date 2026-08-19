@@ -7,10 +7,17 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Navbar } from "@/components/site/Navbar";
 import { Preloader } from "@/components/site/Preloader";
+import { CustomCursor } from "@/components/site/CustomCursor";
 
 gsap.registerPlugin(ScrollTrigger);
 
-export function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({
+  children,
+  footer,
+}: {
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}) {
   const pathname = usePathname();
   const isAdmin = pathname.startsWith("/admin");
 
@@ -40,8 +47,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="page-shell min-h-screen">
       {pathname === "/" && <Preloader />}
       <div className="grain-overlay" />
+      <CustomCursor />
       <Navbar />
       <div className="relative z-10">{children}</div>
+      {footer && <div className="relative z-10">{footer}</div>}
     </div>
   );
 }

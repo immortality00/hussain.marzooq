@@ -1961,3 +1961,58 @@ derived from the saved doc's tags; homepage link-through via `PortfolioCard` tag
 - **CLAUDE.md updated same commit:** rewrote the "Tag taxonomy & discipline subpages" section
   (T1 + T2 shipped, disciplines field removed, subpage/nav/revalidation facts), added
   `TagChipRow` + the `useMediaSearch` `lockedTag` note to reusable components.
+
+---
+
+## Phase S2 — Defects from the 2026-08-17 full-repo audit
+
+### Session S11 — Admin: stop losing work — `done` (2026-08-19)
+1. **No unsaved-work guard existed.** `/admin/pages` held drafts for all 13 rows (~170
+   fields) in React state; the sidebar is plain `<Link>`s, so one click discarded every
+   unsaved row silently. Added guard covering both browser unload and in-app navigation.
+2. **Partial saves reported nothing useful.** `usePagesAdmin.save()` fired up to three
+   concurrent PATCHes in one `Promise.all`; each committed its own slice but `discard(row)`
+   only ran if all resolved, so a partial failure left saved parts still reading "Unsaved"
+   and the banner said only "Failed to save."
+
+**Outcome:**
+- New shared hook `hooks/useUnsavedChangesGuard.ts(hasUnsavedChanges)` — `beforeunload`
+  prompt + a document capture-phase click interceptor that `confirm()`s before internal-link
+  navigation (App-Router `<Link>` renders `<a>`, so one document listener catches the sidebar,
+  "View site", "Logout", any in-app nav). Skips modifier/new-tab/external/hash/same-path clicks.
+  Wired into `/admin/pages` via a new `admin.hasUnsavedChanges` (true when any of the three
+  drafts maps is non-empty). Scope: `/admin/pages` only (Hussain's call); the hook is reusable
+  for the lower-severity same-shape gaps later.
+- `usePagesAdmin.save()` rewritten to `Promise.allSettled` over up to three labelled parts
+  (Visibility & image / Search & social / Sections). **Each part clears its own draft on
+  success and keeps it on failure**, so `isDirty(row)` is honest and a re-save re-sends only
+  the failed part. Feedback via `useAdminAction`'s exposed `setFeedback` (not `run()`, which is
+  all-or-nothing): all-ok names what saved (`"Home saved — …"`), partial names both
+  (`"Home: saved Search & social; Sections failed. Try again."`), all-fail (`"Home not
+  saved — …"`).
+- **Feedback-clarity fixes Hussain requested mid-session ("no wrong/unclear feedback
+  anywhere"):** surveyed every admin surface — inquiries, tags, private galleries, media
+  editor save, testimonials, media list already report the server's specific error. The two
+  genuine gaps fixed: (a) `MediaDetailsSection` `loadPeople()` `catch {}` → `peopleError`
+  state on any non-ok/throw + inline note; (b) service-categories `CategoryRow` name/slug
+  uncontrolled inputs reset to the last-saved value when `onEdit` returns failure (now
+  `Promise<boolean>`), so the field no longer contradicts the banner. Left for D9b: the
+  feedback-*architecture* consolidation (many hand-rolled wrappers → one hook).
+- `tsc` + `eslint --max-warnings 0` + `npm test` (115 pass) clean. CLAUDE.md updated same
+  commit: removed the two S11 defect rows, expanded the `useAdminAction` reusable-components
+  entry with the accuracy/multi-part rule, added the `useUnsavedChangesGuard` entry.
+
+---
+
+### Session N9 — Stop public chrome rendering on admin — `done` (2026-08-19)
+`app/layout.tsx` mounted `<CustomCursor />` and `<SiteFooter />` as siblings of `<AppShell>`,
+outside its `isAdmin` gate, so the custom cursor's `cursor-none` and the full public marketing
+footer rendered on every `/admin/*` page including login.
+
+**Outcome:** consolidated both into `AppShell` (restores CLAUDE.md's "all global elements live
+in AppShell" invariant). `SiteFooter` (async Server Component) is passed as the `footer` prop
+from `layout.tsx` — `<AppShell footer={<SiteFooter />}>` — a server component rendered by a
+client parent via props; `CustomCursor` is imported and rendered directly inside AppShell's
+public branch (both wrapped in `relative z-10` to sit above the z-2 grain). Admin branch stays
+`return <>{children}</>` — no cursor, no footer. `tsc` + `eslint` + `npm test` clean. CLAUDE.md
+updated same commit: rewrote the AppShell "Correction" paragraph, removed the defect row.

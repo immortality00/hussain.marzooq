@@ -431,7 +431,17 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
 - `components/shared/AnimatedText.tsx` — all text reveals. **Word-mode only,
   scroll-triggered.** No char/line modes — don't assume they exist.
 - `useAdminAction` hook + `AdminActionFeedback` — all admin loading/fetch/feedback
-  flows (F5). Never hand-roll the try/catch+setFeedback pattern.
+  flows (F5). Never hand-roll the try/catch+setFeedback pattern. Feedback must always be
+  **accurate and specific** (S11): report the server's own error, never a vague "Failed to
+  save"; on a multi-part save (e.g. `/admin/pages`, up to 3 collections in one row) report
+  per-part success/failure with `Promise.allSettled` and clear only the parts that saved, so
+  a re-save re-sends only what failed. `run()` is strictly all-or-nothing — for a multi-part
+  outcome, drive `setFeedback` directly. No silent `catch {}` and no uncontrolled input left
+  showing an unsaved value while the banner reports failure.
+- `hooks/useUnsavedChangesGuard.ts(hasUnsavedChanges)` — the shared unsaved-work guard (S11).
+  Adds a `beforeunload` prompt **and** a document capture-phase click interceptor that
+  `confirm()`s before internal-link navigation while dirty. Wired into `/admin/pages`; reuse
+  it on any admin surface holding unsaved drafts rather than hand-rolling another.
 - `app/api/_lib/admin-route.ts` — every admin `[id]` mutation route's preamble
   (S2b). `requireAdminObjectId(ctx)` runs the admin guard **then** validates the
   `:id` ObjectId (auth-before-parse ordering lives here, don't re-inline it);
@@ -458,11 +468,13 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   hand-roll another tag-nav row. It is distinct from `MediaTagChips` (in-place filter).
 - `components/search/SearchInput.tsx` · `components/site/PortfolioFallbackPanel.tsx` ·
   `components/site/Navbar.tsx` · `components/site/AppShell.tsx`.
-  **Correction:** AppShell holds Lenis, Navbar, Preloader and the grain overlay, all behind
-  its `if (isAdmin) return <>{children}</>` gate (`AppShell.tsx:14-15,31-33`). It does **not**
-  hold every global element: `CustomCursor` and `SiteFooter` are mounted as siblings in
-  `app/layout.tsx:30,32`, outside that gate, so they currently render on every `/admin/*`
-  page including the login screen. Fixed in queue §N9.
+  **AppShell holds every global element (N9).** Lenis, Navbar, Preloader, the grain overlay,
+  `CustomCursor` and the `SiteFooter` all live in `AppShell` behind its
+  `if (isAdmin) return <>{children}</>` gate, so none of them render on `/admin/*`. `SiteFooter`
+  is an async Server Component and `AppShell` is a client component, so the footer is passed in
+  as the `footer` prop from `app/layout.tsx` (`<AppShell footer={<SiteFooter />}>`) — a server
+  component rendered by a client parent via props. `CustomCursor` is imported and rendered
+  directly inside `AppShell`'s public branch. Do not re-mount either as a sibling in `layout.tsx`.
 
 ## Code quality rules
 - **Any code that can become a reusable component must be refactored into one.** Reuse
@@ -666,9 +678,6 @@ Do not "discover" these again; do not fix them outside their session.
 |---|---|---|
 | Admin login rate limiter keys on `ip\|userAgent`, so a UA change resets the lockout | `app/admin/page.tsx:32-34` | §S10 |
 | Public form fields are interpolated raw into notification email HTML | `lib/server/email.ts:19-29,45-55` | §S10 |
-| `/admin/pages` has no unsaved-work guard anywhere in the repo | zero `beforeunload` matches repo-wide | §S11 |
-| A partly-failed `/admin/pages` save commits some PATCHes and reports only "Failed to save" | `usePagesAdmin.ts:207-269` | §S11 |
-| `SiteFooter` + `CustomCursor` render on every admin route | `app/layout.tsx:30,32` | §N9 |
 | `POST /api/testimonials/reorder` is fully built and called from nowhere; testimonials cannot be reordered | `app/api/testimonials/reorder/route.ts` | §D9b |
 | Public media search has no supporting index; `ensure-indexes.mjs` creates a dead `{status:1}` index and misses `approvedAt` | `ensure-indexes.mjs:89,90` | §P1 |
 | N+1 query on `/people` (one `media.find()` per person) | `lib/server/public-people.ts:76-114` | §P1 |

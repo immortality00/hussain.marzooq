@@ -31,7 +31,9 @@ Phase 3: C4 (validated media locations + stored coordinates) ·
 Phase 2: D6 (exhibition globe) · Phase S2: S10 (security fixes), S8 (rAF + pointer-listener leaks),
 S9 (revalidation coverage: layout-wide invalidation on discipline toggle + revalidate on 4 static pages) ·
 Phase T: T1 (tag taxonomy `media_tags` + `/admin/tags` + shared admin `SortableList`),
-T2 (`/photography/[tag]` + `/videography/[tag]` subpages, `TagChipRow` nav, per-tag disciplines removed).
+T2 (`/photography/[tag]` + `/videography/[tag]` subpages, `TagChipRow` nav, per-tag disciplines removed) ·
+Phase S2: S11 (unsaved-work guard + honest multi-part save feedback + admin feedback-clarity fixes),
+N9 (public cursor/footer consolidated into `AppShell`, off admin).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -57,8 +59,8 @@ longer top-to-bottom — take sessions in exactly this order.
 7. **T2** — `/photography/[tag]` and `/videography/[tag]`. ✓ done — Block 3 complete.
 
 **Block 4 — Everything else,** in this order:
-8. **S11, N9** — admin work-loss and public chrome on admin. Each is under an hour; take them
-   as a batch whenever there is a gap. (**S8, S9 done.**)
+8. ~~**S11, N9**~~ ✓ done — admin unsaved-work guard + honest multi-part save feedback (S11),
+   and public cursor/footer no longer render on admin (N9). (**S8, S9 done.**)
 9. **L1** — launch prep. Small, and it is what actually gates going live.
 10. **D4, D5, D7, D8** · **D9b before D9** · **D10, D11, D12**
 11. **D13 last** — the consistency sweep; it needs everything else landed first.
@@ -146,47 +148,6 @@ Docs: impeccable.style
 Run order matters: **DS0 → DS1 → DS2 → D-sessions.** Skills before diagnosis before
 adoption before building, so each step informs the next instead of duplicating it.
 Full routing table + conflict rules: CLAUDE.md → "Design & motion skills".
-
----
-
-## Phase S2 — Defects from the 2026-08-17 full-repo audit
-
-Four sessions, all small, all with proven file:line evidence in CLAUDE.md → "Known
-defects". **Run these before the D-phase design work** — S8 and S9 are live bugs, S10 is
-security, S11 loses Hussain's work. None of them touches design.
-
-### Session S11 — Admin: stop losing work — `pending`
-1. **No unsaved-work guard exists anywhere in the repo** (zero `beforeunload` matches).
-   `/admin/pages` holds drafts for all 13 rows in React state (`usePagesAdmin.ts:94-98`) —
-   roughly 170 fields — and the sidebar is plain `<Link>`s (`admin/(protected)/layout.tsx:9-20,65-73`).
-   One click on any nav item discards every unsaved row with no confirmation. Add a guard
-   covering both browser unload and in-app navigation. Lower-severity same-shape gaps:
-   `ServiceEditorModal` Close/Cancel, `PeopleAdminClient` and `PrivateGalleriesAdminClient`
-   Cancel / "Back to list".
-2. **Partial saves report nothing useful.** `usePagesAdmin.ts:207-269` fires up to three
-   concurrent PATCHes in one `Promise.all`; each `.then()` commits its own slice of local
-   state (lines 220-230, 236-248, 253-260) but `discard(row)` only runs if the whole
-   `Promise.all` resolves (line 266). If one of the three fails, two are durably saved
-   server-side while the row still reads "Unsaved" and the banner says only "Failed to save.
-   Try again." Report per-part success/failure, and only re-send the parts that failed.
-
-Admin-only, no public surface. Read `usePagesAdmin.ts`, `PageRowCard.tsx`,
-`admin/(protected)/layout.tsx`, `hooks/useAdminAction.ts` before writing.
-
----
-
-### Session N9 — Stop public chrome rendering on admin — `pending`
-`app/layout.tsx:30,32` mounts `<CustomCursor />` and `<SiteFooter />` as siblings of
-`<AppShell>`, outside its `if (isAdmin) return <>{children}</>` gate
-(`AppShell.tsx:14-15,31-33`). So `CustomCursor.tsx:10,64-81` sets `cursor-none` on `<html>`
-on every route, and `SiteFooter.tsx:25-38` renders the full public marketing footer — every
-discipline link plus the "HM VISUALS" brand lockup — at the bottom of every `/admin/*` page
-including the login screen. `app/globals.css` has no admin-scoped override.
-
-Decide the shape in Gate 1: move both inside `AppShell`, or give each its own `isAdmin`
-check. Moving them in is the smaller change and makes CLAUDE.md's "all global elements live
-in AppShell" true again — but `SiteFooter` is an async Server Component and `AppShell` is a
-client component, so check that composition carefully before committing to it.
 
 ---
 
@@ -382,10 +343,13 @@ Specific things to evaluate — propose, do not assume:
   hand-roll the same `text-2xl font-semibold tracking-tight` page header — the admin has no
   `PageHeader` equivalent. (The per-page `mounted` hydration guards on service-categories and
   services are also gone — the primitive needs none.)
-- **Silent failures.** `MediaDetailsSection.tsx:52-64` `loadPeople()` is `catch {}` with no
-  feedback. `CategoryRowSortable.tsx:36-44` / `CategoryRowStatic.tsx:22-32` are uncontrolled
-  (`defaultValue`) inputs autosaving on blur — on failure only the page-top banner fires and
-  the field keeps showing the unsaved value, because React never re-renders it back.
+- **Silent failures — RESOLVED in S11 (2026-08-19).** `MediaDetailsSection` `loadPeople()`
+  now sets a `peopleError` state on any non-ok/throw and shows an inline note instead of the
+  old `catch {}`. The service-categories name/slug inputs (now `CategoryRow.tsx`, not the
+  stale `CategoryRowSortable`/`CategoryRowStatic` names) reset to the last-saved value when
+  `onEdit` reports failure, so the field no longer contradicts the banner. Left for D9b: the
+  broader feedback-*architecture* consolidation (multiple hand-rolled wrappers onto one hook)
+  — the user-facing feedback correctness itself is fixed.
 - **Dead surfaces:** `/admin/removal-requests` is a hardcoded stub (owned by D12, but it is
   live in the sidebar today); `/admin/nfts` is three stat tiles and two nav buttons, and is
   the only admin page querying MongoDB directly from a page component.
