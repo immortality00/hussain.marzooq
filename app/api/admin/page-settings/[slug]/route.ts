@@ -49,11 +49,7 @@ export async function PATCH(
 
   await db.collection("page_settings").updateOne({ slug }, { $set: set }, { upsert: true });
 
-  // Invalidate all pages that reference discipline links
-  const AFFECTED_PATHS = ["/", "/about", "/blog", "/testimonials", "/people", "/dancing"];
-  for (const path of AFFECTED_PATHS) {
-    revalidatePath(path);
-  }
+  revalidatePath("/", "layout");
 
   return NextResponse.json({
     slug,

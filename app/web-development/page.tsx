@@ -7,6 +7,8 @@ import { getPageSettings } from "@/lib/server/page-settings";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { getPageSections } from "@/lib/server/page-sections";
 
+export const revalidate = 300;
+
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("web-development");
   return { title: seo.title, description: seo.description };
