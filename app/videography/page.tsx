@@ -4,6 +4,7 @@ import { MediaGrid } from "@/components/media/MediaGrid";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
 import { toEmbedUrl } from "@/components/media/utils";
+import { getDisciplineTagNav } from "@/lib/server/tag-pages";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { getPageSections } from "@/lib/server/page-sections";
 
@@ -23,9 +24,10 @@ export const revalidate = 300;
 export default async function VideographyPage() {
   const { isActive } = await getPageSettings("videography");
   if (!isActive) redirect("/");
-  const [showreel, videos, seo, sections] = await Promise.all([
+  const [showreel, videos, nav, seo, sections] = await Promise.all([
     getShowreelItem(),
     getVideographyItems(),
+    getDisciplineTagNav({ category: "videography", mediaMode: "video" }),
     getPageSeo("videography"),
     getPageSections("videography"),
   ]);
@@ -81,6 +83,8 @@ export default async function VideographyPage() {
             items={videos}
             mediaMode="video"
             searchCategory="videography"
+            tagLinks={nav.tagLinks}
+            navChips={nav.chips}
           />
         ) : (
           <PortfolioFallbackPanel

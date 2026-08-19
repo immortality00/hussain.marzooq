@@ -1,9 +1,7 @@
 "use client";
 
 import { useSortableRow } from "@/components/admin/sortable/SortableList";
-import type { TagDiscipline } from "@/lib/server/media-tags";
 import type { Tag, TagPatch } from "../lib/types";
-import DisciplinePicker from "./DisciplinePicker";
 
 export default function TagRow({
   tag,
@@ -17,13 +15,6 @@ export default function TagRow({
   onDelete: (tag: Tag) => void;
 }) {
   const { setNodeRef, style, handleProps } = useSortableRow(tag.id);
-
-  function toggleDiscipline(discipline: TagDiscipline, next: boolean) {
-    const set = new Set(tag.disciplines);
-    if (next) set.add(discipline);
-    else set.delete(discipline);
-    onEdit(tag.id, { disciplines: Array.from(set) });
-  }
 
   return (
     <div ref={setNodeRef} style={style} className="border-b p-4">
@@ -68,8 +59,6 @@ export default function TagRow({
             }}
             placeholder="Description (optional)"
           />
-
-          <DisciplinePicker selected={tag.disciplines} onToggle={toggleDiscipline} />
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-2">

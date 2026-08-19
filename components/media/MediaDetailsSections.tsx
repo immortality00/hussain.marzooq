@@ -1,6 +1,7 @@
 "use client";
 
-import type { Appearance, MediaItem } from "./types";
+import Link from "next/link";
+import type { Appearance, MediaItem, TagLink } from "./types";
 import { formatDates, formatPlace } from "./utils";
 
 function Pill({ children }: { children: string }) {
@@ -8,6 +9,18 @@ function Pill({ children }: { children: string }) {
     <span className="rounded-full border bg-background/60 px-2 py-0.5 text-xs text-muted-foreground">
       {children}
     </span>
+  );
+}
+
+function TagPill({ slug, link }: { slug: string; link?: TagLink }) {
+  if (!link) return <Pill>{slug}</Pill>;
+  return (
+    <Link
+      href={link.href}
+      className="rounded-full border bg-background/60 px-2 py-0.5 text-xs text-muted-foreground transition-colors hover:bg-foreground hover:text-background"
+    >
+      {link.label}
+    </Link>
   );
 }
 
@@ -48,7 +61,13 @@ function AppearanceBlock({ title, items }: { title: string; items: Appearance[] 
   );
 }
 
-export default function MediaDetailsSections({ active }: { active: MediaItem }) {
+export default function MediaDetailsSections({
+  active,
+  tagLinks,
+}: {
+  active: MediaItem;
+  tagLinks?: Record<string, TagLink>;
+}) {
   const exhibitions = (active.appearances ?? []).filter((a) => a.kind === "exhibited");
   const features = (active.appearances ?? []).filter((a) => a.kind === "featured");
 
@@ -92,7 +111,7 @@ export default function MediaDetailsSections({ active }: { active: MediaItem }) 
         <Section title="Tags">
           <div className="flex flex-wrap gap-2">
             {active.tags.slice(0, 120).map((t) => (
-              <Pill key={t}>{t}</Pill>
+              <TagPill key={t} slug={t} link={tagLinks?.[t]} />
             ))}
           </div>
         </Section>

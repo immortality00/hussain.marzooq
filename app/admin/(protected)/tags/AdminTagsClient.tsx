@@ -11,7 +11,7 @@ import { createTagRequest, deleteTagRequest, fetchTags, patchTag } from "./lib/a
 import type { NewTag, Tag, TagPatch } from "./lib/types";
 import { getErrorMessage } from "./lib/utils";
 
-const EMPTY_DRAFT: NewTag = { label: "", slug: "", description: "", disciplines: [] };
+const EMPTY_DRAFT: NewTag = { label: "", slug: "", description: "" };
 
 export default function AdminTagsClient({ initial }: { initial: Tag[] }) {
   const [items, setItems] = useState<Tag[]>(initial);

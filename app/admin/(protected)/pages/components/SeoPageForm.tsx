@@ -15,13 +15,17 @@ export function SeoPageForm({
   draft,
   onChange,
   detailPage = false,
+  detailToken = "name",
 }: {
   draft: SeoDraft;
   onChange: (field: keyof SeoDraft, value: string) => void;
   // Dynamic detail pages: the visible header is the record's own data, so the
-  // on-page group is hidden and {name} is replaced with the record's name.
+  // on-page group is hidden and {name}/{tag} is replaced with the record's own
+  // value at render time.
   detailPage?: boolean;
+  detailToken?: "name" | "tag";
 }) {
+  const detailNoun = detailToken === "tag" ? "tag" : "person";
   return (
     <>
       {!detailPage && (
@@ -52,8 +56,9 @@ export function SeoPageForm({
       <GroupCard icon={Search} label="Search & social — what search engines see" tint="seo">
         {detailPage && (
           <p className="text-xs text-muted-foreground">
-            Applies to every person&apos;s page — write <code>{"{name}"}</code> where the
-            person&apos;s name should appear.
+            Applies to every {detailNoun}&apos;s page — write{" "}
+            <code>{`{${detailToken}}`}</code> where the {detailNoun}&apos;s{" "}
+            {detailToken === "tag" ? "label" : "name"} should appear.
           </p>
         )}
         <div>

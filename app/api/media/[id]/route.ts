@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidateMediaSurfaces } from "@/app/api/_lib/revalidate";
 import { getDb } from "@/lib/server/db";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import {
@@ -316,11 +316,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     }
   }
 
-  revalidatePath("/");
-  revalidatePath("/photography");
-  revalidatePath("/videography");
-  revalidatePath("/nft");
-  revalidatePath("/people", "layout");
+  revalidateMediaSurfaces([...tags, ...asStringArray(existingMedia.tags)]);
 
   return noStoreJson({ ok: true });
 }
@@ -355,11 +351,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
 
   await deleteStoredMediaAsset(mediaAsset);
 
-  revalidatePath("/");
-  revalidatePath("/photography");
-  revalidatePath("/videography");
-  revalidatePath("/nft");
-  revalidatePath("/people", "layout");
+  revalidateMediaSurfaces(asStringArray(media.tags));
 
   return noStoreJson({ ok: true });
 }

@@ -441,7 +441,11 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
 - `components/services/ServiceCard.tsx` — all service cards (`preview` variant for the
   homepage).
 - `components/media/useMediaSearch.ts` / `MediaGridResults` / `MediaTagChips` — all
-  media search/filter surfaces (D3). `MediaGrid` composes them.
+  media search/filter surfaces (D3). `MediaGrid` composes them. `useMediaSearch` takes an
+  optional `lockedTag` that scopes every search to one tag (used by the tag subpages).
+- `components/media/TagChipRow.tsx` — **all tag-subpage navigation** (T2). Compact, boxed,
+  sideways-scrolling chip row of `<Link>`s (`scroll` + `boxed` props), Lenis-safe. Do not
+  hand-roll another tag-nav row. It is distinct from `MediaTagChips` (in-place filter).
 - `components/search/SearchInput.tsx` · `components/site/PortfolioFallbackPanel.tsx` ·
   `components/site/Navbar.tsx` · `components/site/AppShell.tsx`.
   **Correction:** AppShell holds Lenis, Navbar, Preloader and the grain overlay, all behind
@@ -567,7 +571,7 @@ session touches none of those, say "no security surface" and move on.
   `contact/page.tsx` (max-w-4xl), `g/[slug]/GalleryPasswordForm.tsx` (max-w-xl),
   `testimonials/page.tsx` (max-w-7xl).
 
-## Tag taxonomy & discipline subpages — T1 shipped 2026-08-19, T2 pending
+## Tag taxonomy & discipline subpages — T1 + T2 shipped 2026-08-19
 `media.tags` is now a validated **slug array** drawn from the `media_tags` taxonomy (T1).
 The old comma-separated free-text field and `toList()` are gone; the media form uses a
 multi-select (`app/admin/(protected)/media/components/TagMultiSelect.tsx`) that picks slugs
@@ -575,14 +579,18 @@ from the taxonomy and can create a tag inline via `POST /api/media-tags`. Server
 `asStringArray` still stores whatever slug array it's given — validation of the *slugs
 themselves* now lives in the taxonomy, not the media route.
 
-**Collection `media_tags`** `{ label, slug, description, disciplines[], isActive, order,
-createdAt, updatedAt }`, modelled on `service_categories`:
+**Collection `media_tags`** `{ label, slug, description, isActive, order, createdAt,
+updatedAt }`, modelled on `service_categories`:
 - `slug` lowercase `[a-z0-9-]`, unique. `label` is what a visitor sees. Validation +
-  reserved-slug + discipline logic live once in `lib/server/media-tags.ts`
-  (`slugifyTag`, `isValidTagSlug`, `isReservedTagSlug`, `sanitizeDisciplines`,
-  `TAG_DISCIPLINES`) — shared by the API and the client picker.
-- `disciplines` ⊆ {photography, videography, nft, dancing, web-development}; limits which
-  discipline pages get a subpage (T2). Empty = usable filter, no subpage.
+  reserved-slug logic live once in `lib/server/media-tags.ts` (`slugifyTag`,
+  `isValidTagSlug`, `isReservedTagSlug`) — shared by the API and the client picker.
+  `TAG_DISCIPLINES` / `TagDiscipline` remain there **only as the 5-discipline category
+  union type**, not a per-tag field.
+- **The per-tag `disciplines[]` field was removed in T2 (2026-08-19).** It used to gate
+  which discipline pages got a subpage; that gate is gone — a tag earns a subpage/chip
+  purely from **media presence** (any active tag on ≥1 public item in that discipline).
+  The `sanitizeDisciplines` helper and the `/admin/tags` disciplines picker are deleted.
+  Existing docs may still carry a stale `disciplines` field — ignored, no migration.
 - **Reserved slug `videos`** is rejected (collides with the static `/videography/videos`
   segment), same shape as `others` for service categories.
 
@@ -595,8 +603,37 @@ createdAt, updatedAt }`, modelled on `service_categories`:
   `$pull`s the slug from every media doc first.
 
 **Admin `/admin/tags`** (sidebar, between Media and People) — list + create/edit/delete,
-per-tag live media count, dnd-kit reorder, disciplines picker. Deactivating hides the tag's
-subpage + chips but leaves it on media.
+per-tag live media count, dnd-kit reorder. No disciplines picker (removed in T2).
+Deactivating hides the tag's subpage + chips but leaves it on media.
+
+**Discipline subpages (T2, shipped 2026-08-19):** `app/photography/[tag]/page.tsx` +
+`app/videography/[tag]/page.tsx`, mirroring `/people/[slug]` (`revalidate = 300`,
+`generateMetadata` + `notFound()`). Assembled by `lib/server/tag-pages.ts`
+(`getTagPage`, `getTagMeta`, `getDisciplineTagNav`) over `getMediaByTag`
+(`lib/server/public-media.ts`, reuses `buildPublicMediaQuery`) and the taxonomy reads in
+`lib/server/public-media-tags.ts` (`getPublicMediaTag`, `getDisciplineTags`).
+- **Validity:** `notFound()` only when the tag slug is unknown/inactive. A known tag with
+  **zero** public items renders the full page with a "No matches." panel — **not a 404**
+  (Hussain's call). There is **no minimum-count threshold** (the §T2 spec's default-3 was
+  dropped).
+- **Header** from `page_seo` slugs `photography-tag` / `videography-tag` (a `{tag}` token
+  replaced with the tag label, like `people-detail`'s `{name}`); description from
+  `media_tags.description` else the SEO template. Both slugs are editable in `/admin/pages`
+  as `seoDetailPage` rows. **No new `page_sections` slug** — subpages reuse the parent's
+  `stickyCta`.
+- **Tag navigation** = `components/media/TagChipRow.tsx` (client): a compact, boxed,
+  sideways-scrolling chip row, most-used-first, that **replaces** the in-viewer filter
+  chips on the parent Photography/Videography pages and appears on the subpages (current
+  tag highlighted). It carries `data-lenis-prevent` + `touch-action: pan-x` so it scrolls
+  under Lenis on wheel/trackpad/touch. `/people` and other `MediaGrid` uses keep their
+  normal filter chips. The viewers take `lockedTag` (scopes search to the tag, hides the
+  filter chips) + `tagLinks` (makes tags in the `MediaLightbox` detail panel link to their
+  subpage).
+- **Revalidation** — `app/api/_lib/revalidate.ts` (`revalidateMediaSurfaces(tagSlugs)`)
+  derives the `/photography/[slug]` + `/videography/[slug]` paths from the saved doc's tags
+  (old + new on an edit), called by media `create`/`[id]`; the `media-tags` routes
+  revalidate `/photography` + `/videography` `"layout"`, which cascades to their `[tag]`
+  children. Paths are never hardcoded (avoids the §S9 bug).
 
 **No migration.** Hussain's call, 2026-08-17: existing media is deleted and re-entered
 through the new form. A surviving legacy free-text value simply matches nothing — intentional.
@@ -606,11 +643,11 @@ Facts a session must not re-derive:
   (`scripts/ensure-indexes.mjs:65`) already fits the tag-page query. T1 added only the three
   `media_tags` indexes (`{slug:1}` unique, `{order:1,createdAt:-1}`, `{isActive:1,order:1}`).
   **Do not add another `media` index.**
-- `/api/media/list-public` supports `?tag=` as an **exact** match (`route.ts:83-84`), now
-  slug===slug — filtering works end-to-end. Public chips (`MediaTagChips`, NFT) currently
-  render the **slug** as label text; resolving slug→label for public surfaces is **T2's** job.
-- `/photography` has no child segments — no collision there.
-Full T2 spec: SESSION-QUEUE.md §T2.
+- `/api/media/list-public` supports `?tag=` as an **exact** match, slug===slug — powers the
+  subpage "Load more". Public chips still render the **slug** as label text; subpage nav
+  chips (`TagChipRow`) render the real **label**.
+- `/photography` has no child segments — the only collision under `/videography` is the
+  static `videos/` segment, which the reserved `videos` slug protects.
 
 ## Known defects — logged, each owns a session
 Do not "discover" these again; do not fix them outside their session.

@@ -29,7 +29,8 @@ Phase S: S1–S7 (security, tests, reuse audit) · Phase DS: DS0–DS2 (skills, 
 Phase 2a: D2b (homepage section pass + the shared `Button` two-look system), D2c (About rebuild) ·
 Phase 3: C4 (validated media locations + stored coordinates) ·
 Phase 2: D6 (exhibition globe) · Phase S2: S10 (security fixes) ·
-Phase T: T1 (tag taxonomy `media_tags` + `/admin/tags` + shared admin `SortableList`).
+Phase T: T1 (tag taxonomy `media_tags` + `/admin/tags` + shared admin `SortableList`),
+T2 (`/photography/[tag]` + `/videography/[tag]` subpages, `TagChipRow` nav, per-tag disciplines removed).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -52,7 +53,7 @@ longer top-to-bottom — take sessions in exactly this order.
 
 **Block 3 — Tags and subpages.**
 6. **T1** — tag taxonomy + `/admin/tags`. ✓ done
-7. **T2** — `/photography/[tag]` and `/videography/[tag]`. Blocked by T1 (now unblocked).
+7. **T2** — `/photography/[tag]` and `/videography/[tag]`. ✓ done — Block 3 complete.
 
 **Block 4 — Everything else,** in this order:
 8. **S8, S9, S11, N9** — small live bugs and admin work-loss. Each is under an hour; take
@@ -598,69 +599,6 @@ audit with prioritised, self-contained fix plans — this is the right session f
 once all the motion work (D4–D8) has landed. Re-run `npx impeccable detect` too and
 compare against DS1's triage table: anything in the "Real" column that is still present
 is unfinished work.
-
----
-
-## Phase T — Tag taxonomy & discipline subpages
-
-Raised by Hussain 2026-08-17: *"i need subpages for the pages i have, specially for
-photography and videography, and that will be based on tags of the media, that will be
-updated from the media form and there should be a control somehow for the tags, like in a
-separate admin page, just like the people. So if a user goes to photography/fashion, all
-media with the fashion tag will appear there."*
-
-**T1 before T2.** T2 cannot be built on today's tag data — see T1's first paragraph.
-
-### Session T2 — `/photography/[tag]` and `/videography/[tag]` — `pending`
-**Blocked by T1.**
-
-**Precedent to follow: `/people/[slug]`** (`app/people/[slug]/page.tsx`) — on-demand render,
-`export const revalidate = 300`, `notFound()` when the record is missing or not public,
-`generateMetadata` reading a `page_seo` slug whose defaults carry a `{name}` token that is
-`replaceAll`'d at request time (`lib/server/page-seo.ts:96-104`, used at
-`people/[slug]/page.tsx:27-28`). Mirror all of it.
-
-**Routes:** `app/photography/[tag]/page.tsx`, `app/videography/[tag]/page.tsx`.
-No collision under `/photography` (it has no child segments). Under `/videography`, the
-static `videos/` segment wins over the dynamic one — T1 reserves that slug.
-
-**Data:** `getMediaByTag({ category, tagSlug, limit })` in `lib/server/public-media.ts`,
-reusing `buildPublicMediaQuery` so the public/`isPublic` rule stays in one place. The
-existing `?tag=` support in `/api/media/list-public` (exact match + keyset pagination, 60
-cap) powers "Load more" — do not write a second endpoint.
-
-**Behaviour:**
-- `notFound()` if the tag does not exist, is inactive, or does not list this discipline in
-  its `disciplines` array.
-- Header via `PageHeader` (never inline h1 — D13 already logs four violations of this):
-  title from a new `page_seo` slug `photography-tag` / `videography-tag` with a `{tag}`
-  token, description from `media_tags.description` when set, falling back to the SEO
-  template. Add both slugs to `ALL_PAGE_SECTIONS_SLUGS` / the page-seo defaults and to
-  `/admin/pages` so they are editable, matching how `people-detail` is handled.
-- Body: the same viewer the parent page uses, with the tag pre-applied —
-  `PhotographyViewer` for photography, `MediaGrid` for videography. Do **not** fork them.
-- A back link to the parent discipline, and the sibling tags as chips so a visitor can move
-  between subpages without going back up.
-- Empty result: `PortfolioFallbackPanel`, the existing shared empty state. Never a gradient.
-- `StickyCta` from the parent page's `page_sections` entry — no new CTA copy.
-
-**Minimum-count rule:** a tag chip should not lead to a near-empty page. Add a threshold
-(default 3 public items) below which a tag renders no chip on the parent page and no card
-on the homepage. Put the threshold in `media_tags` or a single shared constant — **not
-hardcoded in a component**.
-
-**Revalidation — do not repeat §S9's bug.** Saving media or editing a tag must
-`revalidatePath` the affected subpages as well as the parent. Since the tag set is dynamic,
-derive the paths from the tags on the saved document rather than hardcoding a list.
-
-**Homepage link-through:** D2b adds the tag chips to `PortfolioCard`. If D2b has already
-run, wire the real hrefs here; if not, T2 leaves the chips out and D2b picks them up.
-
-Read before writing: `app/people/[slug]/page.tsx`, `lib/server/public-people.ts`,
-`lib/server/page-seo.ts`, `lib/server/page-sections.ts`, `app/photography/page.tsx`,
-`app/videography/page.tsx`, `components/photography/PhotographyViewer.tsx`,
-`components/media/MediaGrid.tsx` + `useMediaSearch.ts`, `app/api/media/list-public/route.ts`,
-`app/admin/(protected)/pages/usePagesAdmin.ts`.
 
 ---
 

@@ -73,7 +73,7 @@ export default function TagMultiSelect({
     setError("");
 
     try {
-      const created = await createTagRequest({ label, slug: "", description: "", disciplines: [] });
+      const created = await createTagRequest({ label, slug: "", description: "" });
       setOptions((prev) =>
         prev.some((o) => o.slug === created.slug)
           ? prev

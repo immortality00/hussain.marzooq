@@ -5,7 +5,6 @@ import { asFiniteNumber, isRecord, noStoreJson } from "@/app/api/_lib/common";
 import {
   isReservedTagSlug,
   isValidTagSlug,
-  sanitizeDisciplines,
   slugifyTag,
 } from "@/lib/server/media-tags";
 
@@ -41,10 +40,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   if (typeof body.description === "string") {
     patch.description = body.description.trim();
-  }
-
-  if (Array.isArray(body.disciplines)) {
-    patch.disciplines = sanitizeDisciplines(body.disciplines);
   }
 
   if (typeof body.isActive === "boolean") {

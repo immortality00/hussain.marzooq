@@ -3,10 +3,10 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { SearchInput } from "@/components/search/SearchInput";
-import MediaTagChips from "@/components/media/MediaTagChips";
+import { TagChipRow, type TagChip } from "@/components/media/TagChipRow";
 import MediaGridResults from "@/components/media/MediaGridResults";
 import MediaLightbox from "@/components/media/MediaLightbox";
-import type { MediaItem } from "@/components/media/types";
+import type { MediaItem, TagLink } from "@/components/media/types";
 import { useMediaSearch } from "@/components/media/useMediaSearch";
 import { useModalNavbarLock } from "@/components/media/useModalNavbarLock";
 import ModeSwitcher, { type ViewerMode } from "./ModeSwitcher";
@@ -17,9 +17,15 @@ const PhotographyHorizontal = dynamic(() => import("./PhotographyHorizontal"), {
 export default function PhotographyViewer({
   items,
   searchCategory = "photography",
+  lockedTag,
+  tagLinks,
+  navChips,
 }: {
   items: MediaItem[];
   searchCategory?: string;
+  lockedTag?: string;
+  tagLinks?: Record<string, TagLink>;
+  navChips?: TagChip[];
 }) {
   const [mode, setMode] = useState<ViewerMode>("cylinder");
   const [active, setActive] = useState<MediaItem | null>(null);
@@ -27,9 +33,6 @@ export default function PhotographyViewer({
   const {
     q,
     setQ,
-    activeTag,
-    setActiveTag,
-    allTags,
     displayedItems,
     isSearching,
     searchError,
@@ -37,7 +40,7 @@ export default function PhotographyViewer({
     isLoadingMore,
     hasActiveSearch,
     loadMore,
-  } = useMediaSearch({ items, mediaMode: "image", searchCategory });
+  } = useMediaSearch({ items, mediaMode: "image", searchCategory, lockedTag });
 
   useModalNavbarLock(Boolean(active));
 
@@ -47,44 +50,50 @@ export default function PhotographyViewer({
   const showLoadMore = Boolean(searchCategory) && hasActiveSearch && Boolean(nextCursor);
 
   return (
-    <div className="mt-5 space-y-4">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
+    <div className="mt-5">
+      <div className="flex flex-wrap items-center gap-5">
         <ModeSwitcher mode={mode} onChange={setMode} />
-        <div className="ml-auto flex flex-1 flex-wrap items-center justify-end gap-x-3 gap-y-2 sm:flex-nowrap">
-          <MediaTagChips activeTag={activeTag} setActiveTag={setActiveTag} allTags={allTags} />
-          <div className="w-full sm:w-64 sm:shrink-0">
-            <SearchInput
-              value={q}
-              onValueChange={setQ}
-              onClear={() => setActiveTag("")}
-              placeholder="Search…"
-            />
+        {navChips?.length ? (
+          <div className="order-last min-w-0 basis-full sm:order-none sm:ml-12 sm:basis-0 sm:flex-1">
+            <TagChipRow chips={navChips} activeSlug={lockedTag} scroll boxed />
           </div>
+        ) : null}
+        <div className="w-full sm:w-64 sm:shrink-0">
+          <SearchInput
+            value={q}
+            onValueChange={setQ}
+            onClear={() => setQ("")}
+            placeholder="Search…"
+          />
         </div>
       </div>
 
-      {mode === "cylinder" ? (
-        <PhotographyCylinder items={displayedItems} onSelect={setActive} />
-      ) : mode === "horizontal" ? (
-        <PhotographyHorizontal
-          key={displayedItems.map((m) => m.id).join(",")}
-          items={displayedItems}
-          onSelect={setActive}
-        />
-      ) : (
-        <MediaGridResults
-          items={displayedItems}
-          onSelect={setActive}
-          mediaMode="image"
-          isSearching={isSearching}
-          searchError={searchError}
-          showLoadMore={showLoadMore}
-          isLoadingMore={isLoadingMore}
-          onLoadMore={() => void loadMore()}
-        />
-      )}
+      <div className="mt-10">
+        {mode === "cylinder" ? (
+          <PhotographyCylinder items={displayedItems} onSelect={setActive} />
+        ) : mode === "horizontal" ? (
+          <PhotographyHorizontal
+            key={displayedItems.map((m) => m.id).join(",")}
+            items={displayedItems}
+            onSelect={setActive}
+          />
+        ) : (
+          <MediaGridResults
+            items={displayedItems}
+            onSelect={setActive}
+            mediaMode="image"
+            isSearching={isSearching}
+            searchError={searchError}
+            showLoadMore={showLoadMore}
+            isLoadingMore={isLoadingMore}
+            onLoadMore={() => void loadMore()}
+          />
+        )}
+      </div>
 
-      {active ? <MediaLightbox active={active} onClose={() => setActive(null)} /> : null}
+      {active ? (
+        <MediaLightbox active={active} onClose={() => setActive(null)} tagLinks={tagLinks} />
+      ) : null}
     </div>
   );
 }

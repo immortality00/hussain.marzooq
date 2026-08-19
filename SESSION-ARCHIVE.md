@@ -1833,3 +1833,63 @@ equivalent — `media_tags` has no system row (unlike service categories' "other
   four surfaces, tag multi-select + inline create, and rename cascade on his machine.
 - **CLAUDE.md updated same commit:** rewrote the "Tag taxonomy" section (T1 shipped), added
   `SortableList` to reusable components, marked the §D9b dnd-kit-reimplementation note resolved.
+
+---
+
+### Session T2 — `/photography/[tag]` and `/videography/[tag]` — `done`
+**Blocked by T1.**
+
+**Precedent to follow: `/people/[slug]`** (`app/people/[slug]/page.tsx`) — on-demand render,
+`export const revalidate = 300`, `notFound()` when the record is missing or not public,
+`generateMetadata` reading a `page_seo` slug whose defaults carry a `{name}` token that is
+`replaceAll`'d at request time. Mirror all of it.
+
+**Routes:** `app/photography/[tag]/page.tsx`, `app/videography/[tag]/page.tsx`.
+No collision under `/photography`. Under `/videography`, the static `videos/` segment wins
+over the dynamic one — T1 reserves that slug.
+
+**Data:** `getMediaByTag({ category, mediaMode, tagSlug, limit })` in
+`lib/server/public-media.ts`, reusing `buildPublicMediaQuery`. The existing `?tag=` support in
+`/api/media/list-public` powers "Load more" — no second endpoint.
+
+**Original spec (see build outcome for the deviations Hussain directed mid-session):**
+`notFound()` when the tag is missing/inactive/does-not-list-the-discipline; header via
+`PageHeader` from a `{tag}`-token `page_seo` slug; body = the parent's viewer with the tag
+pre-applied; back link + sibling chips; empty → `PortfolioFallbackPanel`; `StickyCta` from the
+parent's `page_sections`; a minimum-count threshold (default 3) gating chips; revalidation
+derived from the saved doc's tags; homepage link-through via `PortfolioCard` tag chips.
+
+**Build outcome (shipped 2026-08-19):**
+- Routes + `lib/server/tag-pages.ts` (`getTagPage`/`getTagMeta`/`getDisciplineTagNav`),
+  `lib/server/public-media-tags.ts` (`getPublicMediaTag`/`getDisciplineTags`),
+  `getMediaByTag` in `public-media.ts`, `page_seo` slugs `photography-tag`/`videography-tag`
+  (`{tag}` token), two `seoDetailPage` rows in `/admin/pages`, and
+  `app/api/_lib/revalidate.ts` (`revalidateMediaSurfaces`, paths derived from doc tags).
+- **`StickyCta` reuses the parent's `page_sections`** — no new `page_sections` slug (the
+  spec's "add to `ALL_PAGE_SECTIONS_SLUGS`" was dropped as self-contradictory with "no new
+  CTA copy").
+- **Hussain-directed deviations from the spec:**
+  1. **No discipline gate.** The per-tag `disciplines[]` field was removed entirely (model +
+     API + `/admin/tags` picker + `sanitizeDisciplines`). A tag earns a subpage/chip purely
+     from **media presence**; the discipline checkboxes were friction that 404'd valid tags.
+  2. **No minimum-count threshold** — the default-3 rule was cut; any tag with ≥1 public item
+     shows.
+  3. **Empty tag ≠ 404.** A known tag with zero items renders the full page with the viewer's
+     "No matches." panel, keeping header/nav/search/CTA.
+  4. **Tag nav = `components/media/TagChipRow.tsx`** (new shared client component): compact,
+     boxed, sideways-scrolling, most-used-first, that **replaces** the in-viewer filter chips
+     on the parent Photography/Videography pages and appears on subpages (active highlighted).
+     Lives inline in the photography toolbar (mode-switcher · tag box · search, `sm:ml-12`
+     gap) and shares the row with search on videography. Carries `data-lenis-prevent` +
+     `touch-action: pan-x` + `overscroll-x-contain` + a vertical-wheel→horizontal handler so
+     it scrolls under Lenis on wheel/trackpad/touch, desktop and mobile.
+  5. **Clickable tags in the `MediaLightbox` detail panel** → each tag with a subpage links to
+     it (real label), threaded via a `tagLinks` map through the viewers. `/people` and other
+     `MediaGrid` uses keep their normal filter chips (no `navChips`).
+- Viewers gained `lockedTag` (scopes search to the tag, hides filter chips) + `navChips` +
+  `tagLinks`; `useMediaSearch` gained `lockedTag`.
+- Verified live on Hussain's dev server (desktop + mobile). `tsc` + `eslint --max-warnings 0`
+  + `npm test` (115 pass; 3 `sanitizeDisciplines` tests removed with the helper) clean.
+- **CLAUDE.md updated same commit:** rewrote the "Tag taxonomy & discipline subpages" section
+  (T1 + T2 shipped, disciplines field removed, subpage/nav/revalidation facts), added
+  `TagChipRow` + the `useMediaSearch` `lockedTag` note to reusable components.

@@ -95,7 +95,12 @@ export function PageRowCard({
               )}
 
               {row.seoSlug && (
-                <SeoPageForm draft={seo} onChange={onSeoChange} detailPage={row.seoDetailPage} />
+                <SeoPageForm
+                  draft={seo}
+                  onChange={onSeoChange}
+                  detailPage={row.seoDetailPage}
+                  detailToken={row.seoSlug?.endsWith("-tag") ? "tag" : "name"}
+                />
               )}
 
               {row.sectionsSlug && sectionsData && (

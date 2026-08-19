@@ -2,7 +2,6 @@ import { describe, expect, test } from "vitest";
 import {
   isReservedTagSlug,
   isValidTagSlug,
-  sanitizeDisciplines,
   slugifyTag,
 } from "@/lib/server/media-tags";
 
@@ -41,23 +40,5 @@ describe("isReservedTagSlug", () => {
 
   test("ordinary slugs are not reserved", () => {
     expect(isReservedTagSlug("fashion")).toBe(false);
-  });
-});
-
-describe("sanitizeDisciplines", () => {
-  test("keeps only known disciplines, deduped and in canonical order", () => {
-    expect(sanitizeDisciplines(["videography", "photography", "photography"])).toEqual([
-      "photography",
-      "videography",
-    ]);
-  });
-
-  test("drops unknown values and non-strings", () => {
-    expect(sanitizeDisciplines(["photography", "cooking", 42, null])).toEqual(["photography"]);
-  });
-
-  test("returns empty array for non-array input", () => {
-    expect(sanitizeDisciplines("photography")).toEqual([]);
-    expect(sanitizeDisciplines(undefined)).toEqual([]);
   });
 });
