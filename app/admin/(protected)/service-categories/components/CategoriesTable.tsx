@@ -13,7 +13,7 @@ export default function CategoriesTable({
 }: {
   ordered: Category[];
   onReorder: (activeId: string, overId: string) => void;
-  onEdit: (id: string, patch: CategoryPatch) => void;
+  onEdit: (id: string, patch: CategoryPatch) => Promise<boolean>;
   onToggle: (id: string, value: boolean) => void;
   onDelete: (cat: Category) => void;
 }) {

@@ -10,7 +10,7 @@ export default function CategoryRow({
   onDelete,
 }: {
   category: Category;
-  onEdit: (id: string, patch: CategoryPatch) => void;
+  onEdit: (id: string, patch: CategoryPatch) => Promise<boolean>;
   onToggle: (id: string, value: boolean) => void;
   onDelete: (cat: Category) => void;
 }) {
@@ -35,11 +35,16 @@ export default function CategoryRow({
 
       <div className="col-span-3">
         <input
+          key={category.name}
           defaultValue={category.name}
           className="w-full rounded-lg border bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-ring"
-          onBlur={(e) => {
-            const v = e.target.value.trim();
-            if (v && v !== category.name) onEdit(category.id, { name: v });
+          onBlur={async (e) => {
+            const input = e.target;
+            const v = input.value.trim();
+            if (v && v !== category.name) {
+              const ok = await onEdit(category.id, { name: v });
+              if (!ok) input.value = category.name;
+            }
           }}
           disabled={category.isSystem}
         />
@@ -47,11 +52,16 @@ export default function CategoryRow({
 
       <div className="col-span-3">
         <input
+          key={category.slug}
           defaultValue={category.slug}
           className="w-full rounded-lg border bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-ring"
-          onBlur={(e) => {
-            const v = e.target.value.trim();
-            if (v && v !== category.slug) onEdit(category.id, { slug: v });
+          onBlur={async (e) => {
+            const input = e.target;
+            const v = input.value.trim();
+            if (v && v !== category.slug) {
+              const ok = await onEdit(category.id, { slug: v });
+              if (!ok) input.value = category.slug;
+            }
           }}
           disabled={category.isSystem}
         />

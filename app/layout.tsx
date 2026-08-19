@@ -4,7 +4,6 @@ import { GeistMono } from "geist/font/mono";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { AppShell } from "@/components/site/AppShell";
-import { CustomCursor } from "@/components/site/CustomCursor";
 import { SiteFooter } from "@/components/site/SiteFooter";
 
 export const metadata: Metadata = {
@@ -27,9 +26,7 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          <CustomCursor />
-          <AppShell>{children}</AppShell>
-          <SiteFooter />
+          <AppShell footer={<SiteFooter />}>{children}</AppShell>
         </ThemeProvider>
       </body>
     </html>

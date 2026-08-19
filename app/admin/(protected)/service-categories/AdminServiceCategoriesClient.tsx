@@ -67,8 +67,8 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
     }
   }
 
-  async function editCategory(id: string, patch: CategoryPatch) {
-    if (actionBusy) return;
+  async function editCategory(id: string, patch: CategoryPatch): Promise<boolean> {
+    if (actionBusy) return false;
 
     setFeedback({ type: "info", text: "Updating category…" });
 
@@ -76,8 +76,10 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
       await patchCategory(id, patch);
       setItems((prev) => prev.map((c) => (c.id === id ? ({ ...c, ...patch } as Category) : c)));
       setFeedback({ type: "ok", text: "✅ Category updated." });
+      return true;
     } catch (e: unknown) {
       setFeedback({ type: "err", text: getErrorMessage(e) });
+      return false;
     }
   }
 

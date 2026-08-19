@@ -52,6 +52,7 @@ export default function MediaDetailsSection({
 }) {
   const [profiles, setProfiles] = useState<PersonProfileOption[]>([]);
   const [peopleQuery, setPeopleQuery] = useState("");
+  const [peopleError, setPeopleError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -64,10 +65,17 @@ export default function MediaDetailsSection({
           items?: PersonProfileOption[];
         };
 
-        if (!cancelled && res.ok && data?.ok && Array.isArray(data.items)) {
+        if (cancelled) return;
+
+        if (res.ok && data?.ok && Array.isArray(data.items)) {
           setProfiles(data.items);
+          setPeopleError(false);
+        } else {
+          setPeopleError(true);
         }
-      } catch {}
+      } catch {
+        if (!cancelled) setPeopleError(true);
+      }
     }
 
     void loadPeople();
@@ -196,6 +204,12 @@ export default function MediaDetailsSection({
 
         <div className="space-y-3 md:col-span-2">
           <label className="text-sm font-medium">People</label>
+
+          {peopleError && (
+            <p className="text-xs text-destructive">
+              Could not load the people list — search may be incomplete. Reload the page to retry.
+            </p>
+          )}
 
           {selectedPeople.length ? (
             <div className="flex flex-wrap gap-2">

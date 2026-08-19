@@ -111,7 +111,12 @@ export function usePagesAdmin({
 
   const [expanded, setExpanded] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
-  const { feedback, run } = useAdminAction();
+  const { feedback, setFeedback } = useAdminAction();
+
+  const hasUnsavedChanges =
+    Object.keys(settingsDrafts).length > 0 ||
+    Object.keys(seoDrafts).length > 0 ||
+    Object.keys(sectionsDrafts).length > 0;
 
   function settingsOf(row: PageRow): SettingsDraft {
     if (!row.settingsSlug) throw new Error(`Row ${row.key} has no settings slug`);
@@ -192,93 +197,127 @@ export function usePagesAdmin({
     setSectionsDrafts((prev) => ({ ...prev, [row.sectionsSlug!]: data }));
   }
 
+  function clearSettingsDraft(slug: string) {
+    setSettingsDrafts((prev) => {
+      const next = { ...prev };
+      delete next[slug];
+      return next;
+    });
+  }
+
+  function clearSeoDraft(slug: string) {
+    setSeoDrafts((prev) => {
+      const next = { ...prev };
+      delete next[slug];
+      return next;
+    });
+  }
+
+  function clearSectionsDraft(slug: string) {
+    setSectionsDrafts((prev) => {
+      const next = { ...prev };
+      delete next[slug];
+      return next;
+    });
+  }
+
   function discard(row: PageRow) {
-    if (row.settingsSlug) {
-      setSettingsDrafts((prev) => {
-        const next = { ...prev };
-        delete next[row.settingsSlug!];
-        return next;
-      });
-    }
-    if (row.seoSlug) {
-      setSeoDrafts((prev) => {
-        const next = { ...prev };
-        delete next[row.seoSlug!];
-        return next;
-      });
-    }
-    if (row.sectionsSlug) {
-      setSectionsDrafts((prev) => {
-        const next = { ...prev };
-        delete next[row.sectionsSlug!];
-        return next;
-      });
-    }
+    if (row.settingsSlug) clearSettingsDraft(row.settingsSlug);
+    if (row.seoSlug) clearSeoDraft(row.seoSlug);
+    if (row.sectionsSlug) clearSectionsDraft(row.sectionsSlug);
   }
 
   async function save(row: PageRow) {
     setSaving(row.key);
-    await run(
-      async () => {
-        const tasks: Promise<void>[] = [];
+    setFeedback({ type: "info", text: `Saving ${row.label}…` });
 
-        if (row.settingsSlug && settingsDrafts[row.settingsSlug] !== undefined) {
-          const draft = settingsDrafts[row.settingsSlug]!;
-          tasks.push(
-            fetch(`/api/admin/page-settings/${row.settingsSlug}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ isActive: draft.isActive, cardImage: draft.cardImage }),
-            }).then((res) => {
-              if (!res.ok) throw new Error("Failed to save. Try again.");
-              setSettings((prev) => ({
-                ...prev,
-                [row.settingsSlug!]: {
-                  ...prev[row.settingsSlug!]!,
-                  isActive: draft.isActive,
-                  cardImage: draft.cardImage,
-                },
-              }));
-            }),
-          );
-        }
+    type Part = { label: string; run: () => Promise<void> };
+    const parts: Part[] = [];
 
-        if (row.seoSlug && seoDrafts[row.seoSlug] !== undefined) {
-          const draft = seoDrafts[row.seoSlug]!;
-          tasks.push(
-            fetch(`/api/admin/page-seo/${row.seoSlug}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(draft),
-            }).then((res) => {
-              if (!res.ok) throw new Error("Failed to save. Try again.");
-              setSeo((prev) => ({
-                ...prev,
-                [row.seoSlug!]: { ...prev[row.seoSlug!]!, ...draft, updatedAt: new Date() },
-              }));
-            }),
-          );
-        }
+    if (row.settingsSlug && settingsDrafts[row.settingsSlug] !== undefined) {
+      const slug = row.settingsSlug;
+      const draft = settingsDrafts[slug]!;
+      parts.push({
+        label: "Visibility & image",
+        run: async () => {
+          const res = await fetch(`/api/admin/page-settings/${slug}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ isActive: draft.isActive, cardImage: draft.cardImage }),
+          });
+          if (!res.ok) throw new Error();
+          setSettings((prev) => ({
+            ...prev,
+            [slug]: { ...prev[slug]!, isActive: draft.isActive, cardImage: draft.cardImage },
+          }));
+          clearSettingsDraft(slug);
+        },
+      });
+    }
 
-        if (row.sectionsSlug && sectionsDrafts[row.sectionsSlug] !== undefined) {
-          const draft = sectionsDrafts[row.sectionsSlug]!;
-          tasks.push(
-            fetch(`/api/admin/page-sections/${row.sectionsSlug}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(draft),
-            }).then((res) => {
-              if (!res.ok) throw new Error("Failed to save. Try again.");
-              setSections((prev) => ({ ...prev, [row.sectionsSlug!]: draft }));
-            }),
-          );
-        }
+    if (row.seoSlug && seoDrafts[row.seoSlug] !== undefined) {
+      const slug = row.seoSlug;
+      const draft = seoDrafts[slug]!;
+      parts.push({
+        label: "Search & social",
+        run: async () => {
+          const res = await fetch(`/api/admin/page-seo/${slug}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(draft),
+          });
+          if (!res.ok) throw new Error();
+          setSeo((prev) => ({
+            ...prev,
+            [slug]: { ...prev[slug]!, ...draft, updatedAt: new Date() },
+          }));
+          clearSeoDraft(slug);
+        },
+      });
+    }
 
-        await Promise.all(tasks);
-        discard(row);
-      },
-      { successText: `${row.label} updated.` },
-    );
+    if (row.sectionsSlug && sectionsDrafts[row.sectionsSlug] !== undefined) {
+      const slug = row.sectionsSlug;
+      const draft = sectionsDrafts[slug]!;
+      parts.push({
+        label: "Sections",
+        run: async () => {
+          const res = await fetch(`/api/admin/page-sections/${slug}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(draft),
+          });
+          if (!res.ok) throw new Error();
+          setSections((prev) => ({ ...prev, [slug]: draft }));
+          clearSectionsDraft(slug);
+        },
+      });
+    }
+
+    const results = await Promise.allSettled(parts.map((p) => p.run()));
+    const saved = parts.filter((_, i) => results[i]!.status === "fulfilled").map((p) => p.label);
+    const failed = parts.filter((_, i) => results[i]!.status === "rejected").map((p) => p.label);
+
+    if (failed.length === 0) {
+      setFeedback({
+        type: "ok",
+        text:
+          parts.length > 1
+            ? `${row.label} saved — ${saved.join(", ")}.`
+            : `${row.label} saved.`,
+      });
+    } else if (saved.length === 0) {
+      setFeedback({
+        type: "err",
+        text: `${row.label} not saved — ${failed.join(", ")} failed. Try again.`,
+      });
+    } else {
+      setFeedback({
+        type: "err",
+        text: `${row.label}: saved ${saved.join(", ")}; ${failed.join(", ")} failed. Try again.`,
+      });
+    }
+
     setSaving(null);
   }
 
@@ -287,6 +326,7 @@ export function usePagesAdmin({
     setExpanded,
     saving,
     feedback,
+    hasUnsavedChanges,
     isActiveOf,
     cardImageOf,
     needsImage,

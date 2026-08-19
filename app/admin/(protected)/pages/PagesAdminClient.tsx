@@ -4,6 +4,7 @@ import type { PageSettings } from "@/lib/server/page-settings";
 import type { PageSeo } from "@/lib/server/page-seo";
 import type { PageSectionsSlug, PageSectionsMap } from "@/lib/server/page-sections";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { PAGE_ROWS, usePagesAdmin } from "./usePagesAdmin";
 import { PageRowCard } from "./components/PageRowCard";
 
@@ -17,6 +18,7 @@ export function PagesAdminClient({
   initialSections: { slug: PageSectionsSlug; data: PageSectionsMap[PageSectionsSlug] }[];
 }) {
   const admin = usePagesAdmin({ initialSettings, initialSeo, initialSections });
+  useUnsavedChangesGuard(admin.hasUnsavedChanges);
 
   return (
     <div>
