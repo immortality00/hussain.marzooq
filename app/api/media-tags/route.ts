@@ -7,7 +7,6 @@ import { asString, isRecord, noStoreJson } from "@/app/api/_lib/common";
 import {
   isReservedTagSlug,
   isValidTagSlug,
-  sanitizeDisciplines,
   slugifyTag,
 } from "@/lib/server/media-tags";
 
@@ -37,7 +36,6 @@ function serializeTag(doc: Record<string, unknown>, counts: Map<string, number>)
     label: typeof doc.label === "string" ? doc.label : "",
     slug,
     description: typeof doc.description === "string" ? doc.description : "",
-    disciplines: sanitizeDisciplines(doc.disciplines),
     isActive: typeof doc.isActive === "boolean" ? doc.isActive : true,
     order: typeof doc.order === "number" ? doc.order : 0,
     mediaCount: counts.get(slug) ?? 0,
@@ -84,7 +82,6 @@ export async function GET(req: Request) {
     label: typeof doc.label === "string" ? doc.label : "",
     slug: typeof doc.slug === "string" ? doc.slug : "",
     description: typeof doc.description === "string" ? doc.description : "",
-    disciplines: sanitizeDisciplines(doc.disciplines),
   }));
 
   return noStoreJson({ ok: true, items });
@@ -109,7 +106,6 @@ export async function POST(req: Request) {
   }
 
   const description = asString(body.description).trim();
-  const disciplines = sanitizeDisciplines(body.disciplines);
 
   const db = await getDb();
 
@@ -133,7 +129,6 @@ export async function POST(req: Request) {
     label,
     slug,
     description,
-    disciplines,
     isActive: true,
     order: nextOrder,
     createdAt: now,

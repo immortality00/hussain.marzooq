@@ -1,5 +1,5 @@
-import { revalidatePath } from "next/cache";
 import { requireAdminOr401 } from "@/lib/auth/admin";
+import { revalidateMediaSurfaces } from "@/app/api/_lib/revalidate";
 import { getDb } from "@/lib/server/db";
 import {
   asBooleanOrNull,
@@ -170,11 +170,7 @@ export async function POST(req: Request) {
 
   if (!id) return noStoreJson({ ok: false, error: "Save failed" }, { status: 500 });
 
-  revalidatePath("/");
-  revalidatePath("/photography");
-  revalidatePath("/videography");
-  revalidatePath("/nft");
-  revalidatePath("/people", "layout");
+  revalidateMediaSurfaces(tags);
 
   return noStoreJson({ ok: true, id });
 }

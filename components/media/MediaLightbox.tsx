@@ -2,7 +2,7 @@
 
 import SmartImage from "@/components/shared/SmartImage";
 import MediaDetailsSections from "./MediaDetailsSections";
-import type { MediaItem } from "./types";
+import type { MediaItem, TagLink } from "./types";
 import { toEmbedUrl } from "./utils";
 
 function MediaSurface({ active }: { active: MediaItem }) {
@@ -62,9 +62,11 @@ function MediaSurface({ active }: { active: MediaItem }) {
 export default function MediaLightbox({
   active,
   onClose,
+  tagLinks,
 }: {
   active: MediaItem;
   onClose: () => void;
+  tagLinks?: Record<string, TagLink>;
 }) {
   return (
     <div className="fixed inset-0 z-50 bg-black/70 p-4" onClick={onClose}>
@@ -92,7 +94,7 @@ export default function MediaLightbox({
           </div>
 
           <div className="min-h-0 overflow-y-auto p-5" data-lenis-prevent>
-            <MediaDetailsSections active={active} />
+            <MediaDetailsSections active={active} tagLinks={tagLinks} />
           </div>
         </div>
       </div>

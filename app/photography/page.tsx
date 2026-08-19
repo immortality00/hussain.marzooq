@@ -4,6 +4,7 @@ import PhotographyViewer from "@/components/photography/PhotographyViewer";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPhotographyItems } from "@/lib/server/public-media";
+import { getDisciplineTagNav } from "@/lib/server/tag-pages";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { getPageSections } from "@/lib/server/page-sections";
 
@@ -20,8 +21,9 @@ export default async function PhotographyPage() {
   const { isActive } = await getPageSettings("photography");
   if (!isActive) redirect("/");
 
-  const [items, seo, sections] = await Promise.all([
+  const [items, nav, seo, sections] = await Promise.all([
     getPhotographyItems(),
+    getDisciplineTagNav({ category: "photography", mediaMode: "image" }),
     getPageSeo("photography"),
     getPageSections("photography"),
   ]);
@@ -37,7 +39,12 @@ export default async function PhotographyPage() {
         />
 
         {items.length > 0 ? (
-          <PhotographyViewer items={items} searchCategory="photography" />
+          <PhotographyViewer
+            items={items}
+            searchCategory="photography"
+            tagLinks={nav.tagLinks}
+            navChips={nav.chips}
+          />
         ) : (
           <PortfolioFallbackPanel
             title="Portraits, fashion, weddings, and atmosphere-led image work."

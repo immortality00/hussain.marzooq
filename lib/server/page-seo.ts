@@ -109,6 +109,25 @@ const DEFAULTS: Record<string, SeoDefaults> = {
     headerTitle: "{name}",
     headerDescription: "",
   },
+  // Template for every /photography/[tag] and /videography/[tag] page — {tag}
+  // is replaced with the tag's label at render time. The on-page heading is the
+  // tag label; only the search & social fields are exposed for these slugs.
+  "photography-tag": {
+    title: "{tag} Photography — HM Visuals",
+    description:
+      "Cinematic {tag} photography by Hussain Marzooq — portraits, fashion, weddings, and emotional visual stories.",
+    headerTitle: "{tag}",
+    headerDescription:
+      "{tag} photography by Hussain Marzooq — cinematic images from this part of the work.",
+  },
+  "videography-tag": {
+    title: "{tag} Videography — HM Visuals",
+    description:
+      "{tag} film and moving-image work by Hussain Marzooq — motion, rhythm, and cinematic visual stories.",
+    headerTitle: "{tag}",
+    headerDescription:
+      "{tag} film and motion work by Hussain Marzooq — moving-image stories from this part of the work.",
+  },
   blog: {
     title: "Blog — HM Visuals",
     description:

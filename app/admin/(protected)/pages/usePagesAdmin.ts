@@ -33,11 +33,23 @@ export const PAGE_ROWS: PageRow[] = [
     sectionsSlug: "photography",
   },
   {
+    key: "photography-tag",
+    label: "Photography — tag page",
+    seoSlug: "photography-tag",
+    seoDetailPage: true,
+  },
+  {
     key: "videography",
     label: "Videography",
     settingsSlug: "videography",
     seoSlug: "videography",
     sectionsSlug: "videography",
+  },
+  {
+    key: "videography-tag",
+    label: "Videography — tag page",
+    seoSlug: "videography-tag",
+    seoDetailPage: true,
   },
   { key: "nft", label: "NFT", settingsSlug: "nft", seoSlug: "nft", sectionsSlug: "nft" },
   { key: "dancing", label: "Dancing", settingsSlug: "dancing", seoSlug: "dancing", sectionsSlug: "dancing" },

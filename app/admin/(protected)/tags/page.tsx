@@ -1,5 +1,4 @@
 import { getDb } from "@/lib/server/db";
-import { sanitizeDisciplines } from "@/lib/server/media-tags";
 import AdminTagsClient from "./AdminTagsClient";
 import type { Tag } from "./lib/types";
 
@@ -30,7 +29,6 @@ export default async function AdminTagsPage() {
       label: typeof doc.label === "string" ? doc.label : "",
       slug,
       description: typeof doc.description === "string" ? doc.description : "",
-      disciplines: sanitizeDisciplines(doc.disciplines),
       isActive: typeof doc.isActive === "boolean" ? doc.isActive : true,
       order: typeof doc.order === "number" ? doc.order : 0,
       mediaCount: countMap.get(slug) ?? 0,

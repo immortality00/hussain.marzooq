@@ -2,6 +2,8 @@ import type { Appearance } from "@/app/api/_lib/media";
 
 export type { Appearance };
 
+export type TagLink = { label: string; href: string };
+
 export type MediaItem = {
   id: string;
   type: string;

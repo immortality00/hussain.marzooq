@@ -44,6 +44,38 @@ export async function getVideographyItems(): Promise<PublicMediaItem[]> {
   return all.filter((item) => item.type === "video" || item.type === "embed");
 }
 
+export async function getMediaByTag({
+  category,
+  mediaMode,
+  tagSlug,
+  limit = 60,
+}: {
+  category: string;
+  mediaMode: "image" | "video";
+  tagSlug: string;
+  limit?: number;
+}): Promise<PublicMediaItem[]> {
+  const db = await getDb();
+
+  const docs = await db
+    .collection("media")
+    .find({
+      $and: [
+        buildPublicMediaQuery({
+          type: mediaMode === "image" ? "image" : "all",
+          category,
+        }),
+        { tags: tagSlug },
+        ...(mediaMode === "video" ? [{ type: { $in: ["video", "embed"] } }] : []),
+      ],
+    })
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(limit)
+    .toArray();
+
+  return docs.map((doc) => toPublicMediaItem(doc as Record<string, unknown>));
+}
+
 export type ExhibitionCity = {
   locationId: string;
   city: string;

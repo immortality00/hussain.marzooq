@@ -59,10 +59,12 @@ export function useMediaSearch({
   items,
   mediaMode = "image",
   searchCategory,
+  lockedTag,
 }: {
   items: MediaItem[];
   mediaMode?: PublicMediaSearchMode;
   searchCategory?: string;
+  lockedTag?: string;
 }) {
   const [q, setQ] = useState("");
   const [activeTag, setActiveTag] = useState<string>("");
@@ -76,7 +78,12 @@ export function useMediaSearch({
   const hasDbSearch = Boolean(searchCategory);
   const cleanQuery = q.trim();
   const cleanTag = activeTag.trim();
+  const cleanLockedTag = (lockedTag ?? "").trim();
   const hasActiveSearch = Boolean(cleanQuery || cleanTag);
+  // On a tag subpage the items are already server-filtered to lockedTag; every
+  // user-initiated search must stay scoped to it, so it's the tag sent to the
+  // API when the user hasn't picked a chip.
+  const effectiveTag = cleanTag || cleanLockedTag;
 
   useEffect(() => {
     setRemoteItems(items);
@@ -109,7 +116,7 @@ export function useMediaSearch({
             category: searchCategory as string,
             mode: mediaMode,
             query: cleanQuery,
-            tag: cleanTag,
+            tag: effectiveTag,
           }),
           { cache: "no-store", signal: controller.signal }
         );
@@ -143,7 +150,7 @@ export function useMediaSearch({
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [cleanQuery, cleanTag, hasActiveSearch, hasDbSearch, items, mediaMode, searchCategory]);
+  }, [cleanQuery, cleanTag, effectiveTag, hasActiveSearch, hasDbSearch, items, mediaMode, searchCategory]);
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -170,7 +177,7 @@ export function useMediaSearch({
           category: searchCategory,
           mode: mediaMode,
           query: cleanQuery,
-          tag: cleanTag,
+          tag: effectiveTag,
           cursor: nextCursor,
         }),
         { cache: "no-store" }
