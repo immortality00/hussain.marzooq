@@ -347,6 +347,16 @@ card image is blank (amber "Needs image" pill on the row + inline note in the gr
 homepage Featured Work cards **and the hero** warn per-image when imageless. So no visible
 surface can *silently* go blank; the public surfaces still render a flat `bg-muted` panel when
 empty by design.
+
+**Revalidation (S9, 2026-08-19).** The `page-settings` discipline toggle revalidates with a
+single `revalidatePath("/", "layout")` — the root layout is shared by every route, so this
+cascades to all public pages at once, covering the global `SiteFooter` discipline links, each
+toggled page's own `isActive` redirect, and the homepage sections. **Do not reintroduce a
+hardcoded `AFFECTED_PATHS` list** — the old one drifted and left `/web-development` (and the
+other discipline pages) never revalidating on toggle (the §S9 bug). When a globally-shared
+layout element changes, revalidate the layout, never enumerate routes. The four previously
+directive-less public pages (`about`, `blog`, `dancing`, `web-development`) now carry
+`revalidate = 300`, matching every other dynamic public route.
 Interim pages (Dancing, Web Development, Blog) = header + card grid + booking bar
 until their design passes. **About had its design pass (D2c) and is no longer interim** —
 see "About page" below. Full history: archive §N3–§N7.
@@ -654,7 +664,6 @@ Do not "discover" these again; do not fix them outside their session.
 
 | Defect | Evidence | Session |
 |---|---|---|
-| `/web-development` is fully static and is missing from `AFFECTED_PATHS`, so deactivating it never revalidates | `app/api/admin/page-settings/[slug]/route.ts:53` | §S9 |
 | Admin login rate limiter keys on `ip\|userAgent`, so a UA change resets the lockout | `app/admin/page.tsx:32-34` | §S10 |
 | Public form fields are interpolated raw into notification email HTML | `lib/server/email.ts:19-29,45-55` | §S10 |
 | `/admin/pages` has no unsaved-work guard anywhere in the repo | zero `beforeunload` matches repo-wide | §S11 |

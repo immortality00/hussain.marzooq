@@ -160,7 +160,8 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
   }, [open, onClose]);
 
   const count = cards.length || 5;
-  const radius = getCylinderRadius(count);
+  const slots = Math.max(count, 5);
+  const radius = getCylinderRadius(slots);
 
   return (
     <div
@@ -200,7 +201,7 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
           }}
         >
           {cards.map((card, i) => {
-            const angle = (360 / count) * i;
+            const angle = (360 / slots) * i;
             const eyebrow = EYEBROWS[card.slug] ?? "";
 
             return (

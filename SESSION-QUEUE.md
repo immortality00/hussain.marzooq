@@ -28,7 +28,8 @@ consolidation, card images) · Phase 2: D1 (preloader), D3 (photography 3-view v
 Phase S: S1–S7 (security, tests, reuse audit) · Phase DS: DS0–DS2 (skills, detector eval) ·
 Phase 2a: D2b (homepage section pass + the shared `Button` two-look system), D2c (About rebuild) ·
 Phase 3: C4 (validated media locations + stored coordinates) ·
-Phase 2: D6 (exhibition globe) · Phase S2: S10 (security fixes), S8 (rAF + pointer-listener leaks) ·
+Phase 2: D6 (exhibition globe) · Phase S2: S10 (security fixes), S8 (rAF + pointer-listener leaks),
+S9 (revalidation coverage: layout-wide invalidation on discipline toggle + revalidate on 4 static pages) ·
 Phase T: T1 (tag taxonomy `media_tags` + `/admin/tags` + shared admin `SortableList`),
 T2 (`/photography/[tag]` + `/videography/[tag]` subpages, `TagChipRow` nav, per-tag disciplines removed).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
@@ -56,8 +57,8 @@ longer top-to-bottom — take sessions in exactly this order.
 7. **T2** — `/photography/[tag]` and `/videography/[tag]`. ✓ done — Block 3 complete.
 
 **Block 4 — Everything else,** in this order:
-8. **S8, S9, S11, N9** — small live bugs and admin work-loss. Each is under an hour; take
-   them as a batch whenever there is a gap.
+8. **S11, N9** — admin work-loss and public chrome on admin. Each is under an hour; take them
+   as a batch whenever there is a gap. (**S8, S9 done.**)
 9. **L1** — launch prep. Small, and it is what actually gates going live.
 10. **D4, D5, D7, D8** · **D9b before D9** · **D10, D11, D12**
 11. **D13 last** — the consistency sweep; it needs everything else landed first.
@@ -77,7 +78,7 @@ Going live does **not** require the whole queue. The launch-blocking set is:
 | 1 | **D2b** | The approved homepage. |
 | 2 | **C4 + D6** | The globe is part of the approved homepage; without C4 it shows wrong or missing cities. |
 | 3 | **S10** | A bypassable admin-login lockout and an HTML-injectable notification email are not shippable. |
-| 4 | **S8, S9** | S8 is a runaway rAF loop; S9 means a deactivated page stays publicly reachable. Both are visible in production. |
+| 4 | ~~**S8, S9**~~ ✓ done | S8 was a runaway rAF loop; S9 meant a deactivated page stayed publicly reachable. Both fixed. |
 | 5 | **L1** | Rotate `ADMIN_COOKIE_SECRET`, verify hash login and the CSP against the deployed origin, fix `README.md`. |
 
 Everything else — T1/T2, D4, D5, D7–D13, C1–C3, P1/P2, NFT — can ship after launch.
@@ -153,25 +154,6 @@ Full routing table + conflict rules: CLAUDE.md → "Design & motion skills".
 Four sessions, all small, all with proven file:line evidence in CLAUDE.md → "Known
 defects". **Run these before the D-phase design work** — S8 and S9 are live bugs, S10 is
 security, S11 loses Hussain's work. None of them touches design.
-
-### Session S9 — Revalidation coverage — `pending`
-`app/web-development/page.tsx` exports no `revalidate` and no `dynamic`, so it is fully
-static, and `app/api/admin/page-settings/[slug]/route.ts:53` hardcodes
-`AFFECTED_PATHS = ["/", "/about", "/blog", "/testimonials", "/people", "/dancing"]` —
-`/web-development` is missing while its structurally identical sibling `/dancing` is there.
-Repo-wide grep confirms nothing else ever calls `revalidatePath("/web-development")`.
-
-Failure today: deactivate Web Development in `/admin/pages`; the homepage/about/blog update
-immediately, but a direct visit to `/web-development` keeps serving the stale active page
-instead of its `redirect("/")` (`app/web-development/page.tsx:21`) until a redeploy.
-
-Gate 1 must produce a **table of every public route × its caching directive × every admin
-action that should invalidate it**, then fix the gaps — do not just patch the one path.
-`about`, `blog` and `dancing` have the same missing-directive shape and must be checked.
-Consider deriving `AFFECTED_PATHS` from the page registry instead of hardcoding it, so the
-next page added cannot silently repeat this.
-
----
 
 ### Session S11 — Admin: stop losing work — `pending`
 1. **No unsaved-work guard exists anywhere in the repo** (zero `beforeunload` matches).

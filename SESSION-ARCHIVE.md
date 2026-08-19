@@ -1766,6 +1766,45 @@ not browser-observable and the sandbox can't reach Atlas, so verified on Hussain
 (drag/release-outside-window/touch-cancel resumes auto-rotate; cards still navigate). CLAUDE.md
 "Known defects" table: the two §S8 rows removed in the same commit. No other CLAUDE.md impact.
 
+### Session S9 — Revalidation coverage — `done`
+`app/web-development/page.tsx` exports no `revalidate` and no `dynamic`, so it is fully
+static, and `app/api/admin/page-settings/[slug]/route.ts:53` hardcodes
+`AFFECTED_PATHS = ["/", "/about", "/blog", "/testimonials", "/people", "/dancing"]` —
+`/web-development` is missing while its structurally identical sibling `/dancing` is there.
+Repo-wide grep confirms nothing else ever calls `revalidatePath("/web-development")`.
+
+Failure today: deactivate Web Development in `/admin/pages`; the homepage/about/blog update
+immediately, but a direct visit to `/web-development` keeps serving the stale active page
+instead of its `redirect("/")` (`app/web-development/page.tsx:21`) until a redeploy.
+
+Gate 1 must produce a **table of every public route × its caching directive × every admin
+action that should invalidate it**, then fix the gaps — do not just patch the one path.
+`about`, `blog` and `dancing` have the same missing-directive shape and must be checked.
+Consider deriving `AFFECTED_PATHS` from the page registry instead of hardcoding it, so the
+next page added cannot silently repeat this.
+
+**Build outcome (2026-08-19):** Gate-1 audit found the bug was bigger than the one path: the
+hardcoded `AFFECTED_PATHS` also missed the *global* `SiteFooter` (root-layout, async, filters
+discipline links by `isActive`), so a toggle left a stale footer on ~9 of ~15 routes, plus the
+toggled discipline page's own redirect on `/photography`, `/videography`, `/nft`,
+`/web-development`. **Fix (Hussain picked the layout-revalidate option over a corrected list):**
+`app/api/admin/page-settings/[slug]/route.ts` now revalidates with a single
+`revalidatePath("/", "layout")` — cascades to every route sharing the root layout, covering the
+footer everywhere, each toggled page's redirect, and the homepage sections. No path list to
+drift (better than the ticket's "derive from a registry" idea — there is no list to derive). The
+Work-overlay nav is `force-dynamic` + client-fetched, so it needed nothing. Additionally, the
+four directive-less public pages (`about`, `blog`, `dancing`, `web-development`) now carry
+`export const revalidate = 300`, matching every other dynamic public route (time-based self-heal
+on top of on-demand). **Add-on at Hussain's request in the same session:**
+`components/site/WorkOverlay.tsx` cylinder geometry was scaling radius + angular spacing with the
+live card count, so deactivating a discipline shrank the cylinder and made the remaining cards
+appear bigger / wider-spaced ("the space becomes bigger"). Fixed to a constant 5-slot geometry
+(`slots = Math.max(count, 5)` for both `getCylinderRadius` and the per-card angle), so every card
+keeps identical size/radius/spacing regardless of count and a deactivated discipline just leaves
+an empty slot in the ring. `tsc` + `eslint` clean (0/0), 115 tests pass. Not browser-verifiable
+in the sandbox (no Atlas); Hussain confirmed the toggle propagation + overlay flexibility on his
+machine. CLAUDE.md: §S9 defect row removed, revalidation rule recorded in the CMS section.
+
 ## Phase T — Tag taxonomy & discipline subpages
 
 ### Session T1 — Tag taxonomy: `media_tags` + `/admin/tags` — `done`

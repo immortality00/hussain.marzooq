@@ -7,6 +7,8 @@ import { getPageSections } from "@/lib/server/page-sections";
 
 const DISCIPLINE_HREFS = ["/photography", "/videography", "/nft", "/dancing"];
 
+export const revalidate = 300;
+
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("about");
   return { title: seo.title, description: seo.description };
