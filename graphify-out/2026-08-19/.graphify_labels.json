@@ -55,8 +55,9 @@
   "53": "Frontend Design",
   "54": "useModalNavbarLock",
   "55": "ensure-indexes.mjs",
+  "56": "page.tsx",
   "57": "common.ts",
-  "58": "Performance Rules",
+  "58": "useServicesAdmin.ts",
   "59": "page.tsx",
   "60": "graphify reference: extra exports and benchmark",
   "61": "page-sections.ts",
@@ -116,5 +117,8 @@
   "115": "vitest.config.ts",
   "116": "Globe Icon",
   "117": "Geist font (next/font)",
-  "118": "Globe earth-topology bump map"
+  "118": "Globe earth-topology bump map",
+  "119": "TestimonialsSection.tsx",
+  "120": "HomeFeaturedWork.tsx",
+  "121": "tailwind-merge"
 }
