@@ -108,15 +108,17 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
       }
     }
 
-    function onUp() {
+    function end() {
       drag.current.active = false;
       startAutoRotate();
       document.removeEventListener("pointermove", onMove);
-      document.removeEventListener("pointerup", onUp);
+      document.removeEventListener("pointerup", end);
+      document.removeEventListener("pointercancel", end);
     }
 
     document.addEventListener("pointermove", onMove);
-    document.addEventListener("pointerup", onUp);
+    document.addEventListener("pointerup", end);
+    document.addEventListener("pointercancel", end);
   }, [stopAutoRotate, applyRotation, startAutoRotate]);
 
   // Open / close animation — never toggle display; only animate opacity + pointerEvents

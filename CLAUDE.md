@@ -654,8 +654,6 @@ Do not "discover" these again; do not fix them outside their session.
 
 | Defect | Evidence | Session |
 |---|---|---|
-| `AppShell` never cancels its Lenis rAF loop; loops stack on every admin↔public crossing | `AppShell.tsx:17-29` | §S8 |
-| `WorkOverlay` document pointer listeners leak when the pointer is released off-viewport | `WorkOverlay.tsx:96-120` | §S8 |
 | `/web-development` is fully static and is missing from `AFFECTED_PATHS`, so deactivating it never revalidates | `app/api/admin/page-settings/[slug]/route.ts:53` | §S9 |
 | Admin login rate limiter keys on `ip\|userAgent`, so a UA change resets the lockout | `app/admin/page.tsx:32-34` | §S10 |
 | Public form fields are interpolated raw into notification email HTML | `lib/server/email.ts:19-29,45-55` | §S10 |

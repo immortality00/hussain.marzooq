@@ -28,7 +28,7 @@ consolidation, card images) · Phase 2: D1 (preloader), D3 (photography 3-view v
 Phase S: S1–S7 (security, tests, reuse audit) · Phase DS: DS0–DS2 (skills, detector eval) ·
 Phase 2a: D2b (homepage section pass + the shared `Button` two-look system), D2c (About rebuild) ·
 Phase 3: C4 (validated media locations + stored coordinates) ·
-Phase 2: D6 (exhibition globe) · Phase S2: S10 (security fixes) ·
+Phase 2: D6 (exhibition globe) · Phase S2: S10 (security fixes), S8 (rAF + pointer-listener leaks) ·
 Phase T: T1 (tag taxonomy `media_tags` + `/admin/tags` + shared admin `SortableList`),
 T2 (`/photography/[tag]` + `/videography/[tag]` subpages, `TagChipRow` nav, per-tag disciplines removed).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
@@ -153,24 +153,6 @@ Full routing table + conflict rules: CLAUDE.md → "Design & motion skills".
 Four sessions, all small, all with proven file:line evidence in CLAUDE.md → "Known
 defects". **Run these before the D-phase design work** — S8 and S9 are live bugs, S10 is
 security, S11 loses Hussain's work. None of them touches design.
-
-### Session S8 — Two resource leaks — `pending`
-1. **`components/site/AppShell.tsx:17-29`** starts a recursive `requestAnimationFrame` loop
-   for Lenis but its cleanup only calls `lenis.destroy()`; the rAF id is never captured or
-   cancelled. `AppShell` wraps `/admin/**` too (`app/layout.tsx:31`) and
-   `app/admin/(protected)/layout.tsx:42-47` links back to the public site, so every
-   admin↔public crossing leaves another loop running forever, calling `.raf()` on a
-   destroyed instance. Capture the id and `cancelAnimationFrame` it in the cleanup.
-2. **`components/site/WorkOverlay.tsx:96-120`** attaches document-level `pointermove` /
-   `pointerup` listeners in `onPointerDown` and relies solely on `onUp` to remove them.
-   Release the pointer outside the viewport and they persist for the life of the page, and
-   `stopAutoRotate()` (line 99) never gets its matching `startAutoRotate()` — the cylinder
-   stays permanently paused. Add `pointercancel`, and prefer `setPointerCapture` so the
-   element keeps receiving events.
-
-Read both files fully. No security surface. Add a test only if a pure helper is extracted.
-
----
 
 ### Session S9 — Revalidation coverage — `pending`
 `app/web-development/page.tsx` exports no `revalidate` and no `dynamic`, so it is fully

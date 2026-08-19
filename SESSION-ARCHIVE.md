@@ -1737,6 +1737,35 @@ No CLAUDE.md impact. Out-of-scope note left un-fixed: the config-error copy at
 `app/admin/page.tsx` still mentions the deleted `ADMIN_PASSWORD` fallback (doc drift, not a
 security bug).
 
+### Session S8 — Two resource leaks — `done`
+1. **`components/site/AppShell.tsx:17-29`** starts a recursive `requestAnimationFrame` loop
+   for Lenis but its cleanup only calls `lenis.destroy()`; the rAF id is never captured or
+   cancelled. `AppShell` wraps `/admin/**` too (`app/layout.tsx:31`) and
+   `app/admin/(protected)/layout.tsx:42-47` links back to the public site, so every
+   admin↔public crossing leaves another loop running forever, calling `.raf()` on a
+   destroyed instance. Capture the id and `cancelAnimationFrame` it in the cleanup.
+2. **`components/site/WorkOverlay.tsx:96-120`** attaches document-level `pointermove` /
+   `pointerup` listeners in `onPointerDown` and relies solely on `onUp` to remove them.
+   Release the pointer outside the viewport and they persist for the life of the page, and
+   `stopAutoRotate()` (line 99) never gets its matching `startAutoRotate()` — the cylinder
+   stays permanently paused. Add `pointercancel`, and prefer `setPointerCapture` so the
+   element keeps receiving events.
+
+Read both files fully. No security surface. Add a test only if a pure helper is extracted.
+
+**Build outcome (2026-08-19):** Fix 1 — `AppShell.tsx` now captures the rAF id into `rafId`
+and the cleanup calls `cancelAnimationFrame(rafId)` before `lenis.destroy()`. Fix 2 —
+`WorkOverlay.tsx` `onUp` renamed to `end()`, registered for **both** `pointerup` and
+`pointercancel`, and it removes all three document listeners; this also restores the missing
+`startAutoRotate()` on a cancelled touch drag. **`setPointerCapture` deliberately NOT
+adopted** (Hussain's call at Gate 1): the `onPointerDown` comment documents that document
+listeners were chosen specifically so pointer capture never steals click-through on the
+discipline `<Link>` cards; adding `pointercancel` fixes the actual leak with zero regression
+risk. No pure helper extracted → no test. `tsc --noEmit` + `eslint` clean (0/0). Leaks are
+not browser-observable and the sandbox can't reach Atlas, so verified on Hussain's machine
+(drag/release-outside-window/touch-cancel resumes auto-rotate; cards still navigate). CLAUDE.md
+"Known defects" table: the two §S8 rows removed in the same commit. No other CLAUDE.md impact.
+
 ## Phase T — Tag taxonomy & discipline subpages
 
 ### Session T1 — Tag taxonomy: `media_tags` + `/admin/tags` — `done`
