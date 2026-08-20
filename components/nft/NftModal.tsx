@@ -9,6 +9,7 @@ import {
   editionSubline,
   getPriceText,
   statusClasses,
+  statusLabel,
 } from "./lib";
 
 export default function NftModal({
@@ -80,7 +81,7 @@ export default function NftModal({
                 <div className="space-y-5">
                   <div className="flex flex-wrap gap-2">
                     <span className={`inline-flex rounded-full px-3 py-1 text-xs ${statusClasses(shownStatus)}`}>
-                      {shownStatus}
+                      {statusLabel(shownStatus)}
                     </span>
                     <span className="inline-flex rounded-full border px-3 py-1 text-xs text-muted-foreground">
                       {item.nft.currency}
