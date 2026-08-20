@@ -35,6 +35,7 @@ export function PortfolioCard({
   // through to the cover, and any tag links re-enabled above it in z-order.
   return (
     <div
+      data-cursor-expand
       className={`group relative ${minHeight} overflow-hidden rounded-[2.25rem] border bg-muted shadow-sm${className ? ` ${className}` : ""}`}
     >
       {imageUrl ? (
