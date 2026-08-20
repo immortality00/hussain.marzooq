@@ -33,7 +33,9 @@ S9 (revalidation coverage: layout-wide invalidation on discipline toggle + reval
 Phase T: T1 (tag taxonomy `media_tags` + `/admin/tags` + shared admin `SortableList`),
 T2 (`/photography/[tag]` + `/videography/[tag]` subpages, `TagChipRow` nav, per-tag disciplines removed) ·
 Phase S2: S11 (unsaved-work guard + honest multi-part save feedback + admin feedback-clarity fixes),
-N9 (public cursor/footer consolidated into `AppShell`, off admin).
+N9 (public cursor/footer consolidated into `AppShell`, off admin) ·
+D4 (page-transition engine + homepage gallery contact-sheet transition; per-route transitions deferred;
+CSP showreel fix — `media-src` + YouTube/Vimeo `frame-src`).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -165,32 +167,41 @@ complete.
 
 ## Phase 2 — Preloader & core experience
 
-### Session D4 — Page transition system — `pending`
-Build the shared transition context and implement per-route transitions using actual page content as animation material.
+### Session D4 — Page transition system — `pending` (engine + homepage shipped 2026-08-20)
 
-Architecture:
-- A `TransitionContext` (React context) holds the current and destination page's available images/media.
+**Shipped in D4 (2026-08-20), with Hussain's explicit approval to reduce scope:** the
+reusable transition **engine** (`components/transitions/`: `TransitionProvider` +
+`usePageTransition`, `ContactSheetTransition`, pure unit-tested `contactSheet.ts`) and the
+**homepage transition** — a contact-sheet/**gallery** move: an 8×5 grid whose cells are the
+real photos on the page (collected from `main img`, shuffled), staggering in, holding until
+the destination route commits (no origin-page flash), then staggering out. Wired via
+`PortfolioCard`'s cover link; homepage-only; reduced-motion fallback. Full architecture is in
+**CLAUDE.md → "Page transitions"**. Also fixed the showreel here (CSP `media-src` + YouTube/
+Vimeo `frame-src`). **Do not rebuild the engine or the homepage move.**
+
+**Still pending — the six bespoke per-route transitions below**, each deferred to its own
+prototype session (they're a large motion budget; prototype behind a switcher per the skill
+notes). D7/D10/D11 cross-reference their route's transition.
+
+Architecture (shipped):
+- A `TransitionContext` (React context) holds the current page's available images/media.
 - A `PageTransition` wrapper component intercepts route changes.
 - Each route has a defined transition in and out.
 
-Transitions to implement in this session:
+Per-route transitions still to implement (deferred):
 - **→ Photography:** Hero image expands from small to full viewport, 3D cylinder assembles.
 - **→ Videography:** Images scatter as ice shards (Three.js), film strip assembles from right.
 - **→ NFT:** Images fragment/glitch, NFT grid assembles.
 - **→ Dancing:** Images distort with wave physics (GSAP elastic), dancing page fades in.
 - **→ About:** Single portrait expands full-screen, about content fades over it.
 - **→ Web Development:** Brief terminal-style effect, page assembles.
-- **Homepage → any: the contact-sheet move.** The photograph currently on screen splits
-  into a grid of frames; each frame scales down and clears in a staggered, randomised order
-  while the destination page's own first image assembles from the same cells. ~1.0s total.
-  Pure CSS transforms on ~40 divs sharing one `background-image` — no Three.js, no new
-  dependency, GPU-composited. Reverses on the way back. Falls back to a cross-fade under
-  `prefers-reduced-motion`.
-  **This is a navigation transition, not a loading screen.** The Preloader (D1) is untouched
-  and keeps its logo/name sequence on every arrival at `/`; this fires only on a deliberate
-  click, after the page is already loaded. Do not merge or replace the two.
-  The destination image must be known before navigation starts — that is what
-  `TransitionContext` is for.
+- ~~**Homepage → any: the contact-sheet move.**~~ **✓ SHIPPED 2026-08-20** — built as a
+  **gallery of the page's real photos** (each cell a different image, shuffled), not one
+  photo sliced (that was tried and rejected by Hussain), and it **holds until the destination
+  commits** rather than assembling the destination's first image. ~40 `div`s, pure CSS
+  transforms, GPU-composited, reduced-motion fade. Forward-only for now (no back-nav reversal
+  yet). It is a navigation transition, not a loading screen — the Preloader (D1) is untouched.
+  Details in CLAUDE.md → "Page transitions".
 
 **Before writing any code:**
 - Read AppShell.tsx, layout.tsx, every public page.tsx, every public page's primary image source.

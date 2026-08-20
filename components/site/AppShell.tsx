@@ -8,6 +8,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Navbar } from "@/components/site/Navbar";
 import { Preloader } from "@/components/site/Preloader";
 import { CustomCursor } from "@/components/site/CustomCursor";
+import { TransitionProvider } from "@/components/transitions/TransitionContext";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -49,8 +50,10 @@ export function AppShell({
       <div className="grain-overlay" />
       <CustomCursor />
       <Navbar />
-      <div className="relative z-10">{children}</div>
-      {footer && <div className="relative z-10">{footer}</div>}
+      <TransitionProvider>
+        <div className="relative z-10">{children}</div>
+        {footer && <div className="relative z-10">{footer}</div>}
+      </TransitionProvider>
     </div>
   );
 }

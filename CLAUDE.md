@@ -262,10 +262,32 @@ cylinder adapts instead of falling back — `fitDistance()` pulls the camera bac
 front plane fits narrow viewports (`fov` is vertical, so phones crop horizontally), and
 `components/photography/lib.ts` cuts the texture budget to 16 @ 420px under 768px.
 
-## Page transitions — content-as-animation (D4, pending)
-Every transition uses the actual photos/videos of origin/destination as material.
-Per-route specs live in SESSION-QUEUE.md §D4, including the homepage in/out transition
-(the old "deferred to a future session" note is gone — the spec is in §D4 now).
+## Page transitions — content-as-animation (D4, engine + homepage shipped 2026-08-20)
+Every transition uses the actual photos/videos of origin/destination as material. The
+**reusable engine + the homepage transition shipped in D4**; the six bespoke per-route
+transitions (Photography expand, Videography ice-shard, NFT glitch, Dancing wave, About
+portrait, Web-dev terminal) were **deliberately deferred** to their own prototype sessions
+at Hussain's request (a large motion budget vs the site's restraint — don't "revert" this
+and build all six). Remaining per-route specs live in SESSION-QUEUE.md §D4.
+
+**The engine** lives in `components/transitions/`:
+- `TransitionContext.tsx` — `TransitionProvider` (mounted in `AppShell`, public branch only,
+  wrapping `children` + the footer) exposes `usePageTransition()` → `navigate(href, imageUrl)`.
+  It **only plays on the homepage** (`pathname === "/"`); anywhere else, and under
+  `prefers-reduced-motion`, it's a plain `router.push` / quick fade. Honors reduced-motion
+  (the repo's first such handling).
+- `ContactSheetTransition.tsx` + `contactSheet.ts` (pure, unit-tested) — the homepage move:
+  an 8×5 grid whose cells are a **gallery of the real photos currently on the page**
+  (collected from `main img`, shuffled — NOT one image sliced; that was rejected). Cells
+  stagger **in**, **hold covering the screen until the destination route actually commits**
+  (watched via `usePathname`, with a 2.5s safety cap), then stagger **out** onto it. Holding
+  for the commit is what prevents the origin page flashing back before the target paints —
+  do not clear the cells on a fixed timer.
+- `PortfolioCard.tsx` is now a client component; its cover `<Link>` routes homepage clicks
+  through `navigate()` (modifier/middle-clicks fall through to normal nav). This is the sole
+  trigger — the transition is homepage-Featured-Work-cards only by design.
+- Motion tokens: `.hm-cell-in`/`.hm-cell-out` keyframes in `globals.css`, repo easing
+  `cubic-bezier(0.2, 0.7, 0.2, 1)`, ~460ms/cell + ~440ms stagger.
 
 ## Globe (D6, shipped 2026-08-18)
 `components/home/HomeExhibitionGlobe.tsx` + `components/home/exhibition/*` render react-globe.gl
@@ -475,6 +497,10 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   as the `footer` prop from `app/layout.tsx` (`<AppShell footer={<SiteFooter />}>`) — a server
   component rendered by a client parent via props. `CustomCursor` is imported and rendered
   directly inside `AppShell`'s public branch. Do not re-mount either as a sibling in `layout.tsx`.
+  **`TransitionProvider` (D4) also lives here**, wrapping `children` + the footer, so the page
+  transition is available to every public route but plays only on the homepage — see "Page
+  transitions" above. Do not build a second page-transition mechanism; route homepage-card
+  clicks through `usePageTransition().navigate()`.
 
 ## Code quality rules
 - **Any code that can become a reusable component must be refactored into one.** Reuse
@@ -527,9 +553,10 @@ keeps them fixed.
 - Login is rate-limited via `lib/server/request-guards.ts` (Mongo-backed, collection
   `request_guards`).
 - A full **Content-Security-Policy** ships in `next.config.ts`, dev/prod aware
-  (`'unsafe-eval'` and ws: are dev-only). Allowlist is deliberately narrow: images from
-  `res.cloudinary.com`, frames from the Cloudinary upload widget and
-  `www.openstreetmap.org`, `frame-ancestors 'none'`.
+  (`'unsafe-eval'` and ws: are dev-only). Allowlist is deliberately narrow: images +
+  video from `res.cloudinary.com` (`img-src` + `media-src`), frames from the Cloudinary
+  upload widget, `www.openstreetmap.org`, and the video embed hosts
+  `www.youtube-nocookie.com` + `player.vimeo.com`, `frame-ancestors 'none'`.
 
 **Standing rules:**
 - **Never invent auth.** Session tokens carry an issue timestamp inside the signed
@@ -549,11 +576,16 @@ keeps them fixed.
   repo — keep it that way.
 - **Never commit `.env*`.** Verified gitignored. If a secret is ever exposed, rotating it
   is mandatory, not optional — the leaked value stays valid until rotated.
-- **CSP `frame-src` in `next.config.ts` legitimately carries `www.openstreetmap.org`** —
-  the testimonials location map is an OSM embed iframe. S1's CSP omitted it and silently
-  broke the map (found in S6, archive §S6). Do not strip it in a future security pass;
-  any new external iframe/CDN needs its origin added to the right CSP directive **and**
+- **CSP `frame-src` in `next.config.ts` legitimately carries `www.openstreetmap.org`**
+  (testimonials OSM map — S1 omitted it and silently broke the map, S6, archive §S6) **and,
+  since D4 (2026-08-20), `www.youtube-nocookie.com` + `player.vimeo.com`** — the showreel and
+  media-lightbox video embeds (`toEmbedUrl`). Do not strip any of them in a future security
+  pass; any new external iframe/CDN needs its origin added to the right CSP directive **and**
   an in-browser check that the surface still renders.
+- **CSP `media-src 'self' blob: https://res.cloudinary.com` was added in D4 (2026-08-20).**
+  There was previously **no `media-src`**, so every Cloudinary `<video>` (showreel, videography
+  grid, lightbox) fell back to `default-src 'self'` and was silently blocked — the "showreel
+  not working" bug. Do not remove it; `<video>`/`<audio>` need `media-src`, not `img-src`.
 
 **Gate 1 must explicitly answer, in one line each, whenever a session touches auth,
 API routes, cookies, env vars, or user input:** does this add a new trust boundary? does
