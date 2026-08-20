@@ -35,7 +35,9 @@ T2 (`/photography/[tag]` + `/videography/[tag]` subpages, `TagChipRow` nav, per-
 Phase S2: S11 (unsaved-work guard + honest multi-part save feedback + admin feedback-clarity fixes),
 N9 (public cursor/footer consolidated into `AppShell`, off admin) ·
 D4 (page-transition engine + homepage gallery contact-sheet transition; per-route transitions deferred;
-CSP showreel fix — `media-src` + YouTube/Vimeo `frame-src`).
+CSP showreel fix — `media-src` + YouTube/Vimeo `frame-src`) ·
+Phase 4: L1 (launch-prep code/docs: README rewrite, admin config-error copy, CLAUDE.md deployment status;
+first-deploy operational checklist recorded, not yet run — site not deployed).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -63,7 +65,9 @@ longer top-to-bottom — take sessions in exactly this order.
 **Block 4 — Everything else,** in this order:
 8. ~~**S11, N9**~~ ✓ done — admin unsaved-work guard + honest multi-part save feedback (S11),
    and public cursor/footer no longer render on admin (N9). (**S8, S9 done.**)
-9. **L1** — launch prep. Small, and it is what actually gates going live.
+9. ~~**L1**~~ ✓ done — launch prep code/docs shipped (README, admin config-error copy,
+   CLAUDE.md deployment status); the deploy-time checklist (rotate secret, verify hash login,
+   re-verify CSP, `/admin` headers) is recorded in CLAUDE.md for first deploy.
 10. **D4, D5, D7, D8** · **D9b before D9** · **D10, D11, D12**
 11. **D13 last** — the consistency sweep; it needs everything else landed first.
 12. **C1, C2, C3** · **P1, P2** · **NFT1, NFT2**
@@ -83,7 +87,7 @@ Going live does **not** require the whole queue. The launch-blocking set is:
 | 2 | **C4 + D6** | The globe is part of the approved homepage; without C4 it shows wrong or missing cities. |
 | 3 | **S10** | A bypassable admin-login lockout and an HTML-injectable notification email are not shippable. |
 | 4 | ~~**S8, S9**~~ ✓ done | S8 was a runaway rAF loop; S9 meant a deactivated page stayed publicly reachable. Both fixed. |
-| 5 | **L1** | Rotate `ADMIN_COOKIE_SECRET`, verify hash login and the CSP against the deployed origin, fix `README.md`. |
+| 5 | **L1** (code ✓, deploy checklist pending) | Code/docs done. Still owed at first deploy: rotate `ADMIN_COOKIE_SECRET`, verify hash login + CSP against the live origin. Checklist in CLAUDE.md → "Domain & deployment status". |
 
 Everything else — T1/T2, D4, D5, D7–D13, C1–C3, P1/P2, NFT — can ship after launch.
 D10/D11/D12 pages stay behind their `isActive` toggle until they are built, which is exactly
@@ -587,29 +591,6 @@ Read AppShell.tsx and layout.tsx before writing.
 ---
 
 ## Phase 4 — People & launch prep
-
-### Session L1 — Launch prep checklist — `pending`
-Created 2026-08-17 because S1 deferred work that no session tracked (archive §S1:
-*"Item 2 (rotate `ADMIN_COOKIE_SECRET`): DEFERRED… Carry to launch prep: rotate it in
-Netlify env when the site is first deployed, alongside a deploy-time re-verification of the
-CSP… and of hash login."*). Phase 4 contained only P1 and P2, so it was never picked up.
-
-1. **Rotate `ADMIN_COOKIE_SECRET`** in the Netlify environment at first deploy. Rotating
-   invalidates every existing session token by design.
-2. **Verify hash login against the deployed build** — `ADMIN_PASSWORD_HASH` set, no
-   plaintext `ADMIN_PASSWORD` anywhere (S1 deleted the fallback; confirm it stayed deleted).
-3. **Re-verify the CSP in the browser on the deployed origin**, not locally: Cloudinary
-   images load, the upload widget opens, the OpenStreetMap embed on `/testimonials` renders
-   (S1's CSP omitted `frame-src www.openstreetmap.org` and silently broke it — archive §S6),
-   and the globe texture loads from `/public/globe/` once D6 has shipped.
-4. **Confirm `/admin/*` is `no-store` + `noindex`** as `next.config.ts:76-81` intends.
-5. **Rewrite `README.md`.** It is still unedited `create-next-app` boilerplate and
-   README.md:32-36 tells the reader to deploy on Vercel, contradicting CLAUDE.md:23
-   ("Deployed on Netlify — not Vercel"). It names none of the real stack.
-6. **Update CLAUDE.md → "Domain & deployment status"** in the same commit, so the ambiguity
-   that made two sessions read it two different ways cannot come back.
-
----
 
 ### Session P1 — Performance audit — `pending`
 Audit the full public site for performance.

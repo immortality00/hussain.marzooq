@@ -2016,3 +2016,51 @@ client parent via props; `CustomCursor` is imported and rendered directly inside
 public branch (both wrapped in `relative z-10` to sit above the z-2 grain). Admin branch stays
 `return <>{children}</>` — no cursor, no footer. `tsc` + `eslint` + `npm test` clean. CLAUDE.md
 updated same commit: rewrote the AppShell "Correction" paragraph, removed the defect row.
+
+---
+
+## Phase 4 — People & launch prep
+
+### Session L1 — Launch prep checklist — `done` (2026-08-20)
+Created 2026-08-17 because S1 deferred work that no session tracked (archive §S1:
+*"Item 2 (rotate `ADMIN_COOKIE_SECRET`): DEFERRED… Carry to launch prep: rotate it in
+Netlify env when the site is first deployed, alongside a deploy-time re-verification of the
+CSP… and of hash login."*). Phase 4 contained only P1 and P2, so it was never picked up.
+
+1. **Rotate `ADMIN_COOKIE_SECRET`** in the Netlify environment at first deploy. Rotating
+   invalidates every existing session token by design.
+2. **Verify hash login against the deployed build** — `ADMIN_PASSWORD_HASH` set, no
+   plaintext `ADMIN_PASSWORD` anywhere (S1 deleted the fallback; confirm it stayed deleted).
+3. **Re-verify the CSP in the browser on the deployed origin**, not locally: Cloudinary
+   images load, the upload widget opens, the OpenStreetMap embed on `/testimonials` renders
+   (S1's CSP omitted `frame-src www.openstreetmap.org` and silently broke it — archive §S6),
+   and the globe texture loads from `/public/globe/` once D6 has shipped.
+4. **Confirm `/admin/*` is `no-store` + `noindex`** as `next.config.ts:76-81` intends.
+5. **Rewrite `README.md`.** It is still unedited `create-next-app` boilerplate and
+   README.md:32-36 tells the reader to deploy on Vercel, contradicting CLAUDE.md:23
+   ("Deployed on Netlify — not Vercel"). It names none of the real stack.
+6. **Update CLAUDE.md → "Domain & deployment status"** in the same commit, so the ambiguity
+   that made two sessions read it two different ways cannot come back.
+
+**Outcome (2026-08-20).** Deployment status re-confirmed at Gate 1: **still NOT DEPLOYED** —
+no Netlify env, no deployed build; hussain-marzooq.com serves the old landing page (unchanged
+from S1). So items 1–3 and the deployed-build half of item 2 stay a **first-deploy checklist**
+(not doable from a session) and were recorded as such in CLAUDE.md → "Domain & deployment
+status". The code/doc half of L1 shipped:
+- **Item 2 (code):** verified the plaintext `ADMIN_PASSWORD` fallback is gone —
+  `verifyAdminPassword` reads only `ADMIN_PASSWORD_HASH` (`lib/auth/admin.ts:40,51`). Fixed
+  the one stale reference left behind: `app/admin/page.tsx:124` config-error copy said set
+  "`ADMIN_PASSWORD_HASH` **or** `ADMIN_PASSWORD`" — now names only `ADMIN_PASSWORD_HASH` +
+  `ADMIN_COOKIE_SECRET`.
+- **Item 4:** confirmed intact, no change — `next.config.ts:80-87` sets `Cache-Control:
+  no-store, max-age=0` + `X-Robots-Tag: noindex, nofollow` on `/admin/:path*`.
+- **Item 5:** `README.md` fully rewritten — HM Visuals description, real stack (Next 16 /
+  React 19 / TS / Tailwind 4 / MongoDB / Cloudinary / Resend / Three / GSAP / Lenis /
+  react-globe.gl), the Cloudinary-loader note, dev/test/lint commands, the "never `next
+  build` to verify" rule, and a Netlify deployment section. No Vercel.
+- **Item 6:** CLAUDE.md → "Domain & deployment status" reworded to state NOT DEPLOYED plainly
+  (the earlier unqualified "Live on Netlify" wording is deleted) with the first-deploy
+  checklist inlined.
+- `tsc` + `eslint --max-warnings 0` + `npm test` (120 pass) clean. No security surface added
+  (docs + one server-rendered error string; no new trust boundary, no secret in client code,
+  no new input).

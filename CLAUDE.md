@@ -16,12 +16,22 @@ Every week without it is a missed booking.
 ## Domain & deployment status
 hussain-marzooq.com. Target: hussain.art when ready. Launch does not wait for hussain.art.
 
-**Deployment status — confirm at Gate 1 of any launch-prep session, do not assume.**
-Last recorded state (S1, 2026-08-01, archive §S1): *no Netlify env and no deployed build of
-this rebuild exist* — the domain serves the previous landing page. "Live on Netlify"
-previously appeared here without qualification and was read both ways by different
-sessions. If the rebuild has since been deployed, update this line in the same commit and
-run the S1 deferred items (queue §L1).
+**Deployment status — NOT DEPLOYED (confirmed L1, 2026-08-20).** There is *no Netlify env
+and no deployed build of this rebuild*; hussain-marzooq.com still serves the previous
+landing page. This is unchanged from S1 (2026-08-01, archive §S1). Do not read this as
+"live" — the earlier unqualified "Live on Netlify" wording was read both ways by different
+sessions and is deleted for good. **Re-confirm this at Gate 1 of any launch-prep session
+and, the moment the rebuild is actually deployed, flip this line in the same commit.**
+
+At first deploy, run the L1 deploy-time checklist (queue §L1), which is not code and cannot
+be done from a session: (1) set `ADMIN_PASSWORD_HASH` + `ADMIN_COOKIE_SECRET` (+ Mongo/
+Cloudinary/Resend) in the Netlify env, rotating `ADMIN_COOKIE_SECRET` — rotation invalidates
+every existing session token by design; (2) verify hash login against the deployed build
+(no plaintext `ADMIN_PASSWORD` — the fallback was deleted in S1 and stays deleted); (3)
+re-verify the full CSP in a browser on the live origin (Cloudinary images/video, upload
+widget, the `/testimonials` OpenStreetMap embed, the globe texture from `/public/globe/`);
+(4) confirm `/admin/*` returns `no-store` + `noindex`. The code side of L1 (README rewrite,
+admin config-error copy, this section) shipped 2026-08-20.
 
 ## Stack
 Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4
