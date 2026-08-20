@@ -2116,3 +2116,45 @@ fixing a latent miscentring where the old inline `translate` silently overrode t
 - **Prototype-skill deviation:** shipped tuned named constants at the top of the file for live
   tuning instead of a baked-in 3-variant switcher (a switcher in a global cursor is awkward);
   Hussain confirmed the feel in-browser.
+
+---
+
+### Session D7 — NFT page redesign — `done` (2026-08-21)
+Rebuild NftCard.tsx and NftCollection.tsx for collector-grade presentation.
+
+- Dark card, full bleed image.
+- Hover: card flips 180° (CSS 3D perspective) revealing back face with price, edition count, status, marketplace link, inquiry link.
+- Status badge: available = white pulse animation, sold = diagonal stamp.
+- The transition INTO the NFT page uses the glitch/fragment effect from Session D4.
+- Filter bar redesign: horizontal tabs, no search box unless expanded.
+
+Read: components/nft/NftCard.tsx, NftCollection.tsx, NftModal.tsx, lib.ts, app/nft/page.tsx. Propose card flip implementation. Wait for approval.
+
+**Build outcome (2026-08-21):** Card rebuilt as a two-face flip in `components/nft/NftCard.tsx`.
+Front is the full-bleed image/video with a legibility scrim, status badge top-left, and a
+bottom block carrying title + edition label + a **Price / edition-count row** (`getPriceText`
+left, `editionSubline` right). Back is a dark spec sheet (`bg-neutral-950`, white-on-dark like
+the hero pills — theme-independent, not tokens, matching the dark-first button rationale) with
+Price, Edition and **Buy** (`buttonClasses("solid")`) / **Inquire** (`buttonClasses("ghost")`).
+Price + edition count are visible on **both** faces (Hussain's request during Gate 2).
+- **Flip mechanics** live in `app/globals.css` (`.hm-nft-card` perspective / `.hm-nft-flip`
+  preserve-3d / `.hm-nft-face(--back)` backface-hidden), `rotateY(180deg)` on hover at 520ms
+  repo easing `cubic-bezier(0.2,0.7,0.2,1)`. Flip is gated `@media (hover: hover)` so touch
+  never sticks flipped; back-face links are `aria-hidden` + `tabIndex={-1}` (pointer sugar —
+  the modal is the accessible action path). Whole-card click/Enter/Space still opens `NftModal`
+  (unchanged); the `id="nft-{id}"` deep-link anchor is preserved.
+- **Status achromatic (Hussain's Gate-1 call):** the old rose/emerald/amber in `lib.ts`
+  `statusClasses` is gone — now neutral token-based (used by the modal pill). Available = white
+  **pulse** (`hm-nft-pulse` keyframe, a scaling `::after` halo on a white dot); sold = a rotated
+  outlined **SOLD stamp** over the art; coming-soon = neutral pill. Added `statusLabel()` helper;
+  `NftModal` pill now renders it. This applies the achromatic-palette mandate; it does not
+  reverse a decision.
+- **Filter bar** (`NftFilters.tsx`) rebuilt: horizontal `.hm-chip` status tabs (active inverts
+  to `bg-foreground text-background`) + a search chip that expands the reused `SearchInput`
+  (autofocused, X clears+closes). Search-open state moved into `NftFilters` (fewer props);
+  `NftCollection.tsx` unchanged.
+- **Reduced-motion** disables flip + pulse + image scale; cards stay on the front and the modal
+  still gives full detail + actions. All Cloudinary/media paths unchanged.
+- The **D4 glitch transition into** the page was left to its own deferred D4 prototype session
+  (out of scope, per the queue). No CLAUDE.md rule/architecture change; **no security surface**
+  (no auth/API/cookies/env/input). `tsc` + `eslint --max-warnings 0` + 126 tests clean.

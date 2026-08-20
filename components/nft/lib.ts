@@ -42,12 +42,15 @@ export function displayStatus(item: PublicNftItem) {
 
 export function statusClasses(status: ReturnType<typeof displayStatus>) {
   if (status === "sold") {
-    return "bg-rose-600 text-white shadow-[0_8px_24px_rgba(0,0,0,0.32)]";
+    return "border border-border bg-muted text-foreground";
   }
-  if (status === "coming-soon") {
-    return "border border-black/40 bg-black/84 text-amber-200 shadow-[0_8px_24px_rgba(0,0,0,0.32)]";
-  }
-  return "border border-black/40 bg-black/84 text-emerald-200 shadow-[0_8px_24px_rgba(0,0,0,0.32)]";
+  return "border border-border text-muted-foreground";
+}
+
+export function statusLabel(status: ReturnType<typeof displayStatus>) {
+  if (status === "sold") return "Sold";
+  if (status === "coming-soon") return "Coming soon";
+  return "Available";
 }
 
 export function editionLabel(item: PublicNftItem) {

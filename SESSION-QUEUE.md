@@ -37,7 +37,9 @@ N9 (public cursor/footer consolidated into `AppShell`, off admin) ·
 D4 (page-transition engine + homepage gallery contact-sheet transition; per-route transitions deferred;
 CSP showreel fix — `media-src` + YouTube/Vimeo `frame-src`) ·
 Phase 4: L1 (launch-prep code/docs: README rewrite, admin config-error copy, CLAUDE.md deployment status;
-first-deploy operational checklist recorded, not yet run — site not deployed).
+first-deploy operational checklist recorded, not yet run — site not deployed) ·
+D5 (cursor: velocity stretch, ghost trail, spring overshoot, zone-reactive size, blend-difference) ·
+D7 (NFT page: hover-flip collector card, achromatic status badges, tabs + expandable search).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -224,19 +226,6 @@ Per-route transitions still to implement (deferred):
 - `review-animations` at Gate 2, before declaring done.
 - **Conflict:** the Dancing transition's elastic wave physics is deliberate and survives
   Impeccable's "no bounce/elastic" rule. See CLAUDE.md → Skill conflicts.
-
----
-
-### Session D7 — NFT page redesign — `pending`
-Rebuild NftCard.tsx and NftCollection.tsx for collector-grade presentation.
-
-- Dark card, full bleed image.
-- Hover: card flips 180° (CSS 3D perspective) revealing back face with price, edition count, status, marketplace link, inquiry link.
-- Status badge: available = white pulse animation, sold = diagonal stamp.
-- The transition INTO the NFT page uses the glitch/fragment effect from Session D4.
-- Filter bar redesign: horizontal tabs, no search box unless expanded.
-
-Read: components/nft/NftCard.tsx, NftCollection.tsx, NftModal.tsx, lib.ts, app/nft/page.tsx. Propose card flip implementation. Wait for approval.
 
 ---
 
