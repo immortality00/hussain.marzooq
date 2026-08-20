@@ -885,9 +885,9 @@
     "semantic_hash": "201892a5c34b815c77f9c2a93f14ea54"
   },
   "components/shared/PortfolioCard.tsx": {
-    "mtime": 1786998433.0543647,
-    "ast_hash": "3fa170e8ac01aff8e0dd065ba476340d",
-    "semantic_hash": "3fa170e8ac01aff8e0dd065ba476340d"
+    "mtime": 1787169473.7047288,
+    "ast_hash": "87feee65e0b3904a8d0bcefb410917c4",
+    "semantic_hash": ""
   },
   "components/shared/SmartImage.tsx": {
     "mtime": 1782484457.87263,
@@ -895,8 +895,8 @@
     "semantic_hash": "a934cf098c04f8d222e97c8a977c42ba"
   },
   "components/site/AppShell.tsx": {
-    "mtime": 1787157728.2017338,
-    "ast_hash": "f29e704478bccb7c1e3a196929c2aa4e",
+    "mtime": 1787169462.4186423,
+    "ast_hash": "cc195adc679b1a7dcda393f05fea4026",
     "semantic_hash": ""
   },
   "components/site/CustomCursor.tsx": {
@@ -1215,9 +1215,9 @@
     "semantic_hash": "5a6fd53fdcf2be529e9cc0b718fde352"
   },
   "next.config.ts": {
-    "mtime": 1785737519.2410617,
-    "ast_hash": "421807a61f7a7d152cd3ed376f56b176",
-    "semantic_hash": "421807a61f7a7d152cd3ed376f56b176"
+    "mtime": 1787175466.9350936,
+    "ast_hash": "8dac4ec17ad45b0a1f1a0b507161d88e",
+    "semantic_hash": ""
   },
   "package.json": {
     "mtime": 1785748648.8130803,
@@ -1305,8 +1305,8 @@
     "semantic_hash": "c698309979460d0f02ba616417844399"
   },
   "CLAUDE.md": {
-    "mtime": 1787166742.8715792,
-    "ast_hash": "30ff30426a5dea403f8810bef912eb51",
+    "mtime": 1787245877.0319574,
+    "ast_hash": "72a05bfd38a3a492ce7e633af88264cc",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1315,8 +1315,8 @@
     "semantic_hash": "f15aaa42d5d299d091b1171097ea56ad"
   },
   "SESSION-QUEUE.md": {
-    "mtime": 1787166796.7065012,
-    "ast_hash": "786e012ec46a2154dddd20022a2dbcb6",
+    "mtime": 1787245920.4995298,
+    "ast_hash": "831e82f667066c2c70bb9d3b6ebef62e",
     "semantic_hash": ""
   },
   "public/file.svg": {
@@ -1712,6 +1712,26 @@
   "hooks/useUnsavedChangesGuard.ts": {
     "mtime": 1787157743.738532,
     "ast_hash": "9a4a63d4b420a424650915763f836335",
+    "semantic_hash": ""
+  },
+  "components/transitions/ContactSheetTransition.tsx": {
+    "mtime": 1787245324.9439404,
+    "ast_hash": "b790f13374575e2c38b94c995dd2f4bf",
+    "semantic_hash": ""
+  },
+  "components/transitions/TransitionContext.tsx": {
+    "mtime": 1787245337.3820913,
+    "ast_hash": "253c6a47f721336998d5a21d203add8e",
+    "semantic_hash": ""
+  },
+  "components/transitions/contactSheet.ts": {
+    "mtime": 1787245317.7340991,
+    "ast_hash": "adabb881898ed48c2b2a39f7a817a0f1",
+    "semantic_hash": ""
+  },
+  "test/transitions/contact-sheet.test.ts": {
+    "mtime": 1787245372.1664832,
+    "ast_hash": "f61336fc4c59d785a0a447a47f397edf",
     "semantic_hash": ""
   }
 }
