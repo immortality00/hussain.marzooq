@@ -227,7 +227,7 @@ Per-route transitions still to implement (deferred):
 
 ---
 
-### Session D5 — Cursor enhancements — `pending`
+### Session D5 — Cursor enhancements — `in-progress`
 Enhance CustomCursor.tsx with the effects from CLAUDE.md direction.
 
 Additions to the existing dot + ring cursor:
@@ -474,8 +474,10 @@ Check and fix:
   both in one file. `WorkOverlay.tsx:237` discipline sublabels are `text-[9px]`; the 10px
   "HM" logo mark is `Navbar.tsx:69`, **not** WorkOverlay. Both still unfixed. Bump to ≥11px
   (CLAUDE.md's micro-label spec sets 11px as the floor).
-- **`transition: width, height`** on a shared element (all pages) — animate `transform`
-  instead to avoid layout thrash. Find the one component and fix.
+- ~~**`transition: width, height`** on a shared element (all pages)~~ **RESOLVED in D5
+  (2026-08-20).** This was `CustomCursor.tsx`'s ring-inner (`transition-[width,height,opacity]`);
+  the D5 rewrite sizes the ring with `transform: scale()` instead, so the layout-thrashing
+  transition is gone. No action left in D13 unless a re-scan flags a new one.
 - **Nested cards** on home / contact / videography (card-in-card is banned — CLAUDE.md).
   Testimonials' nested card is its deliberate hero-card layout — leave it.
 - **Line length** 96–112 ch on body copy across 8 pages — tighten prose measure toward <80ch.
