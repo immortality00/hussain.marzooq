@@ -2064,3 +2064,55 @@ status". The code/doc half of L1 shipped:
 - `tsc` + `eslint --max-warnings 0` + `npm test` (120 pass) clean. No security surface added
   (docs + one server-rendered error string; no new trust boundary, no secret in client code,
   no new input).
+
+---
+
+### Session D5 — Cursor enhancements — `done` (2026-08-20)
+Enhance CustomCursor.tsx with the effects from CLAUDE.md direction.
+
+Additions to the existing dot + ring cursor:
+1. **Velocity stretch:** When moving fast, the ring distorts into an ellipse in the direction of movement. Calculated from dx/dy velocity each frame. Returns to circle when still.
+2. **Ghost trail:** When velocity exceeds threshold, 2 ghost rings appear behind with 80% and 40% opacity. Fades when cursor slows.
+3. **Spring overshoot:** When stopping, the ring slightly overshoots the dot position then springs back. Spring physics (k and damping values to be tuned).
+4. **Zone-reactive size:** Expands on image/card hover, collapses on button hover. Already partially implemented — refine and verify consistency across all pages.
+5. **mix-blend-mode: difference:** Applied to both dot and ring for automatic inversion on any background.
+
+Read CustomCursor.tsx fully before writing. Verify cursor is applied correctly to every public page via AppShell.
+
+**Skills to use here (installed in DS0):**
+- `prototype` — spring physics is pure feel. Build 3 variants (stiffness/damping sets)
+  behind a switcher and pick by eye rather than guessing constants in the dark.
+- `animation-vocabulary` for the Gate 1 spec; `review-animations` at Gate 2.
+- **Conflict:** spring overshoot is deliberate here and survives Impeccable's
+  "no bounce/elastic easing" rule. Ignore the rule with a reason, don't remove the motion.
+
+**Build outcome (2026-08-20):** All five effects shipped in `components/site/CustomCursor.tsx`,
+rewritten as one rAF loop with no React re-renders (unchanged pattern). Each of the dot/ring/2
+ghosts is an outer positioned div (JS `translate`) + inner visual div (centering + effects),
+fixing a latent miscentring where the old inline `translate` silently overrode the Tailwind
+`-translate-1/2`.
+- **Spring overshoot** — the ring's old `lerp 0.12` replaced by an underdamped spring integrator
+  (`stepSpring`, `SPRING_K=0.2`, `SPRING_DAMP=0.62`); dot keeps its tight `lerp 0.35`.
+- **Velocity stretch** — `stretchFor(speedSm)` maps smoothed speed → `scale(sx,sy)` (up to
+  1.35 / 0.78), applied with `rotate(atan2)` on the ring inner; circle at rest.
+- **Ghost trail** — 2 extra rings trailing via lerp, opacity gated by smoothed speed
+  (`GHOST_MIN=6`/`GHOST_MAX=34` → 0.8 / 0.4 ceilings).
+- **Zone-reactive size** — one selector split into COLLAPSE (`button, .hm-btn, .hm-chip,
+  [role='button'], input, textarea, select, label` → 0.5×) checked first, then EXPAND
+  (`img, [data-cursor-expand], figure` → 1.6×); eased toward target each frame.
+  `PortfolioCard` root got `data-cursor-expand` so cards read as an expand zone (the cover
+  `<a>` over the image otherwise reads neutral).
+- **mix-blend-difference** — dot + ring go solid white with `mix-blend-mode: difference` in
+  `globals.css` (`.cursor-dot`, `.cursor-ring-inner`); the `dark:` colour variants dropped.
+- **Reduced-motion** — effect early-returns under `prefers-reduced-motion: reduce`, leaving
+  the native cursor (elements stay `opacity-0`, never revealed). Repo's second reduced-motion
+  handling after D4.
+- Pure helpers `stretchFor` / `stepSpring` exported + unit-tested (`test/custom-cursor.test.ts`,
+  6 tests incl. overshoot-and-settle). `tsc` + `eslint --max-warnings 0` + tests clean.
+- **Incidental:** removed the ring's `transition-[width,height]` (sizing now via `transform:
+  scale`), which resolved the D13 "animate transform not width/height" finding — noted resolved
+  in that D13 list. No CLAUDE.md rule/architecture change; no security surface (no auth/API/
+  cookies/env/input).
+- **Prototype-skill deviation:** shipped tuned named constants at the top of the file for live
+  tuning instead of a baked-in 3-variant switcher (a switcher in a global cursor is awkward);
+  Hussain confirmed the feel in-browser.

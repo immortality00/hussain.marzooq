@@ -227,27 +227,6 @@ Per-route transitions still to implement (deferred):
 
 ---
 
-### Session D5 — Cursor enhancements — `in-progress`
-Enhance CustomCursor.tsx with the effects from CLAUDE.md direction.
-
-Additions to the existing dot + ring cursor:
-1. **Velocity stretch:** When moving fast, the ring distorts into an ellipse in the direction of movement. Calculated from dx/dy velocity each frame. Returns to circle when still.
-2. **Ghost trail:** When velocity exceeds threshold, 2 ghost rings appear behind with 80% and 40% opacity. Fades when cursor slows.
-3. **Spring overshoot:** When stopping, the ring slightly overshoots the dot position then springs back. Spring physics (k and damping values to be tuned).
-4. **Zone-reactive size:** Expands on image/card hover, collapses on button hover. Already partially implemented — refine and verify consistency across all pages.
-5. **mix-blend-mode: difference:** Applied to both dot and ring for automatic inversion on any background.
-
-Read CustomCursor.tsx fully before writing. Verify cursor is applied correctly to every public page via AppShell.
-
-**Skills to use here (installed in DS0):**
-- `prototype` — spring physics is pure feel. Build 3 variants (stiffness/damping sets)
-  behind a switcher and pick by eye rather than guessing constants in the dark.
-- `animation-vocabulary` for the Gate 1 spec; `review-animations` at Gate 2.
-- **Conflict:** spring overshoot is deliberate here and survives Impeccable's
-  "no bounce/elastic easing" rule. Ignore the rule with a reason, don't remove the motion.
-
----
-
 ### Session D7 — NFT page redesign — `pending`
 Rebuild NftCard.tsx and NftCollection.tsx for collector-grade presentation.
 
