@@ -12,6 +12,11 @@ const isDev = process.env.NODE_ENV !== "production";
  *   Used on public pages too (testimonial review form), not just admin.
  * - OpenStreetMap embed: read-only map iframe (www.openstreetmap.org) on the
  *   testimonials page showing each reviewer's city — needs frame-src.
+ * - Cloudinary video: <video> elements stream from res.cloudinary.com (showreel,
+ *   videography grid, lightbox) — needs media-src (no media-src falls back to
+ *   default-src 'self' and silently blocks every video).
+ * - Video embeds: YouTube (youtube-nocookie.com) and Vimeo (player.vimeo.com)
+ *   iframes from toEmbedUrl (showreel embed, lightbox) — need frame-src.
  * - Fonts are self-hosted (geist via next/font) — no external font origin.
  *
  * `script-src` keeps 'unsafe-inline': Next's App Router injects inline hydration
@@ -25,9 +30,10 @@ const cspDirectives = [
   `script-src 'self' 'unsafe-inline' https://upload-widget.cloudinary.com${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://res.cloudinary.com",
+  "media-src 'self' blob: https://res.cloudinary.com",
   "font-src 'self' data:",
   `connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com https://upload-widget.cloudinary.com${isDev ? " ws: http://localhost:*" : ""}`,
-  "frame-src https://upload-widget.cloudinary.com https://www.openstreetmap.org",
+  "frame-src https://upload-widget.cloudinary.com https://www.openstreetmap.org https://www.youtube-nocookie.com https://player.vimeo.com",
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",

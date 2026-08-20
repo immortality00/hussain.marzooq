@@ -387,3 +387,82 @@
 .hm-globe-ping {
   animation: hm-globe-ping 2.6s ease-out infinite;
 }
+
+@keyframes hm-cell-in {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes hm-cell-out {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+}
+
+@keyframes hm-transition-fade {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.hm-transition-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.hm-transition-grid {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 4px;
+}
+
+.hm-cell {
+  background-color: var(--muted);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  will-change: transform, opacity;
+}
+
+.hm-cell-in {
+  animation: hm-cell-in 460ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.hm-cell-out {
+  animation: hm-cell-out 460ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.hm-transition-reduced {
+  background: var(--background);
+  animation: hm-transition-fade 300ms linear both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-cell-in,
+  .hm-cell-out {
+    animation-duration: 1ms;
+  }
+}
