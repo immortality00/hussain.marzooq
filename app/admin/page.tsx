@@ -121,8 +121,8 @@ export default async function AdminLoginPage({
         {error === "config" ? (
           <div className="mt-6 rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
             Admin is not configured. Check <code>.env.local</code> for{" "}
-            <code>ADMIN_PASSWORD_HASH</code> or <code>ADMIN_PASSWORD</code>, plus{" "}
-            <code>ADMIN_COOKIE_SECRET</code>, then restart the dev server.
+            <code>ADMIN_PASSWORD_HASH</code> and <code>ADMIN_COOKIE_SECRET</code>, then
+            restart the dev server.
           </div>
         ) : null}
 
