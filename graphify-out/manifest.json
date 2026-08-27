@@ -925,9 +925,9 @@
     "semantic_hash": "deabb409bf7ca08d5680846b8e16977d"
   },
   "components/site/StickyCta.tsx": {
-    "mtime": 1787801148.3547778,
-    "ast_hash": "3d94ba1d1e188bd4a8d179bb8acca239",
-    "semantic_hash": "3d94ba1d1e188bd4a8d179bb8acca239"
+    "mtime": 1787802256.5394871,
+    "ast_hash": "a344d99317efd1d8e23bfe21c58f128b",
+    "semantic_hash": ""
   },
   "components/site/WorkOverlay.tsx": {
     "mtime": 1787145366.9624908,
@@ -1305,9 +1305,9 @@
     "semantic_hash": "c698309979460d0f02ba616417844399"
   },
   "CLAUDE.md": {
-    "mtime": 1787801741.366531,
-    "ast_hash": "ee4ccde8240416413ab86153385bffa0",
-    "semantic_hash": "ee4ccde8240416413ab86153385bffa0"
+    "mtime": 1787802513.5561147,
+    "ast_hash": "a54aff444d724e7cf23e3674422a7768",
+    "semantic_hash": ""
   },
   "README.md": {
     "mtime": 1787246954.4988809,
@@ -1315,7 +1315,7 @@
     "semantic_hash": "7030b878f3e352238f4fd3a233af0ada"
   },
   "SESSION-QUEUE.md": {
-    "mtime": 1787801767.1146994,
+    "mtime": 1787802530.8555677,
     "ast_hash": "f34d19704cc8827e9fc9ca884f7debd7",
     "semantic_hash": "f34d19704cc8827e9fc9ca884f7debd7"
   },
@@ -1385,9 +1385,9 @@
     "semantic_hash": "a2bdee4fb2783ac465076738c25ce3e0"
   },
   "SESSION-ARCHIVE.md": {
-    "mtime": 1787801786.854691,
-    "ast_hash": "ad5f6010654d8119fae01a69a5c426ba",
-    "semantic_hash": "ad5f6010654d8119fae01a69a5c426ba"
+    "mtime": 1787802549.6405706,
+    "ast_hash": "f0c29e01f05341046ee8cab7edf2a1fb",
+    "semantic_hash": ""
   },
   "lib/auth/session-token.ts": {
     "mtime": 1785490458.2333324,
