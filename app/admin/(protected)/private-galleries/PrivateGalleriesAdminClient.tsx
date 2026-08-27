@@ -1,48 +1,49 @@
 "use client";
 
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { GalleryFormFields } from "@/components/admin/private-galleries/GalleryFormFields";
 import { GalleryList } from "@/components/admin/private-galleries/GalleryList";
 import { PrivateGalleryMediaPicker } from "@/components/admin/private-galleries/PrivateGalleryMediaPicker";
 import { usePrivateGalleriesAdmin } from "@/components/admin/private-galleries/usePrivateGalleriesAdmin";
+import { useBulkSelection } from "@/components/admin/bulk/useBulkSelection";
+import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 
 export default function PrivateGalleriesAdminClient() {
   const admin = usePrivateGalleriesAdmin();
+  const selection = useBulkSelection(admin.items.map((g) => g.id));
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Private Galleries</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Create password-protected galleries with secret links and selected media.
-          </p>
-        </div>
-
-        {admin.view === "list" ? (
-          <button
-            type="button"
-            onClick={admin.openNew}
-            disabled={admin.actionBusy}
-            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            New gallery
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={admin.backToList}
-            disabled={admin.actionBusy}
-            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Back to list
-          </button>
-        )}
-      </div>
+      <AdminPageHeader
+        title="Private Galleries"
+        actions={
+          admin.view === "list" ? (
+            <button
+              type="button"
+              onClick={admin.openNew}
+              disabled={admin.actionBusy}
+              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              New gallery
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={admin.backToList}
+              disabled={admin.actionBusy}
+              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Back to list
+            </button>
+          )
+        }
+      />
 
       <AdminActionFeedback feedback={admin.banner} />
 
       {admin.view === "list" ? (
+        <>
         <GalleryList
           items={admin.items}
           loading={admin.loading}
@@ -53,7 +54,30 @@ export default function PrivateGalleriesAdminClient() {
           onCopyLink={(slug) => void admin.copyLink(slug)}
           onEdit={(id) => void admin.openEdit(id)}
           onDelete={(id) => void admin.remove(id)}
+          isSelected={selection.isSelected}
+          onToggleSelect={selection.toggle}
+          selectAll={{
+            checked: selection.allSelected,
+            indeterminate: selection.count > 0 && !selection.allSelected,
+            onChange: selection.toggleAll,
+          }}
         />
+        <BulkActionBar
+          count={selection.count}
+          busy={admin.bulkBusy}
+          onClear={selection.clear}
+          actions={[
+            {
+              label: "Delete",
+              tone: "danger",
+              onRun: async () => {
+                await admin.bulkRemove(selection.selectedIds);
+                selection.clear();
+              },
+            },
+          ]}
+        />
+        </>
       ) : (
         <section className="mt-8 space-y-6">
           <GalleryFormFields

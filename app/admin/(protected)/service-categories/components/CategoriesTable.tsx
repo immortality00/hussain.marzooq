@@ -6,12 +6,16 @@ import CategoryRow from "./CategoryRow";
 
 export default function CategoriesTable({
   ordered,
+  isSelected,
+  onToggleSelect,
   onReorder,
   onEdit,
   onToggle,
   onDelete,
 }: {
   ordered: Category[];
+  isSelected: (id: string) => boolean;
+  onToggleSelect: (id: string) => void;
   onReorder: (activeId: string, overId: string) => void;
   onEdit: (id: string, patch: CategoryPatch) => Promise<boolean>;
   onToggle: (id: string, value: boolean) => void;
@@ -34,6 +38,8 @@ export default function CategoriesTable({
           <CategoryRow
             key={c.id}
             category={c}
+            selected={isSelected(c.id)}
+            onToggleSelect={() => onToggleSelect(c.id)}
             onEdit={onEdit}
             onToggle={onToggle}
             onDelete={onDelete}

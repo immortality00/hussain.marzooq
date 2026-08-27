@@ -7,72 +7,9 @@ import type { PageSectionsSlug, PageSectionsMap, HomeSections } from "@/lib/serv
 import type { SectionImage } from "@/lib/page-sections-shared";
 import { useAdminAction } from "@/hooks/useAdminAction";
 import type { SeoDraft } from "./components/SeoPageForm";
+import { pageNeedsImage, type PageRow } from "./lib/rows";
 
 type SettingsDraft = { isActive: boolean; cardImage: SectionImage };
-
-export type PageRow = {
-  key: string;
-  label: string;
-  settingsSlug?: string;
-  seoSlug?: string;
-  // Dynamic detail pages: the on-page header is the record's own data (edited
-  // in its own admin section), so only the search & social group is shown, and
-  // the {name} placeholder hint applies.
-  seoDetailPage?: boolean;
-  sectionsSlug?: PageSectionsSlug;
-};
-
-export const PAGE_ROWS: PageRow[] = [
-  { key: "home", label: "Home", seoSlug: "home", sectionsSlug: "home" },
-  { key: "about", label: "About", seoSlug: "about", sectionsSlug: "about" },
-  {
-    key: "photography",
-    label: "Photography",
-    settingsSlug: "photography",
-    seoSlug: "photography",
-    sectionsSlug: "photography",
-  },
-  {
-    key: "photography-tag",
-    label: "Photography — tag page",
-    seoSlug: "photography-tag",
-    seoDetailPage: true,
-  },
-  {
-    key: "videography",
-    label: "Videography",
-    settingsSlug: "videography",
-    seoSlug: "videography",
-    sectionsSlug: "videography",
-  },
-  {
-    key: "videography-tag",
-    label: "Videography — tag page",
-    seoSlug: "videography-tag",
-    seoDetailPage: true,
-  },
-  { key: "nft", label: "NFT", settingsSlug: "nft", seoSlug: "nft", sectionsSlug: "nft" },
-  { key: "dancing", label: "Dancing", settingsSlug: "dancing", seoSlug: "dancing", sectionsSlug: "dancing" },
-  {
-    key: "web-development",
-    label: "Web Development",
-    settingsSlug: "web-development",
-    seoSlug: "web-development",
-    sectionsSlug: "web-development",
-  },
-  { key: "services", label: "Services", seoSlug: "services" },
-  { key: "people", label: "People", seoSlug: "people", sectionsSlug: "people" },
-  {
-    key: "people-detail",
-    label: "People — detail page",
-    seoSlug: "people-detail",
-    seoDetailPage: true,
-    sectionsSlug: "people-detail",
-  },
-  { key: "blog", label: "Blog", seoSlug: "blog", sectionsSlug: "blog" },
-  { key: "contact", label: "Contact", seoSlug: "contact" },
-  { key: "testimonials", label: "Testimonials", seoSlug: "testimonials", sectionsSlug: "testimonials" },
-];
 
 function seoDraftOf(seo: PageSeo): SeoDraft {
   return {
@@ -109,8 +46,8 @@ export function usePagesAdmin({
     Partial<Record<string, PageSectionsMap[PageSectionsSlug]>>
   >({});
 
-  const [expanded, setExpanded] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
+  const [togglingSlug, setTogglingSlug] = useState<string | null>(null);
   const { feedback, setFeedback } = useAdminAction();
 
   const hasUnsavedChanges =
@@ -138,19 +75,12 @@ export function usePagesAdmin({
     return settingsOf(row).cardImage;
   }
 
-  // Row-level "Needs image" flag — true whenever any image warning inside the
-  // row would fire, so the pill and the inline notes stay in lockstep:
-  //  • a visible discipline with no Work-overlay card image, and
-  //  • the homepage hero or any Featured Work card left imageless.
-  // "Empty means empty" is upheld everywhere — this only warns, never auto-picks.
   function needsImage(row: PageRow): boolean {
-    if (row.settingsSlug && isActiveOf(row) && !cardImageOf(row).url) return true;
-    if (row.sectionsSlug === "home") {
-      const home = sectionsOf(row) as HomeSections;
-      if (!home.hero?.image?.url) return true;
-      if (home.featuredCards.some((card) => !card.image?.url)) return true;
-    }
-    return false;
+    return pageNeedsImage(row, {
+      isActive: isActiveOf(row),
+      cardImageUrl: row.settingsSlug ? cardImageOf(row).url : undefined,
+      homeSections: row.sectionsSlug === "home" ? (sectionsOf(row) as HomeSections) : undefined,
+    });
   }
 
   function seoOf(row: PageRow): SeoDraft {
@@ -177,6 +107,30 @@ export function usePagesAdmin({
       ...prev,
       [row.settingsSlug!]: { ...settingsOf(row), isActive: next },
     }));
+  }
+
+  async function toggleVisibility(row: PageRow) {
+    if (!row.settingsSlug || togglingSlug) return;
+    const slug = row.settingsSlug;
+    const previous = settings[slug]!.isActive;
+    const next = !previous;
+
+    setTogglingSlug(slug);
+    setSettings((prev) => ({ ...prev, [slug]: { ...prev[slug]!, isActive: next } }));
+
+    try {
+      const res = await fetch(`/api/admin/page-settings/${slug}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: next }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setSettings((prev) => ({ ...prev, [slug]: { ...prev[slug]!, isActive: previous } }));
+      setFeedback({ type: "err", text: `Could not update ${row.label}. Try again.` });
+    } finally {
+      setTogglingSlug(null);
+    }
   }
 
   function setCardImageDraft(row: PageRow, image: SectionImage) {
@@ -322,9 +276,9 @@ export function usePagesAdmin({
   }
 
   return {
-    expanded,
-    setExpanded,
     saving,
+    togglingSlug,
+    toggleVisibility,
     feedback,
     hasUnsavedChanges,
     isActiveOf,

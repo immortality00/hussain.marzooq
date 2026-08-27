@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useAdminAction } from "@/hooks/useAdminAction";
+import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
+import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
+import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import type { TestimonialItem } from "./components/TestimonialShared";
 import { ReviewRow } from "./components/TestimonialList";
 import { TestimonialInspectModal } from "./components/TestimonialForm";
@@ -90,6 +93,49 @@ export default function TestimonialsAdminClient() {
     }
   }
 
+  const selection = useBulkSelection(filtered.map((i) => i.id));
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  async function bulkSetApproval(value: boolean) {
+    if (bulkBusy || selection.count === 0) return;
+    const ids = selection.selectedIds;
+    setBulkBusy(true);
+    setBanner({ type: "info", text: value ? "Approving selected…" : "Unapproving selected…" });
+    const { ok, failed } = await runBulkAction(ids, async (id) => {
+      const res = await fetch(`/api/testimonials/${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isApproved: value }),
+      });
+      const data = (await res.json().catch(() => null)) as { ok?: boolean };
+      if (!res.ok || !data?.ok) throw new Error();
+    });
+    setBanner({
+      type: failed ? "err" : "ok",
+      text: `${ok} ${value ? "approved" : "moved to pending"}${failed ? `, ${failed} failed` : ""}.`,
+    });
+    selection.clear();
+    await load();
+    setBulkBusy(false);
+  }
+
+  async function bulkDelete() {
+    if (bulkBusy || selection.count === 0) return;
+    if (!confirm(`Delete ${selection.count} review(s) permanently?`)) return;
+    const ids = selection.selectedIds;
+    setBulkBusy(true);
+    setBanner({ type: "info", text: "Deleting selected reviews…" });
+    const { ok, failed } = await runBulkAction(ids, async (id) => {
+      const res = await fetch(`/api/testimonials/${encodeURIComponent(id)}`, { method: "DELETE" });
+      const data = (await res.json().catch(() => null)) as { ok?: boolean };
+      if (!res.ok || !data?.ok) throw new Error();
+    });
+    setBanner({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} failed` : ""}.` });
+    selection.clear();
+    await load();
+    setBulkBusy(false);
+  }
+
   async function setApproval(id: string, value: boolean) {
     if (actionBusy) return;
     setUpdatingId(id);
@@ -119,9 +165,6 @@ export default function TestimonialsAdminClient() {
       <div className="grid gap-6 lg:grid-cols-[1fr_420px] lg:items-start">
         <div>
           <h1 className="text-4xl font-semibold tracking-[-0.06em]">Testimonials</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Inspect submitted reviews, approve or unapprove public visibility, or delete reviews that should not be kept.
-          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-2">
@@ -169,7 +212,19 @@ export default function TestimonialsAdminClient() {
           />
         </div>
 
-        <div className="mt-5 space-y-3">
+        {filtered.length > 0 && (
+          <div className="mt-4 flex items-center gap-2.5 text-sm text-muted-foreground">
+            <BulkCheckbox
+              checked={selection.allSelected}
+              indeterminate={selection.count > 0 && !selection.allSelected}
+              onChange={selection.toggleAll}
+              label="Select all reviews"
+            />
+            Select all
+          </div>
+        )}
+
+        <div className="mt-4 space-y-3">
           {loading ? (
             <div className="rounded-2xl border border-border/50 p-4 text-sm text-muted-foreground">Loading…</div>
           ) : filtered.length === 0 ? (
@@ -178,19 +233,39 @@ export default function TestimonialsAdminClient() {
             </div>
           ) : (
             filtered.map((item) => (
-              <ReviewRow
-                key={item.id}
-                item={item}
-                updating={updatingId === item.id}
-                deleting={deletingId === item.id}
-                onInspect={setActive}
-                onSetApproval={(id, value) => void setApproval(id, value)}
-                onDelete={(id) => void remove(id)}
-              />
+              <div key={item.id} className="flex items-start gap-3">
+                <BulkCheckbox
+                  checked={selection.isSelected(item.id)}
+                  onChange={() => selection.toggle(item.id)}
+                  label={`Select ${item.name}`}
+                  className="mt-4"
+                />
+                <div className="min-w-0 flex-1">
+                  <ReviewRow
+                    item={item}
+                    updating={updatingId === item.id}
+                    deleting={deletingId === item.id}
+                    onInspect={setActive}
+                    onSetApproval={(id, value) => void setApproval(id, value)}
+                    onDelete={(id) => void remove(id)}
+                  />
+                </div>
+              </div>
             ))
           )}
         </div>
       </section>
+
+      <BulkActionBar
+        count={selection.count}
+        busy={bulkBusy}
+        onClear={selection.clear}
+        actions={[
+          { label: "Approve", onRun: () => bulkSetApproval(true) },
+          { label: "Unapprove", onRun: () => bulkSetApproval(false) },
+          { label: "Delete", tone: "danger", onRun: bulkDelete },
+        ]}
+      />
 
       {active ? (
         <TestimonialInspectModal

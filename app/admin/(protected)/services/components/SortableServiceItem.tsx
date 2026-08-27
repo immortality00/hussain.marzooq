@@ -2,17 +2,22 @@
 
 import SmartImage from "@/components/shared/SmartImage";
 import { useSortableRow } from "@/components/admin/sortable/SortableList";
+import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import type { Service } from "../lib/types";
 
 export default function SortableServiceItem({
   service,
   index,
+  selected,
+  onToggleSelect,
   onEdit,
   onToggleActive,
   onDeleteForever,
 }: {
   service: Service;
   index: number;
+  selected: boolean;
+  onToggleSelect: () => void;
   onEdit: (s: Service) => void;
   onToggleActive: (s: Service) => void;
   onDeleteForever: (s: Service) => void;
@@ -25,6 +30,7 @@ export default function SortableServiceItem({
       style={style}
       className="flex items-center gap-3 rounded-2xl border p-3 transition-colors hover:bg-accent/20"
     >
+      <BulkCheckbox checked={selected} onChange={onToggleSelect} label={`Select ${service.name}`} />
       <button
         type="button"
         {...handleProps}

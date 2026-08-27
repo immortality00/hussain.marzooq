@@ -4,7 +4,11 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { useAdminAction } from "@/hooks/useAdminAction";
+import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
+import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
+import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { MediaListFilterBar } from "./components/MediaListFilterBar";
 import { MediaListItem, type MediaItem } from "./components/MediaListItem";
 
@@ -103,6 +107,26 @@ export default function AdminMediaListPage() {
     return () => window.clearTimeout(timer);
   }, [load]);
 
+  const selection = useBulkSelection(items.map((m) => m.id));
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  async function bulkDelete() {
+    if (bulkBusy || selection.count === 0) return;
+    if (!confirm(`Delete ${selection.count} media item(s) forever? This cannot be undone.`)) return;
+    const ids = selection.selectedIds;
+    setBulkBusy(true);
+    setBanner({ type: "info", text: "Deleting selected media…" });
+    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => {
+      const res = await fetch(`/api/media/${encodeURIComponent(id)}`, { method: "DELETE" });
+      const data = (await res.json().catch(() => null)) as { ok?: boolean };
+      if (!res.ok || !data?.ok) throw new Error();
+    });
+    setItems((prev) => prev.filter((x) => !okIds.includes(x.id)));
+    setBanner({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} failed` : ""}.` });
+    selection.clear();
+    setBulkBusy(false);
+  }
+
   async function del(id: string) {
     if (deletingId) return;
     if (!confirm("Delete this media forever? This cannot be undone.")) return;
@@ -126,30 +150,27 @@ export default function AdminMediaListPage() {
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Media</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Filter, edit, or delete existing media items across the full media library.
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href="/admin/media"
-            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
-          >
-            Upload new
-          </Link>
-          <button
-            type="button"
-            onClick={() => void load("replace")}
-            disabled={loading || Boolean(deletingId)}
-            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
+      <AdminPageHeader
+        title="Media"
+        actions={
+          <>
+            <Link
+              href="/admin/media"
+              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+            >
+              Upload new
+            </Link>
+            <button
+              type="button"
+              onClick={() => void load("replace")}
+              disabled={loading || Boolean(deletingId)}
+              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Refresh
+            </button>
+          </>
+        }
+      />
 
       <AdminActionFeedback feedback={banner} />
 
@@ -168,7 +189,19 @@ export default function AdminMediaListPage() {
         onReset={() => { setQuery(""); setCategoryFilter(""); setTypeFilter(""); setVisibilityFilter(""); }}
       />
 
-      <div className="mt-8 space-y-4">
+      {items.length > 0 && (
+        <div className="mt-6 flex items-center gap-2.5 text-sm text-muted-foreground">
+          <BulkCheckbox
+            checked={selection.allSelected}
+            indeterminate={selection.count > 0 && !selection.allSelected}
+            onChange={selection.toggleAll}
+            label="Select all media"
+          />
+          Select all
+        </div>
+      )}
+
+      <div className="mt-4 space-y-4">
         {loading && items.length === 0 ? (
           <div className="rounded-2xl border p-6 text-sm text-muted-foreground">Loading media…</div>
         ) : null}
@@ -178,17 +211,33 @@ export default function AdminMediaListPage() {
           </div>
         ) : (
           items.map((m, idx) => (
-            <MediaListItem
-              key={m.id}
-              item={m}
-              index={idx}
-              deleting={deletingId === m.id}
-              actionDisabled={Boolean(deletingId)}
-              onDelete={(id) => void del(id)}
-            />
+            <div key={m.id} className="flex items-start gap-3">
+              <BulkCheckbox
+                checked={selection.isSelected(m.id)}
+                onChange={() => selection.toggle(m.id)}
+                label="Select media item"
+                className="mt-4"
+              />
+              <div className="min-w-0 flex-1">
+                <MediaListItem
+                  item={m}
+                  index={idx}
+                  deleting={deletingId === m.id}
+                  actionDisabled={Boolean(deletingId)}
+                  onDelete={(id) => void del(id)}
+                />
+              </div>
+            </div>
           ))
         )}
       </div>
+
+      <BulkActionBar
+        count={selection.count}
+        busy={bulkBusy}
+        onClear={selection.clear}
+        actions={[{ label: "Delete", tone: "danger", onRun: bulkDelete }]}
+      />
 
       {nextCursor ? (
         <div className="mt-8 flex justify-center">

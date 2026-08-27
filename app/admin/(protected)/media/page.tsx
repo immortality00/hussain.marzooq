@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import MediaAppearancesSection from "./components/MediaAppearancesSection";
 import MediaAssetSection from "./components/MediaAssetSection";
 import MediaDetailsSection from "./components/MediaDetailsSection";
@@ -22,36 +23,30 @@ export default function AdminMediaPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {editor.editingId ? "Edit Media" : "Upload Media"}
-          </h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Category first. The form adapts to the selected media destination.
-          </p>
-        </div>
-
-        <div className="flex gap-2">
-          <Link
-            href="/admin/media/list"
-            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
-          >
-            View list
-          </Link>
-
-          {editor.editingId ? (
-            <button
-              type="button"
-              onClick={startNewUpload}
-              disabled={busy}
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+      <AdminPageHeader
+        title={editor.editingId ? "Edit Media" : "Upload Media"}
+        actions={
+          <>
+            <Link
+              href="/admin/media/list"
+              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
             >
-              New upload
-            </button>
-          ) : null}
-        </div>
-      </div>
+              View list
+            </Link>
+
+            {editor.editingId ? (
+              <button
+                type="button"
+                onClick={startNewUpload}
+                disabled={busy}
+                className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                New upload
+              </button>
+            ) : null}
+          </>
+        }
+      />
 
       <AdminActionFeedback feedback={banner} />
 

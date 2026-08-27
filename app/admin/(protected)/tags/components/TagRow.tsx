@@ -1,15 +1,20 @@
 "use client";
 
 import { useSortableRow } from "@/components/admin/sortable/SortableList";
+import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import type { Tag, TagPatch } from "../lib/types";
 
 export default function TagRow({
   tag,
+  selected,
+  onToggleSelect,
   onEdit,
   onToggle,
   onDelete,
 }: {
   tag: Tag;
+  selected: boolean;
+  onToggleSelect: () => void;
   onEdit: (id: string, patch: TagPatch) => void;
   onToggle: (id: string, value: boolean) => void;
   onDelete: (tag: Tag) => void;
@@ -19,6 +24,12 @@ export default function TagRow({
   return (
     <div ref={setNodeRef} style={style} className="border-b p-4">
       <div className="flex items-start gap-3">
+        <BulkCheckbox
+          checked={selected}
+          onChange={onToggleSelect}
+          label={`Select ${tag.label}`}
+          className="mt-1"
+        />
         <button
           type="button"
           {...handleProps}

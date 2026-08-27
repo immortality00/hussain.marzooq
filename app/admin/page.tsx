@@ -24,8 +24,8 @@ function getSearchParamValue(value: string | string[] | undefined) {
 }
 
 function getSafeNextPath(nextPath: string) {
-  if (!nextPath.startsWith("/admin")) return "/admin/inquiries";
-  if (nextPath === "/admin" || nextPath.startsWith("/admin?")) return "/admin/inquiries";
+  if (!nextPath.startsWith("/admin")) return "/admin/dashboard";
+  if (nextPath === "/admin" || nextPath.startsWith("/admin?")) return "/admin/dashboard";
 
   return nextPath;
 }
@@ -34,7 +34,7 @@ async function login(formData: FormData) {
   "use server";
 
   const password = String(formData.get("password") ?? "").trim();
-  const nextPath = String(formData.get("next") ?? "/admin/inquiries");
+  const nextPath = String(formData.get("next") ?? "/admin/dashboard");
   const adminCookieSecret = String(process.env.ADMIN_COOKIE_SECRET ?? "").trim();
 
   if (!isAdminPasswordConfigured() || !adminCookieSecret) {
@@ -100,11 +100,6 @@ export default async function AdminLoginPage({
         </div>
 
         <h1 className="mt-6 text-2xl font-semibold tracking-tight">Admin</h1>
-
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">
-          Enter your admin password to manage HM Visuals content, inquiries, services, galleries,
-          testimonials, and public pages.
-        </p>
 
         {error === "wrong" ? (
           <div className="mt-6 rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">

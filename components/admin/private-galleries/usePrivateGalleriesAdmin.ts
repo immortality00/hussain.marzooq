@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import type { BannerState, GalleryItem } from "./types";
 import { buildGalleryUrl, MIN_PRIVATE_GALLERY_PASSWORD_LENGTH } from "./helpers";
 
@@ -12,6 +13,7 @@ export function usePrivateGalleriesAdmin() {
   const [editingId, setEditingId] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [bulkBusy, setBulkBusy] = useState(false);
   const [gallerySearch, setGallerySearch] = useState("");
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
@@ -215,6 +217,21 @@ export function usePrivateGalleriesAdmin() {
     }
   }
 
+  async function bulkRemove(ids: string[]) {
+    if (bulkBusy || ids.length === 0) return;
+    if (!confirm(`Delete ${ids.length} private gallery(ies)?`)) return;
+    setBulkBusy(true);
+    setBanner({ type: "info", text: "Deleting selected galleries…" });
+    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => {
+      const res = await fetch(`/api/private-galleries/${encodeURIComponent(id)}`, { method: "DELETE" });
+      const data = (await res.json().catch(() => null)) as { ok?: boolean } | null;
+      if (!res.ok || !data?.ok) throw new Error();
+    });
+    setItems((prev) => prev.filter((item) => !okIds.includes(item.id)));
+    setBanner({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} failed` : ""}.` });
+    setBulkBusy(false);
+  }
+
   async function copyLink(slugValue: string) {
     try {
       await navigator.clipboard.writeText(buildGalleryUrl(slugValue));
@@ -247,6 +264,8 @@ export function usePrivateGalleriesAdmin() {
     editingId,
     saving,
     deletingId,
+    bulkBusy,
+    bulkRemove,
     actionBusy,
     gallerySearchValue: gallerySearch,
     title,

@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useAdminAction } from "@/hooks/useAdminAction";
+import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
+import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
+import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import CategoriesTable from "./components/CategoriesTable";
 import CategoriesToolbar from "./components/CategoriesToolbar";
 import CategoryFormCard from "./components/CategoryFormCard";
@@ -22,6 +25,38 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
   const actionBusy = creating || savingOrder;
 
   const ordered = useMemo(() => [...items].sort((a, b) => a.order - b.order), [items]);
+
+  const selection = useBulkSelection(ordered.map((c) => c.id));
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  async function bulkSetActive(value: boolean) {
+    if (bulkBusy || selection.count === 0) return;
+    const ids = selection.selectedIds;
+    setBulkBusy(true);
+    setFeedback({ type: "info", text: value ? "Activating selected…" : "Deactivating selected…" });
+    const { ok, failed } = await runBulkAction(ids, (id) => patchCategory(id, { isActive: value }));
+    setFeedback({
+      type: failed ? "err" : "ok",
+      text: `${ok} ${value ? "activated" : "deactivated"}${failed ? `, ${failed} failed` : ""}.`,
+    });
+    selection.clear();
+    await refresh();
+    setBulkBusy(false);
+  }
+
+  async function bulkDelete() {
+    if (bulkBusy || selection.count === 0) return;
+    if (!confirm(`Delete ${selection.count} categor(ies)? System or non-empty ones will be skipped.`))
+      return;
+    const ids = selection.selectedIds;
+    setBulkBusy(true);
+    setFeedback({ type: "info", text: "Deleting selected categories…" });
+    const { ok, failed } = await runBulkAction(ids, (id) => deleteCategoryRequest(id));
+    setFeedback({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} skipped/failed` : ""}.` });
+    selection.clear();
+    await refresh();
+    setBulkBusy(false);
+  }
 
   async function refresh() {
     setFeedback(null);
@@ -174,12 +209,37 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
         msg=""
       />
 
+      {ordered.length > 0 && (
+        <div className="mt-6 flex items-center gap-2.5 text-sm text-muted-foreground">
+          <BulkCheckbox
+            checked={selection.allSelected}
+            indeterminate={selection.count > 0 && !selection.allSelected}
+            onChange={selection.toggleAll}
+            label="Select all categories"
+          />
+          Select all
+        </div>
+      )}
+
       <CategoriesTable
         ordered={ordered}
+        isSelected={selection.isSelected}
+        onToggleSelect={selection.toggle}
         onReorder={onReorder}
         onEdit={editCategory}
         onToggle={toggleCategory}
         onDelete={deleteCategory}
+      />
+
+      <BulkActionBar
+        count={selection.count}
+        busy={bulkBusy}
+        onClear={selection.clear}
+        actions={[
+          { label: "Activate", onRun: () => bulkSetActive(true) },
+          { label: "Deactivate", onRun: () => bulkSetActive(false) },
+          { label: "Delete", tone: "danger", onRun: bulkDelete },
+        ]}
       />
 
       <div className="mt-6">

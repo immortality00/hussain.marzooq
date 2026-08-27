@@ -1,15 +1,20 @@
 "use client";
 
 import { useSortableRow } from "@/components/admin/sortable/SortableList";
+import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import type { Category, CategoryPatch } from "../lib/types";
 
 export default function CategoryRow({
   category,
+  selected,
+  onToggleSelect,
   onEdit,
   onToggle,
   onDelete,
 }: {
   category: Category;
+  selected: boolean;
+  onToggleSelect: () => void;
   onEdit: (id: string, patch: CategoryPatch) => Promise<boolean>;
   onToggle: (id: string, value: boolean) => void;
   onDelete: (cat: Category) => void;
@@ -22,7 +27,8 @@ export default function CategoryRow({
       style={style}
       className="grid grid-cols-12 gap-2 border-b px-4 py-3 text-sm"
     >
-      <div className="col-span-1 flex items-center">
+      <div className="col-span-1 flex flex-col items-start gap-1.5">
+        <BulkCheckbox checked={selected} onChange={onToggleSelect} label={`Select ${category.name}`} />
         <button
           type="button"
           {...handleProps}

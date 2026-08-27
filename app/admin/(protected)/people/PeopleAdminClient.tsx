@@ -3,6 +3,10 @@
 import Image from "next/image";
 import { CldUploadWidget } from "next-cloudinary";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { useBulkSelection } from "@/components/admin/bulk/useBulkSelection";
+import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
+import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
 import { usePeopleAdmin } from "@/hooks/usePeopleAdmin";
 
@@ -43,38 +47,38 @@ export default function PeopleAdminClient() {
     backToList,
     save,
     remove,
+    bulkBusy,
+    bulkRemove,
   } = usePeopleAdmin();
+
+  const selection = useBulkSelection(items.map((p) => p.id));
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">People</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Create clean people profiles and link them from media using existing profiles only.
-          </p>
-        </div>
-
-        {mode === "list" ? (
-          <button
-            type="button"
-            disabled={actionBusy}
-            onClick={openCreate}
-            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            New profile
-          </button>
-        ) : (
-          <button
-            type="button"
-            disabled={actionBusy}
-            onClick={backToList}
-            className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            Back to list
-          </button>
-        )}
-      </div>
+      <AdminPageHeader
+        title="People"
+        actions={
+          mode === "list" ? (
+            <button
+              type="button"
+              disabled={actionBusy}
+              onClick={openCreate}
+              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              New profile
+            </button>
+          ) : (
+            <button
+              type="button"
+              disabled={actionBusy}
+              onClick={backToList}
+              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Back to list
+            </button>
+          )
+        }
+      />
 
       <AdminActionFeedback feedback={banner} />
 
@@ -91,7 +95,19 @@ export default function PeopleAdminClient() {
             />
           </div>
 
-          <div className="mt-5 space-y-3">
+          {items.length > 0 && (
+            <div className="mt-4 flex items-center gap-2.5 text-sm text-muted-foreground">
+              <BulkCheckbox
+                checked={selection.allSelected}
+                indeterminate={selection.count > 0 && !selection.allSelected}
+                onChange={selection.toggleAll}
+                label="Select all profiles"
+              />
+              Select all
+            </div>
+          )}
+
+          <div className="mt-4 space-y-3">
             {loading ? (
               <div className="rounded-2xl border p-4 text-sm text-muted-foreground">Loading…</div>
             ) : items.length === 0 ? (
@@ -100,6 +116,11 @@ export default function PeopleAdminClient() {
               items.map((item) => (
                 <article key={item.id} className="rounded-[2rem] border p-4">
                   <div className="flex items-center gap-4">
+                    <BulkCheckbox
+                      checked={selection.isSelected(item.id)}
+                      onChange={() => selection.toggle(item.id)}
+                      label={`Select ${item.name}`}
+                    />
                     <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border bg-muted">
                       {item.avatarUrl ? (
                         <Image src={item.avatarUrl} alt={item.name} fill className="object-cover" sizes="56px" />
@@ -136,6 +157,22 @@ export default function PeopleAdminClient() {
               ))
             )}
           </div>
+
+          <BulkActionBar
+            count={selection.count}
+            busy={bulkBusy}
+            onClear={selection.clear}
+            actions={[
+              {
+                label: "Delete",
+                tone: "danger",
+                onRun: async () => {
+                  await bulkRemove(selection.selectedIds);
+                  selection.clear();
+                },
+              },
+            ]}
+          />
         </section>
       ) : (
         <section className="mt-8 mx-auto max-w-2xl rounded-[2rem] border p-5">
