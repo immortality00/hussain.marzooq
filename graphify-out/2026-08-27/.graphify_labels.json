@@ -195,13 +195,5 @@
   "193": "Structural (AST) Extraction",
   "194": "layout.tsx",
   "195": "Preloader.tsx",
-  "196": "CustomCursor.tsx",
-  "197": "cloudinary-image-loader.ts",
-  "198": "Phase 3 — Content & analytics",
-  "199": "Phase S2 — Defects from the 2026-08-17 full-repo audit",
-  "200": "framer-motion",
-  "201": "geist",
-  "202": "@gsap/react",
-  "203": "next",
-  "204": "radix-ui"
+  "196": "CustomCursor.tsx"
 }
