@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
 import { WorkOverlay } from "@/components/site/WorkOverlay";
+import { useMagneticHover } from "@/hooks/useMagneticHover";
 
 export function Navbar() {
   const [hiddenByModal, setHiddenByModal] = useState(false);
@@ -13,6 +14,7 @@ export function Navbar() {
   const [workOpen, setWorkOpen] = useState(false);
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
+  const bookRef = useMagneticHover<HTMLAnchorElement>();
   const [mounted, setMounted] = useState(false);
   // next-themes hydration guard: the resolved theme is unknown during SSR, so we
   // render a stable placeholder until mounted. The one-shot setState on mount is the
@@ -104,7 +106,9 @@ export function Navbar() {
 
               {/* Book CTA */}
               <Link
+                ref={bookRef}
                 href="/contact"
+                data-magnetic=""
                 className="hidden rounded-full border border-border/60 px-5 py-1.5 text-[13px] tracking-wide transition-all hover:border-foreground/40 hover:bg-accent md:inline-flex ml-2"
               >
                 Book
