@@ -15,9 +15,11 @@ gsap.registerPlugin(ScrollTrigger);
 export function AppShell({
   children,
   footer,
+  transitionImages,
 }: {
   children: React.ReactNode;
   footer?: React.ReactNode;
+  transitionImages?: string[];
 }) {
   const pathname = usePathname();
   const isAdmin = pathname.startsWith("/admin");
@@ -50,7 +52,7 @@ export function AppShell({
       <div className="grain-overlay" />
       <CustomCursor />
       <Navbar />
-      <TransitionProvider>
+      <TransitionProvider images={transitionImages}>
         <div className="relative z-10">{children}</div>
         {footer && <div className="relative z-10">{footer}</div>}
       </TransitionProvider>

@@ -1,4 +1,6 @@
+import { unstable_cache } from "next/cache";
 import { getDb } from "@/lib/server/db";
+import cloudinaryImageLoader from "@/lib/cloudinary-image-loader";
 import {
   buildPublicMediaQuery,
   toPublicMediaItem,
@@ -25,6 +27,26 @@ async function listPublicMedia({
 
   return docs.map((doc) => toPublicMediaItem(doc as Record<string, unknown>));
 }
+
+// A single, consistent gallery pool for the page transition — recent public
+// photos, sized down for the grid. Used on every page so the transition reads
+// the same everywhere instead of depending on the current page's own images.
+export const getTransitionImages = unstable_cache(
+  async (): Promise<string[]> => {
+    try {
+      const items = await listPublicMedia({ type: "image", limit: 24 });
+      return items
+        .map((item) => item.secureUrl)
+        .filter((url): url is string => Boolean(url))
+        .map((url) => cloudinaryImageLoader({ src: url, width: 400 }));
+    } catch {
+      // Root layout depends on this — never let a failed query break every page.
+      return [];
+    }
+  },
+  ["transition-images"],
+  { revalidate: 300 },
+);
 
 export async function getPhotographyItems(): Promise<PublicMediaItem[]> {
   return listPublicMedia({
