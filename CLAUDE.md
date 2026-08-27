@@ -184,6 +184,17 @@ accent fights it. The only non-neutral token is `--destructive`, admin-only.
 1. Hero (`HomeHero.tsx`) — untouched · 2. **Exhibition globe** (D6) · 3. Featured Work ·
 4. Creative System + Services Preview side by side · 5. Trust · 6. Sticky CTA.
 
+**Homepage sticky CTA reveals on scroll (D8).** `StickyCta` takes `revealOnScroll` — the
+homepage passes it so the bar stays parked off-screen (below the bottom edge, opacity 0,
+`pointer-events:none`) while the hero is in view and **slides up** once `window.scrollY > 40`,
+re-hiding at the top. Every other page leaves it default (always visible, no slide). This is the
+only page where the CTA must not cover the full-bleed hero.
+**Tailwind v4 gotcha (do not regress):** the slide MUST be `transition-[translate,opacity]`, not
+`transition-[transform,...]`. In Tailwind v4 `translate-y-*` sets the **independent `translate`
+CSS property**, not `transform` — so a `transform` transition leaves the position un-animated and
+the bar *pops* instead of sliding (the D8 bug). The magnetic hook (`useMagneticHover`) drives the
+same `translate` property for the same reason.
+
 The globe sits **directly under the hero**, so the exhibition record is the first thing
 after the opening frame. Its city index is a compact column (`minmax(170px,208px)`, city
 name + bare count, no index number, no "WORKS" suffix, ellipsis on overflow) with the globe
@@ -464,7 +475,18 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
 - `components/shared/Button.tsx` — the only public button (D2b). `variant` `ghost`
   (default) or `solid`; renders `<Link>` with `href`, else `<button>`. `buttonClasses()`
   exported for styled non-interactive spans. See "The button system". The hero's two pills
-  are the sole exception and stay inline.
+  are the sole exception and stay inline. **Forwards `ref`** (React 19 ref-as-prop, stays
+  server-compatible) so a client caller can attach a magnetic ref (D8); auto-adds
+  `data-magnetic` when a ref is present.
+- `hooks/useMagneticHover.ts` — the shared magnetic-hover pull for CTAs (D8). Returns a
+  `ref`; on cursor proximity (60px around the element) the button leans toward the cursor
+  (max 12px x / 8px y) and springs back on leave, via the **independent CSS `translate`
+  property** (composes with `.hm-btn:active { transform: scale() }`, so press feedback
+  survives). Self-terminating rAF (no runaway loop), skips under reduced-motion and on
+  non-`(pointer: fine)` devices. Exported pure `magneticOffset()` is unit-tested
+  (`test/magnetic-hover.test.ts`). **Applied only to the two persistent high-intent CTAs —
+  nav "Book" (desktop) and `StickyCta` — deliberately not sitewide** (find-animation-
+  opportunities: blanket magnetism reads as gimmick). The hero is fixed and excluded.
 - `components/shared/PortfolioCard.tsx` — all full-bleed image cards with overlay. Not an
   `<a>` itself: a `div` + absolute cover `<Link>` + `pointer-events` layering, so its tag
   chips and CTA don't nest anchors (D2b). Props include `priority?` (LCP) and `tags?`.

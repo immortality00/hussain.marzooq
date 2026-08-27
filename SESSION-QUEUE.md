@@ -39,7 +39,9 @@ server image pool; six per-route transitions built, rejected on sight, reverted;
 Phase 4: L1 (launch-prep code/docs: README rewrite, admin config-error copy, CLAUDE.md deployment status;
 first-deploy operational checklist recorded, not yet run — site not deployed) ·
 D5 (cursor: velocity stretch, ghost trail, spring overshoot, zone-reactive size, blend-difference) ·
-D7 (NFT page: hover-flip collector card, achromatic status badges, tabs + expandable search).
+D7 (NFT page: hover-flip collector card, achromatic status badges, tabs + expandable search) ·
+D8 (magnetic-hover CTA hook + Button ref forwarding; nav Book + StickyCta only; homepage sticky
+CTA now slides up on scroll instead of covering the hero).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -70,7 +72,7 @@ longer top-to-bottom — take sessions in exactly this order.
 9. ~~**L1**~~ ✓ done — launch prep code/docs shipped (README, admin config-error copy,
    CLAUDE.md deployment status); the deploy-time checklist (rotate secret, verify hash login,
    re-verify CSP, `/admin` headers) is recorded in CLAUDE.md for first deploy.
-10. ~~**D4, D5, D7**~~ ✓ done · **D8** · **D9b before D9** · **D10, D11, D12**
+10. ~~**D4, D5, D7, D8**~~ ✓ done · **D9b before D9** · **D10, D11, D12**
 11. **D13 last** — the consistency sweep; it needs everything else landed first.
 12. **C1, C2, C3** · **P1, P2** · **NFT1, NFT2**
 
@@ -172,21 +174,6 @@ complete.
 ---
 
 ## Phase 2 — Preloader & core experience
-
-### Session D8 — Magnetic button effect — `pending`
-Add magnetic hover to all primary CTA buttons sitewide.
-
-On cursor proximity (within 60px): button translates toward cursor (max 12px x, 8px y).
-On cursor leave: spring back to original position.
-Implementation: custom hook `useMagneticHover`, applied via `data-magnetic` attribute.
-Targets: all primary CTA buttons, StickyCta.tsx, nav Book button.
-
-Read every file that renders a primary CTA button before writing.
-
-**Skills to use here (installed in DS0):** `find-animation-opportunities` to confirm
-magnetic hover belongs on *every* primary CTA rather than only the highest-intent ones
-(nav Book, StickyCta) — sitewide magnetism can read as gimmick. `review-animations` at
-Gate 2.
 
 ---
 

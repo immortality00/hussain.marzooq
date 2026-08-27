@@ -2208,3 +2208,48 @@ Per-route transitions (were deferred, then built + rejected + reverted 2026-08-2
 - **→ Web Development:** Brief terminal-style effect, page assembles.
 - **Homepage → any: the contact-sheet move.** SHIPPED 2026-08-20 — gallery of the page's real
   photos, holds until the destination commits. Now generalised site-wide (see final architecture).
+
+---
+
+### Session D8 — Magnetic button effect — `done` (2026-08-27)
+**Spec (as queued):** Add magnetic hover to all primary CTA buttons sitewide. On cursor
+proximity (within 60px): button translates toward cursor (max 12px x, 8px y). On leave: spring
+back. Implementation: custom hook `useMagneticHover`, applied via `data-magnetic` attribute.
+Targets: all primary CTA buttons, StickyCta.tsx, nav Book button. Skills: `find-animation-
+opportunities` to confirm magnetic belongs on *every* CTA vs only highest-intent.
+
+**Outcome:**
+- **`hooks/useMagneticHover.ts` (new)** — returns a `ref`; window-mousemove proximity (60px
+  around the rect), pull clamped to max 12px x / 8px y, self-terminating spring rAF (stops at
+  rest — no runaway loop, S8 lesson). Drives the **independent CSS `translate` property** so it
+  composes with `.hm-btn:active { transform: scale(.975) }` — press feedback survives. Skips
+  entirely under reduced-motion and non-`(pointer: fine)` (touch). Exported pure
+  `magneticOffset()` unit-tested in `test/magnetic-hover.test.ts` (4 cases).
+- **`components/shared/Button.tsx`** — now forwards optional `ref` (React 19 ref-as-prop, stays
+  server-compatible), auto-adds `data-magnetic` when a ref is attached. Ref typed as the
+  `HTMLAnchorElement & HTMLButtonElement` intersection so both `<Link>` and `<button>` branches
+  accept it; the `StickyCta` caller matches that generic.
+- **Scope decided against the literal spec (Hussain approved):** magnetic applied only to the
+  **two persistent high-intent CTAs — nav "Book" (desktop) + `StickyCta` Book** — not sitewide.
+  Excluded: hero (fixed), HomeCreativeSystem discipline row + NftCard (multiple adjacent),
+  PortfolioCard CTA (pointer-events-off span in an animating card), mobile drawer Book (touch),
+  homepage section CTAs (lower intent). Architecturally clean too: only Nav and StickyCta are
+  already client components.
+- **Follow-up in the same session (Hussain):** the homepage sticky CTA was covering the hero and
+  "just popped up." Added `revealOnScroll` to `StickyCta` — the homepage passes it; the bar stays
+  parked off-screen (`translate-y-[calc(100%+1.5rem)]`, opacity 0, `pointer-events:none`) while
+  the hero is in view and **slides up** once `window.scrollY > 40`, re-hiding at the top. Every
+  other page keeps the default always-visible behavior; the modal-hide still hard-unmounts.
+- **Slide bug found + fixed (Hussain reported it still popped):** the transition was written
+  `transition-[transform,opacity]`, but **Tailwind v4 `translate-y-*` animates the independent
+  `translate` CSS property, not `transform`** — so only opacity faded and the position jumped
+  (pop). Corrected to `transition-[translate,opacity]` + `will-change-[translate]`. Verified a
+  hidden→shown flip now spins up two running `CSSTransition`s (opacity **and** translate) where
+  before there was only opacity. Recorded as a "do not regress" gotcha in CLAUDE.md.
+- **Process note:** first pass over-trusted a DOM reading taken while the preview pane was
+  backgrounded (`document.hidden` freezes the CSS-transition clock at `currentTime 0`), and I
+  prematurely advanced to Gate 3. Rolled back, fixed the real bug, re-verified, and waited for
+  Hussain's confirmation before committing.
+- **CLAUDE.md impact:** added `useMagneticHover` + Button `ref`/`data-magnetic` to "Reusable
+  components"; added the homepage sticky-CTA reveal-on-scroll note + the Tailwind-v4 translate
+  gotcha under "Homepage section order".

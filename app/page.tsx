@@ -61,6 +61,7 @@ export default async function HomePage() {
         title={sections.stickyCta.title}
         description={sections.stickyCta.description}
         buttonLabel={sections.stickyCta.buttonLabel}
+        revealOnScroll
       />
     </>
   );

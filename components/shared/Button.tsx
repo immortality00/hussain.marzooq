@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ComponentProps, ReactNode } from "react";
+import type { ComponentProps, ReactNode, Ref } from "react";
 import { cn } from "@/lib/utils";
 
 // Two button looks, both modelled on the hero's own pills (Hussain, 2026-08-18:
@@ -25,21 +25,23 @@ type BaseProps = {
   variant?: ButtonVariant;
   className?: string;
   children: ReactNode;
+  ref?: Ref<HTMLAnchorElement & HTMLButtonElement>;
 };
 
 type ButtonProps = BaseProps &
   (
-    | ({ href: string } & Omit<ComponentProps<typeof Link>, "href" | "className" | "children">)
-    | ({ href?: undefined } & Omit<ComponentProps<"button">, "className" | "children">)
+    | ({ href: string } & Omit<ComponentProps<typeof Link>, "href" | "className" | "children" | "ref">)
+    | ({ href?: undefined } & Omit<ComponentProps<"button">, "className" | "children" | "ref">)
   );
 
-export function Button({ variant = "ghost", className, children, ...rest }: ButtonProps) {
+export function Button({ variant = "ghost", className, children, ref, ...rest }: ButtonProps) {
   const classes = buttonClasses(variant, className);
+  const magnetic = ref ? { "data-magnetic": "" } : undefined;
 
   if (rest.href !== undefined) {
     const { href, ...linkRest } = rest;
     return (
-      <Link href={href} className={classes} {...linkRest}>
+      <Link ref={ref} href={href} className={classes} {...magnetic} {...linkRest}>
         {children}
       </Link>
     );
@@ -47,7 +49,7 @@ export function Button({ variant = "ghost", className, children, ...rest }: Butt
 
   const { type = "button", ...buttonRest } = rest;
   return (
-    <button type={type} className={classes} {...buttonRest}>
+    <button ref={ref} type={type} className={classes} {...magnetic} {...buttonRest}>
       {children}
     </button>
   );
