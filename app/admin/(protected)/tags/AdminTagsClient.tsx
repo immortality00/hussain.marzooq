@@ -4,6 +4,9 @@ import { useMemo, useState } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useAdminAction } from "@/hooks/useAdminAction";
+import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
+import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
+import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import TagFormCard from "./components/TagFormCard";
 import TagsTable from "./components/TagsTable";
 import TagsToolbar from "./components/TagsToolbar";
@@ -23,6 +26,42 @@ export default function AdminTagsClient({ initial }: { initial: Tag[] }) {
   const actionBusy = creating || savingOrder;
 
   const ordered = useMemo(() => [...items].sort((a, b) => a.order - b.order), [items]);
+
+  const selection = useBulkSelection(ordered.map((t) => t.id));
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  async function bulkSetActive(value: boolean) {
+    if (bulkBusy || selection.count === 0) return;
+    const ids = selection.selectedIds;
+    setBulkBusy(true);
+    setFeedback({ type: "info", text: value ? "Activating selected…" : "Hiding selected…" });
+    const { ok, failed } = await runBulkAction(ids, (id) => patchTag(id, { isActive: value }));
+    setFeedback({
+      type: failed ? "err" : "ok",
+      text: `${ok} ${value ? "activated" : "hidden"}${failed ? `, ${failed} failed` : ""}.`,
+    });
+    selection.clear();
+    await refresh();
+    setBulkBusy(false);
+  }
+
+  async function bulkDelete() {
+    if (bulkBusy || selection.count === 0) return;
+    if (
+      !confirm(
+        `Delete ${selection.count} tag(s) forever?\n\nAny still on media will be detached (the media stays).`,
+      )
+    )
+      return;
+    const ids = selection.selectedIds;
+    setBulkBusy(true);
+    setFeedback({ type: "info", text: "Deleting selected tags…" });
+    const { ok, failed } = await runBulkAction(ids, (id) => deleteTagRequest(id, true));
+    setFeedback({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} failed` : ""}.` });
+    selection.clear();
+    await refresh();
+    setBulkBusy(false);
+  }
 
   async function refresh() {
     try {
@@ -151,12 +190,37 @@ export default function AdminTagsClient({ initial }: { initial: Tag[] }) {
 
       <TagFormCard draft={draft} setDraft={setDraft} onCreate={createTag} creating={creating} />
 
+      {ordered.length > 0 && (
+        <div className="mt-6 flex items-center gap-2.5 text-sm text-muted-foreground">
+          <BulkCheckbox
+            checked={selection.allSelected}
+            indeterminate={selection.count > 0 && !selection.allSelected}
+            onChange={selection.toggleAll}
+            label="Select all tags"
+          />
+          Select all
+        </div>
+      )}
+
       <TagsTable
         ordered={ordered}
+        isSelected={selection.isSelected}
+        onToggleSelect={selection.toggle}
         onReorder={onReorder}
         onEdit={editTag}
         onToggle={toggleTag}
         onDelete={deleteTag}
+      />
+
+      <BulkActionBar
+        count={selection.count}
+        busy={bulkBusy}
+        onClear={selection.clear}
+        actions={[
+          { label: "Activate", onRun: () => bulkSetActive(true) },
+          { label: "Deactivate", onRun: () => bulkSetActive(false) },
+          { label: "Delete", tone: "danger", onRun: bulkDelete },
+        ]}
       />
 
       <div className="mt-6">

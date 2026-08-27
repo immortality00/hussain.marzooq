@@ -6,18 +6,38 @@ import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const nav = [
-  { href: "/admin/inquiries", label: "Inquiries" },
-  { href: "/admin/media/list", label: "Media" },
-  { href: "/admin/tags", label: "Tags" },
-  { href: "/admin/people", label: "People" },
-  { href: "/admin/services", label: "Services" },
-  { href: "/admin/service-categories", label: "Service Categories" },
-  { href: "/admin/nfts", label: "NFTs" },
-  { href: "/admin/testimonials", label: "Testimonials" },
-  { href: "/admin/private-galleries", label: "Private Galleries" },
-  { href: "/admin/removal-requests", label: "Removal Requests" },
-  { href: "/admin/pages", label: "Pages" },
+const navGroups = [
+  {
+    label: "Overview",
+    items: [{ href: "/admin/dashboard", label: "Dashboard" }],
+  },
+  {
+    label: "Content",
+    items: [
+      { href: "/admin/media/list", label: "Media" },
+      { href: "/admin/tags", label: "Tags" },
+      { href: "/admin/pages", label: "Pages" },
+    ],
+  },
+  {
+    label: "People",
+    items: [
+      { href: "/admin/people", label: "People" },
+      { href: "/admin/testimonials", label: "Testimonials" },
+      { href: "/admin/inquiries", label: "Inquiries" },
+    ],
+  },
+  {
+    label: "Services",
+    items: [
+      { href: "/admin/services", label: "Services" },
+      { href: "/admin/service-categories", label: "Service Categories" },
+    ],
+  },
+  {
+    label: "Private",
+    items: [{ href: "/admin/private-galleries", label: "Private Galleries" }],
+  },
 ];
 
 export default async function AdminProtectedLayout({
@@ -57,22 +77,23 @@ export default async function AdminProtectedLayout({
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[240px_1fr]">
-          <aside className="rounded-2xl border p-3">
-            <div className="px-2 pb-2 text-xs font-medium text-muted-foreground">
-              Navigation
-            </div>
-
-            <div className="space-y-2">
-              {nav.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="block rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent/40"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </div>
+          <aside className="space-y-4 rounded-2xl border p-3">
+            {navGroups.map((group) => (
+              <div key={group.label} className="space-y-2">
+                <div className="px-2 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                  {group.label}
+                </div>
+                {group.items.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="block rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent/40"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            ))}
           </aside>
 
           <section className="rounded-2xl border p-4">{children}</section>

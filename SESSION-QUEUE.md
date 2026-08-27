@@ -41,7 +41,10 @@ first-deploy operational checklist recorded, not yet run — site not deployed) 
 D5 (cursor: velocity stretch, ghost trail, spring overshoot, zone-reactive size, blend-difference) ·
 D7 (NFT page: hover-flip collector card, achromatic status badges, tabs + expandable search) ·
 D8 (magnetic-hover CTA hook + Button ref forwarding; nav Book + StickyCta only; homepage sticky
-CTA now slides up on scroll instead of covering the hero).
+CTA now slides up on scroll instead of covering the hero) ·
+D9b (admin IA structural pass: grouped sidebar + `/admin/dashboard` landing, `/admin/pages` →
+per-page routes with inline visibility toggle, shared `AdminPageHeader`/`AdminToggle`, reusable
+bulk-select across all 8 admin lists, dead `/admin/nfts` removed).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -72,7 +75,7 @@ longer top-to-bottom — take sessions in exactly this order.
 9. ~~**L1**~~ ✓ done — launch prep code/docs shipped (README, admin config-error copy,
    CLAUDE.md deployment status); the deploy-time checklist (rotate secret, verify hash login,
    re-verify CSP, `/admin` headers) is recorded in CLAUDE.md for first deploy.
-10. ~~**D4, D5, D7, D8**~~ ✓ done · **D9b before D9** · **D10, D11, D12**
+10. ~~**D4, D5, D7, D8**~~ ✓ done · ~~**D9b**~~ ✓ done (admin structure pass; **D9** visual polish still pending) · **D10, D11, D12**
 11. **D13 last** — the consistency sweep; it needs everything else landed first.
 12. **C1, C2, C3** · **P1, P2** · **NFT1, NFT2**
 
@@ -195,84 +198,6 @@ Read every admin layout file before writing. Report what will change visually an
 **Note (2026-07-31):** Hussain reports the admin is "getting messy" — that is a
 *structural/UX* complaint, which this session does not cover. D9 stays visual-only;
 the structural work is Session D9b below. Do not silently widen D9's scope.
-
----
-
-### Session D9b — Admin information architecture — `pending`
-Raised by Hussain 2026-07-31: the admin dashboard is getting messy as features accumulate.
-This is about structure and findability, not colours (colours = D9).
-
-N5 Part 2 already consolidated three sidebar entries into the single `/admin/pages`
-accordion, which was the right move. The mess is what has grown since: each discipline
-row now stacks Visibility + Work layout image + Header + Search & social + Sections
-groups behind one accordion, and image controls for the *same* visual surface live in
-two different places (Work overlay card image on `page_settings`, Featured Work card
-image on `page_sections`).
-
-Gate 1 must start with an inventory, not a redesign: list every admin route, every group
-inside `/admin/pages`, and which collection each writes to. Then propose structure.
-Specific things to evaluate — propose, do not assume:
-- Is one accordion per page still right at 13 pages × up to 5 groups?
-- Should "images used on other pages' cards" be grouped by *where they appear* rather
-  than by which collection stores them?
-- Is there a genuine landing/dashboard need (what's unpublished, what's missing an image,
-  what has pending removal requests), versus the current straight-to-lists layout?
-- Which admin surfaces are now dead or rarely used and could be removed outright.
-
-**From the 2026-08-17 audit — verified, use these instead of re-surveying:**
-- **`/admin/pages` is not an accordion.** `PageRowCard.tsx:70-71` renders each open row as
-  `<div className="fixed inset-0 z-50 …">` — 13 independent full-screen modals behind 13
-  toggle buttons. D9b's own framing question ("is one accordion per page still right?")
-  has no accordion to evaluate. Field counts per row: Home 27, Web Development 22, About 20,
-  Blog 20, Dancing 19, Photography/Videography/NFT 10 each, People 8, Testimonials 8,
-  People-detail 6, Services 5, Contact 5 — **≈170 inputs total.**
-- **Five different interaction patterns for the same job.** Modal overlay (Services, Pages
-  rows) · same-page list⇄form swap with no URL change (People, Private Galleries) · two
-  separate routes (Media form vs Media list) · inline expand-in-row, the only real accordion
-  (Inquiries, `InquirySection.tsx:56-133`) · always-editable cells with per-field `onBlur`
-  autosave and no save/cancel (Service Categories, `CategoryRowSortable.tsx:36-57`).
-- **Ordering is split too:** dnd-kit drag on Services, Service Categories and Pages
-  repeating cards; **no manual ordering at all** on Media, People, Private Galleries,
-  Testimonials.
-- **`POST /api/testimonials/reorder` is fully built, admin-gated, validated, and called from
-  nowhere.** `sortOrder` drives both the public order (`lib/server/testimonials.ts:59`) and
-  the admin list, yet `TestimonialsAdminClient.tsx` has no drag handle and no order field —
-  the only thing that ever sets it is the auto-increment on public submission
-  (`api/testimonials/submit/route.ts:195-230`). **Hussain cannot reorder testimonials.**
-  Either wire the endpoint up or delete it.
-- **`media.order` is dead schema** — defaulted to `0` at creation
-  (`api/media/create/route.ts:144-147`), never sent by the editor, never read by any query.
-- **CLAUDE.md rules the admin does not follow.** Feedback (CLAUDE.md: "never hand-roll the
-  try/catch+setFeedback pattern"): only `usePagesAdmin.ts` actually calls `useAdminAction`'s
-  `run()`; three surfaces import the hook and still hand-roll
-  (`AdminServiceCategoriesClient.tsx`, `media/list/page.tsx`, `TestimonialsAdminClient.tsx`),
-  three skip it entirely (`inquiries/page.tsx`, `useMediaEditorController.ts`,
-  `usePrivateGalleriesAdmin.ts`), and `useServicesAdmin.ts:64-88` is a **third** generic
-  wrapper with its own 4s/7s auto-dismiss that nothing else has. Image picker (CLAUDE.md:
-  "don't build another picker"): three exist — `ImageField.tsx`, plus hand-rolled
-  `CldUploadWidget` blocks in `ServiceEditorModal.tsx:58-199` and `PeopleAdminClient.tsx:171-216`.
-  ~~dnd-kit sortable is reimplemented three times~~ **RESOLVED in T1** — extracted to
-  `components/admin/sortable/SortableList.tsx` (`SortableList` + `useSortableRow`); service-categories,
-  services and page-sections now consume it. Eight files
-  hand-roll the same `text-2xl font-semibold tracking-tight` page header — the admin has no
-  `PageHeader` equivalent. (The per-page `mounted` hydration guards on service-categories and
-  services are also gone — the primitive needs none.)
-- **Silent failures — RESOLVED in S11 (2026-08-19).** `MediaDetailsSection` `loadPeople()`
-  now sets a `peopleError` state on any non-ok/throw and shows an inline note instead of the
-  old `catch {}`. The service-categories name/slug inputs (now `CategoryRow.tsx`, not the
-  stale `CategoryRowSortable`/`CategoryRowStatic` names) reset to the last-saved value when
-  `onEdit` reports failure, so the field no longer contradicts the banner. Left for D9b: the
-  broader feedback-*architecture* consolidation (multiple hand-rolled wrappers onto one hook)
-  — the user-facing feedback correctness itself is fixed.
-- **Dead surfaces:** `/admin/removal-requests` is a hardcoded stub (owned by D12, but it is
-  live in the sidebar today); `/admin/nfts` is three stat tiles and two nav buttons, and is
-  the only admin page querying MongoDB directly from a page component.
-
-Constraint: no data-model changes in this session. Presentation only — the three
-collections stay as they are (that reasoning is in archive §N5 Part 2). S11 (unsaved-work
-guard) is a **separate, earlier** session — do not fold it in here.
-If D9 and D9b are both still pending when reached: run **D9b first** (structure), then
-D9 (visual polish) — polishing a layout that's about to change is wasted work.
 
 ---
 

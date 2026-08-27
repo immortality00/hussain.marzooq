@@ -2,6 +2,7 @@
 
 import type { Inquiry } from "../lib/types";
 import { fmt, statusPill } from "../lib/utils";
+import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import IconButton from "./IconButton";
 import { ArchiveIcon, DeleteIcon, RestoreIcon } from "./InquiryIcons";
 import InquiryExpandedCard from "./InquiryExpandedCard";
@@ -19,6 +20,9 @@ export default function InquirySection({
   onArchive,
   onRestore,
   onDeleteForever,
+  isSelected,
+  onToggleSelect,
+  selectAll,
 }: {
   title: string;
   list: Inquiry[];
@@ -32,6 +36,9 @@ export default function InquirySection({
   onArchive: (id: string) => void | Promise<void>;
   onRestore: (id: string) => void | Promise<void>;
   onDeleteForever: (id: string) => void | Promise<void>;
+  isSelected: (id: string) => boolean;
+  onToggleSelect: (id: string) => void;
+  selectAll: { checked: boolean; indeterminate: boolean; onChange: () => void };
 }) {
   function toggleExpand(id: string) {
     setExpandedId(expandedId === id ? "" : id);
@@ -44,13 +51,23 @@ export default function InquirySection({
         <div className="text-xs text-muted-foreground">{list.length} item(s)</div>
       </div>
 
-      <div className="grid grid-cols-12 gap-2 border-b px-4 py-3 text-xs font-medium text-muted-foreground">
-        <div className="col-span-2">Date</div>
-        <div className="col-span-2">Name</div>
-        <div className="col-span-3">Email</div>
-        <div className="col-span-2">Service</div>
-        <div className="col-span-2">Status</div>
-        <div className="col-span-1 text-right">Actions</div>
+      <div className="flex items-center gap-2 border-b px-4 py-3 text-xs font-medium text-muted-foreground">
+        {list.length > 0 && (
+          <BulkCheckbox
+            checked={selectAll.checked}
+            indeterminate={selectAll.indeterminate}
+            onChange={selectAll.onChange}
+            label={`Select all ${title.toLowerCase()} inquiries`}
+          />
+        )}
+        <div className="grid flex-1 grid-cols-12 gap-2">
+          <div className="col-span-2">Date</div>
+          <div className="col-span-2">Name</div>
+          <div className="col-span-3">Email</div>
+          <div className="col-span-2">Service</div>
+          <div className="col-span-2">Status</div>
+          <div className="col-span-1 text-right">Actions</div>
+        </div>
       </div>
 
       {list.map((it) => {
@@ -58,7 +75,13 @@ export default function InquirySection({
 
         return (
           <div key={it.id} className="border-b last:border-b-0">
-            <div className="grid grid-cols-12 gap-2 px-4 py-2 text-sm hover:bg-accent/20">
+            <div className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent/20">
+              <BulkCheckbox
+                checked={isSelected(it.id)}
+                onChange={() => onToggleSelect(it.id)}
+                label={`Select inquiry from ${it.name}`}
+              />
+              <div className="grid flex-1 grid-cols-12 gap-2">
               <button
                 type="button"
                 onClick={() => toggleExpand(it.id)}
@@ -112,6 +135,7 @@ export default function InquirySection({
                     </IconButton>
                   </>
                 )}
+              </div>
               </div>
             </div>
 

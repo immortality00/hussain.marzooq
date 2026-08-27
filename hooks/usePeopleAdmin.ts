@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { useAdminAction } from "./useAdminAction";
 
 export type PersonItem = {
@@ -21,6 +22,7 @@ export function usePeopleAdmin() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState("");
+  const [bulkBusy, setBulkBusy] = useState(false);
   const { feedback: banner, setFeedback: setBanner } = useAdminAction();
 
   const [mode, setMode] = useState<"list" | "form">(createPrefill ? "form" : "list");
@@ -190,11 +192,28 @@ export function usePeopleAdmin() {
     }
   }
 
+  async function bulkRemove(ids: string[]) {
+    if (bulkBusy || ids.length === 0) return;
+    if (!confirm(`Delete ${ids.length} person profile(s)?`)) return;
+    setBulkBusy(true);
+    setBanner({ type: "info", text: "Deleting selected profiles…" });
+    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => {
+      const res = await fetch(`/api/people/${encodeURIComponent(id)}`, { method: "DELETE" });
+      const data = (await res.json().catch(() => null)) as { ok?: boolean };
+      if (!res.ok || !data?.ok) throw new Error();
+    });
+    setItems((prev) => prev.filter((x) => !okIds.includes(x.id)));
+    setBanner({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} failed` : ""}.` });
+    setBulkBusy(false);
+  }
+
   return {
     items: filtered,
     loading,
     saving,
     deletingId,
+    bulkBusy,
+    bulkRemove,
     actionBusy,
     banner,
     mode,

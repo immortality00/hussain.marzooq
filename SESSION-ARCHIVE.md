@@ -2253,3 +2253,119 @@ opportunities` to confirm magnetic belongs on *every* CTA vs only highest-intent
 - **CLAUDE.md impact:** added `useMagneticHover` + Button `ref`/`data-magnetic` to "Reusable
   components"; added the homepage sticky-CTA reveal-on-scroll note + the Tailwind-v4 translate
   gotcha under "Homepage section order".
+
+
+### Session D9b — Admin information architecture — `done`
+Raised by Hussain 2026-07-31: the admin dashboard is getting messy as features accumulate.
+This is about structure and findability, not colours (colours = D9).
+
+**Build outcome (2026-08-27).** Ran as a **focused structural pass** (Hussain's scope choice),
+plus two things he added mid-session (a real dashboard, and a reusable bulk-select system).
+
+Shipped:
+- **Grouped sidebar + dashboard landing.** `(protected)/layout.tsx` nav is now grouped
+  (Overview/Content/People/Services/Private). New `(protected)/dashboard/page.tsx` at
+  `/admin/dashboard` (login default redirect changed from `/admin/inquiries`), backed by
+  `lib/server/admin-dashboard.ts` (one batched set of count queries): a **Needs attention**
+  inbox (pending testimonials, new inquiries, pages missing an image, hidden pages) + Media
+  totals/per-category (achromatic distribution bar) + Library counts. Geist-Mono tabular numerics.
+- **`/admin/pages` → per-page routes.** The 11 `fixed inset-0` modals are gone. `/admin/pages`
+  is a grouped card list (Main/Disciplines/Templates); each page edits at `/admin/pages/[key]`
+  (`PageEditorClient` + shared `PageEditorBody`). `PageRowCard` deleted. Discipline cards carry
+  an **inline visibility toggle** (immediate optimistic PATCH). `PAGE_ROWS` + pure
+  `pageNeedsImage`/`pageGroup` moved to `pages/lib/rows.ts` (plain module — a server route
+  importing `PAGE_ROWS` from the `"use client"` hook returned a client-reference proxy and
+  `.some` threw; fixed by importing from the plain module).
+- **Shared `AdminPageHeader`** adopted across media list/form, people, private galleries, and the
+  services/categories/tags/inquiries toolbars. Instructional subtitle blurbs removed sitewide in
+  admin (+ the login page's) per Hussain's standing "no instructional UI microcopy" preference.
+- **Shared `AdminToggle`** (Pages list + editor `VisibilityGroup`).
+- **Feedback consolidation (contained):** `useAdminAction({ autoDismiss: true })` + `notify()`;
+  `useServicesAdmin` consumes it, retiring its bespoke timer. The 3 hook-skippers (inquiries,
+  media editor, private galleries) deferred — they work.
+- **Dead surfaces removed:** `/admin/nfts` route deleted; Removal Requests unlinked from the nav
+  (stub file kept for D12).
+- **Reusable bulk-select + action bar** (`components/admin/bulk/`: `useBulkSelection`,
+  `BulkCheckbox`, `BulkActionBar`, `runBulkAction`) wired into all 8 admin lists + the
+  services/inquiries archived sections. Actions loop existing single-item endpoints
+  (`Promise.allSettled`); media/people/private-galleries are delete-only (their PATCH needs a
+  full body). No bulk API routes, no data-model change.
+
+Deferred (out of the focused scope): unifying the 5 editing patterns, the 3 image pickers, the 6
+hand-rolled overlays (all D9/later), and wiring/deleting `POST /api/testimonials/reorder` (bulk
+was wired instead — the defect is now unassigned in CLAUDE.md's table). `media.order` dead schema
+left as-is (no data-model changes).
+
+--- ORIGINAL SPEC (verbatim) ---
+
+N5 Part 2 already consolidated three sidebar entries into the single `/admin/pages`
+accordion, which was the right move. The mess is what has grown since: each discipline
+row now stacks Visibility + Work layout image + Header + Search & social + Sections
+groups behind one accordion, and image controls for the *same* visual surface live in
+two different places (Work overlay card image on `page_settings`, Featured Work card
+image on `page_sections`).
+
+Gate 1 must start with an inventory, not a redesign: list every admin route, every group
+inside `/admin/pages`, and which collection each writes to. Then propose structure.
+Specific things to evaluate — propose, do not assume:
+- Is one accordion per page still right at 13 pages × up to 5 groups?
+- Should "images used on other pages' cards" be grouped by *where they appear* rather
+  than by which collection stores them?
+- Is there a genuine landing/dashboard need (what's unpublished, what's missing an image,
+  what has pending removal requests), versus the current straight-to-lists layout?
+- Which admin surfaces are now dead or rarely used and could be removed outright.
+
+**From the 2026-08-17 audit — verified, use these instead of re-surveying:**
+- **`/admin/pages` is not an accordion.** `PageRowCard.tsx:70-71` renders each open row as
+  `<div className="fixed inset-0 z-50 …">` — 13 independent full-screen modals behind 13
+  toggle buttons. D9b's own framing question ("is one accordion per page still right?")
+  has no accordion to evaluate. Field counts per row: Home 27, Web Development 22, About 20,
+  Blog 20, Dancing 19, Photography/Videography/NFT 10 each, People 8, Testimonials 8,
+  People-detail 6, Services 5, Contact 5 — **≈170 inputs total.**
+- **Five different interaction patterns for the same job.** Modal overlay (Services, Pages
+  rows) · same-page list⇄form swap with no URL change (People, Private Galleries) · two
+  separate routes (Media form vs Media list) · inline expand-in-row, the only real accordion
+  (Inquiries, `InquirySection.tsx:56-133`) · always-editable cells with per-field `onBlur`
+  autosave and no save/cancel (Service Categories, `CategoryRowSortable.tsx:36-57`).
+- **Ordering is split too:** dnd-kit drag on Services, Service Categories and Pages
+  repeating cards; **no manual ordering at all** on Media, People, Private Galleries,
+  Testimonials.
+- **`POST /api/testimonials/reorder` is fully built, admin-gated, validated, and called from
+  nowhere.** `sortOrder` drives both the public order (`lib/server/testimonials.ts:59`) and
+  the admin list, yet `TestimonialsAdminClient.tsx` has no drag handle and no order field —
+  the only thing that ever sets it is the auto-increment on public submission
+  (`api/testimonials/submit/route.ts:195-230`). **Hussain cannot reorder testimonials.**
+  Either wire the endpoint up or delete it.
+- **`media.order` is dead schema** — defaulted to `0` at creation
+  (`api/media/create/route.ts:144-147`), never sent by the editor, never read by any query.
+- **CLAUDE.md rules the admin does not follow.** Feedback (CLAUDE.md: "never hand-roll the
+  try/catch+setFeedback pattern"): only `usePagesAdmin.ts` actually calls `useAdminAction`'s
+  `run()`; three surfaces import the hook and still hand-roll
+  (`AdminServiceCategoriesClient.tsx`, `media/list/page.tsx`, `TestimonialsAdminClient.tsx`),
+  three skip it entirely (`inquiries/page.tsx`, `useMediaEditorController.ts`,
+  `usePrivateGalleriesAdmin.ts`), and `useServicesAdmin.ts:64-88` is a **third** generic
+  wrapper with its own 4s/7s auto-dismiss that nothing else has. Image picker (CLAUDE.md:
+  "don't build another picker"): three exist — `ImageField.tsx`, plus hand-rolled
+  `CldUploadWidget` blocks in `ServiceEditorModal.tsx:58-199` and `PeopleAdminClient.tsx:171-216`.
+  ~~dnd-kit sortable is reimplemented three times~~ **RESOLVED in T1** — extracted to
+  `components/admin/sortable/SortableList.tsx` (`SortableList` + `useSortableRow`); service-categories,
+  services and page-sections now consume it. Eight files
+  hand-roll the same `text-2xl font-semibold tracking-tight` page header — the admin has no
+  `PageHeader` equivalent. (The per-page `mounted` hydration guards on service-categories and
+  services are also gone — the primitive needs none.)
+- **Silent failures — RESOLVED in S11 (2026-08-19).** `MediaDetailsSection` `loadPeople()`
+  now sets a `peopleError` state on any non-ok/throw and shows an inline note instead of the
+  old `catch {}`. The service-categories name/slug inputs (now `CategoryRow.tsx`, not the
+  stale `CategoryRowSortable`/`CategoryRowStatic` names) reset to the last-saved value when
+  `onEdit` reports failure, so the field no longer contradicts the banner. Left for D9b: the
+  broader feedback-*architecture* consolidation (multiple hand-rolled wrappers onto one hook)
+  — the user-facing feedback correctness itself is fixed.
+- **Dead surfaces:** `/admin/removal-requests` is a hardcoded stub (owned by D12, but it is
+  live in the sidebar today); `/admin/nfts` is three stat tiles and two nav buttons, and is
+  the only admin page querying MongoDB directly from a page component.
+
+Constraint: no data-model changes in this session. Presentation only — the three
+collections stay as they are (that reasoning is in archive §N5 Part 2). S11 (unsaved-work
+guard) is a **separate, earlier** session — do not fold it in here.
+If D9 and D9b are both still pending when reached: run **D9b first** (structure), then
+D9 (visual polish) — polishing a layout that's about to change is wasted work.

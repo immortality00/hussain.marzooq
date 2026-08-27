@@ -372,8 +372,16 @@ Completed web projects + related services; admin CRUD (`web_projects`).
 Standard blog, admin-defined categories, full CRUD, /blog + /blog/[slug].
 
 ## Page content CMS — current system
-Three collections, one admin surface (single **Pages** accordion at `/admin/pages`;
-old `/admin/seo` and `/admin/page-sections` routes are deleted):
+Three collections, one admin surface at `/admin/pages` (old `/admin/seo` and
+`/admin/page-sections` routes are deleted). **Since D9b the surface is per-page routes,
+not modals:** `/admin/pages` is a grouped card list (Main / Disciplines / Templates) and
+each page edits at its own route `/admin/pages/[key]` (`PageEditorClient` + shared
+`PageEditorBody`; the old full-screen-modal `PageRowCard` is deleted). Discipline cards
+carry an **inline visibility toggle** on the list that PATCHes `page-settings` immediately
+(optimistic, rolls back on failure) — no need to open the page. `PAGE_ROWS` + the pure
+`pageNeedsImage`/`pageGroup` helpers live in `pages/lib/rows.ts` (plain module, imported by
+both server routes and the client hook — never re-export `PAGE_ROWS` through the `"use client"`
+hook, that hands a server component a client-reference proxy and `.some` throws):
 1. `page_settings` — visibility toggle (5 disciplines) + Work-overlay `cardImage`.
 2. `page_seo` — per slug, 5 fields: `title`/`description`/`ogImageUrl` (search & social,
    used by `generateMetadata`) + `headerTitle`/`headerDescription` (the visible on-page
@@ -420,7 +428,21 @@ Plausible, one script tag, public pages only (Phase 3, queue §C3).
 
 ## Admin design
 Visual consistency with the portfolio (dark theme, same typography/tokens/shadcn styling).
-Not a layout rebuild (queue §D9).
+Not a layout rebuild (queue §D9 — visual polish, still pending).
+
+**Admin structure (D9b, structural pass — done).** The sidebar (`(protected)/layout.tsx`) is
+**grouped**: Overview (Dashboard) · Content (Media, Tags, Pages) · People (People, Testimonials,
+Inquiries) · Services (Services, Service Categories) · Private (Private Galleries). Login lands
+on **`/admin/dashboard`** (a real landing at its own route — `/admin` is the login page, so the
+dashboard can't live there; the login default redirect is `/admin/dashboard`). The dashboard
+(`lib/server/admin-dashboard.ts` → one batched set of count queries) shows a **Needs attention**
+band (pending testimonials, new inquiries, pages missing an image, hidden pages — amber when
+non-zero) plus Media totals/per-category and Library counts; numerics are Geist Mono tabular.
+**Two dead surfaces were removed:** the `/admin/nfts` stub route is deleted (NFT media lives in
+Media); **Removal Requests is unlinked from the nav** but its stub file stays for §D12 to rebuild.
+D9b was a **focused** structural pass — the 5 editing patterns, 3 image pickers, and 6 hand-rolled
+overlays were deliberately left for a later pass; only the header (`AdminPageHeader`), feedback
+(auto-dismiss fold), and dead-surface cleanup were consolidated here.
 
 ## Media locations — validated + coordinate-carrying (C4, shipped 2026-08-18)
 The old free-text location inputs are **gone**. Both media location surfaces now use the
@@ -499,7 +521,27 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   per-part success/failure with `Promise.allSettled` and clear only the parts that saved, so
   a re-save re-sends only what failed. `run()` is strictly all-or-nothing — for a multi-part
   outcome, drive `setFeedback` directly. No silent `catch {}` and no uncontrolled input left
-  showing an unsaved value while the banner reports failure.
+  showing an unsaved value while the banner reports failure. **D9b added opt-in auto-dismiss:**
+  `useAdminAction({ autoDismiss: true })` returns `notify(type, text)` that clears success
+  after 4s / errors after 7s (self-cleaning on unmount) — `useServicesAdmin` consumes it
+  instead of its old bespoke timer. Deferred: three surfaces still skip the hook (inquiries,
+  media editor controller, private galleries) — they work, folding them in is a later refactor.
+- `components/admin/AdminPageHeader.tsx` — every protected admin surface's page header
+  (D9b). `{ title, description?, actions? }`. Don't hand-roll `text-2xl font-semibold` headers.
+  Testimonials keeps its own `text-4xl` header deliberately (D9 territory).
+- `components/admin/AdminToggle.tsx` — the shared admin switch (D9b). `{ checked, onChange,
+  label, disabled?, className? }`. Used by the Pages-list visibility toggle and the editor's
+  `VisibilityGroup`; reuse it for any admin on/off control.
+- `components/admin/bulk/` — the reusable bulk-select system (D9b). `useBulkSelection(allIds)`
+  → `{ selectedIds, count, isSelected, toggle, toggleAll, clear, allSelected }` (selection is
+  derived against the live id list, so removed rows drop out with no effect); `BulkCheckbox`
+  (row + tri-state select-all); `BulkActionBar` (sticky bar shown when `count>0`, page-specific
+  action buttons + clear); `runBulkAction(ids, perItem)` → `{ ok, failed, okIds, failedIds }`
+  loops existing single-item endpoints via `Promise.allSettled`. **Wired into all 8 admin
+  lists** (testimonials, tags, service-categories, services + its inactive/archived sections,
+  inquiries + archived, media, people, private galleries) with each page's available actions
+  — no bulk API routes, no data-model change; media/people/private-galleries are delete-only
+  because their PATCH needs a full body. Don't hand-roll row selection; reuse these.
 - `hooks/useUnsavedChangesGuard.ts(hasUnsavedChanges)` — the shared unsaved-work guard (S11).
   Adds a `beforeunload` prompt **and** a document capture-phase click interceptor that
   `confirm()`s before internal-link navigation while dirty. Wired into `/admin/pages`; reuse
@@ -750,7 +792,7 @@ Do not "discover" these again; do not fix them outside their session.
 |---|---|---|
 | Admin login rate limiter keys on `ip\|userAgent`, so a UA change resets the lockout | `app/admin/page.tsx:32-34` | §S10 |
 | Public form fields are interpolated raw into notification email HTML | `lib/server/email.ts:19-29,45-55` | §S10 |
-| `POST /api/testimonials/reorder` is fully built and called from nowhere; testimonials cannot be reordered | `app/api/testimonials/reorder/route.ts` | §D9b |
+| `POST /api/testimonials/reorder` is fully built and called from nowhere; testimonials cannot be reordered (**deferred out of D9b** — bulk-select was wired instead; wire the reorder or delete it in a later pass) | `app/api/testimonials/reorder/route.ts` | unassigned |
 | Public media search has no supporting index; `ensure-indexes.mjs` creates a dead `{status:1}` index and misses `approvedAt` | `ensure-indexes.mjs:89,90` | §P1 |
 | N+1 query on `/people` (one `media.find()` per person) | `lib/server/public-people.ts:76-114` | §P1 |
 | `SmartMediaPreview`'s default empty state is a gradient, violating the no-gradient rule | `SmartMediaPreview.tsx:32,93` | §D13 |

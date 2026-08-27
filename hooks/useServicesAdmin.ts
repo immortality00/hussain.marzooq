@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { arrayMove } from "@dnd-kit/sortable";
 import type { Service, ServiceCategory } from "@/app/admin/(protected)/services/lib/types";
@@ -18,6 +18,7 @@ import {
   isCreateServiceResponse,
 } from "@/app/admin/(protected)/services/lib/ui";
 import { useAdminAction } from "@/hooks/useAdminAction";
+import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 
 export function useServicesAdmin(
   initialServices: Service[],
@@ -32,29 +33,10 @@ export function useServicesAdmin(
   const [creating, setCreating] = useState(false);
   const [busy, setBusy] = useState(false);
 
-  const { feedback: banner, setFeedback: setBanner } = useAdminAction();
+  const { feedback: banner, setFeedback: setBanner, notify: showBanner } = useAdminAction({
+    autoDismiss: true,
+  });
   const bannerRef = useRef<HTMLDivElement | null>(null);
-  const bannerTimerRef = useRef<number | null>(null);
-  function clearBannerTimer() {
-    if (bannerTimerRef.current) {
-      window.clearTimeout(bannerTimerRef.current);
-      bannerTimerRef.current = null;
-    }
-  }
-
-  function showBanner(type: "ok" | "err" | "info", text: string) {
-    clearBannerTimer();
-    setBanner({ type, text });
-
-    if (type !== "info") {
-      const ms = type === "ok" ? 4000 : 7000;
-      bannerTimerRef.current = window.setTimeout(() => setBanner(null), ms);
-    }
-  }
-
-  useEffect(() => {
-    return () => clearBannerTimer();
-  }, []);
 
   async function withBusy(
     infoText: string,
@@ -216,6 +198,67 @@ export function useServicesAdmin(
     );
   }
 
+  async function bulkSetActive(ids: string[], value: boolean) {
+    if (busy || ids.length === 0) return;
+    setBusy(true);
+    showBanner("info", value ? "Activating selected…" : "Deactivating selected…");
+    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => { await patchService(id, { isActive: value }); });
+    setServices((prev) => prev.map((p) => (okIds.includes(p.id) ? { ...p, isActive: value } : p)));
+    showBanner(
+      failed ? "err" : "ok",
+      `${ok} ${value ? "activated" : "deactivated"}${failed ? `, ${failed} failed` : ""}.`,
+    );
+    setBusy(false);
+  }
+
+  async function bulkArchive(ids: string[]) {
+    if (busy || ids.length === 0) return;
+    if (!confirm(`Archive ${ids.length} service(s)? They will be hidden from public pages.`)) return;
+    setBusy(true);
+    showBanner("info", "Archiving selected…");
+    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => { await archiveService(id); });
+    setServices((prev) =>
+      prev.map((p) => (okIds.includes(p.id) ? { ...p, isArchived: true, isActive: false } : p)),
+    );
+    showBanner(failed ? "err" : "ok", `${ok} archived${failed ? `, ${failed} failed` : ""}.`);
+    setBusy(false);
+  }
+
+  async function bulkRestore(ids: string[]) {
+    if (busy || ids.length === 0) return;
+    setBusy(true);
+    showBanner("info", "Restoring selected…");
+    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => { await patchService(id, { isArchived: false }); });
+    setServices((prev) => prev.map((p) => (okIds.includes(p.id) ? { ...p, isArchived: false } : p)));
+    showBanner(failed ? "err" : "ok", `${ok} restored${failed ? `, ${failed} failed` : ""}.`);
+    setBusy(false);
+  }
+
+  async function bulkDeleteForever(ids: string[]) {
+    if (busy || ids.length === 0) return;
+    const deletable = ids.filter((id) => (services.find((s) => s.id === id)?.inquiriesCount ?? 0) === 0);
+    const blocked = ids.length - deletable.length;
+    if (deletable.length === 0) {
+      showBanner("err", "❌ None can be deleted — all selected have inquiries. Keep them archived.");
+      return;
+    }
+    if (
+      !confirm(
+        `Delete ${deletable.length} service(s) FOREVER?${blocked ? ` (${blocked} with inquiries skipped)` : ""}\n\nThis cannot be undone.`,
+      )
+    )
+      return;
+    setBusy(true);
+    showBanner("info", "Deleting selected forever…");
+    const { ok, failed, okIds } = await runBulkAction(deletable, async (id) => { await deleteServiceForever(id); });
+    setServices((prev) => prev.filter((p) => !okIds.includes(p.id)));
+    showBanner(
+      failed || blocked ? "err" : "ok",
+      `${ok} deleted${failed ? `, ${failed} failed` : ""}${blocked ? `, ${blocked} skipped (has inquiries)` : ""}.`,
+    );
+    setBusy(false);
+  }
+
   async function handleCreateSave(patch: Partial<Service>) {
     await withBusy(
       "Creating service…",
@@ -308,5 +351,9 @@ export function useServicesAdmin(
     handleToggleActive,
     handleCreateSave,
     handleEditSave,
+    bulkSetActive,
+    bulkArchive,
+    bulkRestore,
+    bulkDeleteForever,
   };
 }

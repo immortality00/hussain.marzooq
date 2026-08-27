@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
+import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import InquirySection from "./components/InquirySection";
 import InquiriesToolbar from "./components/InquiriesToolbar";
 import {
@@ -60,6 +62,49 @@ export default function AdminInquiriesPage() {
 
   const active = useMemo(() => items.filter((x) => !x.isArchived), [items]);
   const archived = useMemo(() => items.filter((x) => x.isArchived), [items]);
+
+  const activeSel = useBulkSelection(active.map((x) => x.id));
+  const archivedSel = useBulkSelection(archived.map((x) => x.id));
+  const [bulkBusy, setBulkBusy] = useState(false);
+
+  async function bulkArchive() {
+    if (bulkBusy || activeSel.count === 0) return;
+    if (!confirm(`Archive ${activeSel.count} inquiry(ies)?`)) return;
+    const ids = activeSel.selectedIds;
+    setBulkBusy(true);
+    setMsg({ type: "info", text: "Archiving selected…" });
+    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => { await archiveInquiry(id); });
+    setItems((prev) => prev.map((p) => (okIds.includes(p.id) ? { ...p, isArchived: true } : p)));
+    setMsg({ type: failed ? "err" : "ok", text: `${ok} archived${failed ? `, ${failed} failed` : ""}.` });
+    activeSel.clear();
+    setBulkBusy(false);
+  }
+
+  async function bulkRestore() {
+    if (bulkBusy || archivedSel.count === 0) return;
+    const ids = archivedSel.selectedIds;
+    setBulkBusy(true);
+    setMsg({ type: "info", text: "Restoring selected…" });
+    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => { await restoreInquiry(id); });
+    setItems((prev) => prev.map((p) => (okIds.includes(p.id) ? { ...p, isArchived: false } : p)));
+    setMsg({ type: failed ? "err" : "ok", text: `${ok} restored${failed ? `, ${failed} failed` : ""}.` });
+    archivedSel.clear();
+    setBulkBusy(false);
+  }
+
+  async function bulkDeleteForever(which: "active" | "archived") {
+    const sel = which === "active" ? activeSel : archivedSel;
+    if (bulkBusy || sel.count === 0) return;
+    if (!confirm(`Delete ${sel.count} inquiry(ies) forever? This cannot be undone.`)) return;
+    const ids = sel.selectedIds;
+    setBulkBusy(true);
+    setMsg({ type: "info", text: "Deleting selected forever…" });
+    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => { await deleteInquiryForever(id); });
+    setItems((prev) => prev.filter((p) => !okIds.includes(p.id)));
+    setMsg({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} failed` : ""}.` });
+    sel.clear();
+    setBulkBusy(false);
+  }
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -210,6 +255,23 @@ export default function AdminInquiriesPage() {
         onArchive={handleArchive}
         onRestore={handleRestore}
         onDeleteForever={handleDeleteForever}
+        isSelected={activeSel.isSelected}
+        onToggleSelect={activeSel.toggle}
+        selectAll={{
+          checked: activeSel.allSelected,
+          indeterminate: activeSel.count > 0 && !activeSel.allSelected,
+          onChange: activeSel.toggleAll,
+        }}
+      />
+
+      <BulkActionBar
+        count={activeSel.count}
+        busy={bulkBusy}
+        onClear={activeSel.clear}
+        actions={[
+          { label: "Archive", onRun: bulkArchive },
+          { label: "Delete forever", tone: "danger", onRun: () => bulkDeleteForever("active") },
+        ]}
       />
 
       <div className="mt-6">
@@ -224,24 +286,43 @@ export default function AdminInquiriesPage() {
       </div>
 
       {showArchivedSection ? (
-        <InquirySection
-          title="Archived"
-          list={archived}
-          archivedMode={true}
-          expandedId={expandedId}
-          setExpandedId={(id) => {
-            if (actionBusy) return;
-            setExpandedId(id);
-            setMsg(null);
-          }}
-          notesMap={notesMap}
-          setNote={setNote}
-          onSaveNotes={handleSaveNotes}
-          onStatusChange={handleStatusChange}
-          onArchive={handleArchive}
-          onRestore={handleRestore}
-          onDeleteForever={handleDeleteForever}
-        />
+        <>
+          <InquirySection
+            title="Archived"
+            list={archived}
+            archivedMode={true}
+            expandedId={expandedId}
+            setExpandedId={(id) => {
+              if (actionBusy) return;
+              setExpandedId(id);
+              setMsg(null);
+            }}
+            notesMap={notesMap}
+            setNote={setNote}
+            onSaveNotes={handleSaveNotes}
+            onStatusChange={handleStatusChange}
+            onArchive={handleArchive}
+            onRestore={handleRestore}
+            onDeleteForever={handleDeleteForever}
+            isSelected={archivedSel.isSelected}
+            onToggleSelect={archivedSel.toggle}
+            selectAll={{
+              checked: archivedSel.allSelected,
+              indeterminate: archivedSel.count > 0 && !archivedSel.allSelected,
+              onChange: archivedSel.toggleAll,
+            }}
+          />
+
+          <BulkActionBar
+            count={archivedSel.count}
+            busy={bulkBusy}
+            onClear={archivedSel.clear}
+            actions={[
+              { label: "Restore", onRun: bulkRestore },
+              { label: "Delete forever", tone: "danger", onRun: () => bulkDeleteForever("archived") },
+            ]}
+          />
+        </>
       ) : null}
     </main>
   );

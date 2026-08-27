@@ -1,6 +1,7 @@
 "use client";
 
 import { SearchInput } from "@/components/search/SearchInput";
+import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import type { GalleryItem } from "./types";
 import { getGalleryStatus } from "./helpers";
 
@@ -14,6 +15,9 @@ type GalleryListProps = {
   onCopyLink: (slug: string) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  isSelected: (id: string) => boolean;
+  onToggleSelect: (id: string) => void;
+  selectAll: { checked: boolean; indeterminate: boolean; onChange: () => void };
 };
 
 export function GalleryList({
@@ -26,6 +30,9 @@ export function GalleryList({
   onCopyLink,
   onEdit,
   onDelete,
+  isSelected,
+  onToggleSelect,
+  selectAll,
 }: GalleryListProps) {
   return (
     <section className="mt-8 rounded-[2rem] border p-5">
@@ -43,7 +50,19 @@ export function GalleryList({
         />
       </div>
 
-      <div className="mt-5 space-y-3">
+      {items.length > 0 && (
+        <div className="mt-4 flex items-center gap-2.5 text-sm text-muted-foreground">
+          <BulkCheckbox
+            checked={selectAll.checked}
+            indeterminate={selectAll.indeterminate}
+            onChange={selectAll.onChange}
+            label="Select all galleries"
+          />
+          Select all
+        </div>
+      )}
+
+      <div className="mt-4 space-y-3">
         {loading ? (
           <div className="rounded-2xl border p-4 text-sm text-muted-foreground">Loading…</div>
         ) : items.length === 0 ? (
@@ -59,7 +78,14 @@ export function GalleryList({
             return (
               <article key={item.id} className="rounded-[2rem] border p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
+                  <div className="flex items-start gap-3">
+                    <BulkCheckbox
+                      checked={isSelected(item.id)}
+                      onChange={() => onToggleSelect(item.id)}
+                      label={`Select ${item.title}`}
+                      className="mt-1"
+                    />
+                    <div>
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="text-sm font-medium">{item.title}</div>
                       <span
@@ -81,6 +107,7 @@ export function GalleryList({
 
                     <div className="mt-1 text-xs text-muted-foreground">
                       Expires: {item.expiresAtLocal.replace("T", " ")}
+                    </div>
                     </div>
                   </div>
 
