@@ -5,6 +5,7 @@ import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { AppShell } from "@/components/site/AppShell";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { getTransitionImages } from "@/lib/server/public-media";
 
 export const metadata: Metadata = {
   title: "HM Visuals",
@@ -12,11 +13,13 @@ export const metadata: Metadata = {
     "Cinematic photography, film, NFTs, dance, and creative development by Hussain Marzooq.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const transitionImages = await getTransitionImages();
+
   return (
     <html
       lang="en"
@@ -26,7 +29,9 @@ export default function RootLayout({
     >
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          <AppShell footer={<SiteFooter />}>{children}</AppShell>
+          <AppShell footer={<SiteFooter />} transitionImages={transitionImages}>
+            {children}
+          </AppShell>
         </ThemeProvider>
       </body>
     </html>

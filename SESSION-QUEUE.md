@@ -34,8 +34,8 @@ Phase T: T1 (tag taxonomy `media_tags` + `/admin/tags` + shared admin `SortableL
 T2 (`/photography/[tag]` + `/videography/[tag]` subpages, `TagChipRow` nav, per-tag disciplines removed) ·
 Phase S2: S11 (unsaved-work guard + honest multi-part save feedback + admin feedback-clarity fixes),
 N9 (public cursor/footer consolidated into `AppShell`, off admin) ·
-D4 (page-transition engine + homepage gallery contact-sheet transition; per-route transitions deferred;
-CSP showreel fix — `media-src` + YouTube/Vimeo `frame-src`) ·
+D4 (page transitions — COMPLETE: one site-wide gallery contact-sheet on every internal nav, consistent
+server image pool; six per-route transitions built, rejected on sight, reverted; CSP showreel fix) ·
 Phase 4: L1 (launch-prep code/docs: README rewrite, admin config-error copy, CLAUDE.md deployment status;
 first-deploy operational checklist recorded, not yet run — site not deployed) ·
 D5 (cursor: velocity stretch, ghost trail, spring overshoot, zone-reactive size, blend-difference) ·
@@ -70,7 +70,7 @@ longer top-to-bottom — take sessions in exactly this order.
 9. ~~**L1**~~ ✓ done — launch prep code/docs shipped (README, admin config-error copy,
    CLAUDE.md deployment status); the deploy-time checklist (rotate secret, verify hash login,
    re-verify CSP, `/admin` headers) is recorded in CLAUDE.md for first deploy.
-10. **D4, D5, D7, D8** · **D9b before D9** · **D10, D11, D12**
+10. ~~**D4, D5, D7**~~ ✓ done · **D8** · **D9b before D9** · **D10, D11, D12**
 11. **D13 last** — the consistency sweep; it needs everything else landed first.
 12. **C1, C2, C3** · **P1, P2** · **NFT1, NFT2**
 
@@ -172,62 +172,6 @@ complete.
 ---
 
 ## Phase 2 — Preloader & core experience
-
-### Session D4 — Page transition system — `pending` (engine + homepage shipped 2026-08-20)
-
-**Shipped in D4 (2026-08-20), with Hussain's explicit approval to reduce scope:** the
-reusable transition **engine** (`components/transitions/`: `TransitionProvider` +
-`usePageTransition`, `ContactSheetTransition`, pure unit-tested `contactSheet.ts`) and the
-**homepage transition** — a contact-sheet/**gallery** move: an 8×5 grid whose cells are the
-real photos on the page (collected from `main img`, shuffled), staggering in, holding until
-the destination route commits (no origin-page flash), then staggering out. Wired via
-`PortfolioCard`'s cover link; homepage-only; reduced-motion fallback. Full architecture is in
-**CLAUDE.md → "Page transitions"**. Also fixed the showreel here (CSP `media-src` + YouTube/
-Vimeo `frame-src`). **Do not rebuild the engine or the homepage move.**
-
-**Still pending — the six bespoke per-route transitions below**, each deferred to its own
-prototype session (they're a large motion budget; prototype behind a switcher per the skill
-notes). D7/D10/D11 cross-reference their route's transition.
-
-Architecture (shipped):
-- A `TransitionContext` (React context) holds the current page's available images/media.
-- A `PageTransition` wrapper component intercepts route changes.
-- Each route has a defined transition in and out.
-
-Per-route transitions still to implement (deferred):
-- **→ Photography:** Hero image expands from small to full viewport, 3D cylinder assembles.
-- **→ Videography:** Images scatter as ice shards (Three.js), film strip assembles from right.
-- **→ NFT:** Images fragment/glitch, NFT grid assembles.
-- **→ Dancing:** Images distort with wave physics (GSAP elastic), dancing page fades in.
-- **→ About:** Single portrait expands full-screen, about content fades over it.
-- **→ Web Development:** Brief terminal-style effect, page assembles.
-- ~~**Homepage → any: the contact-sheet move.**~~ **✓ SHIPPED 2026-08-20** — built as a
-  **gallery of the page's real photos** (each cell a different image, shuffled), not one
-  photo sliced (that was tried and rejected by Hussain), and it **holds until the destination
-  commits** rather than assembling the destination's first image. ~40 `div`s, pure CSS
-  transforms, GPU-composited, reduced-motion fade. Forward-only for now (no back-nav reversal
-  yet). It is a navigation transition, not a loading screen — the Preloader (D1) is untouched.
-  Details in CLAUDE.md → "Page transitions".
-
-**Before writing any code:**
-- Read AppShell.tsx, layout.tsx, every public page.tsx, every public page's primary image source.
-- Propose the complete transition architecture and timing for each route.
-- Wait for approval before writing any code.
-
-**Skills to use here (installed in DS0):**
-- `find-animation-opportunities` **first** — it also says what *not* to animate. Six
-  bespoke route transitions is a large motion budget; confirm each one earns its place
-  before speccing it.
-- `animation-vocabulary` when writing the Gate 1 spec — durations, easings and
-  choreography stated precisely, so Gate 2 has an objective target instead of "feels off".
-- `prototype` for the two hardest transitions (Videography glass-shard, Dancing wave) —
-  variants behind a switcher. D3's cylinder needed four rejected geometries before it
-  landed (archive §D3); cheap exploration is how that cost drops.
-- `review-animations` at Gate 2, before declaring done.
-- **Conflict:** the Dancing transition's elastic wave physics is deliberate and survives
-  Impeccable's "no bounce/elastic" rule. See CLAUDE.md → Skill conflicts.
-
----
 
 ### Session D8 — Magnetic button effect — `pending`
 Add magnetic hover to all primary CTA buttons sitewide.
@@ -355,7 +299,8 @@ Content:
 - Booking CTA.
 - Stats (years teaching, students, location).
 
-The transition INTO the dancing page uses the wave/ripple effect from Session D4.
+Navigating into the dancing page uses the site-wide gallery transition (D4, complete) — there
+is no per-route dancing transition; the bespoke ones were built, rejected and reverted.
 
 Read app/dancing/page.tsx and all imports before writing.
 

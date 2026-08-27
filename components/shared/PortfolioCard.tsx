@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { buttonClasses } from "@/components/shared/Button";
-import { usePageTransition } from "@/components/transitions/TransitionContext";
 
 interface PortfolioCardProps {
   href: string;
@@ -28,7 +27,6 @@ export function PortfolioCard({
   minHeight = "min-h-[25rem]",
   className,
 }: PortfolioCardProps) {
-  const transition = usePageTransition();
   // A card with tag links cannot itself be an <a> (nested anchors are invalid).
   // Structure: a div with an absolutely-positioned cover link for the whole-card
   // click, non-interactive content marked pointer-events-none so clicks fall
@@ -53,17 +51,7 @@ export function PortfolioCard({
 
       <div className="absolute inset-0 bg-linear-to-t from-black/82 via-black/24 to-transparent" />
 
-      <Link
-        href={href}
-        aria-label={title}
-        className="absolute inset-0 z-10"
-        onClick={(e) => {
-          if (!imageUrl || !transition) return;
-          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
-          e.preventDefault();
-          transition.navigate(href, imageUrl);
-        }}
-      />
+      <Link href={href} aria-label={title} className="absolute inset-0 z-10" />
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 p-6 text-white sm:p-7">
         <h2 className="max-w-lg text-3xl font-semibold leading-[1.02] tracking-[-0.045em]">

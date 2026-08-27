@@ -272,30 +272,38 @@ cylinder adapts instead of falling back — `fitDistance()` pulls the camera bac
 front plane fits narrow viewports (`fov` is vertical, so phones crop horizontally), and
 `components/photography/lib.ts` cuts the texture budget to 16 @ 420px under 768px.
 
-## Page transitions — content-as-animation (D4, engine + homepage shipped 2026-08-20)
-Every transition uses the actual photos/videos of origin/destination as material. The
-**reusable engine + the homepage transition shipped in D4**; the six bespoke per-route
-transitions (Photography expand, Videography ice-shard, NFT glitch, Dancing wave, About
-portrait, Web-dev terminal) were **deliberately deferred** to their own prototype sessions
-at Hussain's request (a large motion budget vs the site's restraint — don't "revert" this
-and build all six). Remaining per-route specs live in SESSION-QUEUE.md §D4.
+## Page transitions — one site-wide gallery move (D4, complete 2026-08-27)
+**There is ONE transition and it plays on every internal navigation, site-wide** — a
+contact-sheet gallery: an 8×5 grid of real photos that staggers in, holds covering the
+screen until the destination commits, then staggers out. **The six bespoke per-route
+transitions were built, rejected by Hussain on sight, and reverted** — each sliced a single
+image, which is the approach he had already rejected (see the `ContactSheetTransition` note).
+Do **not** revive per-route transitions; there is no registry, no variant system, no
+`three`-in-transitions. D4 is complete.
 
 **The engine** lives in `components/transitions/`:
 - `TransitionContext.tsx` — `TransitionProvider` (mounted in `AppShell`, public branch only,
-  wrapping `children` + the footer) exposes `usePageTransition()` → `navigate(href, imageUrl)`.
-  It **only plays on the homepage** (`pathname === "/"`); anywhere else, and under
-  `prefers-reduced-motion`, it's a plain `router.push` / quick fade. Honors reduced-motion
-  (the repo's first such handling).
-- `ContactSheetTransition.tsx` + `contactSheet.ts` (pure, unit-tested) — the homepage move:
-  an 8×5 grid whose cells are a **gallery of the real photos currently on the page**
-  (collected from `main img`, shuffled — NOT one image sliced; that was rejected). Cells
-  stagger **in**, **hold covering the screen until the destination route actually commits**
-  (watched via `usePathname`, with a 2.5s safety cap), then stagger **out** onto it. Holding
-  for the commit is what prevents the origin page flashing back before the target paints —
-  do not clear the cells on a fixed timer.
-- `PortfolioCard.tsx` is now a client component; its cover `<Link>` routes homepage clicks
-  through `navigate()` (modifier/middle-clicks fall through to normal nav). This is the sole
-  trigger — the transition is homepage-Featured-Work-cards only by design.
+  wrapping `children` + the footer; takes an `images` prop) exposes `usePageTransition()` →
+  `navigate(href, imageUrl?)`. It plays on **every page** now (the old `pathname === "/"`
+  gate is gone). Under `prefers-reduced-motion` it's a quick fade. Honors reduced-motion.
+- **Site-wide trigger:** the provider installs a **document capture-phase click interceptor**
+  that catches every same-origin internal `<a>` click and routes it through `navigate()`.
+  It skips modifier/middle clicks, `target="_blank"`, `download`, external `rel`, `/admin/*`,
+  same-path links, and anything marked `data-no-transition`. This is why `PortfolioCard` no
+  longer needs its own click handler — it's a plain presentational card again.
+- **Image source is a single consistent server pool, NOT the current page's DOM.**
+  `getTransitionImages()` (`lib/server/public-media.ts`, `unstable_cache` 300s, **fail-safe →
+  `[]`**) returns 24 recent public photos sized down through the Cloudinary loader; the root
+  `layout.tsx` fetches it and passes it `AppShell → TransitionProvider images`. Using one pool
+  everywhere is what makes the transition read identically on every page — the earlier
+  per-page `main img` collection gave sparse pages a same-image grid or no animation (the bug
+  Hussain reported). `collectImagePool(main img)` remains only as a fallback when the server
+  pool is empty. **Because the pool is fetched in the root layout, `getTransitionImages` must
+  never throw — keep the try/catch that returns `[]`, or a failed query breaks every page.**
+- `ContactSheetTransition.tsx` + `contactSheet.ts` (pure, unit-tested) — the grid: 8×5 cells
+  drawn from the pool (shuffled — NOT one image sliced; **that was rejected, twice**). Cells
+  **hold covering the screen until the destination route commits** (watched via `usePathname`,
+  2.5s safety cap), then stagger out. Do not clear the cells on a fixed timer.
 - Motion tokens: `.hm-cell-in`/`.hm-cell-out` keyframes in `globals.css`, repo easing
   `cubic-bezier(0.2, 0.7, 0.2, 1)`, ~460ms/cell + ~440ms stagger.
 
@@ -507,10 +515,10 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   as the `footer` prop from `app/layout.tsx` (`<AppShell footer={<SiteFooter />}>`) — a server
   component rendered by a client parent via props. `CustomCursor` is imported and rendered
   directly inside `AppShell`'s public branch. Do not re-mount either as a sibling in `layout.tsx`.
-  **`TransitionProvider` (D4) also lives here**, wrapping `children` + the footer, so the page
-  transition is available to every public route but plays only on the homepage — see "Page
-  transitions" above. Do not build a second page-transition mechanism; route homepage-card
-  clicks through `usePageTransition().navigate()`.
+  **`TransitionProvider` (D4) also lives here**, wrapping `children` + the footer and taking an
+  `images` prop (the server transition pool from `layout.tsx`). The page transition plays on
+  **every** public route via a global click interceptor — see "Page transitions" above. Do not
+  build a second page-transition mechanism; the interceptor already catches all internal links.
 
 ## Code quality rules
 - **Any code that can become a reusable component must be refactored into one.** Reuse
@@ -784,9 +792,10 @@ recorded in this file, **CLAUDE.md wins.** Known conflicts, do not silently "fix
   core rhythm device ("Atmosphere. Precision. — built with restraint"). Brand voice wins
   for all public copy. The ban may apply to UI microcopy only — decide per case, never
   rewrite brand copy to satisfy it.
-- **Impeccable bans bounce/elastic easing as dated.** D5 specs spring overshoot on the
-  cursor; D4 specs GSAP elastic wave physics for the Dancing transition. Both deliberate.
-  Add to `detector.ignoreRules` with a reason rather than removing the motion.
+- **Impeccable bans bounce/elastic easing as dated.** D5's spring overshoot on the cursor is
+  deliberate. (D4's Dancing elastic transition no longer exists — the per-route transitions
+  were reverted; see "Page transitions".) Add to `detector.ignoreRules` with a reason rather
+  than removing the motion.
 - **Impeccable/taste-skill may suggest gradients, eyebrows, or card-in-card.** All three
   are banned here (see "What is NOT in the design" and "Reusable components").
 - **taste-skill v2 is marked experimental.** If it misbehaves, pin

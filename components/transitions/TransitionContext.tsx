@@ -14,7 +14,7 @@ import {
 const REDUCED_MS = 300;
 
 interface PageTransition {
-  navigate: (href: string, imageUrl: string) => void;
+  navigate: (href: string, imageUrl?: string) => void;
 }
 
 const TransitionCtx = createContext<PageTransition | null>(null);
@@ -46,7 +46,13 @@ function collectImagePool(first: string): string[] {
   return Array.from(new Set(pool));
 }
 
-export function TransitionProvider({ children }: { children: React.ReactNode }) {
+export function TransitionProvider({
+  children,
+  images,
+}: {
+  children: React.ReactNode;
+  images?: string[];
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [state, setState] = useState<ContactSheetState | null>(null);
@@ -82,10 +88,15 @@ export function TransitionProvider({ children }: { children: React.ReactNode }) 
   }, [pathname, startOut]);
 
   const navigate = useCallback(
-    (href: string, imageUrl: string) => {
+    (href: string, imageUrl?: string) => {
       if (playing.current) return;
 
-      if (pathname !== "/" || !imageUrl) {
+      const path = hrefToPath(href);
+      // One consistent gallery pool for every page so the transition reads the
+      // same everywhere; fall back to the current page's photos only if the
+      // server pool is empty. Skip when there's no material or we're already here.
+      const pool = images && images.length > 0 ? images : collectImagePool(imageUrl ?? "");
+      if (path === pathname || pool.length === 0) {
         router.push(href);
         return;
       }
@@ -105,9 +116,9 @@ export function TransitionProvider({ children }: { children: React.ReactNode }) 
       inDone.current = false;
       committed.current = false;
       outStarted.current = false;
-      pendingPath.current = hrefToPath(href);
+      pendingPath.current = path;
 
-      setState({ cells: buildContactSheetCells(collectImagePool(imageUrl)) });
+      setState({ cells: buildContactSheetCells(pool) });
       setPhase("in");
       router.push(href);
 
@@ -124,8 +135,44 @@ export function TransitionProvider({ children }: { children: React.ReactNode }) 
         startOut();
       }, CONTACT_SHEET_IN_MS + CONTACT_SHEET_MAX_WAIT_MS);
     },
-    [pathname, router, startOut],
+    [images, pathname, router, startOut],
   );
+
+  // Site-wide trigger: intercept every same-origin internal link click (capture
+  // phase, before Next's Link handler) so the gallery transition plays on any
+  // page-to-page navigation. Opt a link out with data-no-transition.
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (e.defaultPrevented || e.button !== 0) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+      const anchor = (e.target as Element | null)?.closest?.("a");
+      if (!anchor) return;
+      if (anchor.dataset.noTransition !== undefined) return;
+      if (anchor.hasAttribute("download")) return;
+      if (anchor.target && anchor.target !== "_self") return;
+      if (anchor.getAttribute("rel")?.includes("external")) return;
+
+      const href = anchor.getAttribute("href");
+      if (!href) return;
+
+      let url: URL;
+      try {
+        url = new URL(href, window.location.href);
+      } catch {
+        return;
+      }
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname.startsWith("/admin")) return;
+      if (url.pathname === window.location.pathname) return;
+
+      e.preventDefault();
+      navigate(url.pathname + url.search + url.hash);
+    }
+
+    document.addEventListener("click", onClick, true);
+    return () => document.removeEventListener("click", onClick, true);
+  }, [navigate]);
 
   return (
     <TransitionCtx.Provider value={{ navigate }}>

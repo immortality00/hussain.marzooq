@@ -2158,3 +2158,53 @@ Price + edition count are visible on **both** faces (Hussain's request during Ga
 - The **D4 glitch transition into** the page was left to its own deferred D4 prototype session
   (out of scope, per the queue). No CLAUDE.md rule/architecture change; **no security surface**
   (no auth/API/cookies/env/input). `tsc` + `eslint --max-warnings 0` + 126 tests clean.
+
+---
+
+### Session D4 — Page transition system — `done` (complete 2026-08-27)
+
+**Engine + homepage move shipped 2026-08-20** (see original spec below). The **six bespoke
+per-route transitions were then built (2026-08-27), rejected by Hussain on sight, and fully
+reverted** — each sliced a single card image, which is exactly the approach he had already
+rejected for the homepage move. Replaced with his final direction: **one gallery contact-sheet
+transition on every internal navigation, site-wide.**
+
+**Final architecture (this is the live state):**
+- `TransitionContext.tsx` no longer gates on `pathname === "/"`. It installs a **document
+  capture-phase click interceptor** that routes every same-origin internal `<a>` click through
+  `navigate()` (skips modifier/middle clicks, `target="_blank"`, `download`, external `rel`,
+  `/admin/*`, same-path, `data-no-transition`). `PortfolioCard` reverted to a plain card (no
+  own click handler).
+- **Image source is one consistent server pool, not the current page's DOM.**
+  `getTransitionImages()` (`lib/server/public-media.ts`, `unstable_cache` 300s, **fail-safe →
+  `[]`** so a failed query can't break the root layout) → 24 recent public photos sized via the
+  Cloudinary loader → `layout.tsx` → `AppShell` → `TransitionProvider images`. `collectImagePool`
+  survives only as a fallback. This fixed the reported bugs: sparse pages (testimonials) showed a
+  same-image grid, image-less pages showed no animation.
+- `ContactSheetTransition.tsx` + `contactSheet.ts` unchanged (8×5 grid, hold-until-commit).
+- `tsc` + `eslint --max-warnings 0` + tests clean. CLAUDE.md "Page transitions" rewritten in the
+  same commit. No security surface. **Do not revive per-route transitions — there is no
+  registry/variant system by design.**
+
+--- Original D4 spec (verbatim) ---
+
+### Session D4 — Page transition system (engine + homepage shipped 2026-08-20)
+
+**Shipped in D4 (2026-08-20), with Hussain's explicit approval to reduce scope:** the
+reusable transition **engine** (`components/transitions/`: `TransitionProvider` +
+`usePageTransition`, `ContactSheetTransition`, pure unit-tested `contactSheet.ts`) and the
+**homepage transition** — a contact-sheet/**gallery** move: an 8×5 grid whose cells are the
+real photos on the page (collected from `main img`, shuffled), staggering in, holding until
+the destination route commits (no origin-page flash), then staggering out. Wired via
+`PortfolioCard`'s cover link; homepage-only; reduced-motion fallback. Also fixed the showreel
+here (CSP `media-src` + YouTube/Vimeo `frame-src`).
+
+Per-route transitions (were deferred, then built + rejected + reverted 2026-08-27):
+- **→ Photography:** Hero image expands from small to full viewport, 3D cylinder assembles.
+- **→ Videography:** Images scatter as ice shards (Three.js), film strip assembles from right.
+- **→ NFT:** Images fragment/glitch, NFT grid assembles.
+- **→ Dancing:** Images distort with wave physics (GSAP elastic), dancing page fades in.
+- **→ About:** Single portrait expands full-screen, about content fades over it.
+- **→ Web Development:** Brief terminal-style effect, page assembles.
+- **Homepage → any: the contact-sheet move.** SHIPPED 2026-08-20 — gallery of the page's real
+  photos, holds until the destination commits. Now generalised site-wide (see final architecture).
