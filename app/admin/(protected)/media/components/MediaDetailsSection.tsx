@@ -110,6 +110,17 @@ export default function MediaDetailsSection({
     return out;
   }, [selectedPeopleIds, selectedPeopleNames]);
 
+  const gatedSelectedNames = useMemo(() => {
+    const byId = new Map(profiles.map((p) => [p.id, p]));
+    const names: string[] = [];
+    for (const person of selectedPeople) {
+      if (!person.id) continue;
+      const profile = byId.get(person.id);
+      if (profile && (profile.isPublic === false || profile.isPrivate)) names.push(person.name);
+    }
+    return names;
+  }, [profiles, selectedPeople]);
+
   const availableMatches = useMemo(() => {
     const q = peopleQuery.trim().toLowerCase();
     if (!q) return [];
@@ -211,6 +222,13 @@ export default function MediaDetailsSection({
               Could not load the people list — search may be incomplete. Reload the page to retry.
             </p>
           )}
+
+          {gatedSelectedNames.length ? (
+            <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-600 dark:text-amber-400">
+              {gatedSelectedNames.join(", ")} {gatedSelectedNames.length > 1 ? "are" : "is"} a
+              hidden or private profile — this media will be kept private and can’t be made public.
+            </p>
+          ) : null}
 
           {selectedPeople.length ? (
             <div className="flex flex-wrap gap-2">

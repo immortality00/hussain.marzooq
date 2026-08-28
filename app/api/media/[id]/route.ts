@@ -168,7 +168,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     updatedAt: new Date(),
   };
 
-  if (typeof isPublic === "boolean") set.isPublic = isPublic;
+  if (resolvedPeople.gatedPersonName) {
+    set.isPublic = false;
+  } else if (typeof isPublic === "boolean") {
+    set.isPublic = isPublic;
+  }
 
   let replacementAsset: StoredMediaAsset | null = null;
 

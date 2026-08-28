@@ -1,11 +1,13 @@
-export default function AdminRemovalRequestsPage() {
-  return (
-    <main className="mx-auto max-w-5xl px-6 py-10">
-      <h1 className="text-2xl font-semibold tracking-tight">Removal Requests</h1>
+import RemovalRequestsClient from "./RemovalRequestsClient";
+import { getRemovalRequestHistory, getRemovalRequestQueue } from "@/lib/server/removal-requests";
 
-      <section className="mt-8 rounded-[2rem] border p-6">
-        <div className="text-sm text-muted-foreground">No requests to review.</div>
-      </section>
-    </main>
-  );
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
+export default async function AdminRemovalRequestsPage() {
+  const [items, history] = await Promise.all([
+    getRemovalRequestQueue(),
+    getRemovalRequestHistory(),
+  ]);
+  return <RemovalRequestsClient items={items} history={history} />;
 }

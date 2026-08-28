@@ -5,6 +5,7 @@ import {
   Inbox,
   ImageOff,
   EyeOff,
+  UserX,
   Check,
   ChevronRight,
   Camera,
@@ -64,6 +65,7 @@ export default async function AdminDashboard() {
   const attention = [
     { icon: Star, label: "Testimonials to review", count: stats.testimonials.pending, href: "/admin/testimonials" },
     { icon: Inbox, label: "New inquiries", count: stats.inquiries.new, href: "/admin/inquiries" },
+    { icon: UserX, label: "Removal requests", count: stats.removalRequests, href: "/admin/removal-requests" },
     { icon: ImageOff, label: "Pages missing an image", count: missingImage, href: "/admin/pages" },
     { icon: EyeOff, label: "Pages hidden from the site", count: hidden, href: "/admin/pages" },
   ];

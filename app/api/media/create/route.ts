@@ -45,7 +45,7 @@ export async function POST(req: Request) {
   const year = yearNum !== null && yearNum > 1900 && yearNum < 2100 ? yearNum : null;
 
   const { tags, categories, peopleIds } = getMediaLists(bodyUnknown);
-  const isPublic = asBooleanOrNull(bodyUnknown.isPublic) ?? true;
+  const requestedPublic = asBooleanOrNull(bodyUnknown.isPublic) ?? true;
   const appearances = sanitizeAppearances(bodyUnknown.appearances);
 
   const secureUrl = (asNullableString(bodyUnknown.secureUrl) ?? "").trim();
@@ -122,6 +122,7 @@ export async function POST(req: Request) {
 
   const db = await getDb();
   const resolvedPeople = await resolvePeopleSelection(db, { peopleIds });
+  const isPublic = resolvedPeople.gatedPersonName ? false : requestedPublic;
   const now = new Date();
 
   const doc = {

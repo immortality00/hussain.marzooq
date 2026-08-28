@@ -46,7 +46,10 @@ D9b (admin IA structural pass: grouped sidebar + `/admin/dashboard` landing, `/a
 per-page routes with inline visibility toggle, shared `AdminPageHeader`/`AdminToggle`, reusable
 bulk-select across all 8 admin lists, dead `/admin/nfts` removed) ·
 D9 (admin visual polish: shared `AdminButton` swept across every admin action button, quiet
-active-highlighting `AdminSidebarNav`, restyled protected-layout shell; admin inputs left for a later pass).
+active-highlighting `AdminSidebarNav`, restyled protected-layout shell; admin inputs left for a later pass) ·
+D12 (people privacy system: 3-state visibility + password gate `lib/password-gate.ts`, removal-request
+flow with audit `removal_requests` collection, media↔gated-person rule, `MediaLightbox` portal/scroll-lock,
+Dashboard notification badge).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -77,7 +80,7 @@ longer top-to-bottom — take sessions in exactly this order.
 9. ~~**L1**~~ ✓ done — launch prep code/docs shipped (README, admin config-error copy,
    CLAUDE.md deployment status); the deploy-time checklist (rotate secret, verify hash login,
    re-verify CSP, `/admin` headers) is recorded in CLAUDE.md for first deploy.
-10. ~~**D4, D5, D7, D8**~~ ✓ done · ~~**D9b**~~ ✓ done (admin structure pass) · ~~**D9**~~ ✓ done (admin visual polish) · ~~**D10**~~ ✓ done (dancing page — admin Instagram embeds) · **D11, D12**
+10. ~~**D4, D5, D7, D8**~~ ✓ done · ~~**D9b**~~ ✓ done (admin structure pass) · ~~**D9**~~ ✓ done (admin visual polish) · ~~**D10**~~ ✓ done (dancing page — admin Instagram embeds) · ~~**D12**~~ ✓ done (people privacy system) · **D11** (deferred by Hussain 2026-08-28 — take next)
 11. **D13 last** — the consistency sweep; it needs everything else landed first.
 12. **C1, C2, C3** · **P1, P2** · **NFT1, NFT2**
 
@@ -196,34 +199,6 @@ Public page:
 - Booking CTA.
 
 Read app/web-development/page.tsx before writing.
-
----
-
-### Session D12 — People page — `pending`
-Build the people page with privacy system.
-
-Public page:
-- Lists people (clients) who have been photographed/videographed.
-- Each person: name, thumbnail from their session, click to view their media.
-- **Private toggle per person:** when private, a password is required to view their content.
-- **Removal request:** a person can submit a removal request from their public profile. Hussain approves it in admin. On approval: content is hidden behind a password (not deleted).
-
-Admin:
-- People management at /admin/people (likely already exists — read it first).
-- Fields: name, isPrivate, password (hashed), removalRequested, removalApproved.
-- Removal request queue: lists pending requests, one-click approve.
-
-Public behavior:
-- If person is private and viewer has no correct password: show password prompt.
-- If person has an approved removal: content hidden, profile shows "Content not available."
-- Direct URL to a private person always requires password.
-
-Read all existing people-related files before writing.
-
-**Audit note:** `app/admin/(protected)/removal-requests/page.tsx` is currently a fully
-hardcoded stub ("No requests to review.", no data fetching at all). That's expected at
-this stage — it's correctly captured by this session's "Removal request queue" task, not
-a separate bug.
 
 ---
 

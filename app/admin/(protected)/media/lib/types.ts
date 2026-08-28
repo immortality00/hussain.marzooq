@@ -60,4 +60,5 @@ export type PersonProfileOption = {
   slug: string;
   avatarUrl: string | null;
   isPublic: boolean;
+  isPrivate: boolean;
 };

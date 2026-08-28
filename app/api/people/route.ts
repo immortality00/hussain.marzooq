@@ -9,6 +9,11 @@ import {
 } from "@/app/api/_lib/common";
 import { isAllowedCloudinaryUrl } from "@/lib/server/cloudinary-assets";
 import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
+import {
+  MIN_PERSON_PASSWORD_LENGTH,
+  hashPassword,
+  makeAccessToken,
+} from "@/lib/password-gate";
 
 export const dynamic = "force-dynamic";
 
@@ -55,6 +60,12 @@ export async function GET() {
     bio: typeof doc.bio === "string" ? doc.bio : null,
     avatarUrl: typeof doc.avatarUrl === "string" ? doc.avatarUrl : null,
     isPublic: typeof doc.isPublic === "boolean" ? doc.isPublic : true,
+    isPrivate: doc.isPrivate === true,
+    hasPassword: typeof doc.passwordHash === "string" && doc.passwordHash.length > 0,
+    removalRequestedAt:
+      doc.removalRequestedAt instanceof Date ? doc.removalRequestedAt.toISOString() : null,
+    removalApprovedAt:
+      doc.removalApprovedAt instanceof Date ? doc.removalApprovedAt.toISOString() : null,
   }));
 
   return noStoreJson({ ok: true, items });
@@ -72,6 +83,8 @@ export async function POST(req: Request) {
   const bio = (asNullableString(body.bio) ?? "").trim().slice(0, 4000);
   const avatarUrl = (asNullableString(body.avatarUrl) ?? "").trim().slice(0, 500);
   const isPublic = asBooleanOrNull(body.isPublic) ?? true;
+  const isPrivate = asBooleanOrNull(body.isPrivate) ?? false;
+  const password = (asNullableString(body.password) ?? "").trim();
 
   if (!name) return noStoreJson({ ok: false, error: "Name is required." }, { status: 400 });
   if (!avatarUrl) return noStoreJson({ ok: false, error: "Avatar is required." }, { status: 400 });
@@ -83,20 +96,32 @@ export async function POST(req: Request) {
     );
   }
 
-  const slug = await ensureUniqueSlug(slugify(slugInput || name));
+  if (password && password.length < MIN_PERSON_PASSWORD_LENGTH) {
+    return noStoreJson(
+      { ok: false, error: `Password must be at least ${MIN_PERSON_PASSWORD_LENGTH} characters.` },
+      { status: 400 }
+    );
+  }
 
+  const slug = await ensureUniqueSlug(slugify(slugInput || name));
   const now = new Date();
   const db = await getDb();
 
-  const result = await db.collection("people_profiles").insertOne({
+  const doc: Record<string, unknown> = {
     name,
     slug,
     bio: bio || null,
     avatarUrl,
     isPublic,
+    isPrivate,
     createdAt: now,
     updatedAt: now,
-  });
+  };
+
+  if (isPrivate) doc.accessToken = makeAccessToken();
+  if (password) doc.passwordHash = await hashPassword(password);
+
+  const result = await db.collection("people_profiles").insertOne(doc);
 
   revalidatePath("/people", "layout");
 

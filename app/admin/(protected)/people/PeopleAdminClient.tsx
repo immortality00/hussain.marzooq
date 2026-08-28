@@ -21,6 +21,43 @@ function getString(value: unknown) {
   return typeof value === "string" ? value : "";
 }
 
+function statusLabel(item: { isPublic: boolean; isPrivate: boolean }) {
+  if (item.isPublic === false) return "Hidden";
+  if (item.isPrivate) return "Password-protected";
+  return "Public";
+}
+
+function FormStatusNotice({
+  visibility,
+  removalApprovedAt,
+}: {
+  visibility: "public" | "private" | "hidden";
+  removalApprovedAt: string | null;
+}) {
+  let text = "";
+  if (removalApprovedAt) {
+    text = `Removed on request (${removalApprovedAt.slice(0, 10)}). This profile is off the public site, its linked media are hidden, and it opens only with its password.`;
+  } else if (visibility === "hidden") {
+    text = "This profile is hidden — it is not listed and its direct link returns a 404.";
+  } else if (visibility === "private") {
+    text = "This profile is password-protected — hidden from the list and reachable only at its direct link with the password.";
+  }
+
+  if (!text) return null;
+
+  return (
+    <div className="mt-4 rounded-2xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm leading-6 text-amber-600 dark:text-amber-400">
+      {text}
+    </div>
+  );
+}
+
+const VISIBILITY_OPTIONS: { value: "public" | "private" | "hidden"; label: string; hint: string }[] = [
+  { value: "public", label: "Public", hint: "Listed on /people, content open to everyone." },
+  { value: "private", label: "Password-protected", hint: "Hidden from the list; opens only with the password." },
+  { value: "hidden", label: "Hidden", hint: "Not listed and the direct link returns a 404." },
+];
+
 export default function PeopleAdminClient() {
   const {
     items,
@@ -36,13 +73,17 @@ export default function PeopleAdminClient() {
     slug,
     bio,
     avatarUrl,
-    isPublic,
+    visibility,
+    password,
+    editingHasPassword,
+    editingRemovalApprovedAt,
     setQuery,
     setName,
     setSlug,
     setBio,
     setAvatarUrl,
-    setIsPublic,
+    setVisibility,
+    setPassword,
     openCreate,
     openEdit,
     backToList,
@@ -129,9 +170,16 @@ export default function PeopleAdminClient() {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium">{item.name}</div>
+                      <div className="flex items-center gap-2">
+                        <span className="truncate text-sm font-medium">{item.name}</span>
+                        {item.removalRequestedAt ? (
+                          <span className="shrink-0 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-amber-600 dark:text-amber-400">
+                            Removal requested
+                          </span>
+                        ) : null}
+                      </div>
                       <div className="mt-1 text-xs text-muted-foreground">
-                        /people/{item.slug} • {item.isPublic ? "Public" : "Private"}
+                        /people/{item.slug} • {statusLabel(item)}
                       </div>
                     </div>
 
@@ -178,6 +226,8 @@ export default function PeopleAdminClient() {
       ) : (
         <section className="mt-8 mx-auto max-w-2xl rounded-[2rem] border p-5">
           <div className="text-sm font-medium">{editingId ? "Edit person" : "Create person"}</div>
+
+          {editingId ? <FormStatusNotice visibility={visibility} removalApprovedAt={editingRemovalApprovedAt} /> : null}
 
           <div className="mt-5 space-y-4">
             <div className="space-y-2">
@@ -265,15 +315,53 @@ export default function PeopleAdminClient() {
               />
             </div>
 
-            <label className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={isPublic}
-                disabled={actionBusy}
-                onChange={(e) => setIsPublic(e.target.checked)}
-              />
-              Public profile
-            </label>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Visibility</label>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {VISIBILITY_OPTIONS.map((option) => {
+                  const active = visibility === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      disabled={actionBusy}
+                      onClick={() => setVisibility(option.value)}
+                      aria-pressed={active}
+                      className={`rounded-xl border px-3 py-2 text-left text-xs transition-colors disabled:opacity-60 ${
+                        active
+                          ? "border-foreground bg-foreground text-background"
+                          : "hover:bg-accent/40"
+                      }`}
+                    >
+                      <div className="font-medium">{option.label}</div>
+                      <div className={`mt-1 leading-4 ${active ? "text-background/70" : "text-muted-foreground"}`}>
+                        {option.hint}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {visibility === "private" ? (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Password</label>
+                <input
+                  type="password"
+                  value={password}
+                  disabled={actionBusy}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                  placeholder={editingHasPassword ? "Leave blank to keep current password" : "Set a password (min 8 characters)"}
+                />
+                <p className="text-xs text-muted-foreground">
+                  {editingHasPassword
+                    ? "A password is already set. Enter a new one only to change it."
+                    : "Anyone with this password can open the profile at its direct link."}
+                </p>
+              </div>
+            ) : null}
 
             <div className="flex flex-wrap gap-2">
               <button

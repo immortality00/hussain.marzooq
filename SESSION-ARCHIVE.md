@@ -10,6 +10,63 @@ a planning question explicitly references it.
 
 ---
 
+## Phase 2 — People page
+
+### Session D12 — People page — `done`
+Build the people page with privacy system.
+
+Public page:
+- Lists people (clients) who have been photographed/videographed.
+- Each person: name, thumbnail from their session, click to view their media.
+- **Private toggle per person:** when private, a password is required to view their content.
+- **Removal request:** a person can submit a removal request from their public profile. Hussain approves it in admin. On approval: content is hidden behind a password (not deleted).
+
+Admin:
+- People management at /admin/people (likely already exists — read it first).
+- Fields: name, isPrivate, password (hashed), removalRequested, removalApproved.
+- Removal request queue: lists pending requests, one-click approve.
+
+Public behavior:
+- If person is private and viewer has no correct password: show password prompt.
+- If person has an approved removal: content hidden, profile shows "Content not available."
+- Direct URL to a private person always requires password.
+
+Read all existing people-related files before writing.
+
+**Audit note:** `app/admin/(protected)/removal-requests/page.tsx` is currently a fully
+hardcoded stub ("No requests to review.", no data fetching at all). That's expected at
+this stage — it's correctly captured by this session's "Removal request queue" task, not
+a separate bug.
+
+**Build outcome (2026-08-28):** Full CLAUDE.md spec lives under "People page — privacy system
+(D12, shipped)". Summary of what shipped and the decisions taken with Hussain:
+- **Three visibility states** (Public / Password-protected / Hidden), set by a Visibility control
+  replacing the old "Public profile" checkbox. Hussain's Gate-1 calls: private people are **hidden
+  from the index** (reachable only by direct URL + password), and removal-approval **removes the
+  profile from all public surfaces but keeps content reachable through the password**.
+- **Password gate** extracted to `lib/password-gate.ts` (scrypt + HMAC signed `hm_person_<id>`
+  cookie), unit-tested (`test/password-gate.test.ts`). Public unlock `POST /api/people/access`,
+  rate-limited. The private-gallery gate stays a separate copy (rewriting it would invalidate live
+  gallery cookies).
+- **Removal flow:** public request (`RemovalRequestButton` → `/api/people/removal-request`) with
+  **required email + message**, rejected for already-gated profiles; admin `/admin/removal-requests`
+  (rebuilt + relinked in the nav) with **inline password-set on approve**, Dismiss, and a **read-only
+  History**. Every request + decision logged in the new **`removal_requests`** collection.
+- Follow-up hardening added during review: **token rotation on password change** (invalidates old
+  sessions), **linked media hidden on approval and re-published when the profile goes public again**
+  (marker-independent, respects other still-gated people), a **media↔gated-person rule** forcing any
+  media linked to a hidden/private person private (`resolvePeopleSelection.gatedPersonName`), a
+  top-of-form **status banner** in the people editor, a red **total-pending badge** on the Dashboard
+  nav link + a "Removal requests" row in Needs-attention.
+- **Design fix (in scope by Hussain's request):** `MediaLightbox` now portals to `document.body` at
+  `z-[120]` and locks scroll via the new `hooks/useScrollLock.ts` — it was trapped in `AppShell`'s
+  `z-10` context so the footer covered it on scroll.
+- Verification: `tsc` + `eslint --max-warnings 0` clean, `npm test` green (10 new gate tests + smoke).
+  No CSP change. `ensure-indexes.mjs` gained `removal_requests` + `people_profiles.removalRequestedAt`
+  indexes (run once on deploy).
+
+---
+
 ## Phase 2 — Dancing page
 
 ### Session D10 — Dancing page — `done`

@@ -358,9 +358,62 @@ in that order in admin — reordering reshuffles the links. Adding/removing a ca
 in admin but leaves extra cards unlinked / shifts the mapping; the default set is exactly
 these four.
 
-## People page (D12, pending)
-Public by default; per-person private toggle (password-gated); removal-request flow
-(approve in admin → content hidden behind password, not deleted). Spec: queue §D12.
+## People page — privacy system (D12, shipped 2026-08-28)
+Three visibility states per person, set in `/admin/people` via a **Visibility control** that
+replaced the old lone "Public profile" checkbox, mapping to two booleans on `people_profiles`:
+- **Public** (`isPublic:true, isPrivate:false`) — listed on `/people`, content open.
+- **Password-protected** (`isPublic:true, isPrivate:true` + `passwordHash`) — **hidden from the
+  index and every public surface**; `/people/[slug]` shows a password prompt; the correct password
+  sets a signed httpOnly cookie and reveals the media. A gated person with **no** password shows
+  **"Content not available."** (a real message, not a 404).
+- **Hidden** (`isPublic:false`) — not listed, direct URL 404s (the pre-D12 hard-hide, kept).
+
+`getPersonPageBySlug` (`lib/server/public-people.ts`) is the state machine
+(`missing | locked | unavailable | open`); the index query and `getPublicPersonBySlug` both exclude
+`isPrivate:true`. The authenticated (unlocked) path shows the person's media **including hidden ones**
+(`buildPersonDetail(..., includeHidden=true)`), so a removed person's own page still shows everything
+once the password is entered.
+
+**Password gate primitives live in `lib/password-gate.ts`** (generic scrypt `hashPassword`/
+`verifyPassword`, `makeAccessToken`, HMAC cookie sign/verify, `getPersonGateSecret` →
+`PERSON_GATE_COOKIE_SECRET` else `ADMIN_COOKIE_SECRET`). Cookie name `hm_person_<id>`, value
+`v1.<accessToken>.<hmac>`. **Changing the password rotates `accessToken`, which invalidates every
+existing access cookie — keep that rotation** (both the edit PATCH and removal-approve do it). Public
+unlock: `POST /api/people/access` (rate-limited, `person-access` bucket, constant-time verify). The
+private-gallery gate (`lib/private-galleries.ts`) is a **separate, deliberately untouched copy** — do
+not fold it onto `password-gate.ts`; its signed payload differs and rewriting it would invalidate live
+gallery cookies (a future D13 dedupe at most).
+
+**Removal flow.** A visitor on an open profile submits a request (`components/people/RemovalRequestButton.tsx`
+→ `POST /api/people/removal-request`, rate-limited; **email + message are required**). A request for an
+already-gated/hidden profile is rejected ("already private or hidden"). Admin reviews at
+`/admin/removal-requests` (**relinked** under the People nav group — the D9b stub is fully rebuilt into
+`RemovalRequestsClient`). **Approving requires setting a password inline** (`POST /api/people/[id]/removal`,
+action `approve`): the profile flips to Password-protected + off the index, its `accessToken` rotates,
+and **every currently-public linked media is hidden** (`isPublic:false` + a `removalHiddenBy:[personId]`
+marker). **Setting the profile back to Public re-publishes each linked private media unless another
+linked person is still gated** — the republish is marker-independent (it re-derives gating from the live
+person docs, so it also restores media hidden before the marker existed). Dismiss just clears the request.
+
+**Audit trail.** Every request and decision is logged in the **`removal_requests`** collection
+(`{personId, personName, slug, email, reason, status: pending|approved|dismissed, createdAt, decidedAt}`);
+`/admin/removal-requests` shows a Pending queue + a read-only History. Reads in
+`lib/server/removal-requests.ts`; indexes in `ensure-indexes.mjs` (`removal_requests` +
+`people_profiles.removalRequestedAt`).
+
+**Media ↔ gated-person rule.** A media linked to any hidden/private person **cannot be public**:
+`resolvePeopleSelection` (`app/api/_lib/media.ts`) now reports a `gatedPersonName`, and both
+`media/create` and `media/[id]` **force `isPublic:false`** when one is present (closes the "attach a
+hidden profile → media still public" leak). The media editor's People section shows an amber note
+naming the gated profile(s).
+
+**Admin notifications.** The dashboard "Needs attention" band gained a **Removal requests** row, and the
+sidebar's **Dashboard** link shows a red badge = total pending (testimonials to review + new inquiries +
+removal requests), computed by `getAdminNotificationCount()` in the protected layout.
+
+**No CSP change; no new remote host.** New trust boundaries are the two public routes (`access`,
+`removal-request`) — both validated + rate-limited; `passwordHash` is never serialized (admin GET returns
+only a `hasPassword` boolean).
 
 ## Dancing page — shipped (D10, 2026-08-28)
 `app/dancing/page.tsx` = `PageHeader` (admin `page_seo` title/description) → an
@@ -460,14 +513,16 @@ later pass (deliberately out of D9's approved button scope).
 
 **Admin structure (D9b, structural pass — done).** The sidebar (`(protected)/layout.tsx`) is
 **grouped**: Overview (Dashboard) · Content (Media, Tags, Pages) · People (People, Testimonials,
-Inquiries) · Services (Services, Service Categories) · Private (Private Galleries). Login lands
+Inquiries, **Removal Requests** [added in D12]) · Services (Services, Service Categories) · Private
+(Private Galleries). Login lands
 on **`/admin/dashboard`** (a real landing at its own route — `/admin` is the login page, so the
 dashboard can't live there; the login default redirect is `/admin/dashboard`). The dashboard
 (`lib/server/admin-dashboard.ts` → one batched set of count queries) shows a **Needs attention**
-band (pending testimonials, new inquiries, pages missing an image, hidden pages — amber when
-non-zero) plus Media totals/per-category and Library counts; numerics are Geist Mono tabular.
-**Two dead surfaces were removed:** the `/admin/nfts` stub route is deleted (NFT media lives in
-Media); **Removal Requests is unlinked from the nav** but its stub file stays for §D12 to rebuild.
+band (pending testimonials, new inquiries, **removal requests** [D12], pages missing an image, hidden
+pages — amber when non-zero) plus Media totals/per-category and Library counts; numerics are Geist Mono
+tabular. The sidebar **Dashboard** link carries a red total-pending badge (`getAdminNotificationCount`,
+D12). **One dead surface was removed in D9b:** the `/admin/nfts` stub route is deleted (NFT media lives in
+Media). (Removal Requests was unlinked in D9b and **rebuilt + relinked in D12** — see "People page".)
 D9b was a **focused** structural pass — the 5 editing patterns, 3 image pickers, and 6 hand-rolled
 overlays were deliberately left for a later pass; only the header (`AdminPageHeader`), feedback
 (auto-dismiss fold), and dead-surface cleanup were consolidated here.
@@ -588,6 +643,19 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   Adds a `beforeunload` prompt **and** a document capture-phase click interceptor that
   `confirm()`s before internal-link navigation while dirty. Wired into `/admin/pages`; reuse
   it on any admin surface holding unsaved drafts rather than hand-rolling another.
+- `hooks/useScrollLock.ts` — the shared overlay scroll-lock (D12). Stops Lenis
+  (`window.lenis`, attached in `AppShell`) and sets `documentElement` overflow hidden while
+  mounted, restoring on unmount. Use it in any full-screen overlay. **`MediaLightbox` renders
+  through a `createPortal(document.body)` at `z-[120]`** so it escapes `AppShell`'s `z-10`
+  stacking context (otherwise the footer painted over it — the D12 bug) and uses this hook +
+  Escape-to-close. The other hand-rolled overlays (NftModal, PrivateGalleryBrowser, WorkOverlay,
+  Review modals) still need the same treatment — a D13 overlay-consolidation task.
+- `lib/password-gate.ts` — the shared password-gate primitives (D12): scrypt `hashPassword`/
+  `verifyPassword`, `makeAccessToken`, `createPersonGateCookieValue`/`verifyPersonGateCookieValue`
+  (HMAC, timing-safe), `personGateCookieName`, `getPersonGateSecret`. Runtime-agnostic
+  `node:crypto`, unit-tested (`test/password-gate.test.ts`). Used by the People privacy gate; the
+  gallery gate keeps its own copy (see "People page"). **Rotate the access token whenever the
+  password changes** — the cookie binds to the token, so rotation is what logs old sessions out.
 - `app/api/_lib/admin-route.ts` — every admin `[id]` mutation route's preamble
   (S2b). `requireAdminObjectId(ctx)` runs the admin guard **then** validates the
   `:id` ObjectId (auth-before-parse ordering lives here, don't re-inline it);
