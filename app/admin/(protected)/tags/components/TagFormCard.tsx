@@ -1,5 +1,6 @@
 "use client";
 
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { NewTag } from "../lib/types";
 
 export default function TagFormCard({
@@ -34,7 +35,7 @@ export default function TagFormCard({
           type="button"
           onClick={() => void onCreate()}
           disabled={creating}
-          className="rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90 disabled:opacity-60"
+          className={adminButtonClasses("solid", "md")}
         >
           {creating ? "Creating…" : "Add"}
         </button>

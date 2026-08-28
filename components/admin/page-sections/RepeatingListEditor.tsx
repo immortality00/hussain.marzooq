@@ -5,6 +5,7 @@ import { arrayMove } from "@dnd-kit/sortable";
 import { SortableList, useSortableRow } from "@/components/admin/sortable/SortableList";
 import { EMPTY_SECTION_IMAGE, type TextCard } from "@/lib/page-sections-shared";
 import { ImageField } from "@/components/admin/media-picker/ImageField";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 
 function SortableRow({
   id,
@@ -34,7 +35,7 @@ function SortableRow({
       <button
         type="button"
         onClick={onRemove}
-        className="h-fit shrink-0 rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-red-500/10"
+        className={adminButtonClasses("danger", "md", "h-fit shrink-0")}
       >
         Remove
       </button>
@@ -72,7 +73,7 @@ export function RepeatingListEditor<T>({
       <button
         type="button"
         onClick={() => onChange([...items, makeNew()])}
-        className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent/40"
+        className={adminButtonClasses("default", "md")}
       >
         + Add card
       </button>

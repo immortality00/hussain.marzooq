@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 
 type NftData = {
   price: number | null;
@@ -109,7 +110,7 @@ export function MediaListItem({
                 type="button"
                 disabled={actionDisabled}
                 onClick={() => router.push(`/admin/media?edit=${encodeURIComponent(item.id)}`)}
-                className="rounded-xl border px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                className={adminButtonClasses("default", "md")}
               >
                 Edit
               </button>
@@ -117,7 +118,7 @@ export function MediaListItem({
                 type="button"
                 disabled={actionDisabled}
                 onClick={() => onDelete(item.id)}
-                className="rounded-xl border px-4 py-2 text-sm hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className={adminButtonClasses("danger", "md")}
               >
                 {deleting ? "Deleting…" : "Delete"}
               </button>

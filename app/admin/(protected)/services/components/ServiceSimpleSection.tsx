@@ -1,6 +1,7 @@
 "use client";
 
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { Service } from "../lib/types";
 
 export default function ServiceSimpleSection({
@@ -71,14 +72,14 @@ export default function ServiceSimpleSection({
 
               <div className="flex gap-2">
                 <button
-                  className="rounded-xl border px-3 py-2 text-sm hover:bg-accent/40"
+                  className={adminButtonClasses("default", "md")}
                   onClick={() => onEdit(s)}
                 >
                   Edit
                 </button>
 
                 <button
-                  className="rounded-xl border px-3 py-2 text-sm hover:bg-accent/40"
+                  className={adminButtonClasses("default", "md")}
                   onClick={() => void onPrimaryAction(s)}
                   disabled={busy}
                 >
@@ -86,9 +87,7 @@ export default function ServiceSimpleSection({
                 </button>
 
                 <button
-                  className={`rounded-xl border px-3 py-2 text-sm ${
-                    secondaryDanger ? "hover:bg-red-500/10" : "hover:bg-accent/40"
-                  } disabled:opacity-50`}
+                  className={adminButtonClasses(secondaryDanger ? "danger" : "default", "md")}
                   onClick={() => void onSecondaryAction(s)}
                   disabled={busy || secondaryDisabled}
                   title={secondaryDisabled ? "Has inquiries" : secondaryActionLabel}

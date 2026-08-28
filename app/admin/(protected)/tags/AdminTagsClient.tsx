@@ -7,6 +7,7 @@ import { useAdminAction } from "@/hooks/useAdminAction";
 import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import TagFormCard from "./components/TagFormCard";
 import TagsTable from "./components/TagsTable";
 import TagsToolbar from "./components/TagsToolbar";
@@ -228,7 +229,7 @@ export default function AdminTagsClient({ initial }: { initial: Tag[] }) {
           type="button"
           disabled={actionBusy}
           onClick={() => void refresh()}
-          className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+          className={adminButtonClasses("default", "md")}
         >
           Refresh
         </button>

@@ -1,6 +1,7 @@
 "use client";
 
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { STATUSES } from "../lib/types";
 
 export default function InquiriesToolbar({
@@ -33,7 +34,7 @@ export default function InquiriesToolbar({
             ))}
           </select>
 
-          <button className="rounded-xl border px-4 py-2 text-sm hover:bg-accent" onClick={() => void onRefresh()}>
+          <button className={adminButtonClasses("default", "md")} onClick={() => void onRefresh()}>
             Refresh
           </button>
         </>

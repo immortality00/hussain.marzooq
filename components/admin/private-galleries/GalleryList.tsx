@@ -2,6 +2,7 @@
 
 import { SearchInput } from "@/components/search/SearchInput";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { GalleryItem } from "./types";
 import { getGalleryStatus } from "./helpers";
 
@@ -46,7 +47,7 @@ export function GalleryList({
           placeholder="Search galleries..."
           wrapperClassName="flex w-full flex-wrap gap-2 md:w-auto"
           inputClassName="w-full max-w-xs rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-          clearButtonClassName="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
+          clearButtonClassName={adminButtonClasses("default", "md")}
         />
       </div>
 
@@ -116,7 +117,7 @@ export function GalleryList({
                       type="button"
                       disabled={actionDisabled}
                       onClick={() => onCopyLink(item.slug)}
-                      className="rounded-xl border px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                      className={adminButtonClasses("default", "md")}
                     >
                       Copy link
                     </button>
@@ -125,7 +126,7 @@ export function GalleryList({
                       type="button"
                       disabled={actionDisabled}
                       onClick={() => onEdit(item.id)}
-                      className="rounded-xl border px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                      className={adminButtonClasses("default", "md")}
                     >
                       Edit
                     </button>
@@ -134,7 +135,7 @@ export function GalleryList({
                       type="button"
                       disabled={actionDisabled}
                       onClick={() => onDelete(item.id)}
-                      className="rounded-xl border px-3 py-2 text-sm hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                      className={adminButtonClasses("danger", "md")}
                     >
                       {deleting ? "Deleting…" : "Delete"}
                     </button>

@@ -9,6 +9,7 @@ import { useAdminAction } from "@/hooks/useAdminAction";
 import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { MediaListFilterBar } from "./components/MediaListFilterBar";
 import { MediaListItem, type MediaItem } from "./components/MediaListItem";
 
@@ -154,17 +155,14 @@ export default function AdminMediaListPage() {
         title="Media"
         actions={
           <>
-            <Link
-              href="/admin/media"
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
-            >
+            <Link href="/admin/media" className={adminButtonClasses("default", "md")}>
               Upload new
             </Link>
             <button
               type="button"
               onClick={() => void load("replace")}
               disabled={loading || Boolean(deletingId)}
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+              className={adminButtonClasses("default", "md")}
             >
               Refresh
             </button>
@@ -245,7 +243,7 @@ export default function AdminMediaListPage() {
             type="button"
             onClick={() => void load("append", nextCursor)}
             disabled={loadingMore || Boolean(deletingId)}
-            className="rounded-full border px-5 py-2 text-sm transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-60"
+            className={adminButtonClasses("default", "md")}
           >
             {loadingMore ? "Loading…" : "Load more"}
           </button>

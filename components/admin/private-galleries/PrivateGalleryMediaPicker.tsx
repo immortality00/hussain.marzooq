@@ -3,6 +3,7 @@
 import { SearchInput } from "@/components/search/SearchInput";
 import { PrivateGalleryMediaCard } from "./PrivateGalleryMediaCard";
 import { usePrivateGalleryMediaPicker } from "./usePrivateGalleryMediaPicker";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 
 type PrivateGalleryMediaPickerProps = {
   selectedMediaIds: string[];
@@ -32,7 +33,7 @@ export function PrivateGalleryMediaPicker({
           placeholder="Search title, tags, location, people, event..."
           wrapperClassName="flex w-full flex-wrap gap-2 md:w-auto"
           inputClassName="min-w-0 flex-1 rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring md:w-80"
-          clearButtonClassName="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
+          clearButtonClassName={adminButtonClasses("default", "md")}
         />
       </div>
 
@@ -84,7 +85,7 @@ export function PrivateGalleryMediaPicker({
           type="button"
           onClick={picker.loadMore}
           disabled={picker.loadingMore}
-          className="mt-5 rounded-xl border px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+          className={adminButtonClasses("default", "md", "mt-5")}
         >
           {picker.loadingMore ? "Loading…" : "Load more media"}
         </button>

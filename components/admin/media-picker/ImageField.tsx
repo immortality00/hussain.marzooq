@@ -7,6 +7,7 @@ import { CLOUDINARY_SECTIONS_FOLDER } from "@/lib/cloudinary-folders";
 import { EMPTY_SECTION_IMAGE } from "@/lib/page-sections-shared";
 import type { SectionImage } from "@/lib/page-sections-shared";
 import { MediaPickerModal } from "./MediaPickerModal";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === "object" && v !== null;
@@ -50,7 +51,7 @@ export function ImageField({
           <button
             type="button"
             onClick={() => setPickerOpen(true)}
-            className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent"
+            className={adminButtonClasses("default", "md")}
           >
             Pick from library
           </button>
@@ -70,7 +71,7 @@ export function ImageField({
               <button
                 type="button"
                 onClick={() => open()}
-                className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent"
+                className={adminButtonClasses("default", "md")}
               >
                 Upload
               </button>
@@ -81,7 +82,7 @@ export function ImageField({
             <button
               type="button"
               onClick={() => onChange(EMPTY_SECTION_IMAGE)}
-              className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-red-500/10"
+              className={adminButtonClasses("danger", "md")}
             >
               Remove
             </button>

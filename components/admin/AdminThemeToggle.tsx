@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 
 function useIsMounted() {
   return useSyncExternalStore(
@@ -20,7 +21,7 @@ export function AdminThemeToggle() {
     <button
       onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
       aria-label="Toggle theme"
-      className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent/40"
+      className={adminButtonClasses("ghost", "sm", "px-2.5")}
     >
       {mounted ? (
         resolvedTheme === "dark" ? (

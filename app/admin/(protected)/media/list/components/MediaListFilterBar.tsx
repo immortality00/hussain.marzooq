@@ -1,4 +1,5 @@
 import { SearchInput } from "@/components/search/SearchInput";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { MEDIA_CATEGORIES } from "../../lib/utils";
 
 type Props = {
@@ -40,7 +41,7 @@ export function MediaListFilterBar({
             placeholder="Search title, tags, people..."
             wrapperClassName="md:col-span-2"
             inputClassName="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            clearButtonClassName="mt-2 rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+            clearButtonClassName={adminButtonClasses("default", "md", "mt-2")}
           />
 
           <select
@@ -82,7 +83,7 @@ export function MediaListFilterBar({
               type="button"
               onClick={onReset}
               disabled={disabled}
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+              className={adminButtonClasses("default", "md")}
             >
               Clear filters
             </button>

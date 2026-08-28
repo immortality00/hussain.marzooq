@@ -7,6 +7,7 @@ import {
   type AdminActionFeedbackState,
 } from "@/components/admin/action-feedback/AdminActionFeedback";
 import type { PageRow } from "../lib/rows";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { VisibilityGroup } from "./VisibilityGroup";
 import { CardImageGroup } from "./CardImageGroup";
 import { SeoPageForm, type SeoDraft } from "./SeoPageForm";
@@ -76,7 +77,7 @@ export function PageEditorBody({
             type="button"
             disabled={!dirty || isSaving}
             onClick={onSave}
-            className="rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-80 disabled:opacity-40"
+            className={adminButtonClasses("solid", "md")}
           >
             {isSaving ? "Saving…" : "Save changes"}
           </button>
@@ -84,7 +85,7 @@ export function PageEditorBody({
             <button
               type="button"
               onClick={onDiscard}
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent/40"
+              className={adminButtonClasses("default", "md")}
             >
               Discard
             </button>

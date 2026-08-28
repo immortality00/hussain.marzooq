@@ -2,6 +2,7 @@
 
 import { useSortableRow } from "@/components/admin/sortable/SortableList";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { Category, CategoryPatch } from "../lib/types";
 
 export default function CategoryRow({
@@ -86,7 +87,7 @@ export default function CategoryRow({
       <div className="col-span-1 flex justify-end">
         <button
           type="button"
-          className="rounded-lg border px-2 py-1 text-xs transition-colors hover:bg-accent disabled:opacity-50"
+          className={adminButtonClasses("danger", "xs")}
           onClick={() => onDelete(category)}
           disabled={category.isSystem || category.servicesCount > 0}
           title={

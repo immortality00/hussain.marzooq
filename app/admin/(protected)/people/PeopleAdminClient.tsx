@@ -8,6 +8,7 @@ import { useBulkSelection } from "@/components/admin/bulk/useBulkSelection";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { usePeopleAdmin } from "@/hooks/usePeopleAdmin";
 
 type WidgetResult = { info?: unknown };
@@ -63,7 +64,7 @@ export default function PeopleAdminClient() {
               type="button"
               disabled={actionBusy}
               onClick={openCreate}
-              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              className={adminButtonClasses("default", "md")}
             >
               New profile
             </button>
@@ -72,7 +73,7 @@ export default function PeopleAdminClient() {
               type="button"
               disabled={actionBusy}
               onClick={backToList}
-              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              className={adminButtonClasses("default", "md")}
             >
               Back to list
             </button>
@@ -139,7 +140,7 @@ export default function PeopleAdminClient() {
                         type="button"
                         disabled={actionBusy}
                         onClick={() => openEdit(item)}
-                        className="rounded-xl border px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                        className={adminButtonClasses("default", "md")}
                       >
                         Edit
                       </button>
@@ -147,7 +148,7 @@ export default function PeopleAdminClient() {
                         type="button"
                         disabled={actionBusy}
                         onClick={() => void remove(item.id)}
-                        className="rounded-xl border px-3 py-2 text-sm hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                        className={adminButtonClasses("danger", "md")}
                       >
                         {deletingId === item.id ? "Deleting…" : "Delete"}
                       </button>
@@ -221,7 +222,7 @@ export default function PeopleAdminClient() {
                       type="button"
                       disabled={actionBusy}
                       onClick={() => open()}
-                      className="rounded-xl border px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                      className={adminButtonClasses("default", "md")}
                     >
                       Upload avatar
                     </button>
@@ -232,7 +233,7 @@ export default function PeopleAdminClient() {
                   type="button"
                   disabled={actionBusy}
                   onClick={() => setAvatarUrl("")}
-                  className="rounded-xl border px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                  className={adminButtonClasses("default", "md")}
                 >
                   Clear
                 </button>
@@ -279,7 +280,7 @@ export default function PeopleAdminClient() {
                 type="button"
                 disabled={saving}
                 onClick={() => void save()}
-                className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                className={adminButtonClasses("solid", "md")}
               >
                 {saving ? (editingId ? "Updating…" : "Creating…") : editingId ? "Update" : "Create"}
               </button>
@@ -288,7 +289,7 @@ export default function PeopleAdminClient() {
                 type="button"
                 disabled={actionBusy}
                 onClick={backToList}
-                className="rounded-xl border px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                className={adminButtonClasses("default", "md")}
               >
                 Cancel
               </button>
