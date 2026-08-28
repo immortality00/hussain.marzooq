@@ -10,6 +10,59 @@ a planning question explicitly references it.
 
 ---
 
+## Phase 2 — Preloader & core experience
+
+### Session D11 — Web development page — `done`
+
+**Original spec (superseded live by Hussain — kept for history):**
+Build the web development page with project showcase.
+
+Admin:
+- New MongoDB collection: `web_projects` (title, description, url, imageUrl, tags, isPublished, order).
+- Admin CRUD at /admin/web-projects.
+
+Public page:
+- Project cards displayed in an editorial grid.
+- Services section below projects.
+- This site as the proof of quality (featured prominently).
+- Booking CTA.
+
+Read app/web-development/page.tsx before writing.
+
+**Build outcome (2026-08-29) — rescoped on sight to a dancing-style link list.** Hussain
+rejected the `web_projects`-collection plan mid-Gate-1 ("it will be cards .. similar to the
+dancing page .. i will add a link to show what i did only for now"), then chose **link-only**
+cards and **dropped** the interim capabilities cards. During Gate 2 he added two hard steers:
+(1) the earlier build silently dropped his saved bare-domain link — `toProjectUrl` now accepts a
+scheme-less domain by assuming https; (2) "i didn't ask for an option to upload a photo .. the
+website itself render a photo" — an image-picker per project was built and **reverted**, replaced
+by an auto-screenshot. Final shape:
+
+- **No `web_projects` collection, no `/admin/web-projects` route, no CSP change, no sidebar entry.**
+  Editing is entirely through the existing `/admin/pages/web-development` + the existing
+  page-sections PATCH route.
+- **Data:** `WebDevSections` = `{ projects: { heading, urls: string[] }, stickyCta }`
+  (`lib/server/page-sections.ts`); old `capabilities: TextCard[]` removed, no migration
+  (shallow-merge ignores the stale key; its images cleaned by the section-image diff on next save).
+  Admin form `WebDevSectionsForm` (heading + `RepeatingListEditor<string>` + `CtaFields`), wired in
+  `SectionsGroup.tsx`, mirrors `DancingSectionsForm`.
+- **Public page** `app/web-development/page.tsx` = `PageHeader` → `border-t` Projects section
+  (`grid sm:grid-cols-2 lg:grid-cols-3` of `WebProjectCard`) → `StickyCta`; keeps the `isActive`
+  redirect. Empty/all-invalid → no Projects section.
+- **`WebProjectCard`** = external link-out card (16:10 screenshot + hostname + "Visit site ↗").
+  The screenshot is fetched through a same-origin proxy `app/api/web-projects/preview/route.ts`
+  (public, rate-limited 60/60s, `toProjectUrl`-validated) that calls **thum.io** server-side and
+  streams the bytes back (`Cache-Control max-age=3600, s-maxage=86400`) — so `img-src 'self'`
+  covers it, **no CSP edit**, and only `image.thum.io` is ever fetched (no SSRF). The `<img>` URL
+  carries `&v=N` to force-refresh cached screenshots. thum.io is a free third-party dependency; the
+  unbuilt robust follow-up is to screenshot once → store in Cloudinary.
+- **`lib/web-projects.ts`** (`toProjectUrl`, `projectUrlLabel`) unit-tested in
+  `test/web-projects.test.ts`. Verified live on Hussain's dev server (real screenshot of
+  hussain-marzooq.com rendering in the card); `tsc` + `eslint --max-warnings 0` + 164 tests green.
+  See CLAUDE.md → "Web development page (D11, shipped 2026-08-29)".
+
+---
+
 ## Phase 2 — People page
 
 ### Session D12 — People page — `done`

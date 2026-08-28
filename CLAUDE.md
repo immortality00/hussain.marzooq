@@ -442,8 +442,42 @@ that ban wins.
 - Extracted `CtaFields` (the booking-bar editor) — now shared by `CtaOnlyForm`, `CardsCtaForm`,
   and `DancingSectionsForm`; `RepeatingListEditor` gained an optional `addLabel` prop.
 
-## Web development page (D11, pending)
-Completed web projects + related services; admin CRUD (`web_projects`).
+## Web development page (D11, shipped 2026-08-29)
+**Dancing-style link list, not a project database.** Hussain rescoped the original §D11 spec
+on sight (no `web_projects` collection, no `/admin/web-projects` CRUD, no capabilities cards,
+no image uploads): `app/web-development/page.tsx` = `PageHeader` → a `border-t` **Projects**
+section (heading + a grid of preview cards) → `StickyCta`. Keeps the `isActive` redirect.
+
+- **Data:** `WebDevSections` is now `{ projects: { heading, urls: string[] }, stickyCta }`
+  (`lib/server/page-sections.ts`) — the old `capabilities: TextCard[]` is gone. Admin pastes
+  **one project URL per row** at `/admin/pages/web-development` via `WebDevSectionsForm`
+  (heading + `RepeatingListEditor<string>` + shared `CtaFields`), mirroring `DancingSectionsForm`;
+  `SectionsGroup.tsx` routes the `web-development` slug to it. **No migration** — shallow-merge
+  ignores a stale `capabilities` key, and its uploaded images are cleaned on the next save by
+  the existing section-image diff. Consumers read `projects.urls ?? []` (a stored doc written
+  under the pre-D11 shape has no `urls` until re-saved).
+- **The card renders the website's own screenshot — admin does NOT upload an image**
+  (Hussain: "the website itself render a photo"). `components/web-development/WebProjectCard.tsx`
+  is a link-out card (external `<a target="_blank" rel="noopener noreferrer">`, `data-no-transition`)
+  showing a 16:10 screenshot + hostname label + "Visit site ↗". **Do not add an image-picker
+  here** and do not re-inflate the item shape to `{url, image}` — that was built, rejected, and
+  reverted.
+- **Screenshots come through a same-origin proxy, so there is NO CSP change.**
+  `app/api/web-projects/preview/route.ts` (public, rate-limited `web-project-preview` 60/60s,
+  validates `?url=` via `toProjectUrl`) fetches a screenshot **server-side from thum.io**
+  (`https://image.thum.io/get/width/1200/crop/900/noanimate/<url>`) and streams the image bytes
+  back with `Cache-Control public, max-age=3600, s-maxage=86400`. Because the image is served
+  from our own origin, `img-src 'self'` already covers it — **do not add thum.io to the CSP**.
+  The only host the route fetches is `image.thum.io` (the target URL is a path segment, never
+  fetched directly) so there is **no SSRF to internal hosts**. The card's `<img src>` carries a
+  `&v=N` version tag — bump it to force every cached screenshot to refresh (used once to bust a
+  stale placeholder). thum.io is a **free third-party dependency** and the only external service
+  in this feature; the robust follow-up (not built) is to screenshot once and store it in
+  Cloudinary so there is no per-view third-party call.
+- **`lib/web-projects.ts`** (unit-tested, `test/web-projects.test.ts`): `toProjectUrl` (accepts a
+  scheme-less domain by assuming https — "mysite.com" works; rejects `mailto:`/`javascript:`/`ftp:`
+  and hostname-less input) + `projectUrlLabel` (hostname without `www.`). Invalid URLs are dropped;
+  an all-invalid/empty list renders no Projects section (empty means empty).
 
 ## Blog (C1, pending)
 Standard blog, admin-defined categories, full CRUD, /blog + /blog/[slug].

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import SmartImage from "@/components/shared/SmartImage";
+import { WebProjectCard } from "@/components/web-development/WebProjectCard";
 import { StickyCta } from "@/components/site/StickyCta";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getPageSettings } from "@/lib/server/page-settings";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { getPageSections } from "@/lib/server/page-sections";
+import { projectUrlLabel, toProjectUrl } from "@/lib/web-projects";
 
 export const revalidate = 300;
 
@@ -21,37 +22,43 @@ export default async function WebDevelopmentPage() {
     getPageSections("web-development"),
   ]);
   if (!isActive) redirect("/");
+
+  const { projects } = content;
+  const cards = (projects.urls ?? [])
+    .map((url) => {
+      const href = toProjectUrl(url);
+      return href ? { href, label: projectUrlLabel(href) } : null;
+    })
+    .filter((card): card is { href: string; label: string } => card !== null);
+
   return (
     <>
-      <main className="section-shell py-12 sm:py-16">
-        <PageHeader
-          title={seo.headerTitle}
-          description={seo.headerDescription}
-          className="max-w-3xl"
-        />
-
-        <section className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {content.capabilities.map((item, i) => (
-            <article
-              key={i}
-              className="rounded-[2rem] border bg-background/60 p-5 shadow-sm backdrop-blur"
-            >
-              {item.image?.url ? (
-                <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-2xl">
-                  <SmartImage
-                    src={item.image.url}
-                    alt=""
-                    fill
-                    sizes="(max-width: 768px) 100vw, 25vw"
-                    className="object-cover"
-                  />
-                </div>
-              ) : null}
-              <h2 className="text-lg font-semibold tracking-tight">{item.title}</h2>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.text}</p>
-            </article>
-          ))}
+      <main>
+        <section className="section-shell pt-12 sm:pt-16">
+          <PageHeader
+            title={seo.headerTitle}
+            description={seo.headerDescription}
+            className="max-w-3xl"
+          />
         </section>
+
+        {cards.length > 0 && (
+          <section className="section-shell border-t border-border pb-28 pt-12 sm:pb-32 sm:pt-16">
+            <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+              {projects.heading}
+            </h2>
+            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {cards.map((card, i) => (
+                <WebProjectCard
+                  key={card.href}
+                  href={card.href}
+                  label={card.label}
+                  priority={i < 3}
+                />
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
       <StickyCta

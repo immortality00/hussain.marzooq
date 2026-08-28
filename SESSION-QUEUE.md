@@ -49,7 +49,11 @@ D9 (admin visual polish: shared `AdminButton` swept across every admin action bu
 active-highlighting `AdminSidebarNav`, restyled protected-layout shell; admin inputs left for a later pass) ·
 D12 (people privacy system: 3-state visibility + password gate `lib/password-gate.ts`, removal-request
 flow with audit `removal_requests` collection, media↔gated-person rule, `MediaLightbox` portal/scroll-lock,
-Dashboard notification badge).
+Dashboard notification badge) ·
+D11 (web-development page: rescoped by Hussain to a dancing-style link list — `WebDevSections.projects.urls`,
+`WebDevSectionsForm`, edited at `/admin/pages/web-development`; cards auto-render each site's own screenshot
+through a same-origin proxy `/api/web-projects/preview` fetching thum.io server-side — NO CSP change, no image
+upload, no `web_projects` collection; `lib/web-projects.ts` URL helpers).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -80,7 +84,7 @@ longer top-to-bottom — take sessions in exactly this order.
 9. ~~**L1**~~ ✓ done — launch prep code/docs shipped (README, admin config-error copy,
    CLAUDE.md deployment status); the deploy-time checklist (rotate secret, verify hash login,
    re-verify CSP, `/admin` headers) is recorded in CLAUDE.md for first deploy.
-10. ~~**D4, D5, D7, D8**~~ ✓ done · ~~**D9b**~~ ✓ done (admin structure pass) · ~~**D9**~~ ✓ done (admin visual polish) · ~~**D10**~~ ✓ done (dancing page — admin Instagram embeds) · ~~**D12**~~ ✓ done (people privacy system) · **D11** (deferred by Hussain 2026-08-28 — take next)
+10. ~~**D4, D5, D7, D8**~~ ✓ done · ~~**D9b**~~ ✓ done (admin structure pass) · ~~**D9**~~ ✓ done (admin visual polish) · ~~**D10**~~ ✓ done (dancing page — admin Instagram embeds) · ~~**D12**~~ ✓ done (people privacy system) · ~~**D11**~~ ✓ done (web-development page — dancing-style link list, cards auto-render the site's own screenshot via a same-origin proxy)
 11. **D13 last** — the consistency sweep; it needs everything else landed first.
 12. **C1, C2, C3** · **P1, P2** · **NFT1, NFT2**
 
@@ -182,23 +186,6 @@ complete.
 ---
 
 ## Phase 2 — Preloader & core experience
-
----
-
-### Session D11 — Web development page — `pending`
-Build the web development page with project showcase.
-
-Admin:
-- New MongoDB collection: `web_projects` (title, description, url, imageUrl, tags, isPublished, order).
-- Admin CRUD at /admin/web-projects.
-
-Public page:
-- Project cards displayed in an editorial grid.
-- Services section below projects.
-- This site as the proof of quality (featured prominently).
-- Booking CTA.
-
-Read app/web-development/page.tsx before writing.
 
 ---
 
