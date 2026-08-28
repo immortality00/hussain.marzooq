@@ -77,7 +77,7 @@ longer top-to-bottom — take sessions in exactly this order.
 9. ~~**L1**~~ ✓ done — launch prep code/docs shipped (README, admin config-error copy,
    CLAUDE.md deployment status); the deploy-time checklist (rotate secret, verify hash login,
    re-verify CSP, `/admin` headers) is recorded in CLAUDE.md for first deploy.
-10. ~~**D4, D5, D7, D8**~~ ✓ done · ~~**D9b**~~ ✓ done (admin structure pass) · ~~**D9**~~ ✓ done (admin visual polish) · **D10, D11, D12**
+10. ~~**D4, D5, D7, D8**~~ ✓ done · ~~**D9b**~~ ✓ done (admin structure pass) · ~~**D9**~~ ✓ done (admin visual polish) · ~~**D10**~~ ✓ done (dancing page — admin Instagram embeds) · **D11, D12**
 11. **D13 last** — the consistency sweep; it needs everything else landed first.
 12. **C1, C2, C3** · **P1, P2** · **NFT1, NFT2**
 
@@ -179,23 +179,6 @@ complete.
 ---
 
 ## Phase 2 — Preloader & core experience
-
----
-
-### Session D10 — Dancing page — `pending`
-Build the dancing page.
-
-Content:
-- Page title + description (admin-controlled via Session N4 — corrected; N3 only covers
-  SEO metadata, N4 is the session that makes the visible header editable).
-- Instagram feed embed (Instagram Basic Display API or oEmbed — propose the approach that works with Next.js App Router).
-- Booking CTA.
-- Stats (years teaching, students, location).
-
-Navigating into the dancing page uses the site-wide gallery transition (D4, complete) — there
-is no per-route dancing transition; the bespoke ones were built, rejected and reverted.
-
-Read app/dancing/page.tsx and all imports before writing.
 
 ---
 

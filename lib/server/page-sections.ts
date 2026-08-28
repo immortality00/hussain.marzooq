@@ -31,7 +31,7 @@ export type AboutSections = {
 };
 
 export type DancingSections = {
-  sections: TextCard[];
+  instagram: { heading: string; urls: string[] };
   stickyCta: CtaCopy;
 };
 
@@ -144,23 +144,10 @@ const DEFAULTS: PageSectionsMap = {
   photography: { stickyCta: BOOKING_CTA },
   videography: { stickyCta: BOOKING_CTA },
   dancing: {
-    sections: [
-      {
-        title: "Performance",
-        text: "Movement-led visuals, stage energy, rehearsals, and cinematic dance-driven storytelling.",
-        image: EMPTY_SECTION_IMAGE,
-      },
-      {
-        title: "Teaching",
-        text: "Classes, workshops, training sessions, and educational visual content shaped with clarity and rhythm.",
-        image: EMPTY_SECTION_IMAGE,
-      },
-      {
-        title: "Collaborations",
-        text: "Creative partnerships with artists, festivals, brands, and visual projects built around movement.",
-        image: EMPTY_SECTION_IMAGE,
-      },
-    ],
+    instagram: {
+      heading: "Movement, in motion.",
+      urls: [],
+    },
     stickyCta: BOOKING_CTA,
   },
   "web-development": {

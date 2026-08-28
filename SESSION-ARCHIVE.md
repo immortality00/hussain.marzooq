@@ -10,6 +10,55 @@ a planning question explicitly references it.
 
 ---
 
+## Phase 2 — Dancing page
+
+### Session D10 — Dancing page — `done`
+Build the dancing page.
+
+Content (as originally queued):
+- Page title + description (admin-controlled via Session N4).
+- Instagram feed embed (Instagram Basic Display API or oEmbed — propose the approach that works with Next.js App Router).
+- Booking CTA.
+- Stats (years teaching, students, location).
+
+Navigating into the dancing page uses the site-wide gallery transition (D4, complete) — there
+is no per-route dancing transition; the bespoke ones were built, rejected and reverted.
+
+**Build outcome (2026-08-28):**
+- **Approach decided with Hussain at Gate 1:** admin-picked Instagram post embeds (not the
+  Graph API — Meta killed Basic Display / free oEmbed, and a live feed would need an app
+  token + server fetch + rotation). The interim text cards were **dropped**; the page is
+  Instagram-centric.
+- **Stats were NOT built.** The queue asked for a years/students/location strip, but CLAUDE.md
+  bans stat strips; that ban won.
+- **Data model:** `DancingSections` → `{ instagram: { heading, urls[] }, stickyCta }`
+  (`lib/server/page-sections.ts`), replacing `sections: TextCard[]`. Shallow-merge keeps stored
+  docs safe (stale `sections` ignored); no migration. First save from the new form cleans up
+  the old card images via the existing replace-diff.
+- **Admin:** new `DancingSectionsForm` (heading + "+ Add post" URL list via the generic
+  `RepeatingListEditor<string>`, given a new optional `addLabel` prop) wired into
+  `SectionsGroup`. Extracted a shared `CtaFields` booking-bar editor now used by `CtaOnlyForm`,
+  `CardsCtaForm`, and the dancing form (killed the duplicated CTA block).
+- **`lib/instagram.ts`** `toInstagramEmbedUrl()` — the only URL→embed parser: accepts
+  `instagram.com/p/…` and `/reel/…` only, rejects lookalike hosts. Unit-tested
+  (`test/instagram.test.ts`, 9 cases).
+- **Embed rendering — two rejected attempts before the shipped one.** (1) The first build
+  tried "media-only, no chrome" by forcing the cross-origin `/embed` iframe into a square box
+  with negative offsets + oversized height to clip Instagram's header/footer — it distorted
+  every post ("stretched, doesn't look like Instagram"). You cannot reach into a cross-origin
+  iframe to isolate the media, and crop offsets differ per aspect ratio. **Do not revive the
+  clip hack.** (2) The shipped `components/dancing/InstagramFeed.tsx` renders the **normal**
+  embed and auto-sizes each card by listening for Instagram's own `MEASURE` postMessage
+  (origin-checked to `https://www.instagram.com`) — no cropping, no fixed height, no embed.js
+  script. Invalid URLs dropped; empty list → section renders nothing. Reveal is a
+  reduced-motion-safe staggered fade/rise.
+- **CSP:** `https://www.instagram.com` added to `frame-src` in `next.config.ts` (the only
+  security surface — admin-supplied URLs, no new public route). CLAUDE.md CSP note updated.
+- Verified by Hussain in-browser (Atlas unreachable from the sandbox); tsc + eslint (0/0) +
+  140 tests green.
+
+---
+
 ## Phase 0 — Foundation (must complete before any design session)
 
 ### Session F1 — Remove violations + initialize Lenis — `done`

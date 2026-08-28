@@ -362,8 +362,32 @@ these four.
 Public by default; per-person private toggle (password-gated); removal-request flow
 (approve in admin → content hidden behind password, not deleted). Spec: queue §D12.
 
-## Dancing page (D10, pending)
-Instagram embed + title + description + booking CTA. No direct media upload for now.
+## Dancing page — shipped (D10, 2026-08-28)
+`app/dancing/page.tsx` = `PageHeader` (admin `page_seo` title/description) → an
+admin-driven Instagram embed section → `StickyCta`. **The old interim text-card grid is
+gone** (Hussain's call — the page is Instagram-centric). **Stats were dropped**, not built:
+the queue listed "years teaching / students / location" but CLAUDE.md bans stat strips and
+that ban wins.
+
+- **Data:** `DancingSections` is now `{ instagram: { heading, urls[] }, stickyCta }`
+  (`lib/server/page-sections.ts`); the old `sections: TextCard[]` is removed. Shallow-merge
+  keeps a stored doc safe (a stale `sections` key is ignored) — no migration. On first save
+  from the new form the old card images get cleaned up by the existing replace-diff (correct).
+- **Admin:** `/admin/pages/dancing` → `DancingSectionsForm` (heading + a "+ Add post" URL
+  list via the generic `RepeatingListEditor<string>` + the shared CTA editor). Admin pastes
+  Instagram **post or reel** URLs.
+- **Embeds render natively — do NOT reintroduce the clip hack.** The build first tried to
+  strip Instagram's chrome by forcing the cross-origin `/embed` iframe into a square box with
+  negative offsets; it distorted every post (you cannot reach into a cross-origin iframe to
+  isolate the media). The shipped `components/dancing/InstagramFeed.tsx` renders the normal
+  embed and **auto-sizes each card by listening for Instagram's own `MEASURE` postMessage**
+  (origin-checked to `https://www.instagram.com`) — no cropping, no fixed height, no embed.js
+  script. Invalid URLs are dropped; empty list → the whole section renders nothing.
+- **`lib/instagram.ts`** `toInstagramEmbedUrl()` (unit-tested, `test/instagram.test.ts`) is the
+  only URL→embed parser: accepts `instagram.com/p/…` and `/reel/…` only, rejects lookalike
+  hosts. No API key, no Graph API, no token.
+- Extracted `CtaFields` (the booking-bar editor) — now shared by `CtaOnlyForm`, `CardsCtaForm`,
+  and `DancingSectionsForm`; `RepeatingListEditor` gained an optional `addLabel` prop.
 
 ## Web development page (D11, pending)
 Completed web projects + related services; admin CRUD (`web_projects`).
@@ -679,7 +703,9 @@ keeps them fixed.
 - **CSP `frame-src` in `next.config.ts` legitimately carries `www.openstreetmap.org`**
   (testimonials OSM map — S1 omitted it and silently broke the map, S6, archive §S6) **and,
   since D4 (2026-08-20), `www.youtube-nocookie.com` + `player.vimeo.com`** — the showreel and
-  media-lightbox video embeds (`toEmbedUrl`). Do not strip any of them in a future security
+  media-lightbox video embeds (`toEmbedUrl`) **and, since D10 (2026-08-28),
+  `https://www.instagram.com`** — the dancing-page post embeds (`InstagramFeed`, admin-picked
+  URLs via `toInstagramEmbedUrl`). Do not strip any of them in a future security
   pass; any new external iframe/CDN needs its origin added to the right CSP directive **and**
   an in-browser check that the surface still renders.
 - **CSP `media-src 'self' blob: https://res.cloudinary.com` was added in D4 (2026-08-20).**
