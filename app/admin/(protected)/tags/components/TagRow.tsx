@@ -2,6 +2,7 @@
 
 import { useSortableRow } from "@/components/admin/sortable/SortableList";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { Tag, TagPatch } from "../lib/types";
 
 export default function TagRow({
@@ -84,7 +85,7 @@ export default function TagRow({
 
           <button
             type="button"
-            className="rounded-lg border px-2 py-1 text-xs transition-colors hover:bg-red-500/10"
+            className={adminButtonClasses("danger", "xs")}
             onClick={() => onDelete(tag)}
             title={tag.mediaCount > 0 ? "Delete (will ask to detach from media)" : "Delete tag"}
           >

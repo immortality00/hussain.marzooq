@@ -8,6 +8,7 @@ import { PrivateGalleryMediaPicker } from "@/components/admin/private-galleries/
 import { usePrivateGalleriesAdmin } from "@/components/admin/private-galleries/usePrivateGalleriesAdmin";
 import { useBulkSelection } from "@/components/admin/bulk/useBulkSelection";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 
 export default function PrivateGalleriesAdminClient() {
   const admin = usePrivateGalleriesAdmin();
@@ -23,7 +24,7 @@ export default function PrivateGalleriesAdminClient() {
               type="button"
               onClick={admin.openNew}
               disabled={admin.actionBusy}
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+              className={adminButtonClasses("default", "md")}
             >
               New gallery
             </button>
@@ -32,7 +33,7 @@ export default function PrivateGalleriesAdminClient() {
               type="button"
               onClick={admin.backToList}
               disabled={admin.actionBusy}
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+              className={adminButtonClasses("default", "md")}
             >
               Back to list
             </button>
@@ -106,7 +107,7 @@ export default function PrivateGalleriesAdminClient() {
               type="button"
               onClick={() => void admin.save()}
               disabled={admin.saving}
-              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className={adminButtonClasses("solid", "md")}
             >
               {admin.saving
                 ? admin.editingId
@@ -121,7 +122,7 @@ export default function PrivateGalleriesAdminClient() {
               type="button"
               onClick={admin.backToList}
               disabled={admin.actionBusy}
-              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+              className={adminButtonClasses("default", "md")}
             >
               Cancel
             </button>

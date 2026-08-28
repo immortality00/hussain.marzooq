@@ -11,6 +11,7 @@ import {
   getFixedWindowRateLimitStatus,
 } from "@/lib/server/request-guards";
 import { getClientAddress } from "@/app/api/_lib/public-form-security";
+import { AdminButton } from "@/components/admin/AdminButton";
 
 type SearchParams = {
   [key: string]: string | string[] | undefined;
@@ -133,9 +134,9 @@ export default async function AdminLoginPage({
 
           <input type="hidden" name="next" value={nextPath} />
 
-          <button className="w-full rounded-xl bg-foreground px-3 py-2 text-sm text-background hover:opacity-90">
+          <AdminButton type="submit" variant="solid" className="w-full">
             Login
-          </button>
+          </AdminButton>
         </form>
       </div>
     </main>

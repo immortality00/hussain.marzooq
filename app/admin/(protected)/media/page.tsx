@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import MediaAppearancesSection from "./components/MediaAppearancesSection";
 import MediaAssetSection from "./components/MediaAssetSection";
 import MediaDetailsSection from "./components/MediaDetailsSection";
@@ -27,10 +28,7 @@ export default function AdminMediaPage() {
         title={editor.editingId ? "Edit Media" : "Upload Media"}
         actions={
           <>
-            <Link
-              href="/admin/media/list"
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
-            >
+            <Link href="/admin/media/list" className={adminButtonClasses("default", "md")}>
               View list
             </Link>
 
@@ -39,7 +37,7 @@ export default function AdminMediaPage() {
                 type="button"
                 onClick={startNewUpload}
                 disabled={busy}
-                className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+                className={adminButtonClasses("default", "md")}
               >
                 New upload
               </button>
@@ -126,7 +124,7 @@ export default function AdminMediaPage() {
               type="button"
               disabled={busy}
               onClick={() => void save()}
-              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className={adminButtonClasses("solid", "md")}
             >
               {busyAction === "save"
                 ? editor.editingId
@@ -142,7 +140,7 @@ export default function AdminMediaPage() {
                 type="button"
                 disabled={busy}
                 onClick={() => void remove()}
-                className="rounded-xl border px-4 py-2 text-sm hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+                className={adminButtonClasses("danger", "md")}
               >
                 {busyAction === "delete" ? "Deleting…" : "Delete"}
               </button>

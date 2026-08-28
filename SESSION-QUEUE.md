@@ -44,7 +44,9 @@ D8 (magnetic-hover CTA hook + Button ref forwarding; nav Book + StickyCta only; 
 CTA now slides up on scroll instead of covering the hero) ·
 D9b (admin IA structural pass: grouped sidebar + `/admin/dashboard` landing, `/admin/pages` →
 per-page routes with inline visibility toggle, shared `AdminPageHeader`/`AdminToggle`, reusable
-bulk-select across all 8 admin lists, dead `/admin/nfts` removed).
+bulk-select across all 8 admin lists, dead `/admin/nfts` removed) ·
+D9 (admin visual polish: shared `AdminButton` swept across every admin action button, quiet
+active-highlighting `AdminSidebarNav`, restyled protected-layout shell; admin inputs left for a later pass).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -75,7 +77,7 @@ longer top-to-bottom — take sessions in exactly this order.
 9. ~~**L1**~~ ✓ done — launch prep code/docs shipped (README, admin config-error copy,
    CLAUDE.md deployment status); the deploy-time checklist (rotate secret, verify hash login,
    re-verify CSP, `/admin` headers) is recorded in CLAUDE.md for first deploy.
-10. ~~**D4, D5, D7, D8**~~ ✓ done · ~~**D9b**~~ ✓ done (admin structure pass; **D9** visual polish still pending) · **D10, D11, D12**
+10. ~~**D4, D5, D7, D8**~~ ✓ done · ~~**D9b**~~ ✓ done (admin structure pass) · ~~**D9**~~ ✓ done (admin visual polish) · **D10, D11, D12**
 11. **D13 last** — the consistency sweep; it needs everything else landed first.
 12. **C1, C2, C3** · **P1, P2** · **NFT1, NFT2**
 
@@ -177,27 +179,6 @@ complete.
 ---
 
 ## Phase 2 — Preloader & core experience
-
----
-
-### Session D9 — Admin visual redesign — `pending`
-Apply visual consistency between the admin and the portfolio design language.
-
-Target: same dark theme, same typography scale, same component style as the portfolio.
-Not a layout rebuild — visual consistency only.
-
-Scope:
-- globals.css: ensure dark admin theme uses the same OKLCH tokens as the public site.
-- Admin layout components: typography, spacing, card backgrounds consistent with portfolio tokens.
-- Table, form, button styles in admin match shadcn/ui components styled for the dark palette.
-
-Admin functionality: zero changes. Only visual.
-
-Read every admin layout file before writing. Report what will change visually and what will not be touched.
-
-**Note (2026-07-31):** Hussain reports the admin is "getting messy" — that is a
-*structural/UX* complaint, which this session does not cover. D9 stays visual-only;
-the structural work is Session D9b below. Do not silently widen D9's scope.
 
 ---
 

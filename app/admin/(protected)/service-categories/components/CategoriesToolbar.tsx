@@ -1,6 +1,7 @@
 "use client";
 
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 
 export default function CategoriesToolbar({
   savingOrder,
@@ -18,7 +19,7 @@ export default function CategoriesToolbar({
           type="button"
           onClick={() => void onSaveOrder()}
           disabled={savingOrder}
-          className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:opacity-60"
+          className={adminButtonClasses("default", "md")}
         >
           {savingOrder ? "Saving…" : "Save Order"}
         </button>

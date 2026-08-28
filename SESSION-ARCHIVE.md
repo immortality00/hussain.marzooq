@@ -2369,3 +2369,46 @@ collections stay as they are (that reasoning is in archive §N5 Part 2). S11 (un
 guard) is a **separate, earlier** session — do not fold it in here.
 If D9 and D9b are both still pending when reached: run **D9b first** (structure), then
 D9 (visual polish) — polishing a layout that's about to change is wasted work.
+
+---
+
+### Session D9 — Admin visual redesign — `done`
+Apply visual consistency between the admin and the portfolio design language.
+
+Target: same dark theme, same typography scale, same component style as the portfolio.
+Not a layout rebuild — visual consistency only.
+
+Scope:
+- globals.css: ensure dark admin theme uses the same OKLCH tokens as the public site.
+- Admin layout components: typography, spacing, card backgrounds consistent with portfolio tokens.
+- Table, form, button styles in admin match shadcn/ui components styled for the dark palette.
+
+Admin functionality: zero changes. Only visual.
+
+Read every admin layout file before writing. Report what will change visually and what will not be touched.
+
+**Note (2026-07-31):** Hussain reports the admin is "getting messy" — that is a
+*structural/UX* complaint, which this session does not cover. D9 stays visual-only;
+the structural work is Session D9b below. Do not silently widen D9's scope.
+
+**Outcome (2026-08-28).** The admin already shared the token system (one `globals.css`,
+Geist via root layout, `next-themes` dark class) and D9b had already cleaned the structure,
+so D9 was pure visual polish. Two shared primitives were added:
+- `components/admin/AdminButton.tsx` — `adminButtonClasses(variant, size?, className?)` +
+  `<AdminButton>`. Variants `default`/`solid`/`danger`/`warning`/`ghost`, sizes `xs`/`sm`/`md`,
+  shared focus ring + disabled state. **Every admin action button was swept onto it** (~40 files):
+  Delete/Remove → `danger` (`--destructive`), Unapprove → `warning` (amber), Save/primary →
+  `solid` (`bg-foreground`, renders white on the dark theme — Hussain confirmed correct), the rest
+  → `default` (bordered). Class-swap approach (kept each `<button>`/`<Link>` element + props),
+  so zero behaviour change.
+- `components/admin/AdminSidebarNav.tsx` — client nav (`usePathname`) with active-route
+  highlighting; replaced the per-item bordered-box sidebar.
+
+The `(protected)/layout.tsx` shell was restyled: quiet ghost nav, reversed "HM Visuals / Admin"
+lockup, `ghost` chrome buttons (View site / Logout / theme toggle), and `--shadow-soft` on the
+sidebar + content frame. Login button adopted `solid`. **Deliberately left untouched** (distinct
+control types, not action buttons): filter pills, drag handles (⠿), the `IconButton` icon-button
+primitive, selectable media tiles, card-cover links — and **all admin inputs** (a later pass;
+D9's approved scope was buttons + shell, and inputs were not silently widened into). Verified:
+`tsc --noEmit` clean, `eslint --max-warnings 0` clean, 131 tests pass. CLAUDE.md updated in the
+same commit (Reusable components: `AdminButton` + `AdminSidebarNav`; Admin design: D9 shipped).

@@ -428,7 +428,11 @@ Plausible, one script tag, public pages only (Phase 3, queue §C3).
 
 ## Admin design
 Visual consistency with the portfolio (dark theme, same typography/tokens/shadcn styling).
-Not a layout rebuild (queue §D9 — visual polish, still pending).
+**D9 visual polish shipped (2026-08-28):** the protected-layout shell was restyled (quiet
+active-highlighting sidebar via `AdminSidebarNav`, reversed "HM Visuals / Admin" lockup,
+`--shadow-soft` frame) and every admin action button now routes through the shared
+`components/admin/AdminButton.tsx` (see "Reusable components"). Admin **inputs** were left as a
+later pass (deliberately out of D9's approved button scope).
 
 **Admin structure (D9b, structural pass — done).** The sidebar (`(protected)/layout.tsx`) is
 **grouped**: Overview (Dashboard) · Content (Media, Tags, Pages) · People (People, Testimonials,
@@ -526,6 +530,20 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   after 4s / errors after 7s (self-cleaning on unmount) — `useServicesAdmin` consumes it
   instead of its old bespoke timer. Deferred: three surfaces still skip the hook (inquiries,
   media editor controller, private galleries) — they work, folding them in is a later refactor.
+- `components/admin/AdminButton.tsx` — **the only admin button (D9).** `adminButtonClasses(variant,
+  size?, className?)` (exported for className-swaps) + `<AdminButton>` (renders `<Link>` with `href`,
+  else `<button>`; forwards `ref`). Variants: `default` (bordered neutral), `solid` (`bg-foreground`
+  fill — primary/save; renders white on the dark admin theme, correct), `danger` (`--destructive`
+  border+text — every delete/remove), `warning` (amber — testimonials Unapprove), `ghost` (borderless
+  — header chrome). Sizes `xs`/`sm`/`md`; base carries the focus ring + `disabled` state. **Adopted
+  across every admin action button** — do not hand-roll `rounded-xl border px-4 py-2` buttons again.
+  Distinct control types are deliberately NOT this component: filter pills (rounded-full segmented
+  toggles), drag handles (⠿), `inquiries/components/IconButton.tsx` (square icon-button primitive),
+  selectable media tiles, and card-cover links. Admin **inputs** were left untouched (a later pass).
+- `components/admin/AdminSidebarNav.tsx` — **the protected-layout sidebar (D9).** Client component
+  (`usePathname`) that owns `NAV_GROUPS` and highlights the active route (`bg-accent`, exact or
+  `startsWith(href + "/")`); inactive links are quiet ghost links. The `(protected)/layout.tsx` shell
+  renders it inside a `--shadow-soft` card; the old per-item bordered-box nav is gone.
 - `components/admin/AdminPageHeader.tsx` — every protected admin surface's page header
   (D9b). `{ title, description?, actions? }`. Don't hand-roll `text-2xl font-semibold` headers.
   Testimonials keeps its own `text-4xl` header deliberately (D9 territory).

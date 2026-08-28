@@ -7,6 +7,7 @@ import { useAdminAction } from "@/hooks/useAdminAction";
 import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import CategoriesTable from "./components/CategoriesTable";
 import CategoriesToolbar from "./components/CategoriesToolbar";
 import CategoryFormCard from "./components/CategoryFormCard";
@@ -247,7 +248,7 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
           type="button"
           disabled={actionBusy}
           onClick={() => void refresh()}
-          className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+          className={adminButtonClasses("default", "md")}
         >
           Refresh
         </button>

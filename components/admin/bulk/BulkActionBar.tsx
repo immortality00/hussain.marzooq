@@ -1,6 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 
 export type BulkAction = {
   label: string;
@@ -27,7 +28,7 @@ export function BulkActionBar({
         type="button"
         onClick={onClear}
         aria-label="Clear selection"
-        className="inline-flex size-7 items-center justify-center rounded-lg border transition-colors hover:bg-accent/40"
+        className={adminButtonClasses("default", "xs", "size-7")}
       >
         <X className="size-4" />
       </button>
@@ -43,12 +44,7 @@ export function BulkActionBar({
             type="button"
             disabled={busy}
             onClick={() => void action.onRun()}
-            className={[
-              "rounded-xl border px-3 py-1.5 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-              action.tone === "danger"
-                ? "border-destructive/30 text-destructive hover:bg-destructive/10"
-                : "hover:bg-accent/40",
-            ].join(" ")}
+            className={adminButtonClasses(action.tone === "danger" ? "danger" : "default", "sm")}
           >
             {action.label}
           </button>

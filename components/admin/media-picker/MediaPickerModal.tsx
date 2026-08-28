@@ -4,6 +4,7 @@ import { SearchInput } from "@/components/search/SearchInput";
 import { PrivateGalleryMediaCard } from "@/components/admin/private-galleries/PrivateGalleryMediaCard";
 import { usePrivateGalleryMediaPicker } from "@/components/admin/private-galleries/usePrivateGalleryMediaPicker";
 import type { SectionImage } from "@/lib/page-sections-shared";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 
 // Single-select image picker over the existing media library. Reuses the
 // private-galleries picker hook + card (both generic); picking an image stores
@@ -35,7 +36,7 @@ export function MediaPickerModal({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border px-3 py-1.5 text-sm transition-colors hover:bg-accent/40"
+            className={adminButtonClasses("default", "sm")}
           >
             Close
           </button>
@@ -49,7 +50,7 @@ export function MediaPickerModal({
             placeholder="Search title, tags, location, people, event..."
             wrapperClassName="flex w-full flex-wrap gap-2"
             inputClassName="min-w-0 flex-1 rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-            clearButtonClassName="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
+            clearButtonClassName={adminButtonClasses("default", "md")}
           />
         </div>
 
@@ -82,7 +83,7 @@ export function MediaPickerModal({
               type="button"
               onClick={picker.loadMore}
               disabled={picker.loadingMore}
-              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+              className={adminButtonClasses("default", "md")}
             >
               {picker.loadingMore ? "Loading…" : "Load more media"}
             </button>

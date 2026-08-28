@@ -4,6 +4,7 @@ import Image from "next/image";
 import { CldUploadWidget } from "next-cloudinary";
 import type { Uploaded, WidgetResult } from "../lib/types";
 import { getString, isRecord } from "../lib/utils";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 
 export default function MediaAssetSection({
   mode,
@@ -32,9 +33,7 @@ export default function MediaAssetSection({
         <button
           type="button"
           onClick={() => setMode("upload")}
-          className={`rounded-xl border px-4 py-2 text-sm ${
-            mode === "upload" ? "bg-accent" : "hover:bg-accent"
-          }`}
+          className={adminButtonClasses("default", "md", mode === "upload" ? "bg-accent" : "")}
         >
           Upload file
         </button>
@@ -43,9 +42,7 @@ export default function MediaAssetSection({
           <button
             type="button"
             onClick={() => setMode("embed")}
-            className={`rounded-xl border px-4 py-2 text-sm ${
-              mode === "embed" ? "bg-accent" : "hover:bg-accent"
-            }`}
+            className={adminButtonClasses("default", "md", mode === "embed" ? "bg-accent" : "")}
           >
             Embed URL
           </button>
@@ -77,7 +74,7 @@ export default function MediaAssetSection({
                   type="button"
                   disabled={!canUpload}
                   onClick={() => open()}
-                  className="rounded-xl border px-4 py-2 text-sm hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+                  className={adminButtonClasses("default", "md")}
                 >
                   Choose file
                 </button>
@@ -87,7 +84,7 @@ export default function MediaAssetSection({
             <button
               type="button"
               onClick={() => setUploaded(null)}
-              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
+              className={adminButtonClasses("default", "md")}
             >
               Clear
             </button>

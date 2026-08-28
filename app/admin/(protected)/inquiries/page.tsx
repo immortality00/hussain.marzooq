@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import InquirySection from "./components/InquirySection";
 import InquiriesToolbar from "./components/InquiriesToolbar";
 import {
@@ -278,7 +279,7 @@ export default function AdminInquiriesPage() {
         <button
           type="button"
           disabled={actionBusy}
-          className="rounded-xl border px-4 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+          className={adminButtonClasses("default", "md")}
           onClick={() => setShowArchivedSection((p) => !p)}
         >
           {showArchivedSection ? "Hide Archived" : `Show Archived (${archived.length})`}

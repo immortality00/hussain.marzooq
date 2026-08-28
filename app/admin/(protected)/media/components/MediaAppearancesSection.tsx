@@ -4,6 +4,7 @@ import { LocationSearch } from "@/components/testimonials/review-form/LocationSe
 import type { LocationOption } from "@/components/testimonials/review-form/types";
 import type { Appearance } from "../lib/types";
 import { appearanceError } from "../lib/utils";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 
 function splitLocationLabel(label: string): { city: string; country: string } {
   const trimmed = label.trim();
@@ -54,14 +55,14 @@ export default function MediaAppearancesSection({
           <button
             type="button"
             onClick={() => addAppearance("exhibited")}
-            className="rounded-xl border px-3 py-2 text-sm hover:bg-accent"
+            className={adminButtonClasses("default", "md")}
           >
             + Exhibition
           </button>
           <button
             type="button"
             onClick={() => addAppearance("featured")}
-            className="rounded-xl border px-3 py-2 text-sm hover:bg-accent"
+            className={adminButtonClasses("default", "md")}
           >
             + Feature
           </button>
@@ -85,7 +86,7 @@ export default function MediaAppearancesSection({
                   <button
                     type="button"
                     onClick={() => removeAppearance(idx)}
-                    className="rounded-xl border px-3 py-1.5 text-sm hover:bg-red-500/10"
+                    className={adminButtonClasses("danger", "sm")}
                   >
                     Remove
                   </button>

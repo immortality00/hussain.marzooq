@@ -6,6 +6,7 @@ import { LocationSearch } from "@/components/testimonials/review-form/LocationSe
 import type { LocationOption } from "@/components/testimonials/review-form/types";
 import type { PersonProfileOption } from "../lib/types";
 import TagMultiSelect from "./TagMultiSelect";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 
 type SelectedPerson = {
   id: string;
@@ -254,7 +255,7 @@ export default function MediaDetailsSection({
                   <span>No matching profile.</span>
                   <Link
                     href={`/admin/people?create=${encodeURIComponent(peopleQuery.trim())}`}
-                    className="rounded-xl border px-3 py-2 text-sm hover:bg-accent"
+                    className={adminButtonClasses("default", "md")}
                   >
                     Create new profile
                   </Link>

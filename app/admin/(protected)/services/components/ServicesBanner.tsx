@@ -1,6 +1,7 @@
 "use client";
 
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { Banner } from "../lib/ui";
 
 export default function ServicesBanner({
@@ -20,7 +21,7 @@ export default function ServicesBanner({
           <button
             type="button"
             onClick={onClose}
-            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg border px-2 py-1 text-xs hover:bg-accent/40"
+            className={adminButtonClasses("default", "xs", "absolute right-3 top-1/2 -translate-y-1/2")}
           >
             Close
           </button>

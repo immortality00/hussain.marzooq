@@ -1,6 +1,7 @@
 "use client";
 
 import { STATUSES, type Inquiry } from "../lib/types";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 
 export default function InquiryExpandedCard({
   inquiry,
@@ -49,9 +50,7 @@ export default function InquiryExpandedCard({
               {STATUSES.map((s) => (
                 <button
                   key={s}
-                  className={`rounded-xl border px-3 py-2 text-sm hover:bg-accent ${
-                    inquiry.status === s ? "bg-accent" : ""
-                  }`}
+                  className={adminButtonClasses("default", "md", inquiry.status === s ? "bg-accent" : "")}
                   onClick={async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -80,7 +79,7 @@ export default function InquiryExpandedCard({
 
           <div className="mt-2 flex flex-wrap gap-2">
             <button
-              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
+              className={adminButtonClasses("default", "md")}
               onClick={async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -92,7 +91,7 @@ export default function InquiryExpandedCard({
 
             {!archivedMode ? (
               <button
-                className="rounded-xl border px-4 py-2 text-sm hover:bg-rose-500/10"
+                className={adminButtonClasses("default", "md")}
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -104,7 +103,7 @@ export default function InquiryExpandedCard({
             ) : (
               <>
                 <button
-                  className="rounded-xl border px-4 py-2 text-sm hover:bg-accent"
+                  className={adminButtonClasses("default", "md")}
                   onClick={async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
@@ -115,7 +114,7 @@ export default function InquiryExpandedCard({
                 </button>
 
                 <button
-                  className="rounded-xl border px-4 py-2 text-sm hover:bg-rose-500/10"
+                  className={adminButtonClasses("danger", "md")}
                   onClick={async (e) => {
                     e.preventDefault();
                     e.stopPropagation();

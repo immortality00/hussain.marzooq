@@ -1,4 +1,5 @@
 import { AdminProcessingPill } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import {
   type TestimonialItem,
   identityLine,
@@ -68,7 +69,7 @@ export function ReviewRow({
             type="button"
             onClick={() => onInspect(item)}
             disabled={actionBusy}
-            className="rounded-xl border border-border/60 px-3 py-2 text-sm hover:bg-accent disabled:cursor-not-allowed disabled:opacity-60"
+            className={adminButtonClasses("default", "md")}
           >
             Inspect
           </button>
@@ -77,7 +78,7 @@ export function ReviewRow({
               type="button"
               disabled={actionBusy}
               onClick={() => onSetApproval(item.id, false)}
-              className="rounded-xl border border-amber-500/30 px-3 py-2 text-sm text-amber-700 hover:bg-amber-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:text-amber-300"
+              className={adminButtonClasses("warning", "md")}
             >
               {updating ? "Unapproving…" : "Unapprove"}
             </button>
@@ -86,7 +87,7 @@ export function ReviewRow({
               type="button"
               disabled={actionBusy}
               onClick={() => onSetApproval(item.id, true)}
-              className="rounded-xl bg-foreground px-3 py-2 text-sm text-background hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+              className={adminButtonClasses("solid", "md")}
             >
               {updating ? "Approving…" : "Approve"}
             </button>
@@ -95,7 +96,7 @@ export function ReviewRow({
             type="button"
             disabled={actionBusy}
             onClick={() => onDelete(item.id)}
-            className="rounded-xl border border-red-500/30 px-3 py-2 text-sm text-red-600 hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-300"
+            className={adminButtonClasses("danger", "md")}
           >
             {deleting ? "Deleting…" : "Delete"}
           </button>

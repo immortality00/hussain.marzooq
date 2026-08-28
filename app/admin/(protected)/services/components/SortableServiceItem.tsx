@@ -3,6 +3,7 @@
 import SmartImage from "@/components/shared/SmartImage";
 import { useSortableRow } from "@/components/admin/sortable/SortableList";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { Service } from "../lib/types";
 
 export default function SortableServiceItem({
@@ -88,7 +89,7 @@ export default function SortableServiceItem({
         <button
           type="button"
           onClick={() => onEdit(service)}
-          className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent/40"
+          className={adminButtonClasses("default", "md")}
         >
           Edit
         </button>
@@ -96,7 +97,7 @@ export default function SortableServiceItem({
         <button
           type="button"
           onClick={() => onToggleActive(service)}
-          className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent/40"
+          className={adminButtonClasses("default", "md")}
           title={service.isActive ? "Deactivate service" : "Activate service"}
         >
           {service.isActive ? "Deactivate" : "Activate"}
@@ -105,7 +106,7 @@ export default function SortableServiceItem({
         <button
           type="button"
           onClick={() => onDeleteForever(service)}
-          className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-red-500/10"
+          className={adminButtonClasses("danger", "md")}
           title="Delete forever"
         >
           Delete

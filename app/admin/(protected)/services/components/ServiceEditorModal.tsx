@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { CldUploadWidget } from "next-cloudinary";
 import { CLOUDINARY_SERVICES_FOLDER } from "@/lib/cloudinary-folders";
+import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { Service, ServiceCategory } from "../lib/types";
 
 type WidgetResult = { info?: unknown };
@@ -82,10 +83,7 @@ export default function ServiceEditorModal({
       <div className="w-full max-w-2xl rounded-3xl border bg-background text-foreground shadow-xl">
         <div className="flex items-center justify-between gap-4 border-b p-5">
           <h2 className="text-xl font-semibold">{initial ? "Edit Service" : "Create Service"}</h2>
-          <button
-            onClick={onClose}
-            className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent"
-          >
+          <button onClick={onClose} className={adminButtonClasses("default", "md")}>
             Close
           </button>
         </div>
@@ -163,7 +161,7 @@ export default function ServiceEditorModal({
                     <button
                       type="button"
                       onClick={() => open?.()}
-                      className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent"
+                      className={adminButtonClasses("default", "md")}
                     >
                       Upload Image
                     </button>
@@ -173,7 +171,7 @@ export default function ServiceEditorModal({
                 <button
                   type="button"
                   onClick={() => setImageUrl("")}
-                  className="rounded-xl border px-3 py-2 text-sm transition-colors hover:bg-accent"
+                  className={adminButtonClasses("default", "md")}
                 >
                   Clear
                 </button>
@@ -221,7 +219,7 @@ export default function ServiceEditorModal({
             <button
               onClick={onClose}
               disabled={busy}
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent disabled:opacity-60"
+              className={adminButtonClasses("default", "md")}
             >
               Cancel
             </button>
@@ -249,7 +247,7 @@ export default function ServiceEditorModal({
                   setBusy(false);
                 }
               }}
-              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90 disabled:opacity-60"
+              className={adminButtonClasses("solid", "md")}
             >
               Save
             </button>
