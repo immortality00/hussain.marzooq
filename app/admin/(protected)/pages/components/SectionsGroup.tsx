@@ -7,6 +7,7 @@ import { HomeSectionsForm } from "./HomeSectionsForm";
 import { CardsCtaForm } from "./CardsCtaForm";
 import { CtaOnlyForm } from "./CtaOnlyForm";
 import { DancingSectionsForm } from "./DancingSectionsForm";
+import { WebDevSectionsForm } from "./WebDevSectionsForm";
 
 type AnySections = PageSectionsMap[PageSectionsSlug];
 
@@ -45,18 +46,10 @@ function SectionForm({
     }
     case "dancing":
       return <DancingSectionsForm data={data as PageSectionsMap["dancing"]} onChange={onChange} />;
-    case "web-development": {
-      const d = data as PageSectionsMap["web-development"];
+    case "web-development":
       return (
-        <CardsCtaForm
-          cardsTitle="Capabilities"
-          cards={d.capabilities}
-          cta={d.stickyCta}
-          onCardsChange={(cards) => onChange({ ...d, capabilities: cards })}
-          onCtaChange={(cta) => onChange({ ...d, stickyCta: cta })}
-        />
+        <WebDevSectionsForm data={data as PageSectionsMap["web-development"]} onChange={onChange} />
       );
-    }
     case "blog": {
       const d = data as PageSectionsMap["blog"];
       return (

@@ -36,7 +36,7 @@ export type DancingSections = {
 };
 
 export type WebDevSections = {
-  capabilities: TextCard[];
+  projects: { heading: string; urls: string[] };
   stickyCta: CtaCopy;
 };
 
@@ -151,28 +151,10 @@ const DEFAULTS: PageSectionsMap = {
     stickyCta: BOOKING_CTA,
   },
   "web-development": {
-    capabilities: [
-      {
-        title: "Creative portfolios",
-        text: "High-end portfolio systems with strong visual direction, motion, media structure, and clear client pathways.",
-        image: EMPTY_SECTION_IMAGE,
-      },
-      {
-        title: "Custom admin tools",
-        text: "Content management flows built around real relationships between media, services, people, galleries, and inquiries.",
-        image: EMPTY_SECTION_IMAGE,
-      },
-      {
-        title: "Front-end systems",
-        text: "Design-led interfaces, reusable components, responsive layouts, and polished public presentation layers.",
-        image: EMPTY_SECTION_IMAGE,
-      },
-      {
-        title: "Interactive direction",
-        text: "Digital experiments, Web3-ready presentation, editorial sections, and cinematic UI moments where they add value.",
-        image: EMPTY_SECTION_IMAGE,
-      },
-    ],
+    projects: {
+      heading: "Selected work.",
+      urls: [],
+    },
     stickyCta: BOOKING_CTA,
   },
   blog: {
