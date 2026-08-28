@@ -6,6 +6,7 @@ import { GroupCard } from "./GroupCard";
 import { HomeSectionsForm } from "./HomeSectionsForm";
 import { CardsCtaForm } from "./CardsCtaForm";
 import { CtaOnlyForm } from "./CtaOnlyForm";
+import { DancingSectionsForm } from "./DancingSectionsForm";
 
 type AnySections = PageSectionsMap[PageSectionsSlug];
 
@@ -42,18 +43,8 @@ function SectionForm({
         />
       );
     }
-    case "dancing": {
-      const d = data as PageSectionsMap["dancing"];
-      return (
-        <CardsCtaForm
-          cardsTitle="Sections"
-          cards={d.sections}
-          cta={d.stickyCta}
-          onCardsChange={(cards) => onChange({ ...d, sections: cards })}
-          onCtaChange={(cta) => onChange({ ...d, stickyCta: cta })}
-        />
-      );
-    }
+    case "dancing":
+      return <DancingSectionsForm data={data as PageSectionsMap["dancing"]} onChange={onChange} />;
     case "web-development": {
       const d = data as PageSectionsMap["web-development"];
       return (

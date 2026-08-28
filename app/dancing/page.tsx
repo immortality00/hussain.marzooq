@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import SmartImage from "@/components/shared/SmartImage";
 import { StickyCta } from "@/components/site/StickyCta";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { InstagramFeed } from "@/components/dancing/InstagramFeed";
 import { getPageSettings } from "@/lib/server/page-settings";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { getPageSections } from "@/lib/server/page-sections";
@@ -21,6 +21,10 @@ export default async function DancingPage() {
     getPageSections("dancing"),
   ]);
   if (!isActive) redirect("/");
+
+  const { instagram } = content;
+  const hasFeed = instagram.urls.length > 0;
+
   return (
     <>
       <main className="section-shell py-12 sm:py-16">
@@ -30,28 +34,16 @@ export default async function DancingPage() {
           className="max-w-3xl"
         />
 
-        <section className="mt-12 grid gap-4 md:grid-cols-3">
-          {content.sections.map((item, i) => (
-            <article
-              key={i}
-              className="rounded-[2rem] border bg-background/60 p-5 shadow-sm backdrop-blur"
-            >
-              {item.image?.url ? (
-                <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-2xl">
-                  <SmartImage
-                    src={item.image.url}
-                    alt=""
-                    fill
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                    className="object-cover"
-                  />
-                </div>
-              ) : null}
-              <h2 className="text-lg font-semibold tracking-tight">{item.title}</h2>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.text}</p>
-            </article>
-          ))}
-        </section>
+        {hasFeed && (
+          <section className="mt-12 border-t border-border pt-8">
+            {instagram.heading && (
+              <h2 className="mb-8 text-3xl font-semibold tracking-tight sm:text-4xl">
+                {instagram.heading}
+              </h2>
+            )}
+            <InstagramFeed urls={instagram.urls} />
+          </section>
+        )}
       </main>
 
       <StickyCta

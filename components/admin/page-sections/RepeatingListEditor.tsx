@@ -48,11 +48,13 @@ export function RepeatingListEditor<T>({
   onChange,
   makeNew,
   renderFields,
+  addLabel = "+ Add card",
 }: {
   items: T[];
   onChange: (items: T[]) => void;
   makeNew: () => T;
   renderFields: (item: T, onItemChange: (item: T) => void) => ReactNode;
+  addLabel?: string;
 }) {
   const ids = items.map((_, i) => String(i));
 
@@ -75,7 +77,7 @@ export function RepeatingListEditor<T>({
         onClick={() => onChange([...items, makeNew()])}
         className={adminButtonClasses("default", "md")}
       >
-        + Add card
+        {addLabel}
       </button>
     </div>
   );

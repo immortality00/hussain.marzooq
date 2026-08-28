@@ -17,6 +17,8 @@ const isDev = process.env.NODE_ENV !== "production";
  *   default-src 'self' and silently blocks every video).
  * - Video embeds: YouTube (youtube-nocookie.com) and Vimeo (player.vimeo.com)
  *   iframes from toEmbedUrl (showreel embed, lightbox) — need frame-src.
+ * - Instagram post embeds: www.instagram.com iframes on the dancing page
+ *   (admin-picked post/reel URLs via toInstagramEmbedUrl) — need frame-src.
  * - Fonts are self-hosted (geist via next/font) — no external font origin.
  *
  * `script-src` keeps 'unsafe-inline': Next's App Router injects inline hydration
@@ -33,7 +35,7 @@ const cspDirectives = [
   "media-src 'self' blob: https://res.cloudinary.com",
   "font-src 'self' data:",
   `connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com https://upload-widget.cloudinary.com${isDev ? " ws: http://localhost:*" : ""}`,
-  "frame-src https://upload-widget.cloudinary.com https://www.openstreetmap.org https://www.youtube-nocookie.com https://player.vimeo.com",
+  "frame-src https://upload-widget.cloudinary.com https://www.openstreetmap.org https://www.youtube-nocookie.com https://player.vimeo.com https://www.instagram.com",
   "worker-src 'self' blob:",
   "object-src 'none'",
   "base-uri 'self'",
