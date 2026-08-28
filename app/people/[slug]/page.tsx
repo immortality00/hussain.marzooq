@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
-import { getPublicPersonBySlug } from "@/lib/server/public-people";
+import { getPersonPageBySlug, getPublicPersonBySlug } from "@/lib/server/public-people";
+import PersonPasswordForm from "./PersonPasswordForm";
+import RemovalRequestButton from "@/components/people/RemovalRequestButton";
 import { AnimatedText } from "@/components/shared/AnimatedText";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 import { getPageSections } from "@/lib/server/page-sections";
@@ -35,13 +37,50 @@ export default async function PersonDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [person, pageSettings, sections] = await Promise.all([
-    getPublicPersonBySlug(slug),
+  const [state, pageSettings, sections] = await Promise.all([
+    getPersonPageBySlug(slug),
     getAllPageSettings(),
     getPageSections("people-detail"),
   ]);
 
-  if (!person) notFound();
+  if (state.state === "missing") notFound();
+
+  if (state.state === "locked") {
+    return (
+      <PersonPasswordForm
+        slug={state.slug}
+        name={state.name}
+        bio={state.bio}
+        avatarUrl={state.avatarUrl}
+      />
+    );
+  }
+
+  if (state.state === "unavailable") {
+    return (
+      <main className="mx-auto max-w-xl px-4 py-16">
+        <section className="rounded-[2rem] border p-6 text-center">
+          <div className="flex justify-center">
+            <div className="relative h-20 w-20 overflow-hidden rounded-full border bg-muted">
+              {state.avatarUrl ? (
+                <SmartImage
+                  src={state.avatarUrl}
+                  alt={state.name}
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                />
+              ) : null}
+            </div>
+          </div>
+          <h1 className="mt-5 text-3xl font-semibold tracking-tight">{state.name}</h1>
+          <p className="mt-3 text-sm leading-6 text-muted-foreground">Content not available.</p>
+        </section>
+      </main>
+    );
+  }
+
+  const person = state.person;
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
   return (
@@ -104,6 +143,8 @@ export default async function PersonDetailPage({
             ]}
           />
         )}
+
+        <RemovalRequestButton slug={person.slug} />
       </main>
 
       <StickyCta

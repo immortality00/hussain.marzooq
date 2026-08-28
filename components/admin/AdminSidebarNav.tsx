@@ -21,6 +21,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "People",
     items: [
       { href: "/admin/people", label: "People" },
+      { href: "/admin/removal-requests", label: "Removal Requests" },
       { href: "/admin/testimonials", label: "Testimonials" },
       { href: "/admin/inquiries", label: "Inquiries" },
     ],
@@ -38,7 +39,7 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-export function AdminSidebarNav() {
+export function AdminSidebarNav({ notificationCount = 0 }: { notificationCount?: number }) {
   const pathname = usePathname();
 
   return (
@@ -51,19 +52,28 @@ export function AdminSidebarNav() {
           {group.items.map((item) => {
             const active =
               pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const badge = item.href === "/admin/dashboard" ? notificationCount : 0;
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "block rounded-xl px-3 py-2 text-sm transition-colors",
+                  "flex items-center justify-between gap-2 rounded-xl px-3 py-2 text-sm transition-colors",
                   active
                     ? "bg-accent text-foreground"
                     : "text-muted-foreground hover:bg-accent/40 hover:text-foreground",
                 )}
               >
-                {item.label}
+                <span>{item.label}</span>
+                {badge > 0 ? (
+                  <span
+                    aria-label={`${badge} pending`}
+                    className="inline-flex min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 font-mono text-[11px] font-semibold leading-none tabular-nums text-white"
+                  >
+                    {badge > 99 ? "99+" : badge}
+                  </span>
+                ) : null}
               </Link>
             );
           })}

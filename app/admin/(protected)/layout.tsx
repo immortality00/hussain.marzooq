@@ -3,6 +3,7 @@ import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { AdminSidebarNav } from "@/components/admin/AdminSidebarNav";
 import { AdminButton } from "@/components/admin/AdminButton";
+import { getAdminNotificationCount } from "@/lib/server/admin-dashboard";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,6 +15,8 @@ export default async function AdminProtectedLayout({
 }) {
   const ok = await isAdminAuthedServer();
   if (!ok) redirect("/admin");
+
+  const notificationCount = await getAdminNotificationCount();
 
   return (
     <div className="min-h-screen bg-background">
@@ -39,7 +42,7 @@ export default async function AdminProtectedLayout({
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[220px_1fr]">
           <aside className="rounded-2xl border bg-card p-3 shadow-[var(--shadow-soft)]">
-            <AdminSidebarNav />
+            <AdminSidebarNav notificationCount={notificationCount} />
           </aside>
 
           <section className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-soft)]">

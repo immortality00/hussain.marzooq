@@ -17,9 +17,20 @@ export type AdminDashboardStats = {
   testimonials: { total: number; pending: number };
   inquiries: { total: number; new: number; active: number };
   people: number;
+  removalRequests: number;
   services: number;
   privateGalleries: number;
 };
+
+export async function getAdminNotificationCount(): Promise<number> {
+  const db = await getDb();
+  const [testimonialsPending, inquiriesNew, removalPending] = await Promise.all([
+    db.collection("testimonials").countDocuments({ isApproved: { $ne: true } }),
+    db.collection("inquiries").countDocuments({ status: "new" }),
+    db.collection("people_profiles").countDocuments({ removalRequestedAt: { $exists: true, $ne: null } }),
+  ]);
+  return testimonialsPending + inquiriesNew + removalPending;
+}
 
 export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   const db = await getDb();
@@ -37,6 +48,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     inquiriesNew,
     inquiriesActive,
     people,
+    removalRequests,
     services,
     privateGalleries,
   ] = await Promise.all([
@@ -54,6 +66,9 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     inquiries.countDocuments({ status: "new" }),
     inquiries.countDocuments({ status: { $nin: ["resolved", "rejected"] } }),
     db.collection("people_profiles").countDocuments({}),
+    db
+      .collection("people_profiles")
+      .countDocuments({ removalRequestedAt: { $exists: true, $ne: null } }),
     db.collection("services").countDocuments({}),
     db.collection("private_galleries").countDocuments({}),
   ]);
@@ -69,6 +84,7 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     testimonials: { total: testimonialsTotal, pending: testimonialsPending },
     inquiries: { total: inquiriesTotal, new: inquiriesNew, active: inquiriesActive },
     people,
+    removalRequests,
     services,
     privateGalleries,
   };

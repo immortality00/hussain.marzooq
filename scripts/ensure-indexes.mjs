@@ -72,6 +72,11 @@ async function ensureIndexes() {
   await createIndex(db, "people_profiles", { slug: 1 }, { unique: true });
   await createIndex(db, "people_profiles", { name: 1 });
   await createIndex(db, "people_profiles", { isPublic: 1, createdAt: -1 });
+  await createIndex(db, "people_profiles", { removalRequestedAt: 1 });
+
+  await createIndex(db, "removal_requests", { status: 1, createdAt: -1 });
+  await createIndex(db, "removal_requests", { status: 1, decidedAt: -1 });
+  await createIndex(db, "removal_requests", { personId: 1 });
 
   await createIndex(db, "private_galleries", { slug: 1 }, { unique: true });
   await createIndex(db, "private_galleries", { isActive: 1, expiresAtUtc: 1 });

@@ -27,6 +27,7 @@ export function AppShell({
   useEffect(() => {
     if (isAdmin) return;
     const lenis = new Lenis();
+    (window as unknown as { lenis?: Lenis }).lenis = lenis;
     // Keep GSAP ScrollTrigger in sync with Lenis's smoothed scroll position,
     // otherwise pinned/scrubbed sections (e.g. photography horizontal mode) drift.
     lenis.on("scroll", ScrollTrigger.update);
@@ -39,6 +40,7 @@ export function AppShell({
     return () => {
       cancelAnimationFrame(rafId);
       lenis.destroy();
+      (window as unknown as { lenis?: Lenis }).lenis = undefined;
     };
   }, [isAdmin]);
 

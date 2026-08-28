@@ -1,6 +1,9 @@
 "use client";
 
+import { useEffect } from "react";
+import { createPortal } from "react-dom";
 import SmartImage from "@/components/shared/SmartImage";
+import { useScrollLock } from "@/hooks/useScrollLock";
 import MediaDetailsSections from "./MediaDetailsSections";
 import type { MediaItem, TagLink } from "./types";
 import { toEmbedUrl } from "./utils";
@@ -68,8 +71,20 @@ export default function MediaLightbox({
   onClose: () => void;
   tagLinks?: Record<string, TagLink>;
 }) {
-  return (
-    <div className="fixed inset-0 z-50 bg-black/70 p-4" onClick={onClose}>
+  useScrollLock();
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  if (typeof document === "undefined") return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/80 p-4" onClick={onClose}>
       <div
         className="mx-auto w-full max-w-6xl overflow-hidden rounded-3xl border bg-background shadow-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -98,6 +113,7 @@ export default function MediaLightbox({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

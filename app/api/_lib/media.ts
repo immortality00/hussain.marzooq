@@ -41,6 +41,7 @@ export type NftMeta = {
 export type ResolvedPeopleSelection = {
   peopleIds: string[];
   people: string[];
+  gatedPersonName: string | null;
 };
 
 export function sanitizeAppearances(v: unknown): Appearance[] {
@@ -130,34 +131,39 @@ export async function resolvePeopleSelection(
   ).slice(0, 60);
 
   if (uniqueIds.length === 0) {
-    return { peopleIds: [], people: [] };
+    return { peopleIds: [], people: [], gatedPersonName: null };
   }
 
   const docs = await db
     .collection("people_profiles")
     .find(
       { _id: { $in: uniqueIds.map((value) => new ObjectId(value)) } },
-      { projection: { _id: 1, name: 1 } }
+      { projection: { _id: 1, name: 1, isPublic: 1, isPrivate: 1 } }
     )
     .toArray();
 
-  const nameById = new Map(
+  const docById = new Map(
     docs
       .filter((doc) => typeof doc.name === "string" && doc.name.trim())
-      .map((doc) => [String(doc._id), String(doc.name).trim()])
+      .map((doc) => [String(doc._id), doc])
   );
 
   const peopleIds: string[] = [];
   const people: string[] = [];
+  let gatedPersonName: string | null = null;
 
   for (const id of uniqueIds) {
-    const name = nameById.get(id);
-    if (!name) continue;
+    const doc = docById.get(id);
+    if (!doc) continue;
+    const name = String(doc.name).trim();
     peopleIds.push(id);
     people.push(name);
+    if (!gatedPersonName && (doc.isPublic === false || doc.isPrivate === true)) {
+      gatedPersonName = name;
+    }
   }
 
-  return { peopleIds, people };
+  return { peopleIds, people, gatedPersonName };
 }
 
 function toPositiveInt(v: unknown): number | null {

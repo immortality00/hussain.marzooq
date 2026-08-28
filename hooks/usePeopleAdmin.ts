@@ -5,6 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { useAdminAction } from "./useAdminAction";
 
+export type PersonVisibility = "public" | "private" | "hidden";
+
 export type PersonItem = {
   id: string;
   name: string;
@@ -12,7 +14,17 @@ export type PersonItem = {
   bio: string | null;
   avatarUrl: string | null;
   isPublic: boolean;
+  isPrivate: boolean;
+  hasPassword: boolean;
+  removalRequestedAt: string | null;
+  removalApprovedAt: string | null;
 };
+
+function toVisibility(item: Pick<PersonItem, "isPublic" | "isPrivate">): PersonVisibility {
+  if (item.isPublic === false) return "hidden";
+  if (item.isPrivate) return "private";
+  return "public";
+}
 
 export function usePeopleAdmin() {
   const searchParams = useSearchParams();
@@ -33,7 +45,10 @@ export function usePeopleAdmin() {
   const [slug, setSlug] = useState("");
   const [bio, setBio] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
-  const [isPublic, setIsPublic] = useState(true);
+  const [visibility, setVisibility] = useState<PersonVisibility>("public");
+  const [password, setPassword] = useState("");
+  const [editingHasPassword, setEditingHasPassword] = useState(false);
+  const [editingRemovalApprovedAt, setEditingRemovalApprovedAt] = useState<string | null>(null);
 
   const actionBusy = saving || Boolean(deletingId);
 
@@ -82,7 +97,10 @@ export function usePeopleAdmin() {
     setSlug("");
     setBio("");
     setAvatarUrl("");
-    setIsPublic(true);
+    setVisibility("public");
+    setPassword("");
+    setEditingHasPassword(false);
+    setEditingRemovalApprovedAt(null);
   }
 
   function openCreate() {
@@ -98,7 +116,10 @@ export function usePeopleAdmin() {
     setSlug(item.slug);
     setBio(item.bio ?? "");
     setAvatarUrl(item.avatarUrl ?? "");
-    setIsPublic(item.isPublic);
+    setVisibility(toVisibility(item));
+    setPassword("");
+    setEditingHasPassword(item.hasPassword);
+    setEditingRemovalApprovedAt(item.removalApprovedAt);
     setMode("form");
   }
 
@@ -123,6 +144,11 @@ export function usePeopleAdmin() {
       return;
     }
 
+    if (visibility === "private" && !editingHasPassword && !password.trim()) {
+      setBanner({ type: "err", text: "Set a password for a password-protected profile." });
+      return;
+    }
+
     setSaving(true);
     setBanner({ type: "info", text: editingId ? "Updating person profile…" : "Creating person profile…" });
 
@@ -131,7 +157,9 @@ export function usePeopleAdmin() {
       slug: slug.trim(),
       bio: bio.trim(),
       avatarUrl: avatarUrl.trim(),
-      isPublic,
+      isPublic: visibility !== "hidden",
+      isPrivate: visibility === "private",
+      password: password.trim(),
     };
 
     try {
@@ -223,13 +251,17 @@ export function usePeopleAdmin() {
     slug,
     bio,
     avatarUrl,
-    isPublic,
+    visibility,
+    password,
+    editingHasPassword,
+    editingRemovalApprovedAt,
     setQuery,
     setName,
     setSlug,
     setBio,
     setAvatarUrl,
-    setIsPublic,
+    setVisibility,
+    setPassword,
     openCreate,
     openEdit,
     backToList,
