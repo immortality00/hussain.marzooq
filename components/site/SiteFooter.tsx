@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAllPageSettings } from "@/lib/server/page-settings";
+import { DISCIPLINES } from "@/lib/disciplines";
 
 const ALWAYS_ON_PRIMARY = [
   { href: "/services", label: "Services" },
@@ -11,27 +12,19 @@ const ALWAYS_ON_SECONDARY = [
   { href: "/blog", label: "Blog" },
 ];
 
-const DISCIPLINE_PRIMARY = [
-  { href: "/photography", label: "Photography", slug: "photography" },
-  { href: "/videography", label: "Videography", slug: "videography" },
-];
-
-const DISCIPLINE_SECONDARY = [
-  { href: "/nft", label: "NFT", slug: "nft" },
-  { href: "/dancing", label: "Dancing", slug: "dancing" },
-  { href: "/web-development", label: "Web Development", slug: "web-development" },
-];
+const PRIMARY_DISCIPLINE_SLUGS = new Set(["photography", "videography"]);
 
 export async function SiteFooter() {
   const pageSettings = await getAllPageSettings();
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
+  const activeDisciplines = DISCIPLINES.filter((d) => activeSet.has(d.slug));
   const primaryLinks = [
-    ...DISCIPLINE_PRIMARY.filter((d) => activeSet.has(d.slug)),
+    ...activeDisciplines.filter((d) => PRIMARY_DISCIPLINE_SLUGS.has(d.slug)),
     ...ALWAYS_ON_PRIMARY,
   ];
   const secondaryLinks = [
-    ...DISCIPLINE_SECONDARY.filter((d) => activeSet.has(d.slug)),
+    ...activeDisciplines.filter((d) => !PRIMARY_DISCIPLINE_SLUGS.has(d.slug)),
     ...ALWAYS_ON_SECONDARY,
   ];
   return (
@@ -39,8 +32,7 @@ export async function SiteFooter() {
       <div className="section-shell py-12">
         <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
           <div className="max-w-md">
-            <div className="eyebrow">HM VISUALS</div>
-            <h2 className="mt-4 text-2xl font-semibold tracking-tight">
+            <h2 className="text-2xl font-semibold tracking-tight">
               Visual work shaped with cinematic clarity.
             </h2>
             <p className="mt-4 text-sm leading-6 text-muted-foreground">

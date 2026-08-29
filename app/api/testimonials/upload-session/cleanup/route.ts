@@ -1,4 +1,5 @@
 import { isRecord, asNullableString, noStoreJson } from "@/app/api/_lib/common";
+import { getClientAddress } from "@/app/api/_lib/public-form-security";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { deleteManagedCloudinaryFolderTree } from "@/lib/server/cloudinary-assets";
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
@@ -9,14 +10,8 @@ const CLEANUP_RATE_LIMIT_WINDOW_MS = 60_000;
 const CLEANUP_RATE_LIMIT_MAX = 12;
 const SESSION_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
-function getClientKey(request: Request) {
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = request.headers.get("x-real-ip")?.trim();
-  return forwardedFor || realIp || "anonymous";
-}
-
 export async function POST(request: Request) {
-  const clientKey = getClientKey(request);
+  const clientKey = getClientAddress(request);
 
   const rateLimit = await consumeFixedWindowRateLimit({
     bucket: "public-testimonials-upload-session-cleanup",

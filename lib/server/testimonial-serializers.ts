@@ -1,20 +1,4 @@
-import { asFiniteNumber, asStringArray } from "@/app/api/_lib/common";
-
-export type PublicTestimonial = {
-  id: string;
-  name: string;
-  about: string | null;
-  location: string | null;
-  locationId: string | null;
-  locationLabel: string | null;
-  locationLat: number | null;
-  locationLon: number | null;
-  locationCountryCode: string | null;
-  review: string;
-  rating: number;
-  profilePhotoUrl: string | null;
-  photoUrls: string[];
-};
+import { asStringArray } from "@/app/api/_lib/common";
 
 export type AdminTestimonialItem = {
   id: string;
@@ -34,26 +18,6 @@ export type AdminTestimonialItem = {
 
 function normalizePhotoUrls(value: unknown) {
   return asStringArray(value, 12);
-}
-
-export function toPublicTestimonial(doc: Record<string, unknown>): PublicTestimonial {
-  return {
-    id: String(doc._id),
-    name: typeof doc.name === "string" ? doc.name : "",
-    about: typeof doc.about === "string" ? doc.about : null,
-    location: typeof doc.location === "string" ? doc.location : null,
-    locationId: typeof doc.locationId === "string" ? doc.locationId : null,
-    locationLabel: typeof doc.locationLabel === "string" ? doc.locationLabel : null,
-    locationLat: asFiniteNumber(doc.locationLat),
-    locationLon: asFiniteNumber(doc.locationLon),
-    locationCountryCode:
-      typeof doc.locationCountryCode === "string" ? doc.locationCountryCode : null,
-    review: typeof doc.review === "string" ? doc.review : "",
-    rating:
-      typeof doc.rating === "number" && doc.rating >= 1 && doc.rating <= 5 ? doc.rating : 5,
-    profilePhotoUrl: typeof doc.profilePhotoUrl === "string" ? doc.profilePhotoUrl : null,
-    photoUrls: normalizePhotoUrls(doc.photoUrls),
-  };
 }
 
 export function toAdminTestimonialItem(doc: Record<string, unknown>): AdminTestimonialItem {

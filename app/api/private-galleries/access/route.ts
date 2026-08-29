@@ -8,6 +8,7 @@ import {
   verifyGalleryPassword,
 } from "@/lib/private-galleries";
 import { asNullableString, isRecord, noStoreJson } from "@/app/api/_lib/common";
+import { getClientAddress } from "@/app/api/_lib/public-form-security";
 import {
   clearFixedWindowRateLimit,
   consumeFixedWindowRateLimit,
@@ -19,15 +20,8 @@ export const dynamic = "force-dynamic";
 const ACCESS_ATTEMPT_LIMIT = 5;
 const ACCESS_ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
 
-function getClientIp(req: Request) {
-  const forwardedFor = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = req.headers.get("x-real-ip")?.trim();
-
-  return forwardedFor || realIp || "unknown";
-}
-
 function buildAccessRateLimitKey(req: Request, slug: string) {
-  return `${slug}:${getClientIp(req)}`;
+  return `${slug}:${getClientAddress(req)}`;
 }
 
 export async function POST(req: Request) {

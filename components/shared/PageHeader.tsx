@@ -16,7 +16,7 @@ export function PageHeader({ title, description, className, titleClassName }: Pa
         <AnimatedText>{title}</AnimatedText>
       </h1>
       {description && (
-        <p className="mt-4 text-sm leading-6 text-muted-foreground sm:text-base">
+        <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
           {description}
         </p>
       )}

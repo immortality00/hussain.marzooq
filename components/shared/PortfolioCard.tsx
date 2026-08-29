@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
+import SmartImage from "@/components/shared/SmartImage";
 import { buttonClasses } from "@/components/shared/Button";
 
 interface PortfolioCardProps {
@@ -37,7 +37,7 @@ export function PortfolioCard({
       className={`group relative ${minHeight} overflow-hidden rounded-[2.25rem] border bg-muted shadow-sm${className ? ` ${className}` : ""}`}
     >
       {imageUrl ? (
-        <Image
+        <SmartImage
           src={imageUrl}
           alt={title}
           fill

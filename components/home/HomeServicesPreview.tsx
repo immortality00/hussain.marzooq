@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/shared/Button";
 import { ServiceCard } from "@/components/services/ServiceCard";
+import { disciplineForCategory } from "@/lib/disciplines";
 import type { PublicServiceItem } from "@/lib/server/public-services";
 import type { HomeSections } from "@/lib/server/page-sections";
 
@@ -13,16 +14,6 @@ const serviceDirections = [
   { label: "Web Development", slug: "web-development" },
 ];
 
-function disciplineSlugForCategory(category: string): string | null {
-  const c = category.trim().toLowerCase();
-  if (c.includes("photo")) return "photography";
-  if (c.includes("video") || c.includes("film") || c.includes("reel")) return "videography";
-  if (c.includes("dance")) return "dancing";
-  if (c.includes("nft")) return "nft";
-  if (c.includes("web") || c.includes("dev") || c.includes("code")) return "web-development";
-  return null;
-}
-
 export function HomeServicesPreview({
   services,
   activeSet,
@@ -33,7 +24,7 @@ export function HomeServicesPreview({
   content: HomeSections["servicesPreview"];
 }) {
   const filteredServices = services.filter((s) => {
-    const discipline = disciplineSlugForCategory(s.category);
+    const discipline = disciplineForCategory(s.category);
     return discipline === null || activeSet.has(discipline);
   });
 

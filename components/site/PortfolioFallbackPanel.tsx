@@ -26,8 +26,6 @@ export function PortfolioFallbackPanel({
     <section className="mt-10 overflow-hidden rounded-[2.25rem] border bg-background/70 shadow-sm backdrop-blur">
       <div className="grid gap-0 lg:grid-cols-[0.95fr_1.05fr]">
         <div className="relative min-h-[20rem] overflow-hidden bg-foreground text-background">
-          <div className="absolute inset-0 bg-linear-to-br from-transparent via-background/0 to-background/10" />
-
           <div className="relative flex h-full min-h-[20rem] flex-col justify-end p-6 sm:p-8">
             <h2 className="max-w-xl text-3xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-4xl">
               {title}
@@ -56,7 +54,7 @@ export function PortfolioFallbackPanel({
 
         <div className="grid gap-3 p-5 sm:p-6">
           {items.map((item) => (
-            <article key={item.title} className="rounded-[1.5rem] border bg-muted/20 p-5">
+            <article key={item.title} className="rounded-[2rem] border bg-muted/20 p-5">
               <h3 className="text-lg font-semibold tracking-tight">{item.title}</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.text}</p>
             </article>

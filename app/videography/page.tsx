@@ -48,7 +48,7 @@ export default async function VideographyPage() {
         {showreel?.type === "video" && showreel.secureUrl ? (
           <section
             id="showreel"
-            className="mt-10 overflow-hidden rounded-3xl border bg-muted scroll-mt-24"
+            className="mt-10 overflow-hidden rounded-[2rem] border bg-muted scroll-mt-24"
           >
             <div className="aspect-video w-full bg-black">
               <video
@@ -63,7 +63,7 @@ export default async function VideographyPage() {
         ) : showreelEmbed ? (
           <section
             id="showreel"
-            className="mt-10 overflow-hidden rounded-3xl border bg-muted scroll-mt-24"
+            className="mt-10 overflow-hidden rounded-[2rem] border bg-muted scroll-mt-24"
           >
             <div className="aspect-video w-full bg-black">
               <iframe

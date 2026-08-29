@@ -221,7 +221,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
 
       {open ? (
         <div
-          className="fixed inset-0 z-[150] flex items-center justify-center bg-black/55 p-3 backdrop-blur-sm sm:p-5"
+          className="fixed inset-0 z-[150] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-5"
           onClick={() => void handleClose()}
         >
           <div
@@ -258,7 +258,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
 
               <div className="grid gap-6 lg:grid-cols-[1fr_0.95fr]">
                 <div className="space-y-5">
-                  <div className="rounded-[1.5rem] border border-border/60 bg-muted/20 p-4">
+                  <div className="rounded-[2rem] border border-border/60 bg-muted/20 p-4">
                     <div className="flex items-start gap-4">
                       <ProfilePhotoField
                         folder={profilePhotoFolder}
@@ -308,7 +308,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                     />
                   </div>
 
-                  <div className="rounded-[1.5rem] border border-border/60 bg-muted/20 p-4">
+                  <div className="rounded-[2rem] border border-border/60 bg-muted/20 p-4">
                     <label className="text-sm font-medium">Stars *</label>
                     <div className="mt-3">
                       <StarPicker rating={rating} setRating={setRating} />
@@ -320,7 +320,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                     <textarea
                       value={review}
                       onChange={(event) => setReview(event.target.value)}
-                      className="min-h-44 w-full rounded-[1.25rem] border border-border/70 bg-background px-4 py-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-ring"
+                      className="min-h-44 w-full rounded-2xl border border-border/70 bg-background px-4 py-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-ring"
                       placeholder="Write your review here..."
                     />
                   </div>
@@ -347,7 +347,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                     </div>
                   ) : null}
 
-                  <div className="rounded-[1.5rem] border border-border/60 bg-muted/20 p-4">
+                  <div className="rounded-[2rem] border border-border/60 bg-muted/20 p-4">
                     <button
                       type="button"
                       disabled={submitting}

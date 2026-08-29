@@ -27,7 +27,7 @@ export function SingleReviewCard({
   onNext: () => void;
 }) {
   return (
-    <article className="relative flex min-h-[285px] items-center rounded-[1.25rem] border border-border/60 bg-background p-4 shadow-sm sm:p-5 lg:min-h-[330px]">
+    <article className="relative flex min-h-[285px] items-center rounded-2xl border border-border/60 bg-background p-4 shadow-sm sm:p-5 lg:min-h-[330px]">
       <div className="absolute right-4 top-4 flex items-center gap-2">
         <button
           type="button"

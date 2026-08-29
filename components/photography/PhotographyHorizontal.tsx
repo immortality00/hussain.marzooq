@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import SmartMediaPreview from "@/components/media/SmartMediaPreview";
 import type { MediaItem } from "@/components/media/types";
+import { NoResults } from "@/components/shared/NoResults";
 
 // Editorial, non-uniform heights (vh). Cycled across the track.
 const HEIGHTS = [56, 46, 60, 50, 54];
@@ -133,7 +134,7 @@ export default function PhotographyHorizontal({
   }, [items]);
 
   if (items.length === 0) {
-    return <div className="rounded-2xl border p-6 text-sm text-muted-foreground">No matches.</div>;
+    return <NoResults />;
   }
 
   return (

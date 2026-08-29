@@ -202,10 +202,6 @@
     box-shadow: var(--shadow-elevated);
   }
 
-  .eyebrow {
-    @apply inline-flex rounded-full border px-3 py-1 text-[11px] tracking-[0.18em] text-muted-foreground;
-  }
-
   .section-shell {
     @apply mx-auto max-w-6xl px-4;
   }

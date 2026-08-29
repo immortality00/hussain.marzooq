@@ -109,7 +109,7 @@ export default function PrivateGalleryBrowser({
 
       {active ? (
         <div
-          className="fixed inset-0 z-50 bg-black/72 p-4"
+          className="fixed inset-0 z-50 bg-black/70 p-4"
           onClick={() => setActive(null)}
         >
           <div
@@ -136,7 +136,7 @@ export default function PrivateGalleryBrowser({
 
             <div className="grid h-[82vh] min-h-0 lg:grid-cols-[1.1fr_0.9fr]">
               <div className="min-h-0 bg-black/5 p-4">
-                <div className="h-full w-full overflow-hidden rounded-[1.5rem] border bg-black">
+                <div className="h-full w-full overflow-hidden rounded-[2rem] border bg-black">
                   {active.secureUrl ? (
                     active.type === "video" ? (
                       <video

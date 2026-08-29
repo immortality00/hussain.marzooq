@@ -68,7 +68,7 @@ export function Navbar() {
 
             {/* Logo */}
             <Link href="/" className="group flex shrink-0 items-center gap-2.5">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/60 text-[10px] tracking-[0.15em] text-muted-foreground transition-colors group-hover:border-foreground/40 group-hover:text-foreground">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/60 text-[11px] tracking-[0.15em] text-muted-foreground transition-colors group-hover:border-foreground/40 group-hover:text-foreground">
                 HM
               </span>
               <span className="hidden text-[13px] font-semibold tracking-[0.12em] text-foreground/80 transition-colors group-hover:text-foreground sm:inline">
@@ -165,35 +165,35 @@ export function Navbar() {
           <button
             type="button"
             onClick={openWork}
-            className="rounded-lg px-3 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+            className="rounded-xl px-3 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
           >
             Work
           </button>
           <Link
             href="/about"
             onClick={() => setMobileOpen(false)}
-            className="rounded-lg px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+            className="rounded-xl px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
           >
             About
           </Link>
           <Link
             href="/services"
             onClick={() => setMobileOpen(false)}
-            className="rounded-lg px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+            className="rounded-xl px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
           >
             Services
           </Link>
           <Link
             href="/people"
             onClick={() => setMobileOpen(false)}
-            className="rounded-lg px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+            className="rounded-xl px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
           >
             People
           </Link>
           <Link
             href="/testimonials"
             onClick={() => setMobileOpen(false)}
-            className="rounded-lg px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
+            className="rounded-xl px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
           >
             Testimonials
           </Link>

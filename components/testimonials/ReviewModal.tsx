@@ -18,7 +18,7 @@ export function ReviewModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[120] bg-black/55 p-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[120] bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
       <div
         className="mx-auto mt-5 w-full max-w-6xl overflow-hidden rounded-[2rem] bg-background text-foreground shadow-2xl ring-1 ring-border/80"
         onClick={(event) => event.stopPropagation()}
@@ -52,7 +52,7 @@ export function ReviewModal({
             <div className="space-y-6">
               <div className="text-xl text-amber-500">{renderStars(item.rating)}</div>
 
-              <blockquote className="rounded-[1.5rem] border border-border/60 bg-muted/25 p-5 text-xl leading-9 tracking-[-0.02em] sm:text-2xl sm:leading-10">
+              <blockquote className="rounded-[2rem] border border-border/60 bg-muted/25 p-5 text-xl leading-9 tracking-[-0.02em] sm:text-2xl sm:leading-10">
                 &quot;{item.review}&quot;
               </blockquote>
             </div>
@@ -63,7 +63,7 @@ export function ReviewModal({
                   {item.photoUrls.map((url, index) => (
                     <div
                       key={url}
-                      className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-[1.2rem] bg-muted/40 ring-1 ring-border/60"
+                      className="relative flex min-h-[320px] items-center justify-center overflow-hidden rounded-2xl bg-muted/40 ring-1 ring-border/60"
                     >
                       <SafeImage
                         src={url}
@@ -75,7 +75,7 @@ export function ReviewModal({
                   ))}
                 </div>
               ) : (
-                <div className="rounded-[1.5rem] border border-border/60 bg-muted/25 p-6 text-sm text-muted-foreground">
+                <div className="rounded-[2rem] border border-border/60 bg-muted/25 p-6 text-sm text-muted-foreground">
                   No photos attached to this review.
                 </div>
               )}

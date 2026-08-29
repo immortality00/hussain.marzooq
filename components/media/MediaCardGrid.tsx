@@ -1,6 +1,7 @@
 "use client";
 
 import SmartMediaPreview from "./SmartMediaPreview";
+import { NoResults } from "@/components/shared/NoResults";
 import type { MediaItem } from "./types";
 
 const EAGER_GRID_IMAGE_COUNT = 3;
@@ -15,7 +16,7 @@ export default function MediaCardGrid({
   mediaMode?: "image" | "video";
 }) {
   if (items.length === 0) {
-    return <div className="rounded-2xl border p-6 text-sm text-muted-foreground">No matches.</div>;
+    return <NoResults />;
   }
 
   const cardAspect = mediaMode === "video" ? "aspect-video" : "aspect-4/3";

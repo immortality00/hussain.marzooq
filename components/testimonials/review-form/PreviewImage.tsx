@@ -1,7 +1,7 @@
 "use client";
 
-import Image from "next/image";
+import SmartImage from "@/components/shared/SmartImage";
 
 export function PreviewImage({ src, alt, className }: { src: string; alt: string; className: string }) {
-  return <Image src={src} alt={alt} fill className={className} sizes="220px" />;
+  return <SmartImage src={src} alt={alt} fill className={className} sizes="220px" />;
 }

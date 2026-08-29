@@ -1,4 +1,4 @@
-import Image from "next/image";
+import SmartImage from "@/components/shared/SmartImage";
 import Link from "next/link";
 import { workLinkForCategory, type PublicServiceItem } from "@/lib/server/public-services";
 
@@ -26,15 +26,13 @@ export function ServiceCard({
       <Link href={`/services/${encodeURIComponent(service.slug)}`} className="block">
         <div className="relative h-72 overflow-hidden bg-muted">
           {img ? (
-            <Image
+            <SmartImage
               src={img}
               alt={service.name || "Service"}
               fill
               sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
               className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
               priority={priority}
-              loading={priority ? "eager" : "lazy"}
-              fetchPriority={priority ? "high" : undefined}
             />
           ) : (
             <div className="h-full w-full bg-muted" />
