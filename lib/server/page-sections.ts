@@ -40,11 +40,6 @@ export type WebDevSections = {
   stickyCta: CtaCopy;
 };
 
-export type BlogSections = {
-  pillars: TextCard[];
-  stickyCta: CtaCopy;
-};
-
 export type CtaOnlySections = { stickyCta: CtaCopy };
 
 export type PageSectionsMap = {
@@ -54,7 +49,7 @@ export type PageSectionsMap = {
   videography: CtaOnlySections;
   dancing: DancingSections;
   "web-development": WebDevSections;
-  blog: BlogSections;
+  blog: CtaOnlySections;
   nft: CtaOnlySections;
   people: CtaOnlySections;
   "people-detail": CtaOnlySections;
@@ -157,31 +152,7 @@ const DEFAULTS: PageSectionsMap = {
     },
     stickyCta: BOOKING_CTA,
   },
-  blog: {
-    pillars: [
-      {
-        title: "Portraits",
-        text: "Thoughtful portrait direction, cinematic framing, and visual storytelling around people.",
-        image: EMPTY_SECTION_IMAGE,
-      },
-      {
-        title: "Fashion",
-        text: "Editorial styling, movement, mood, and image construction for strong visual identity.",
-        image: EMPTY_SECTION_IMAGE,
-      },
-      {
-        title: "Weddings",
-        text: "Emotion-led coverage with a premium and artistic point of view.",
-        image: EMPTY_SECTION_IMAGE,
-      },
-      {
-        title: "Film",
-        text: "Cinematic shooting, visual pacing, and stronger moving-image work.",
-        image: EMPTY_SECTION_IMAGE,
-      },
-    ],
-    stickyCta: BOOKING_CTA,
-  },
+  blog: { stickyCta: BOOKING_CTA },
   nft: {
     stickyCta: {
       title: "Interested in a piece?",

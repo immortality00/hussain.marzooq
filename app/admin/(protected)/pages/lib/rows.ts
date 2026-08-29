@@ -4,6 +4,10 @@ export type PageRow = {
   key: string;
   label: string;
   settingsSlug?: string;
+  // A settingsSlug row that has a visibility toggle but no Work-overlay card
+  // image — a plain Main page (Blog), not one of the 5 disciplines. Keeps it in
+  // the Main group and out of the "needs card image" check.
+  toggleOnly?: boolean;
   seoSlug?: string;
   seoDetailPage?: boolean;
   sectionsSlug?: PageSectionsSlug;
@@ -56,7 +60,20 @@ export const PAGE_ROWS: PageRow[] = [
     seoDetailPage: true,
     sectionsSlug: "people-detail",
   },
-  { key: "blog", label: "Blog", seoSlug: "blog", sectionsSlug: "blog" },
+  {
+    key: "blog",
+    label: "Blog",
+    settingsSlug: "blog",
+    toggleOnly: true,
+    seoSlug: "blog",
+    sectionsSlug: "blog",
+  },
+  {
+    key: "blog-detail",
+    label: "Blog — post page",
+    seoSlug: "blog-detail",
+    seoDetailPage: true,
+  },
   { key: "contact", label: "Contact", seoSlug: "contact" },
   { key: "testimonials", label: "Testimonials", seoSlug: "testimonials", sectionsSlug: "testimonials" },
 ];
@@ -65,7 +82,7 @@ export type PageGroup = "main" | "discipline" | "template";
 
 export function pageGroup(row: PageRow): PageGroup {
   if (row.seoDetailPage) return "template";
-  if (row.settingsSlug) return "discipline";
+  if (row.settingsSlug && !row.toggleOnly) return "discipline";
   return "main";
 }
 
@@ -73,7 +90,7 @@ export function pageNeedsImage(
   row: PageRow,
   ctx: { isActive: boolean; cardImageUrl?: string; homeSections?: HomeSections },
 ): boolean {
-  if (row.settingsSlug && ctx.isActive && !ctx.cardImageUrl) return true;
+  if (row.settingsSlug && !row.toggleOnly && ctx.isActive && !ctx.cardImageUrl) return true;
   if (row.sectionsSlug === "home" && ctx.homeSections) {
     if (!ctx.homeSections.hero?.image?.url) return true;
     if (ctx.homeSections.featuredCards.some((card) => !card.image?.url)) return true;

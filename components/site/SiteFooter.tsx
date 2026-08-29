@@ -7,16 +7,16 @@ const ALWAYS_ON_PRIMARY = [
   { href: "/contact", label: "Contact" },
 ];
 
-const ALWAYS_ON_SECONDARY = [
-  { href: "/people", label: "People" },
-  { href: "/blog", label: "Blog" },
-];
-
 const PRIMARY_DISCIPLINE_SLUGS = new Set(["photography", "videography"]);
 
 export async function SiteFooter() {
   const pageSettings = await getAllPageSettings();
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
+
+  const secondaryAlwaysOn = [
+    { href: "/people", label: "People" },
+    ...(activeSet.has("blog") ? [{ href: "/blog", label: "Blog" }] : []),
+  ];
 
   const activeDisciplines = DISCIPLINES.filter((d) => activeSet.has(d.slug));
   const primaryLinks = [
@@ -25,7 +25,7 @@ export async function SiteFooter() {
   ];
   const secondaryLinks = [
     ...activeDisciplines.filter((d) => !PRIMARY_DISCIPLINE_SLUGS.has(d.slug)),
-    ...ALWAYS_ON_SECONDARY,
+    ...secondaryAlwaysOn,
   ];
   return (
     <footer className="border-t bg-card">

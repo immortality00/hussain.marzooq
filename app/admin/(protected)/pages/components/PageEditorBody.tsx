@@ -51,7 +51,7 @@ export function PageEditorBody({
       <div className="space-y-3">
         {row.settingsSlug && <VisibilityGroup isActive={isActive} onToggle={onVisibilityChange} />}
 
-        {row.settingsSlug && cardImage && (
+        {row.settingsSlug && !row.toggleOnly && cardImage && (
           <CardImageGroup value={cardImage} onChange={onCardImageChange} isActive={isActive} />
         )}
 

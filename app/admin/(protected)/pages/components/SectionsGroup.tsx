@@ -15,6 +15,7 @@ const CTA_ONLY_SLUGS: PageSectionsSlug[] = [
   "photography",
   "videography",
   "nft",
+  "blog",
   "people",
   "people-detail",
   "testimonials",
@@ -50,21 +51,10 @@ function SectionForm({
       return (
         <WebDevSectionsForm data={data as PageSectionsMap["web-development"]} onChange={onChange} />
       );
-    case "blog": {
-      const d = data as PageSectionsMap["blog"];
-      return (
-        <CardsCtaForm
-          cardsTitle="Pillars"
-          cards={d.pillars}
-          cta={d.stickyCta}
-          onCardsChange={(cards) => onChange({ ...d, pillars: cards })}
-          onCtaChange={(cta) => onChange({ ...d, stickyCta: cta })}
-        />
-      );
-    }
     case "photography":
     case "videography":
     case "nft":
+    case "blog":
     case "people":
     case "people-detail":
     case "testimonials":

@@ -136,6 +136,16 @@ const DEFAULTS: Record<string, SeoDefaults> = {
     headerDescription:
       "Visual essays, creative process, and long-form writing around photography, film, movement, and image-making.",
   },
+  // Template for every /blog/[slug] page — {title} is replaced with the post's
+  // own title at render time. Each post also carries its own title/excerpt, so
+  // these are the search & social fallbacks; there is no on-page Header group.
+  "blog-detail": {
+    title: "{title} — HM Visuals",
+    description:
+      "{title} — a visual essay by Hussain Marzooq on photography, film, movement, and image-making.",
+    headerTitle: "{title}",
+    headerDescription: "",
+  },
   testimonials: {
     title: "Testimonials — HM Visuals",
     description:
