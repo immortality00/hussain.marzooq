@@ -38,7 +38,8 @@ Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4
 MongoDB Atlas, Cloudinary, Resend
 Deployed on **Netlify** — not Vercel.
 shadcn/ui new-york at components/ui/ · Three.js · react-globe.gl · GSAP + @gsap/react +
-ScrollTrigger · Framer Motion · Lenis
+ScrollTrigger · Framer Motion · Lenis · react-markdown + remark-gfm (blog content, C1 —
+renders to React elements, no dangerouslySetInnerHTML)
 
 ## Image pipeline — Next's optimizer is bypassed (2026-07-31)
 `next.config.ts` sets `loader: "custom"` → `lib/cloudinary-image-loader.ts`. Every
@@ -490,8 +491,54 @@ section (heading + a grid of preview cards) → `StickyCta`. Keeps the `isActive
   and hostname-less input) + `projectUrlLabel` (hostname without `www.`). Invalid URLs are dropped;
   an all-invalid/empty list renders no Projects section (empty means empty).
 
-## Blog (C1, pending)
-Standard blog, admin-defined categories, full CRUD, /blog + /blog/[slug].
+## Blog (C1, shipped 2026-08-29)
+Full blog system: two collections, admin CRUD, public `/blog` + `/blog/[slug]`.
+
+- **Collections:** `blog_posts` `{ title, slug, excerpt, content(markdown), coverImageUrl,
+  coverImagePublicId, categoryId, category(slug), tags[], author, isPublished, publishedAt,
+  createdAt, updatedAt }` and `blog_categories` `{ name, slug, isActive, order, createdAt,
+  updatedAt }` (modelled on `service_categories` but **no system "others"** — a post's
+  category is optional, `categoryId:null`/`category:""`). Indexes in `ensure-indexes.mjs`
+  (`blog_posts.slug` unique + `{isPublished,publishedAt}` + `{category,isPublished,publishedAt}`
+  + `{updatedAt}`; `blog_categories.slug` unique + order/active). **No migration** — new feature.
+- **Content is Markdown, rendered with `react-markdown` + `remark-gfm`** (deps added C1). It
+  renders to **React elements — no `dangerouslySetInnerHTML`** (honors the ban). `components/blog/
+  BlogContent.tsx` is the only renderer; styling is the `.blog-prose` block in `globals.css`
+  (there is **no `@tailwindcss/typography`** — don't add it, extend `.blog-prose`). Do **not**
+  switch to a WYSIWYG/HTML editor — that would reintroduce `dangerouslySetInnerHTML`.
+- **API:** `api/blog` + `api/blog/[id]` (posts CRUD) and `api/blog-categories` + `[id]`
+  (categories CRUD), all admin-gated via `requireAdminOr401`/`requireAdminObjectId`. Category
+  **rename cascades** `category` slug onto linked posts; category **delete is blocked while
+  referenced** unless `?detach=1` (nulls the posts' category). Slug helpers are reused from
+  `lib/server/media-tags.ts` (`slugifyTag`/`isValidTagSlug` are generic slug utils). Cover image
+  cleanup is scoped to `CLOUDINARY_BLOG_FOLDER` so library-picked covers are never deleted.
+- **Public reads** `lib/server/public-blog.ts` (`getPublishedPosts(category?)`, `getPostBySlug`,
+  `getPublicBlogCategories`) are **fail-safe → `[]`** (a DB blip renders the empty state, never
+  throws). Published = `isPublished:true` AND `publishedAt <= now`; drafts 404 on the detail route
+  and never list. `lib/reading-time.ts` (`readingMinutes`, unit-tested) drives the read-time label.
+- **Public pages:** `app/blog/page.tsx` (listing + category filter via `?category=`, `BlogCard`,
+  `NoResults` empty state) and `app/blog/[slug]/page.tsx` (reading layout, `generateMetadata` with
+  OG = cover, `notFound()` on missing/unpublished). SEO template slug **`blog-detail`** (`{title}`
+  token, like `people-detail`) added to `page-seo` + `PAGE_ROWS`. Blog's own `page_sections` is now
+  **CTA-only** — `BlogSections` (the old interim `pillars` TextCards) was **deleted**; the Pages→Blog
+  editor is CTA-only.
+- **Admin:** sidebar "Content" group gains **Blog** (`/admin/blog` list + bulk publish/unpublish/
+  delete) and **Blog Categories** (`/admin/blog-categories`, `SortableList` reorder + active toggle).
+  Post editor at `/admin/blog/new` and `/admin/blog/[id]` (`BlogPostEditor`: auto-slug-from-title,
+  `ImageField` cover → `CLOUDINARY_BLOG_FOLDER`, category select, freeform `TagsInput`, markdown
+  field with live preview, `AdminToggle` publish; `author` defaults to "Hussain Marzooq", no UI).
+- **Blog page visibility toggle lives in the Pages tab**, not `/admin/blog`. The blog `PAGE_ROW`
+  carries `settingsSlug:"blog"` **plus `toggleOnly:true`** — a new `rows.ts` flag meaning "has a
+  visibility toggle but no Work-overlay card image": it keeps blog in the **Main** group (not
+  Disciplines), and `pageGroup`/`pageNeedsImage` both skip the card-image machinery for it (so blog
+  is never a "needs image" dashboard warning). `getAllPageSettings()` now includes `"blog"` so the
+  toggle has state; the page-settings PATCH route's `VALID_SLUGS` gained `"blog"`. When inactive,
+  `/blog` + `/blog/[slug]` **redirect home** (via tolerant `getBlogActive()`) and the footer's Blog
+  link drops (`SiteFooter` reads it from `getAllPageSettings`). Blog is not in the 6-item nav (footer
+  only) — unchanged.
+- **`ImageField` gained an optional `folder` prop** (default `CLOUDINARY_SECTIONS_FOLDER`,
+  backward-compatible) so blog covers upload to `CLOUDINARY_BLOG_FOLDER`. **No CSP change** — covers
+  are Cloudinary images already covered by `img-src`.
 
 ## Page content CMS — current system
 Three collections, one admin surface at `/admin/pages` (old `/admin/seo` and
@@ -504,7 +551,8 @@ carry an **inline visibility toggle** on the list that PATCHes `page-settings` i
 `pageNeedsImage`/`pageGroup` helpers live in `pages/lib/rows.ts` (plain module, imported by
 both server routes and the client hook — never re-export `PAGE_ROWS` through the `"use client"`
 hook, that hands a server component a client-reference proxy and `.some` throws):
-1. `page_settings` — visibility toggle (5 disciplines) + Work-overlay `cardImage`.
+1. `page_settings` — visibility toggle (5 disciplines + Work-overlay `cardImage`, **plus Blog
+   as a `toggleOnly` Main-group toggle with no card image** — C1, see Blog section).
 2. `page_seo` — per slug, 5 fields: `title`/`description`/`ogImageUrl` (search & social,
    used by `generateMetadata`) + `headerTitle`/`headerDescription` (the visible on-page
    H1/description). Two different things — do not conflate. `people-detail` has an SEO
@@ -723,7 +771,8 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   `wantsHardDelete(req)` for the `?hard=1` soft-vs-hard delete flag. Domain
   field-mapping and cleanup stay in each route.
 - `components/admin/media-picker/MediaPickerModal.tsx` + `ImageField.tsx` — all admin
-  image pick/upload flows (N7). Don't build another picker.
+  image pick/upload flows (N7). Don't build another picker. `ImageField` takes an optional
+  `folder` prop (default `CLOUDINARY_SECTIONS_FOLDER`; C1 passes `CLOUDINARY_BLOG_FOLDER`).
 - `components/admin/sortable/SortableList.tsx` — **all** admin drag-to-reorder (T1).
   `<SortableList ids onReorder(activeId,overId) className>` owns the sensors + `DndContext`
   (closestCenter) + vertical `SortableContext`; each row calls the `useSortableRow(id)` hook

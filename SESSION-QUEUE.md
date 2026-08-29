@@ -57,6 +57,9 @@ upload, no `web_projects` collection; `lib/web-projects.ts` URL helpers) ·
 D13 (final public consistency sweep: `lib/disciplines.ts` + `NoResults` shared modules, flat-fallback
 + eyebrow + radius + backdrop cleanup, dead-code/dedup, PageHeader/SmartImage adoption; `SortableList`
 dnd-kit hydration fix; WorkOverlay rebuilt to the photography-cylinder arc+sway model).
+C1 (blog: `blog_posts` + `blog_categories`, admin CRUD at `/admin/blog` + `/admin/blog-categories`,
+Markdown content via react-markdown, public `/blog` + `/blog/[slug]` with category filter + read time,
+`blog-detail` SEO template; plus a Pages-tab visibility toggle via a new `toggleOnly` row flag). Archive §C1.
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -91,7 +94,7 @@ longer top-to-bottom — take sessions in exactly this order.
 11. ~~**D13 last**~~ ✓ done (2026-08-29) — public consistency sweep: shared `lib/disciplines.ts`
     + `NoResults`, gradient/eyebrow/radius/backdrop cleanup, dead-code + dedup, PageHeader/SmartImage
     adoption; plus a dnd-kit `SortableList` hydration fix and the WorkOverlay arc+sway rebuild. Archive §D13.
-12. **C1, C2, C3** · **P1, P2** · **NFT1, NFT2** — the remaining queue.
+12. ~~**C1**~~ ✓ done (blog system, archive §C1) · **C2, C3** · **P1, P2** · **NFT1, NFT2** — the remaining queue.
 
 Hard dependencies, stated once so no session has to re-derive them:
 `C4 → D6` · `T1 → T2` · `D9b → D9` · `D2b → D4`'s homepage transition · everything → `D13`.
@@ -191,25 +194,6 @@ complete.
 ---
 
 ## Phase 3 — Content & analytics
-
-### Session C1 — Blog admin + public pages — `pending`
-Build the blog system.
-
-Admin:
-- MongoDB collection: `blog_posts` (title, slug, content, coverImageUrl, category, tags, publishedAt, isPublished, author, updatedAt).
-- Categories: admin-defined (same pattern as existing media categories).
-- Admin CRUD at /admin/blog with list + create/edit forms.
-- Slug auto-generated from title, editable.
-- Content editor: rich text or Markdown — propose the best option for Next.js App Router.
-
-Public:
-- /blog: post listing with cover images, date, category, tags.
-- /blog/[slug]: article page with reading layout, large typography, estimated read time.
-- Category filter on listing page.
-
-Read existing admin pattern (services admin is a good reference) before writing.
-
----
 
 ### Session C2 — Open Graph images — `pending`
 Each public page needs a proper OG image so link previews on social media show actual photography.

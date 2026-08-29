@@ -26,8 +26,21 @@ export async function getPageSettings(slug: string): Promise<PageSettings> {
   };
 }
 
+// Blog is a whole-page on/off switch (not a discipline — it has no Work-overlay
+// card). Defaults to active, and stays active on a DB blip so a transient error
+// never hides the page.
+export async function getBlogActive(): Promise<boolean> {
+  try {
+    const db = await getDb();
+    const doc = await db.collection("page_settings").findOne({ slug: "blog" });
+    return typeof doc?.isActive === "boolean" ? doc.isActive : true;
+  } catch {
+    return true;
+  }
+}
+
 export async function getAllPageSettings(): Promise<PageSettings[]> {
-  const SLUGS = ["photography", "videography", "nft", "dancing", "web-development"];
+  const SLUGS = ["photography", "videography", "nft", "dancing", "web-development", "blog"];
   const db = await getDb();
   const docs = await db.collection("page_settings").find({ slug: { $in: SLUGS } }).toArray();
   const map = new Map(docs.map((d) => [d.slug as string, d]));

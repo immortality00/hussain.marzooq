@@ -230,6 +230,49 @@
     @apply text-sm leading-6 text-muted-foreground sm:text-base;
   }
 
+  .blog-prose {
+    @apply text-base leading-8 text-foreground/90;
+  }
+  .blog-prose > * + * {
+    @apply mt-6;
+  }
+  .blog-prose h2 {
+    @apply mt-12 text-2xl font-semibold tracking-tight sm:text-3xl;
+  }
+  .blog-prose h3 {
+    @apply mt-10 text-xl font-semibold tracking-tight;
+  }
+  .blog-prose h4 {
+    @apply mt-8 text-lg font-semibold tracking-tight;
+  }
+  .blog-prose a {
+    @apply underline decoration-foreground/30 underline-offset-4 transition-colors hover:decoration-foreground;
+  }
+  .blog-prose ul {
+    @apply list-disc space-y-2 pl-6;
+  }
+  .blog-prose ol {
+    @apply list-decimal space-y-2 pl-6;
+  }
+  .blog-prose blockquote {
+    @apply border-l-2 border-border pl-5 italic text-muted-foreground;
+  }
+  .blog-prose img {
+    @apply w-full rounded-2xl border;
+  }
+  .blog-prose code {
+    @apply rounded-md bg-muted px-1.5 py-0.5 text-sm;
+  }
+  .blog-prose pre {
+    @apply overflow-x-auto rounded-2xl border bg-muted p-4 text-sm;
+  }
+  .blog-prose pre code {
+    @apply bg-transparent p-0;
+  }
+  .blog-prose hr {
+    @apply border-border;
+  }
+
   /* Button system — one geometry, two looks modelled on the hero pills
      (colour set in Button.tsx: ghost = hero "Book" outline, solid = hero
      "See the work" white). Motion: 220ms fill transition, 160ms press scale,

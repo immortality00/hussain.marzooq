@@ -95,6 +95,15 @@ async function ensureIndexes() {
   await createIndex(db, "media_tags", { order: 1, createdAt: -1 });
   await createIndex(db, "media_tags", { isActive: 1, order: 1 });
 
+  await createIndex(db, "blog_posts", { slug: 1 }, { unique: true });
+  await createIndex(db, "blog_posts", { isPublished: 1, publishedAt: -1 });
+  await createIndex(db, "blog_posts", { category: 1, isPublished: 1, publishedAt: -1 });
+  await createIndex(db, "blog_posts", { updatedAt: -1 });
+
+  await createIndex(db, "blog_categories", { slug: 1 }, { unique: true });
+  await createIndex(db, "blog_categories", { order: 1, createdAt: -1 });
+  await createIndex(db, "blog_categories", { isActive: 1, order: 1 });
+
   await createIndex(db, "testimonials", { isApproved: 1, sortOrder: 1, createdAt: -1 });
   await createIndex(db, "testimonials", { status: 1, createdAt: -1 });
   await createIndex(db, "testimonials", { email: 1, createdAt: -1 }, { sparse: true });

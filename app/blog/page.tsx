@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import SmartImage from "@/components/shared/SmartImage";
+import { redirect } from "next/navigation";
 import { StickyCta } from "@/components/site/StickyCta";
 import { PageHeader } from "@/components/shared/PageHeader";
-import { getAllPageSettings } from "@/lib/server/page-settings";
+import { NoResults } from "@/components/shared/NoResults";
+import { BlogCard } from "@/components/blog/BlogCard";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { getPageSections } from "@/lib/server/page-sections";
+import { getBlogActive } from "@/lib/server/page-settings";
+import { getPublishedPosts, getPublicBlogCategories } from "@/lib/server/public-blog";
 
 export const revalidate = 300;
 
@@ -14,73 +17,51 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: seo.title, description: seo.description };
 }
 
-export default async function BlogPage() {
-  const [pageSettings, seo, content] = await Promise.all([
-    getAllPageSettings(),
+export default async function BlogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ category?: string }>;
+}) {
+  if (!(await getBlogActive())) redirect("/");
+
+  const { category } = await searchParams;
+  const activeCategory = typeof category === "string" ? category : "";
+
+  const [seo, content, categories, posts] = await Promise.all([
     getPageSeo("blog"),
     getPageSections("blog"),
+    getPublicBlogCategories(),
+    getPublishedPosts(activeCategory || undefined),
   ]);
-  const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
   return (
     <>
       <main className="section-shell py-12 sm:py-16">
-        <PageHeader
-          title={seo.headerTitle}
-          description={seo.headerDescription}
-          className="max-w-3xl"
-        />
+        <PageHeader title={seo.headerTitle} description={seo.headerDescription} className="max-w-3xl" />
 
-        <section className="mt-12 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-          {content.pillars.map((item, i) => (
-            <article key={i} className="rounded-[2rem] border bg-background/60 p-5">
-              {item.image?.url ? (
-                <div className="relative mb-4 aspect-[4/3] overflow-hidden rounded-2xl">
-                  <SmartImage
-                    src={item.image.url}
-                    alt=""
-                    fill
-                    sizes="(max-width: 768px) 100vw, 25vw"
-                    className="object-cover"
-                  />
-                </div>
-              ) : null}
-              <h2 className="text-lg font-semibold tracking-tight">{item.title}</h2>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">{item.text}</p>
-            </article>
-          ))}
-        </section>
-
-        <section className="mt-12 rounded-[2rem] border bg-background/60 p-6">
-          <div className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            Explore the work
+        {categories.length > 0 ? (
+          <div className="mt-8 flex flex-wrap gap-2">
+            <CategoryChip href="/blog" label="All" active={!activeCategory} />
+            {categories.map((c) => (
+              <CategoryChip
+                key={c.slug}
+                href={`/blog?category=${c.slug}`}
+                label={c.label}
+                active={activeCategory === c.slug}
+              />
+            ))}
           </div>
+        ) : null}
 
-          <div className="mt-4 flex flex-wrap gap-3">
-            {activeSet.has("photography") && (
-              <Link
-                href="/photography"
-                className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
-              >
-                Photography
-              </Link>
-            )}
-            {activeSet.has("videography") && (
-              <Link
-                href="/videography"
-                className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
-              >
-                Videography
-              </Link>
-            )}
-            <Link
-              href="/contact"
-              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
-            >
-              Book
-            </Link>
-          </div>
-        </section>
+        {posts.length > 0 ? (
+          <section className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            {posts.map((post, i) => (
+              <BlogCard key={post.id} post={post} priority={i < 3} />
+            ))}
+          </section>
+        ) : (
+          <NoResults className="mt-10">Nothing published here yet.</NoResults>
+        )}
       </main>
 
       <StickyCta
@@ -89,5 +70,18 @@ export default async function BlogPage() {
         buttonLabel={content.stickyCta.buttonLabel}
       />
     </>
+  );
+}
+
+function CategoryChip({ href, label, active }: { href: string; label: string; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      className={`rounded-full border px-3.5 py-1.5 text-xs transition-colors ${
+        active ? "border-foreground bg-foreground text-background" : "hover:bg-accent"
+      }`}
+    >
+      {label}
+    </Link>
   );
 }

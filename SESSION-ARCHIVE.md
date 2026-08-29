@@ -2705,3 +2705,52 @@ the photography cylinder's ≤5 arc+sway model (symmetric front arc, gentle sine
 arc, responsive scale) — the old arc-length full-spin cylinder left an empty gap when disciplines
 were deactivated. Verified: `tsc` clean, `eslint --max-warnings 0` clean, 163 tests pass. CLAUDE.md
 updated in the same commit.
+
+---
+
+## Phase 3 — Content & analytics
+
+### Session C1 — Blog admin + public pages — `done` (2026-08-29)
+Build the blog system.
+
+Admin:
+- MongoDB collection: `blog_posts` (title, slug, content, coverImageUrl, category, tags, publishedAt, isPublished, author, updatedAt).
+- Categories: admin-defined (same pattern as existing media categories).
+- Admin CRUD at /admin/blog with list + create/edit forms.
+- Slug auto-generated from title, editable.
+- Content editor: rich text or Markdown — propose the best option for Next.js App Router.
+
+Public:
+- /blog: post listing with cover images, date, category, tags.
+- /blog/[slug]: article page with reading layout, large typography, estimated read time.
+- Category filter on listing page.
+
+Read existing admin pattern (services admin is a good reference) before writing.
+
+**Build outcome.** Shipped in full. Two collections — `blog_posts` (added `excerpt`,
+`coverImagePublicId`, `categoryId`, `createdAt` beyond the spec) + `blog_categories` (modelled on
+`service_categories`, no system "others"; category optional). CRUD API: `api/blog` + `api/blog/[id]`
+and `api/blog-categories` + `[id]` (rename cascades category slug to posts; delete blocked while
+referenced unless `?detach=1`); admin-gated via the shared `requireAdminOr401`/`requireAdminObjectId`.
+**Editor decision: Markdown, approved by Hussain over WYSIWYG** — `react-markdown` + `remark-gfm`
+(deps added), rendered to React elements (no `dangerouslySetInnerHTML`), styled by a new `.blog-prose`
+block in `globals.css`; editor at `/admin/blog/new` + `/admin/blog/[id]` (`BlogPostEditor` with
+auto-slug, `ImageField` cover → new `CLOUDINARY_BLOG_FOLDER`, category select, freeform `TagsInput`,
+markdown field with live preview, publish `AdminToggle`; author defaults to "Hussain Marzooq").
+`/admin/blog` list with bulk publish/unpublish/delete; `/admin/blog-categories` with `SortableList`
+reorder + active toggle; both added to the sidebar "Content" group. Public `lib/server/public-blog.ts`
+(fail-safe → `[]`; published = `isPublished` AND `publishedAt<=now`, drafts 404) + `lib/reading-time.ts`
+(unit-tested). Public `/blog` (category filter via `?category=`, `BlogCard`, `NoResults`) and
+`/blog/[slug]` (reading layout, `generateMetadata` OG=cover, read time). New SEO template `blog-detail`
+(`{title}` token); blog `page_sections` reduced to CTA-only (interim `BlogSections.pillars` deleted).
+`ImageField` gained an optional `folder` prop. **No CSP change** (covers are Cloudinary images).
+
+**Hussain add-on this session: a blog-page visibility toggle in the Pages tab** (not on `/admin/blog`
+— first built there, then moved at his request to match every other page). Implemented as a new
+`rows.ts` `toggleOnly` flag: the blog `PAGE_ROW` carries `settingsSlug:"blog"` + `toggleOnly:true`,
+so it gets the inline visibility toggle but stays in the **Main** group with no Work-overlay card
+image, and `pageGroup`/`pageNeedsImage` (used by both the Pages editor and the dashboard warning)
+skip the card machinery for it. `getAllPageSettings()` now includes `"blog"`; the page-settings PATCH
+route's `VALID_SLUGS` gained `"blog"`. When inactive, `/blog` + `/blog/[slug]` redirect home (tolerant
+`getBlogActive()`) and the footer's Blog link drops. Verified: `tsc` clean, `eslint --max-warnings 0`
+clean, 173 tests pass (new `reading-time` suite + smoke). CLAUDE.md updated in the same commit.

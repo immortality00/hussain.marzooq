@@ -24,10 +24,12 @@ export function ImageField({
   label,
   value,
   onChange,
+  folder = CLOUDINARY_SECTIONS_FOLDER,
 }: {
   label?: string;
   value: SectionImage | undefined;
   onChange: (image: SectionImage) => void;
+  folder?: string;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const image = value ?? EMPTY_SECTION_IMAGE;
@@ -58,7 +60,7 @@ export function ImageField({
 
           <CldUploadWidget
             signatureEndpoint="/api/sign-cloudinary-params"
-            options={{ folder: CLOUDINARY_SECTIONS_FOLDER, multiple: false, resourceType: "image" }}
+            options={{ folder, multiple: false, resourceType: "image" }}
             onSuccess={(result: unknown) => {
               const info = isRecord(result) ? result.info : null;
               if (!isRecord(info)) return;

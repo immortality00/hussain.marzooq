@@ -7,7 +7,14 @@ import { deleteReplacedSectionImages } from "@/lib/server/section-images";
 
 export const dynamic = "force-dynamic";
 
-const VALID_SLUGS = new Set(["photography", "videography", "nft", "dancing", "web-development"]);
+const VALID_SLUGS = new Set([
+  "photography",
+  "videography",
+  "nft",
+  "dancing",
+  "web-development",
+  "blog",
+]);
 
 export async function PATCH(
   req: NextRequest,
