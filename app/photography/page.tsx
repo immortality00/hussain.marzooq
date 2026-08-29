@@ -35,7 +35,6 @@ export default async function PhotographyPage() {
           title={seo.headerTitle}
           description={seo.headerDescription}
           className="max-w-3xl"
-          titleClassName="text-2xl! sm:text-3xl!"
         />
 
         {items.length > 0 ? (

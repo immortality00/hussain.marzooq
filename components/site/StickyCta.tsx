@@ -66,7 +66,7 @@ export function StickyCta({
           : "pointer-events-none translate-y-[calc(100%+1.5rem)] opacity-0",
       ].join(" ")}
     >
-      <div className="flex items-center justify-between gap-4 rounded-[1.75rem] border bg-card px-4 py-3 shadow-[var(--shadow-elevated)]">
+      <div className="flex items-center justify-between gap-4 rounded-[2rem] border bg-card px-4 py-3 shadow-[var(--shadow-elevated)]">
         <div className="min-w-0">
           <div className="text-sm font-semibold tracking-tight">{title}</div>
           <div className="mt-1 text-xs text-muted-foreground">{description}</div>

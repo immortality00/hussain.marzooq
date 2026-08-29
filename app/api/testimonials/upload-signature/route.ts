@@ -1,4 +1,5 @@
 import { isRecord, noStoreJson } from "@/app/api/_lib/common";
+import { getClientAddress } from "@/app/api/_lib/public-form-security";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { signCloudinaryParams } from "@/lib/server/cloudinary";
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
@@ -17,12 +18,6 @@ const ALLOWED_SIGN_KEYS = new Set([
   "source",
   "custom_coordinates",
 ]);
-
-function getClientKey(request: Request) {
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = request.headers.get("x-real-ip")?.trim();
-  return forwardedFor || realIp || "anonymous";
-}
 
 function toValidTimestamp(value: unknown) {
   const timestamp = typeof value === "number" ? value : Number(value);
@@ -82,7 +77,7 @@ export async function POST(request: Request) {
     return noStoreJson({ error: "Cloudinary config missing." }, { status: 500 });
   }
 
-  const clientKey = getClientKey(request);
+  const clientKey = getClientAddress(request);
 
   const rateLimit = await consumeFixedWindowRateLimit({
     bucket: "public-testimonials-upload-signature",

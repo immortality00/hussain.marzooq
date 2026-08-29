@@ -13,40 +13,36 @@ type DisciplineCard = {
   imageUrl: string | null;
 };
 
-const EYEBROWS: Record<string, string> = {
-  photography: "Still image",
-  videography: "Motion",
-  nft: "Digital art",
-  dancing: "Movement",
-  "web-development": "Digital product",
-};
+const CARD_W = 200;
+const CARD_H = 300;
+const DRAG_THRESHOLD = 6;
+const ARC_SPACING = 26;
+const DRAG_SENSITIVITY = 0.22;
+const SWAY_DURATION = 22;
 
-const CARD_W = 260;
-const CARD_H = 380;
-const GAP = 40;
-const DRAG_THRESHOLD = 6; // px before a move is considered a drag
+const ARC_RADIUS = Math.round(CARD_W / 2 / Math.tan((ARC_SPACING / 2) * (Math.PI / 180)));
 
-function getCylinderRadius(count: number) {
-  return Math.round((count * (CARD_W + GAP)) / (2 * Math.PI));
+function maxSway(count: number) {
+  return count > 1 ? ((count - 1) / 2) * ARC_SPACING : 0;
 }
 
 type Props = {
   open: boolean;
   onClose: () => void;
-  activeSlugs?: string[];
 };
 
-export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
+export function WorkOverlay({ open, onClose }: Props) {
   const [cards, setCards] = useState<DisciplineCard[]>([]);
+  const [scale, setScale] = useState(1);
   const overlayRef = useRef<HTMLDivElement>(null);
   const cylinderRef = useRef<HTMLDivElement>(null);
   const fetchedRef = useRef(false);
 
-  // Rotation state — stored in refs so GSAP tween can mutate without re-renders
-  const rotProxy = useRef({ val: 0 });
-  const autoTween = useRef<gsap.core.Tween | null>(null);
+  const rot = useRef({ val: 0 });
+  const sway = useRef({ p: 0 });
+  const swayTween = useRef<gsap.core.Tween | null>(null);
+  const maxRotRef = useRef(0);
 
-  // Drag state
   const drag = useRef({ active: false, didDrag: false, startX: 0, startRot: 0 });
 
   useEffect(() => {
@@ -55,8 +51,7 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
     fetch("/api/work-overlay")
       .then((r) => r.json())
       .then((data: DisciplineCard[]) => {
-        const filtered = activeSlugs ? data.filter((c) => activeSlugs.includes(c.slug)) : data;
-        setCards(filtered);
+        setCards(data);
       })
       .catch(() => {
         setCards([
@@ -67,50 +62,60 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
           { slug: "web-development", label: "Web Development", href: "/web-development", imageUrl: null },
         ]);
       });
-  }, [activeSlugs]);
+  }, []);
 
   const applyRotation = useCallback(() => {
     if (cylinderRef.current) {
-      cylinderRef.current.style.transform = `rotateY(${rotProxy.current.val}deg)`;
+      cylinderRef.current.style.transform = `rotateY(${rot.current.val}deg)`;
     }
   }, []);
 
-  const startAutoRotate = useCallback((fromVal?: number) => {
-    autoTween.current?.kill();
-    if (fromVal !== undefined) rotProxy.current.val = fromVal;
-    autoTween.current = gsap.to(rotProxy.current, {
-      val: rotProxy.current.val - 360,
-      duration: 60,            // slow: one full revolution in 60 seconds
+  const startSway = useCallback(() => {
+    swayTween.current?.kill();
+    const amp = maxRotRef.current;
+    if (amp <= 0) {
+      rot.current.val = 0;
+      applyRotation();
+      return;
+    }
+    swayTween.current = gsap.to(sway.current, {
+      p: sway.current.p + Math.PI * 2,
+      duration: SWAY_DURATION,
       ease: "none",
       repeat: -1,
-      onUpdate: applyRotation,
+      onUpdate: () => {
+        rot.current.val = amp * Math.sin(sway.current.p);
+        applyRotation();
+      },
     });
   }, [applyRotation]);
 
-  const stopAutoRotate = useCallback(() => {
-    autoTween.current?.kill();
-    autoTween.current = null;
+  const stopSway = useCallback(() => {
+    swayTween.current?.kill();
+    swayTween.current = null;
   }, []);
 
-  // Drag via document listeners so pointer capture never steals click events
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    // Only respond to primary button / touch
     if (e.button !== 0 && e.pointerType === "mouse") return;
-    stopAutoRotate();
-    drag.current = { active: true, didDrag: false, startX: e.clientX, startRot: rotProxy.current.val };
+    stopSway();
+    drag.current = { active: true, didDrag: false, startX: e.clientX, startRot: rot.current.val };
 
     function onMove(ev: PointerEvent) {
       const dx = ev.clientX - drag.current.startX;
       if (Math.abs(dx) > DRAG_THRESHOLD) drag.current.didDrag = true;
       if (drag.current.didDrag) {
-        rotProxy.current.val = drag.current.startRot + dx * 0.25;
+        const amp = maxRotRef.current;
+        const next = drag.current.startRot + dx * DRAG_SENSITIVITY;
+        rot.current.val = Math.max(-amp, Math.min(amp, next));
         applyRotation();
       }
     }
 
     function end() {
       drag.current.active = false;
-      startAutoRotate();
+      const amp = maxRotRef.current;
+      if (amp > 0) sway.current.p = Math.asin(Math.max(-1, Math.min(1, rot.current.val / amp)));
+      startSway();
       document.removeEventListener("pointermove", onMove);
       document.removeEventListener("pointerup", end);
       document.removeEventListener("pointercancel", end);
@@ -119,9 +124,26 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
     document.addEventListener("pointermove", onMove);
     document.addEventListener("pointerup", end);
     document.addEventListener("pointercancel", end);
-  }, [stopAutoRotate, applyRotation, startAutoRotate]);
+  }, [stopSway, applyRotation, startSway]);
 
-  // Open / close animation — never toggle display; only animate opacity + pointerEvents
+  useEffect(() => {
+    maxRotRef.current = maxSway(cards.length);
+    if (open && cards.length > 0) startSway();
+    return () => stopSway();
+  }, [cards, open, startSway, stopSway]);
+
+  useEffect(() => {
+    function fit() {
+      const count = cards.length || 5;
+      const half = ARC_RADIUS * Math.sin((maxSway(count) * Math.PI) / 180) + CARD_W / 2;
+      const sceneW = Math.max(half * 2, CARD_W);
+      setScale(Math.min(1, (window.innerWidth - 32) / sceneW));
+    }
+    fit();
+    window.addEventListener("resize", fit);
+    return () => window.removeEventListener("resize", fit);
+  }, [cards]);
+
   useEffect(() => {
     if (!overlayRef.current) return;
 
@@ -134,9 +156,7 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
         duration: 0.5,
         ease: "power2.out",
       });
-      startAutoRotate(rotProxy.current.val);
     } else {
-      stopAutoRotate();
       document.body.style.overflow = "";
       gsap.killTweensOf(overlayRef.current);
       gsap.to(overlayRef.current, {
@@ -148,9 +168,8 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
     }
 
     return () => { document.body.style.overflow = ""; };
-  }, [open, startAutoRotate, stopAutoRotate]);
+  }, [open]);
 
-  // ESC to close
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -159,9 +178,7 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  const count = cards.length || 5;
-  const slots = Math.max(count, 5);
-  const radius = getCylinderRadius(slots);
+  const count = cards.length;
 
   return (
     <div
@@ -172,7 +189,6 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
       role="dialog"
       aria-label="Work disciplines"
     >
-      {/* Header — close button only */}
       <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-8 pt-6">
         <p className="text-[11px] tracking-[0.25em] text-white/30 uppercase">Work</p>
         <button
@@ -185,9 +201,8 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
         </button>
       </div>
 
-      {/* 3D cylinder scene */}
       <div
-        style={{ perspective: "1000px" }}
+        style={{ perspective: "1200px", transform: `scale(${scale})` }}
         onPointerDown={onPointerDown}
         className="relative z-10 cursor-grab select-none active:cursor-grabbing"
       >
@@ -201,8 +216,7 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
           }}
         >
           {cards.map((card, i) => {
-            const angle = (360 / slots) * i;
-            const eyebrow = EYEBROWS[card.slug] ?? "";
+            const theta = (i - (count - 1) / 2) * ARC_SPACING;
 
             return (
               <div
@@ -211,7 +225,7 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
                   position: "absolute",
                   inset: 0,
                   transformStyle: "preserve-3d",
-                  transform: `rotateY(${angle}deg) translateZ(${radius}px)`,
+                  transform: `rotateY(${theta}deg) translateZ(${ARC_RADIUS}px)`,
                   backfaceVisibility: "hidden",
                 }}
               >
@@ -222,22 +236,18 @@ export function WorkOverlay({ open, onClose, activeSlugs }: Props) {
                   className="group relative flex h-full w-full flex-col justify-end overflow-hidden rounded-2xl border border-white/10 bg-muted"
                 >
                   {card.imageUrl && (
-                    // The overlay stays mounted (opacity-animated, never display:none),
-                    // so lazy card images get flagged as un-eager LCP candidates.
-                    // Eager-load them: 5 small cards, ready before the overlay opens.
                     <SmartImage
                       src={card.imageUrl}
                       alt={card.label}
                       fill
                       draggable={false}
                       loading="eager"
-                      sizes="260px"
+                      sizes="200px"
                       className="object-cover opacity-70 transition-opacity duration-500 group-hover:opacity-90"
                     />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
                   <div className="relative z-10 p-5">
-                    <p className="mb-1 text-[9px] tracking-[0.22em] text-white/45 uppercase">{eyebrow}</p>
                     <h2 className="text-[15px] font-semibold leading-snug text-white">{card.label}</h2>
                   </div>
                 </Link>

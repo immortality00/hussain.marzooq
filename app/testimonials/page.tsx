@@ -66,7 +66,7 @@ export default async function TestimonialsPage() {
 
             <aside className="bg-background/70 p-5 sm:p-6 lg:p-7">
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-[1.25rem] border border-border/60 bg-muted/20 p-4">
+                <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
                   <div className="text-3xl font-semibold tracking-[-0.07em]">
                     {data.averageRating.toFixed(1)}
                   </div>
@@ -75,7 +75,7 @@ export default async function TestimonialsPage() {
                   </div>
                 </div>
 
-                <div className="rounded-[1.25rem] border border-border/60 bg-muted/20 p-4">
+                <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
                   <div className="text-3xl font-semibold tracking-[-0.07em]">
                     {data.totalReviews}
                   </div>
@@ -85,7 +85,7 @@ export default async function TestimonialsPage() {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-[1.25rem] border border-border/60 bg-muted/20 p-4">
+              <div className="mt-4 rounded-2xl border border-border/60 bg-muted/20 p-4">
                 <div className="text-lg tracking-[0.08em] text-amber-500">
                   {renderStars(data.averageRating)}
                 </div>

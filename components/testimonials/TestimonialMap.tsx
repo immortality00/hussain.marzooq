@@ -19,8 +19,8 @@ function getMapEmbedUrl(point: GeoPoint) {
 export function TestimonialMap({ activePoint }: { activePoint: GeoPoint | null }) {
   if (!activePoint) {
     return (
-      <section className="overflow-hidden rounded-[1.25rem] border border-border/60 bg-muted/20 p-2 shadow-sm">
-        <div className="flex h-[250px] items-center justify-center rounded-[1rem] border border-border/70 bg-background px-6 text-center text-sm text-muted-foreground sm:h-[290px]">
+      <section className="overflow-hidden rounded-2xl border border-border/60 bg-muted/20 p-2 shadow-sm">
+        <div className="flex h-[250px] items-center justify-center rounded-2xl border border-border/70 bg-background px-6 text-center text-sm text-muted-foreground sm:h-[290px]">
           No location
         </div>
       </section>
@@ -30,8 +30,8 @@ export function TestimonialMap({ activePoint }: { activePoint: GeoPoint | null }
   const mapUrl = getMapEmbedUrl(activePoint);
 
   return (
-    <section className="overflow-hidden rounded-[1.25rem] border border-border/60 bg-muted/20 p-2 shadow-sm">
-      <div className="relative overflow-hidden rounded-[1rem] border border-border/70 bg-background">
+    <section className="overflow-hidden rounded-2xl border border-border/60 bg-muted/20 p-2 shadow-sm">
+      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-background">
         <iframe
           key={activePoint.key}
           title={`Map centered on ${activePoint.label}`}

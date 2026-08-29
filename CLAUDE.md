@@ -227,9 +227,10 @@ each individual page** (D4–D13 own these per page). Everything else above is d
   `PageHeader` sitewide; the ban is broader than that prop. Do not put a small
   uppercase/mono word above a section heading ("SERVICES", "TESTIMONIALS", "EXHIBITED") —
   the heading says it already. Hussain, 2026-08-17, on seeing them reintroduced in a
-  mockup: *"remove these and stop adding these stupid comments."* The `.eyebrow` class in
-  `globals.css:205-207` is a leftover and its one remaining use (`SiteFooter.tsx:42`) is
-  removed in D13.
+  mockup: *"remove these and stop adding these stupid comments."* **D13 removed the last two
+  offenders — `SiteFooter`'s `.eyebrow` lockup and WorkOverlay's `text-[9px]` discipline
+  sublabel — and deleted the now-unused `.eyebrow` class from `globals.css`.** There is no
+  `.eyebrow` class any more; do not reintroduce it.
 - **No stat strips.** No `12 CITIES / 12 COUNTRIES / 64 WORKS / SINCE 2019` blocks, and no
   equivalent anywhere else. The work and the index carry the credibility; a tally reads as
   marketing. Counts are allowed only as inline metadata on the thing they count (a city row
@@ -244,6 +245,16 @@ each individual page** (D4–D13 own these per page). Everything else above is d
   Videography, NFT, Dancing, Web Development), images admin-picked per card (N7).
   Inactive disciplines are excluded automatically. Services/People/Testimonials are
   **not** in the overlay — it stays scoped to the 5 disciplines only.
+  **Overlay motion (D13, `WorkOverlay.tsx`): a symmetric front-facing ARC + gentle sine
+  SWAY, matching the photography cylinder's `isFew` (≤5) branch — NOT a full-spin cylinder.**
+  The overlay never holds more than 5 cards, so it is always in the "few" regime: cards fan
+  around the front (`θ = (i-(count-1)/2)·ARC_SPACING`, edges touching via the apothem
+  radius), the container sways within `±((count-1)/2)·ARC_SPACING` so each end card rocks to
+  front and **nothing ever rotates into empty space** (this fixed the deactivated-card gap),
+  drag is clamped to the same arc, and a responsive `scale()` keeps the fan on-screen at any
+  width. Do not revert to the arc-length `getCylinderRadius`/full-360°-spin — few cards on a
+  full circle is exactly what left the empty gaps. Tunables: `ARC_SPACING`, `SWAY_DURATION`,
+  `CARD_W`/`CARD_H`.
 - About → /about · Services → /services · People → /people · Testimonials →
   /testimonials · Book → /contact.
 - The navbar's visual design stays exactly as N1 shipped it — a camera-hump redesign was
@@ -631,6 +642,17 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   chips and CTA don't nest anchors (D2b). Props include `priority?` (LCP) and `tags?`.
 - `components/shared/AnimatedText.tsx` — all text reveals. **Word-mode only,
   scroll-triggered.** No char/line modes — don't assume they exist.
+- `components/shared/NoResults.tsx` — the shared empty-state panel (D13): `rounded-2xl
+  border p-8 text-sm text-muted-foreground`, default child "No matches.", optional override.
+  Replaced five hand-rolled "no results" divs (MediaCardGrid, PhotographyCylinder,
+  PhotographyHorizontal, NftCollection, PeopleIndex). Don't hand-roll another empty panel.
+- `lib/disciplines.ts` — the single source of the 5 canonical disciplines (D13): `DISCIPLINES`
+  (slug/label/href), `DISCIPLINE_HREF`, and `disciplineForCategory(category)` (the classifier
+  formerly duplicated in `HomeServicesPreview` and `public-services.workLinkForCategory`).
+  Used by the work-overlay route and `SiteFooter`. **The homepage `HomeCreativeSystem`/
+  `HomeServicesPreview` keep their own bespoke marketing labels** ("NFT / Web3", "Dance",
+  "Creative Direction") — deliberately not sourced from here or from `page_seo.headerTitle`
+  (there is no admin "nav label" field; headerTitle is a long H1, wrong for a nav chip).
 - `useAdminAction` hook + `AdminActionFeedback` — all admin loading/fetch/feedback
   flows (F5). Never hand-roll the try/catch+setFeedback pattern. Feedback must always be
   **accurate and specific** (S11): report the server's own error, never a vague "Failed to
@@ -683,7 +705,11 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   through a `createPortal(document.body)` at `z-[120]`** so it escapes `AppShell`'s `z-10`
   stacking context (otherwise the footer painted over it — the D12 bug) and uses this hook +
   Escape-to-close. The other hand-rolled overlays (NftModal, PrivateGalleryBrowser, WorkOverlay,
-  Review modals) still need the same treatment — a D13 overlay-consolidation task.
+  Review modals) still need the full portal/scroll-lock treatment — a later overlay-consolidation
+  task. **D13 did unify their scrim: every content modal now uses `bg-black/70`** (MediaLightbox,
+  NftModal, PrivateGalleryBrowser, ReviewModal, PublicReviewForm). **WorkOverlay keeps `bg-black/92`
+  deliberately** — it is a full-screen takeover, not a card modal. `components/ui/dialog.tsx` and
+  `sheet.tsx` (imported by nothing) were **deleted** in D13; don't re-add an unused primitive.
 - `lib/password-gate.ts` — the shared password-gate primitives (D12): scrypt `hashPassword`/
   `verifyPassword`, `makeAccessToken`, `createPersonGateCookieValue`/`verifyPersonGateCookieValue`
   (HMAC, timing-safe), `personGateCookieName`, `getPersonGateSecret`. Runtime-agnostic
@@ -704,8 +730,12 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   and spreads `{ setNodeRef, style, handleProps }`. Adopted by service-categories, services,
   page-sections `RepeatingListEditor`, and `/admin/tags` — the three hand-rolled dnd-kit
   copies are gone. **Do not re-inline `useSortable`/`DndContext`; reorder via this.** No
-  mount gate (React-Compiler lint bans `setState`-in-effect; dnd-kit's `useId` is
-  hydration-safe, as `RepeatingListEditor` already proved).
+  mount gate (React-Compiler lint bans `setState`-in-effect). **`DndContext` is given a
+  stable `id={useId()}` (D13)** — without it dnd-kit derives its `DndDescribedBy-N`
+  announcement ids from the global `useId` counter, which desyncs between SSR and hydration
+  and throws a hydration mismatch on any admin form that renders `useId`-calling components
+  upstream. Keep the explicit `id`; the earlier "dnd-kit's useId is hydration-safe" note was
+  wrong.
 - `components/services/ServiceCard.tsx` — all service cards (`preview` variant for the
   homepage).
 - `components/media/useMediaSearch.ts` / `MediaGridResults` / `MediaTagChips` — all
@@ -842,12 +872,12 @@ session touches none of those, say "no security surface" and move on.
   | `rounded-[2rem]` | 18 | panels (`.premium-panel`), sticky bars, large surfaces |
   | `rounded-[2.25rem]` | 4 | full-bleed work cards only (`PortfolioCard`) |
 
-  Those five already cover **156 of 192** uses. The remaining **36 uses across nine
-  values** get converted in D13: `rounded-[1.5rem]` ×9 → `[2rem]`, `rounded-[1.25rem]` ×8 →
-  `2xl`, `rounded-lg` ×8 → `xl` (a 4px difference, invisible), `rounded-3xl` ×3 → `[2rem]`,
-  `rounded-[1rem]` ×2, `rounded-[0.85rem]` ×2, `rounded-[1.75rem]` ×2, `rounded-[1.2rem]` ×1,
-  `rounded-[0.95rem]` ×1 → nearest token. Most sit in `components/testimonials/` and
-  `components/site/Navbar.tsx`. Reject any new value in review.
+  **The one-off conversion is DONE (D13).** All nine remaining values were converted to the
+  five-token scale (`[1.5rem]`→`[2rem]`, `[1.25rem]`/`[1rem]`/`[1.2rem]`/`[0.95rem]`→`2xl`,
+  `lg`/`[0.85rem]`→`xl`, `3xl`/`[1.75rem]`→`[2rem]`), mostly across `components/testimonials/`,
+  `Navbar.tsx`, `StickyCta.tsx`, `PeopleIndex.tsx` and the modals. The public tree
+  (`app/` + `components/`, excluding `admin/` + `ui/`) now carries **only** the five tokens —
+  reject any new value in review. `components/ui/` shadcn primitives stay out of scope.
 - Section container: use `.section-shell` (`mx-auto max-w-6xl px-4`) — never write it
   inline. Adopted sitewide in F4. Three intentional exceptions keep their own width:
   `contact/page.tsx` (max-w-4xl), `g/[slug]/GalleryPasswordForm.tsx` (max-w-xl),
@@ -941,10 +971,9 @@ Do not "discover" these again; do not fix them outside their session.
 | `POST /api/testimonials/reorder` is fully built and called from nowhere; testimonials cannot be reordered (**deferred out of D9b** — bulk-select was wired instead; wire the reorder or delete it in a later pass) | `app/api/testimonials/reorder/route.ts` | unassigned |
 | Public media search has no supporting index; `ensure-indexes.mjs` creates a dead `{status:1}` index and misses `approvedAt` | `ensure-indexes.mjs:89,90` | §P1 |
 | N+1 query on `/people` (one `media.find()` per person) | `lib/server/public-people.ts:76-114` | §P1 |
-| `SmartMediaPreview`'s default empty state is a gradient, violating the no-gradient rule | `SmartMediaPreview.tsx:32,93` | §D13 |
-| `page_seo.title` / `.headerTitle` silently revert to defaults when blanked, unlike every other field in the same form | `lib/server/page-seo.ts:144,146-149` | §D13 |
-| Dead, drifted `toPublicTestimonial` in `testimonial-serializers.ts` (nothing imports it) | `lib/server/testimonial-serializers.ts:3-17,39-57` | §D13 |
 | `README.md` is unedited create-next-app boilerplate telling the reader to deploy on Vercel | `README.md:32-36` | §L1 |
+
+Resolved in D13: `SmartMediaPreview` empty/embed states are now flat `bg-muted`; dead `toPublicTestimonial` deleted. **`page_seo.title`/`.headerTitle` reverting to defaults when blanked is now a DECISION, not a defect** — a blank `<title>` is bad SEO, so the truthy-gate stays and the default is the safety net (unlike the optional description/OG fields).
 
 ## Design & motion skills — which to load, when
 Installed in Session DS0 (install commands: archive §DS0). **Load per task, never all at

@@ -19,7 +19,7 @@ export function ReviewPhotosField({
   onRemove: (url: string) => void;
 }) {
   return (
-    <div className="rounded-[1.5rem] border border-border/60 bg-muted/20 p-4">
+    <div className="rounded-[2rem] border border-border/60 bg-muted/20 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <label className="text-sm font-medium">Photos</label>
 
@@ -67,14 +67,14 @@ export function ReviewPhotosField({
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
           {photoUrls.map((url) => (
             <div key={url} className="space-y-2">
-              <div className="relative aspect-[4/5] overflow-hidden rounded-[0.95rem] bg-background ring-1 ring-border/60">
+              <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-background ring-1 ring-border/60">
                 <PreviewImage src={url} alt="Review upload" className="object-cover" />
               </div>
 
               <button
                 type="button"
                 onClick={() => onRemove(url)}
-                className="w-full rounded-lg border border-border/70 bg-background px-3 py-1.5 text-xs hover:bg-muted"
+                className="w-full rounded-xl border border-border/70 bg-background px-3 py-1.5 text-xs hover:bg-muted"
               >
                 Remove
               </button>
@@ -82,7 +82,7 @@ export function ReviewPhotosField({
           ))}
         </div>
       ) : (
-        <div className="mt-4 rounded-[1.25rem] border border-dashed border-border/70 bg-background p-5 text-sm text-muted-foreground">
+        <div className="mt-4 rounded-2xl border border-dashed border-border/70 bg-background p-5 text-sm text-muted-foreground">
           Add optional photos from the work or the experience.
         </div>
       )}

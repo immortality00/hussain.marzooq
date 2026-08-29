@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, ReactNode } from "react";
+import { useId, type CSSProperties, type ReactNode } from "react";
 import {
   DndContext,
   closestCenter,
@@ -27,6 +27,7 @@ export function SortableList({
   children: ReactNode;
   className?: string;
 }) {
+  const dndId = useId();
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   );
@@ -38,7 +39,7 @@ export function SortableList({
   }
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+    <DndContext id={dndId} sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
         <div className={className}>{children}</div>
       </SortableContext>

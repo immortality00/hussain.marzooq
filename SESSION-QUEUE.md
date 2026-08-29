@@ -53,7 +53,10 @@ Dashboard notification badge) ·
 D11 (web-development page: rescoped by Hussain to a dancing-style link list — `WebDevSections.projects.urls`,
 `WebDevSectionsForm`, edited at `/admin/pages/web-development`; cards auto-render each site's own screenshot
 through a same-origin proxy `/api/web-projects/preview` fetching thum.io server-side — NO CSP change, no image
-upload, no `web_projects` collection; `lib/web-projects.ts` URL helpers).
+upload, no `web_projects` collection; `lib/web-projects.ts` URL helpers) ·
+D13 (final public consistency sweep: `lib/disciplines.ts` + `NoResults` shared modules, flat-fallback
++ eyebrow + radius + backdrop cleanup, dead-code/dedup, PageHeader/SmartImage adoption; `SortableList`
+dnd-kit hydration fix; WorkOverlay rebuilt to the photography-cylinder arc+sway model).
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -85,8 +88,10 @@ longer top-to-bottom — take sessions in exactly this order.
    CLAUDE.md deployment status); the deploy-time checklist (rotate secret, verify hash login,
    re-verify CSP, `/admin` headers) is recorded in CLAUDE.md for first deploy.
 10. ~~**D4, D5, D7, D8**~~ ✓ done · ~~**D9b**~~ ✓ done (admin structure pass) · ~~**D9**~~ ✓ done (admin visual polish) · ~~**D10**~~ ✓ done (dancing page — admin Instagram embeds) · ~~**D12**~~ ✓ done (people privacy system) · ~~**D11**~~ ✓ done (web-development page — dancing-style link list, cards auto-render the site's own screenshot via a same-origin proxy)
-11. **D13 last** — the consistency sweep; it needs everything else landed first.
-12. **C1, C2, C3** · **P1, P2** · **NFT1, NFT2**
+11. ~~**D13 last**~~ ✓ done (2026-08-29) — public consistency sweep: shared `lib/disciplines.ts`
+    + `NoResults`, gradient/eyebrow/radius/backdrop cleanup, dead-code + dedup, PageHeader/SmartImage
+    adoption; plus a dnd-kit `SortableList` hydration fix and the WorkOverlay arc+sway rebuild. Archive §D13.
+12. **C1, C2, C3** · **P1, P2** · **NFT1, NFT2** — the remaining queue.
 
 Hard dependencies, stated once so no session has to re-derive them:
 `C4 → D6` · `T1 → T2` · `D9b → D9` · `D2b → D4`'s homepage transition · everything → `D13`.
@@ -182,119 +187,6 @@ Each session loads **one** direction skill at a time (named in its Gate 1), neve
 
 **Both D2b and D2c are done** — full specs + outcomes in SESSION-ARCHIVE.md. This phase is
 complete.
-
----
-
-## Phase 2 — Preloader & core experience
-
----
-
-### Session D13 — Final public consistency pass — `pending`
-Review every public page for visual and functional consistency.
-
-Check and fix:
-- PageHeader component used on all pages (not inline h1+p).
-- PortfolioCard component used everywhere appropriate.
-- SmartImage used for all public-page images — no raw `next/image` imports outside
-  `components/shared/SmartImage.tsx`. **List re-verified 2026-08-17; the old one was
-  stale.** Public-side violations are 5 files: `PortfolioCard.tsx:1`, `PeopleIndex.tsx:4`,
-  `ServiceCard.tsx:1` (new since the old list was written), `SmartMediaPreview.tsx:1`,
-  `review-form/PreviewImage.tsx:3`. `app/services/page.tsx` was named in the old list and
-  **no longer imports it** — it delegates to `ServiceCard`. Admin side is 8 files, not 6
-  (`MediaAssetSection`, `MediaListItem`, `PeopleAdminClient`, `ServiceEditorModal`,
-  `TestimonialForm`, `TestimonialShared`, `ImageField`, `PrivateGalleryMediaCard`) and stays
-  D9 territory. `SafeImage.tsx` is a documented wrapper exception — evaluate each, don't
-  blind-swap. `WorkOverlay.tsx` was fixed in N5 Part 3; the overlay stays mounted at
-  opacity 0, so its images must load eagerly.
-- section-shell class used for all page containers.
-- No gradient fallback divs anywhere.
-- AnimatedText applied to all h1 elements.
-- Dark background consistent in dark mode.
-- Light mode clean and consistent.
-- Spacing follows token scale.
-- No placeholder or internal copy visible to visitors.
-- Mobile layout works on all pages.
-- Lenis scroll feels correct on all pages.
-
-**From DS1's Impeccable URL scan (2026-08-06) — 5 Real findings, all in shared components:**
-- **Glass-panel text contrast — RESOLVED in D2b.** `SiteFooter.tsx` and `StickyCta.tsx`
-  were swapped from `backdrop-filter` glass (`surface-1`/`surface-3` / `bg-background/70
-  backdrop-blur`) to solid `bg-card`, so the 1.1–1.4:1 pixel contrast is gone. No action in
-  D13 unless a re-scan flags a regression.
-- **Undersized functional text.** Two sources, re-verified 2026-08-17 — the old entry put
-  both in one file. `WorkOverlay.tsx:237` discipline sublabels are `text-[9px]`; the 10px
-  "HM" logo mark is `Navbar.tsx:69`, **not** WorkOverlay. Both still unfixed. Bump to ≥11px
-  (CLAUDE.md's micro-label spec sets 11px as the floor).
-- ~~**`transition: width, height`** on a shared element (all pages)~~ **RESOLVED in D5
-  (2026-08-20).** This was `CustomCursor.tsx`'s ring-inner (`transition-[width,height,opacity]`);
-  the D5 rewrite sizes the ring with `transform: scale()` instead, so the layout-thrashing
-  transition is gone. No action left in D13 unless a re-scan flags a new one.
-- **Nested cards** on home / contact / videography (card-in-card is banned — CLAUDE.md).
-  Testimonials' nested card is its deliberate hero-card layout — leave it.
-- **Line length** 96–112 ch on body copy across 8 pages — tighten prose measure toward <80ch.
-- Re-run the URL scan after fixing and confirm these drop out (invocation in DS2 step 2).
-
-**From the 2026-08-17 full audit — verified, each with file:line:**
-- **Gradient fallbacks, which CLAUDE.md bans.** `SmartMediaPreview.tsx:93` — the *shared*
-  empty-state renderer defaults to `bg-linear-to-br from-muted to-background`, and none of
-  its four call sites override it (`PrivateGalleryBrowser.tsx:59-66`, `MediaCardGrid.tsx:39-49`,
-  `NftCard.tsx:44-52`, `PhotographyHorizontal.tsx:162-171`). Also `SmartMediaPreview.tsx:32`
-  uses `from-zinc-900 via-zinc-800 to-zinc-950` — hardcoded palette outside the tokens. Also
-  `PortfolioFallbackPanel.tsx:29`, which renders on 7 pages' empty states.
-- **Eyebrow chip, banned in N4, still shipping on every page.** `SiteFooter.tsx:42` uses the
-  literal `.eyebrow` class. (The footer brand lockup was classified Intentional in DS1 — the
-  *class* is still the banned component; decide once and record it.)
-- **`PageHeader` bypassed** in 4 places: `people/[slug]/page.tsx:68-70`,
-  `services/[slug]/page.tsx:56-58`, `g/[slug]/page.tsx:36`, `GalleryPasswordForm.tsx:53`.
-  Three of them hand-roll markup byte-identical to the component's own default.
-- **`AnimatedText` missing on one h1**: `GalleryPasswordForm.tsx:53`.
-- **`PortfolioCard` has one call site** (`HomeFeaturedWork.tsx:24`) and four hand-rolled
-  near-duplicates: `HomeCreativeSystem.tsx:27-63`, `NftCard.tsx:26-73`, `ServiceCard.tsx:24-60`,
-  `PrivateGalleryBrowser.tsx:49-75`. Evaluate each — some genuinely differ.
-- **Radius one-offs.** The scale is now decided (CLAUDE.md → Design tokens: `full`, `xl`,
-  `2xl`, `[2rem]`, `[2.25rem]`). Convert the nine remaining values — `[1.5rem]` ×9,
-  `[1.25rem]` ×8, `3xl` ×3, `xs` ×2, `[1rem]`, `[1.75rem]`, `[0.85rem]`, `[1.2rem]`,
-  `[0.95rem]` — almost all in `components/testimonials/`.
-- **`components/ui/dialog.tsx` and `sheet.tsx` are installed and imported by nothing.** Six
-  hand-rolled overlays instead, with four different backdrop opacities for the same scrim
-  role: `MediaLightbox.tsx:70` `bg-black/70`, `NftModal.tsx:25` `/72`, `ReviewModal.tsx:21`
-  `/55`, `PublicReviewForm.tsx:224` `/55`, `PrivateGalleryBrowser.tsx:112` `/72`,
-  `WorkOverlay.tsx:166` `/92`. Pick one value; adopt the primitive or delete it.
-- **Five different "no results" treatments**: `MediaCardGrid.tsx:18`,
-  `PhotographyCylinder.tsx:294`, `PhotographyHorizontal.tsx:136`, `NftCollection.tsx:47`,
-  `PeopleIndex.tsx:32`. `PortfolioFallbackPanel` covers none of them.
-- **H1 has 6 size/weight/tracking combinations across 15 routes**; H2 has 7 across 12 files.
-  `photography/page.tsx:36` overrides `PageHeader` to `text-2xl! sm:text-3xl!` — visibly
-  smaller than every other page. (About's old `lg:text-6xl` override was removed in D2c.)
-- **Section padding** is `py-12 sm:py-16` on 10 of 15 routes; videography, contact,
-  `GalleryPasswordForm`, photography and testimonials each deviate differently.
-- **`page_seo.title` / `.headerTitle` cannot be blanked** — `lib/server/page-seo.ts:144,146-149`
-  truthy-gate them so an empty string reverts to a hardcoded default, while
-  `.description`/`.headerDescription`/`.ogImageUrl` in the same form pass empty through.
-  Inconsistent with "empty means empty" and inconsistent within one form.
-- **Duplicated types/logic to collapse:** ~~the same appearance shape declared 4×~~ and
-  ~~appearances date formatting forked into `NftModal`~~ were **both fixed in C4** (2026-08-18):
-  `Appearance` is one shared type in `_lib/media.ts` and `NftModal` now calls `formatDates`.
-  Remaining: dead+drifted `toPublicTestimonial` in `testimonial-serializers.ts:3-17,39-57`;
-  two independent discipline matchers (`public-services.ts:37-51` vs
-  `HomeServicesPreview.tsx:15-23`); IP extraction reimplemented in 5 places instead of
-  importing `getClientAddress` (`_lib/public-form-security.ts:1-5`).
-- **Discipline display names hardcoded in 4 places**, none reading the admin-editable
-  `page_seo.headerTitle`: `api/work-overlay/route.ts:6-12`, `SiteFooter.tsx:14-23`,
-  `HomeCreativeSystem.tsx:5-10`, `HomeServicesPreview.tsx:6-13`. Rename a page in admin and
-  the nav overlay, footer and homepage links keep the old name.
-- **Dead code to delete:** `WorkOverlay`'s `activeSlugs` prop (never passed by its only
-  caller, `Navbar.tsx:209`); `StickyCta`'s default props (all 11 call sites pass explicit
-  values); `app/api/testimonials/geocode/route.ts` (no client calls it — but check C4 first,
-  it may become useful).
-
-Read all public page components. Report every inconsistency before fixing anything.
-
-**Skills to use here (installed in DS0):** `improve-animations` for a repo-wide motion
-audit with prioritised, self-contained fix plans — this is the right session for it,
-once all the motion work (D4–D8) has landed. Re-run `npx impeccable detect` too and
-compare against DS1's triage table: anything in the "Real" column that is still present
-is unfinished work.
 
 ---
 

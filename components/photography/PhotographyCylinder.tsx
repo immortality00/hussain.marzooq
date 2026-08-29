@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import * as THREE from "three";
 import gsap from "gsap";
 import type { MediaItem } from "@/components/media/types";
+import { NoResults } from "@/components/shared/NoResults";
 import { cloudinaryTextureUrl, cylinderItems } from "./lib";
 
 const PLANE_W = 3.4;
@@ -291,7 +292,7 @@ export default function PhotographyCylinder({
   }, [signature]);
 
   if (ringItems.length === 0) {
-    return <div className="rounded-2xl border p-6 text-sm text-muted-foreground">No matches.</div>;
+    return <NoResults />;
   }
 
   return (

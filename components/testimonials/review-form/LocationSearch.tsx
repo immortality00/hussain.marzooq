@@ -143,7 +143,7 @@ export function LocationSearch({
             <button
               type="button"
               onClick={clearLocation}
-              className="rounded-lg border border-border/70 bg-background px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="rounded-xl border border-border/70 bg-background px-2 py-1 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
             >
               Clear
             </button>
@@ -158,7 +158,7 @@ export function LocationSearch({
                 type="button"
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => chooseLocation(item)}
-                className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-muted"
+                className="block w-full rounded-xl px-3 py-2 text-left text-sm hover:bg-muted"
               >
                 <span className="block font-medium">{item.label}</span>
                 <span className="mt-0.5 block text-xs text-muted-foreground">

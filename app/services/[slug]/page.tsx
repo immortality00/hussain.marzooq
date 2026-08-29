@@ -3,7 +3,7 @@ import SmartImage from "@/components/shared/SmartImage";
 import { notFound } from "next/navigation";
 import { getDb } from "@/lib/server/db";
 import { workLinkForCategory } from "@/lib/server/public-services";
-import { AnimatedText } from "@/components/shared/AnimatedText";
+import { PageHeader } from "@/components/shared/PageHeader";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 
 export const revalidate = 300;
@@ -53,9 +53,7 @@ export default async function ServiceDetailPage({
           </div>
 
           <div className="space-y-3">
-            <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-              <AnimatedText>{name}</AnimatedText>
-            </h1>
+            <PageHeader title={name} />
 
             {startingPrice !== null ? (
               <div className="inline-flex rounded-full border px-4 py-2 text-sm text-muted-foreground">

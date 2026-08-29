@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AnimatedText } from "@/components/shared/AnimatedText";
 
 export default function GalleryPasswordForm({
   slug,
@@ -50,7 +51,9 @@ export default function GalleryPasswordForm({
   return (
     <main className="mx-auto max-w-xl px-4 py-16">
       <section className="rounded-[2rem] border p-6 text-center">
-        <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
+        <h1 className="text-3xl font-semibold tracking-tight">
+          <AnimatedText>{title}</AnimatedText>
+        </h1>
         {description ? (
           <p className="mt-3 text-sm leading-6 text-muted-foreground">{description}</p>
         ) : null}

@@ -6,6 +6,7 @@ import { useModalNavbarLock } from "@/components/media/useModalNavbarLock";
 import NftCard from "./NftCard";
 import NftFilters from "./NftFilters";
 import NftModal from "./NftModal";
+import { NoResults } from "@/components/shared/NoResults";
 import { displayStatus } from "./lib";
 
 const EAGER_GRID_IMAGE_COUNT = 3;
@@ -44,9 +45,7 @@ export default function NftCollection({ items }: { items: PublicNftItem[] }) {
       />
 
       {filtered.length === 0 ? (
-        <div className="rounded-[2rem] border p-8 text-sm text-muted-foreground">
-          No NFT items match these filters.
-        </div>
+        <NoResults>No NFT items match these filters.</NoResults>
       ) : (
         <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((item, index) => (

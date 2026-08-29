@@ -1,15 +1,8 @@
 import { noStoreJson } from "@/app/api/_lib/common";
 import { getAllPageSettings } from "@/lib/server/page-settings";
+import { DISCIPLINES } from "@/lib/disciplines";
 
 export const dynamic = "force-dynamic";
-
-const DISCIPLINES = [
-  { slug: "photography", label: "Photography", href: "/photography" },
-  { slug: "videography", label: "Videography", href: "/videography" },
-  { slug: "nft", label: "NFT", href: "/nft" },
-  { slug: "dancing", label: "Dancing", href: "/dancing" },
-  { slug: "web-development", label: "Web Development", href: "/web-development" },
-] as const;
 
 export async function GET() {
   const pageSettings = await getAllPageSettings();

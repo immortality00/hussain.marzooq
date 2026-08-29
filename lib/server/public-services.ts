@@ -1,4 +1,5 @@
 import { getDb } from "@/lib/server/db";
+import { DISCIPLINE_HREF, disciplineForCategory } from "@/lib/disciplines";
 
 export type PublicServiceItem = {
   id: string;
@@ -34,20 +35,18 @@ function asBool(v: unknown, fallback = false): boolean {
   return typeof v === "boolean" ? v : fallback;
 }
 
+const WORK_LINK_LABEL: Record<string, string> = {
+  photography: "See photos",
+  videography: "See videos",
+  dancing: "See dancing",
+  nft: "See NFTs",
+  "web-development": "See web work",
+};
+
 export function workLinkForCategory(categorySlug: string): { href: string; label: string } {
-  const c = categorySlug.trim().toLowerCase();
-
-  if (c.includes("photo")) return { href: "/photography", label: "See photos" };
-  if (c.includes("video") || c.includes("film") || c.includes("reel")) {
-    return { href: "/videography", label: "See videos" };
-  }
-  if (c.includes("dance")) return { href: "/dancing", label: "See dancing" };
-  if (c.includes("nft")) return { href: "/nft", label: "See NFTs" };
-  if (c.includes("web") || c.includes("dev") || c.includes("code")) {
-    return { href: "/web-development", label: "See web work" };
-  }
-
-  return { href: "/photography", label: "See my work" };
+  const slug = disciplineForCategory(categorySlug);
+  if (!slug) return { href: "/photography", label: "See my work" };
+  return { href: DISCIPLINE_HREF[slug], label: WORK_LINK_LABEL[slug] };
 }
 
 export async function getActiveServicesForContact() {

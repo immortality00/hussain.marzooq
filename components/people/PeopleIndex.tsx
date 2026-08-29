@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import SmartImage from "@/components/shared/SmartImage";
 import { SearchInput } from "@/components/search/SearchInput";
+import { NoResults } from "@/components/shared/NoResults";
 import type { PublicPersonIndexItem } from "@/lib/server/public-people";
 
 export default function PeopleIndex({ items }: { items: PublicPersonIndexItem[] }) {
@@ -29,17 +30,15 @@ export default function PeopleIndex({ items }: { items: PublicPersonIndexItem[] 
       />
 
       {filtered.length === 0 ? (
-        <div className="rounded-[2rem] border p-8 text-sm text-muted-foreground">
-          No people match this search.
-        </div>
+        <NoResults>No people match this search.</NoResults>
       ) : (
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((item) => (
-            <article key={item.id} className="rounded-[1.75rem] border bg-background/60 p-4">
+            <article key={item.id} className="rounded-[2rem] border bg-background/60 p-4">
               <div className="flex flex-col items-center text-center">
                 <div className="relative h-20 w-20 overflow-hidden rounded-full border bg-muted">
                   {item.avatarUrl || item.featuredImage ? (
-                    <Image
+                    <SmartImage
                       src={item.avatarUrl || item.featuredImage || ""}
                       alt={item.name}
                       fill
