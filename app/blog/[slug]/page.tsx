@@ -7,6 +7,7 @@ import { StickyCta } from "@/components/site/StickyCta";
 import { BlogContent } from "@/components/blog/BlogContent";
 import { formatBlogDate } from "@/components/blog/formatDate";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { getPageSections } from "@/lib/server/page-sections";
 import { getBlogActive } from "@/lib/server/page-settings";
 import { getPostBySlug } from "@/lib/server/public-blog";
@@ -25,16 +26,12 @@ export async function generateMetadata({
   const title = seo.title.replaceAll("{title}", post.title);
   const description = post.excerpt || seo.description.replaceAll("{title}", post.title);
 
-  return {
+  return buildPublicMetadata({
     title,
     description,
-    openGraph: {
-      title,
-      description,
-      type: "article",
-      images: post.ogImageUrl ? [post.ogImageUrl] : undefined,
-    },
-  };
+    image: post.ogImageUrl,
+    type: "article",
+  });
 }
 
 export default async function BlogPostPage({

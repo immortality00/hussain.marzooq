@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { getPageSections } from "@/lib/server/page-sections";
 import { HomeCreativeSystem } from "@/components/home/HomeCreativeSystem";
 import { HomeExhibitionGlobe } from "@/components/home/HomeExhibitionGlobe";
@@ -17,7 +18,11 @@ export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("home");
-  return { title: seo.title, description: seo.description };
+  return buildPublicMetadata({
+    title: seo.title,
+    description: seo.description,
+    image: seo.ogImageUrl,
+  });
 }
 
 export default async function HomePage() {

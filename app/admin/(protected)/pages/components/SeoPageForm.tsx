@@ -2,6 +2,7 @@
 
 import { Type, Search } from "lucide-react";
 import { GroupCard } from "./GroupCard";
+import { ImageField } from "@/components/admin/media-picker/ImageField";
 
 export type SeoDraft = {
   title: string;
@@ -88,15 +89,16 @@ export function SeoPageForm({
         </div>
         <div>
           <label className="mb-1 block text-xs font-medium text-muted-foreground">
-            OG image URL (optional — used in Session C2)
+            Share image
           </label>
-          <input
-            type="text"
-            value={draft.ogImageUrl}
-            placeholder="https://res.cloudinary.com/..."
-            onChange={(e) => onChange("ogImageUrl", e.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          <ImageField
+            value={{ url: draft.ogImageUrl, publicId: "" }}
+            onChange={(image) => onChange("ogImageUrl", image.url)}
           />
+          <p className="mt-1 text-xs text-muted-foreground">
+            Shown when this page&apos;s link is shared on social or messaging. Leave empty to
+            use the HM Visuals card.
+          </p>
         </div>
       </GroupCard>
     </>

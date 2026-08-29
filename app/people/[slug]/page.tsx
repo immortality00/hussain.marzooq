@@ -11,6 +11,7 @@ import { AnimatedText } from "@/components/shared/AnimatedText";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 import { getPageSections } from "@/lib/server/page-sections";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 
 export const revalidate = 300;
 
@@ -25,10 +26,12 @@ export async function generateMetadata({
     getPageSeo("people-detail"),
   ]);
   if (!person) return {};
-  return {
+  return buildPublicMetadata({
     title: seo.title.replaceAll("{name}", person.name),
     description: seo.description.replaceAll("{name}", person.name),
-  };
+    image: person.featuredImage ?? person.avatarUrl ?? undefined,
+    type: "profile",
+  });
 }
 
 export default async function PersonDetailPage({

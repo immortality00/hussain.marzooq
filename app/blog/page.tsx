@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { NoResults } from "@/components/shared/NoResults";
 import { BlogCard } from "@/components/blog/BlogCard";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { getPageSections } from "@/lib/server/page-sections";
 import { getBlogActive } from "@/lib/server/page-settings";
 import { getPublishedPosts, getPublicBlogCategories } from "@/lib/server/public-blog";
@@ -14,7 +15,11 @@ export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("blog");
-  return { title: seo.title, description: seo.description };
+  return buildPublicMetadata({
+    title: seo.title,
+    description: seo.description,
+    image: seo.ogImageUrl,
+  });
 }
 
 export default async function BlogPage({
