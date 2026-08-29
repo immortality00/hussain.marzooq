@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPageSettings } from "@/lib/server/page-settings";
 import { getTagMeta, getTagPage } from "@/lib/server/tag-pages";
+import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 
 export const revalidate = 300;
 
@@ -17,10 +18,11 @@ export async function generateMetadata({
   const { tag } = await params;
   const meta = await getTagMeta({ category: "photography", tagSlug: tag });
   if (!meta) return {};
-  return {
+  return buildPublicMetadata({
     title: meta.seo.title.replaceAll("{tag}", meta.tag.label),
     description: meta.seo.description.replaceAll("{tag}", meta.tag.label),
-  };
+    image: meta.seo.ogImageUrl,
+  });
 }
 
 export default async function PhotographyTagPage({

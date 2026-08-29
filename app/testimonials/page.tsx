@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { getPageSections } from "@/lib/server/page-sections";
 import { StickyCta } from "@/components/site/StickyCta";
 import PublicReviewForm from "@/components/testimonials/PublicReviewForm";
@@ -13,7 +14,11 @@ export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("testimonials");
-  return { title: seo.title, description: seo.description };
+  return buildPublicMetadata({
+    title: seo.title,
+    description: seo.description,
+    image: seo.ogImageUrl,
+  });
 }
 
 function renderStars(value: number) {

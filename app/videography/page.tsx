@@ -6,11 +6,16 @@ import { StickyCta } from "@/components/site/StickyCta";
 import { toEmbedUrl } from "@/components/media/utils";
 import { getDisciplineTagNav } from "@/lib/server/tag-pages";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { getPageSections } from "@/lib/server/page-sections";
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("videography");
-  return { title: seo.title, description: seo.description };
+  return buildPublicMetadata({
+    title: seo.title,
+    description: seo.description,
+    image: seo.ogImageUrl,
+  });
 }
 import {
   getShowreelItem,

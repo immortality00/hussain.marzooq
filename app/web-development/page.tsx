@@ -5,6 +5,7 @@ import { StickyCta } from "@/components/site/StickyCta";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getPageSettings } from "@/lib/server/page-settings";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { getPageSections } from "@/lib/server/page-sections";
 import { projectUrlLabel, toProjectUrl } from "@/lib/web-projects";
 
@@ -12,7 +13,11 @@ export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("web-development");
-  return { title: seo.title, description: seo.description };
+  return buildPublicMetadata({
+    title: seo.title,
+    description: seo.description,
+    image: seo.ogImageUrl,
+  });
 }
 
 export default async function WebDevelopmentPage() {

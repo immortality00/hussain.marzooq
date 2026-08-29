@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { getPageSections } from "@/lib/server/page-sections";
 import { StickyCta } from "@/components/site/StickyCta";
 import NftCollection from "@/components/nft/NftCollection";
@@ -12,7 +13,11 @@ export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("nft");
-  return { title: seo.title, description: seo.description };
+  return buildPublicMetadata({
+    title: seo.title,
+    description: seo.description,
+    image: seo.ogImageUrl,
+  });
 }
 
 export default async function NftPage() {

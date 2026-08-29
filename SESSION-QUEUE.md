@@ -60,6 +60,9 @@ dnd-kit hydration fix; WorkOverlay rebuilt to the photography-cylinder arc+sway 
 C1 (blog: `blog_posts` + `blog_categories`, admin CRUD at `/admin/blog` + `/admin/blog-categories`,
 Markdown content via react-markdown, public `/blog` + `/blog/[slug]` with category filter + read time,
 `blog-detail` SEO template; plus a Pages-tab visibility toggle via a new `toggleOnly` row flag). Archive §C1.
+C2 (Open Graph / share-preview images: admin-driven `page_seo.ogImageUrl` wired through a shared
+`buildPublicMetadata` across all 16 public pages + one branded `next/og` fallback card, `metadataBase`;
+admin Share-image field swapped to the `ImageField` picker). Archive §C2.
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -94,7 +97,9 @@ longer top-to-bottom — take sessions in exactly this order.
 11. ~~**D13 last**~~ ✓ done (2026-08-29) — public consistency sweep: shared `lib/disciplines.ts`
     + `NoResults`, gradient/eyebrow/radius/backdrop cleanup, dead-code + dedup, PageHeader/SmartImage
     adoption; plus a dnd-kit `SortableList` hydration fix and the WorkOverlay arc+sway rebuild. Archive §D13.
-12. ~~**C1**~~ ✓ done (blog system, archive §C1) · **C2, C3** · **P1, P2** · **NFT1, NFT2** — the remaining queue.
+12. ~~**C1**~~ ✓ done (blog system, archive §C1) · ~~**C2**~~ ✓ done (OG/share images — admin-driven
+    `page_seo.ogImageUrl` + one branded `next/og` fallback card, shared `buildPublicMetadata`, archive §C2) ·
+    **C3** · **P1, P2** · **NFT1, NFT2** — the remaining queue.
 
 Hard dependencies, stated once so no session has to re-derive them:
 `C4 → D6` · `T1 → T2` · `D9b → D9` · `D2b → D4`'s homepage transition · everything → `D13`.
@@ -194,18 +199,6 @@ complete.
 ---
 
 ## Phase 3 — Content & analytics
-
-### Session C2 — Open Graph images — `pending`
-Each public page needs a proper OG image so link previews on social media show actual photography.
-
-Implementation:
-- Next.js App Router `opengraph-image.tsx` per page, using the Vercel/Next.js OG image generation API.
-- Each page pulls a representative photo from Cloudinary (the page's primary image).
-- Fallback: a branded dark card with "HM Visuals" if no image is available.
-
-Read all public page.tsx files and Next.js OG image docs before writing.
-
----
 
 ### Session C3 — Plausible Analytics — `pending`
 Add Plausible Analytics to all public pages.

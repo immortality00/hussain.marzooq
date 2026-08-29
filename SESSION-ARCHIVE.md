@@ -2745,6 +2745,45 @@ reorder + active toggle; both added to the sidebar "Content" group. Public `lib/
 (`{title}` token); blog `page_sections` reduced to CTA-only (interim `BlogSections.pillars` deleted).
 `ImageField` gained an optional `folder` prop. **No CSP change** (covers are Cloudinary images).
 
+### Session C2 — Open Graph images — `done` (2026-08-29)
+Each public page needs a proper OG image so link previews on social media show actual photography.
+
+Implementation:
+- Next.js App Router `opengraph-image.tsx` per page, using the Vercel/Next.js OG image generation API.
+- Each page pulls a representative photo from Cloudinary (the page's primary image).
+- Fallback: a branded dark card with "HM Visuals" if no image is available.
+
+Read all public page.tsx files and Next.js OG image docs before writing.
+
+**Build outcome.** Shipped, but **rescoped by decision at Gate 1 (approved by Hussain).** The spec's
+"pull a representative photo" per page conflicts with the binding "empty means empty — no auto-pick"
+rule (the same rule that removed the hero's auto-pick in S4), and the project already provides the
+mechanism: the dormant admin `page_seo.ogImageUrl` field, which nothing consumed. So the shipped model
+is **admin-driven, empty means empty**: a page's OG image = its admin-picked `ogImageUrl`; empty → one
+site-wide branded fallback card. Not per-page generated cards.
+
+- New `lib/seo/page-metadata.ts` — `buildPublicMetadata({ title, description, image?, type? })`, the
+  single builder all 16 public `generateMetadata` blocks route through (home, 5 disciplines,
+  about/services/contact/people/blog/testimonials, the two `[tag]` pages, blog-post + person detail).
+  Returns `openGraph` + `twitter` (`summary_large_image`). **Omits the `images` key when there is no
+  image** — `images: undefined` counts as "specified" to Next and suppresses the file-based fallback
+  (this was the bug caught in-browser: og:image absent until the key was omitted).
+- New `app/opengraph-image.tsx` — the ONE branded fallback card via `next/og` `ImageResponse` (built
+  into Next 16, no dependency added). Dark achromatic 1200×630, "HM Visuals" wordmark + tagline, no
+  gradient; inline literal colors (Satori can't resolve CSS tokens — accepted no-hardcoded-hex exception,
+  same class as WebGL). Next inherits it site-wide onto any route not setting its own `openGraph.images`.
+- `app/layout.tsx` — added `metadataBase` (`NEXT_PUBLIC_SITE_URL` → `https://hussain-marzooq.com`) so
+  image URLs resolve absolute, plus site-default `openGraph`/`twitter`. **`NEXT_PUBLIC_SITE_URL` added to
+  the L1 deploy checklist** (unset → OG URLs point at localhost).
+- Detail pages pass their own image: blog post → cover (`type: "article"`, replacing its hand-rolled
+  openGraph); person → `featuredImage ?? avatarUrl` (`type: "profile"`); tag pages → the `{tag}` slug image.
+- Admin: the per-page **Share image** control in `SeoPageForm` swapped from a raw URL text box to the
+  shared `ImageField` picker/upload (consistency with every other admin image field). `page_seo.ogImageUrl`
+  stays a plain URL string (picker reads/writes only `.url`) — no data-model/serializer change, no migration.
+- **No CSP change** (Cloudinary already allowed; fallback is same-origin). Verified in-browser: fallback
+  card renders 1200×630; homepage `<head>` emits absolute `og:image` + `twitter:image` with type/width/
+  height/alt. tsc + eslint clean, 173 tests pass.
+
 **Hussain add-on this session: a blog-page visibility toggle in the Pages tab** (not on `/admin/blog`
 — first built there, then moved at his request to match every other page). Implemented as a new
 `rows.ts` `toggleOnly` flag: the blog `PAGE_ROW` carries `settingsSlug:"blog"` + `toggleOnly:true`,

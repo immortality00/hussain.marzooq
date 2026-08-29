@@ -30,8 +30,10 @@ every existing session token by design; (2) verify hash login against the deploy
 (no plaintext `ADMIN_PASSWORD` — the fallback was deleted in S1 and stays deleted); (3)
 re-verify the full CSP in a browser on the live origin (Cloudinary images/video, upload
 widget, the `/testimonials` OpenStreetMap embed, the globe texture from `/public/globe/`);
-(4) confirm `/admin/*` returns `no-store` + `noindex`. The code side of L1 (README rewrite,
-admin config-error copy, this section) shipped 2026-08-20.
+(4) confirm `/admin/*` returns `no-store` + `noindex`; (5) set `NEXT_PUBLIC_SITE_URL` to the
+live origin so OG/share-preview image URLs resolve absolute (feeds `metadataBase` — C2; unset,
+they point at localhost). The code side of L1 (README rewrite, admin config-error copy, this
+section) shipped 2026-08-20.
 
 ## Stack
 Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS 4
@@ -590,8 +592,38 @@ Interim pages (Dancing, Web Development, Blog) = header + card grid + booking ba
 until their design passes. **About had its design pass (D2c) and is no longer interim** —
 see "About page" below. Full history: archive §N3–§N7.
 
-## Open Graph images
-Per-page OG images from actual photography (Phase 3, queue §C2).
+## Open Graph images — shipped (C2, 2026-08-29)
+The image shown when a page's link is shared (WhatsApp, X, iMessage, Slack, etc.) and the
+social/search preview. **Admin-driven, empty means empty — no auto-pick.** The queue's
+"pull a representative photo" was rescoped to this on the binding "empty means empty"
+rule (the same rule that removed the hero's auto-pick in S4): a page's OG image is the
+admin-picked `page_seo.ogImageUrl` only; empty → one site-wide branded fallback card.
+
+- **`lib/seo/page-metadata.ts`** — `buildPublicMetadata({ title, description, image?, type? })`
+  is the single builder every public `generateMetadata` routes through (all 16 blocks: home,
+  the 5 disciplines, about/services/contact/people/blog/testimonials, the two `[tag]` pages,
+  and the blog-post/person detail pages). It returns `openGraph` + `twitter`
+  (`summary_large_image`). **It OMITS the `images` key when there is no image** — setting
+  `images: undefined` counts as "specified" to Next and suppresses the file-based fallback,
+  so the key must be absent for the fallback to merge. Do not reintroduce `images: undefined`.
+- **`app/opengraph-image.tsx`** — the ONE branded fallback card, generated with `next/og`
+  `ImageResponse` (built into Next 16, no dependency). Dark achromatic 1200×630, "HM Visuals"
+  wordmark + tagline, no gradient. Next inherits it site-wide onto any route that doesn't set
+  its own `openGraph.images`. Colors are inline literals (Satori can't resolve CSS tokens) —
+  an accepted exception to the no-hardcoded-hex rule, same class as WebGL shader colors.
+- **`app/layout.tsx`** sets `metadataBase` from `NEXT_PUBLIC_SITE_URL` (fallback
+  `https://hussain-marzooq.com`) so OG/Twitter image URLs resolve absolute, plus the site
+  default `openGraph`/`twitter`. **`NEXT_PUBLIC_SITE_URL` must be set at deploy** or OG URLs
+  point at localhost — added to the L1 deploy checklist.
+- Detail pages pass their own image: blog post → cover (`type: "article"`); person →
+  `featuredImage ?? avatarUrl` (`type: "profile"`); tag pages → the `{tag}` SEO slug's image.
+- **Admin:** the per-page **Share image** control in `SeoPageForm` (Search & social group) is
+  the shared `ImageField` picker/upload — swapped from the old raw URL box (C2) for consistency
+  with every other admin image field. `page_seo.ogImageUrl` stays a **plain URL string** (the
+  picker reads/writes only `.url`; no `publicId`, so no data-model/serializer change and no
+  delete-on-replace cleanup for OG uploads).
+- **No CSP change** — Cloudinary is already an allowed image host and the fallback card is
+  same-origin.
 
 ## Analytics
 Plausible, one script tag, public pages only (Phase 3, queue §C3).

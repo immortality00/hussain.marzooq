@@ -3,6 +3,7 @@ import { AboutDisciplineCard } from "@/components/about/AboutDisciplineCard";
 import { StickyCta } from "@/components/site/StickyCta";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { getPageSections } from "@/lib/server/page-sections";
 
 const DISCIPLINE_HREFS = ["/photography", "/videography", "/nft", "/dancing"];
@@ -11,7 +12,11 @@ export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("about");
-  return { title: seo.title, description: seo.description };
+  return buildPublicMetadata({
+    title: seo.title,
+    description: seo.description,
+    image: seo.ogImageUrl,
+  });
 }
 
 export default async function AboutPage() {

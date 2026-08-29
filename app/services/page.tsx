@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import Link from "next/link";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { ServiceCard } from "@/components/services/ServiceCard";
@@ -14,7 +15,11 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("services");
-  return { title: seo.title, description: seo.description };
+  return buildPublicMetadata({
+    title: seo.title,
+    description: seo.description,
+    image: seo.ogImageUrl,
+  });
 }
 
 export default async function ServicesPage({
