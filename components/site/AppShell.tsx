@@ -8,6 +8,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Navbar } from "@/components/site/Navbar";
 import { Preloader } from "@/components/site/Preloader";
 import { CustomCursor } from "@/components/site/CustomCursor";
+import { SiteAnalytics } from "@/components/site/Analytics";
 import { TransitionProvider } from "@/components/transitions/TransitionContext";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -53,6 +54,7 @@ export function AppShell({
       {pathname === "/" && <Preloader />}
       <div className="grain-overlay" />
       <CustomCursor />
+      <SiteAnalytics />
       <Navbar />
       <TransitionProvider images={transitionImages}>
         <div className="relative z-10">{children}</div>

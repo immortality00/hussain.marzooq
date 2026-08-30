@@ -8,7 +8,13 @@ type NavItem = { href: string; label: string };
 type NavGroup = { label: string; items: NavItem[] };
 
 const NAV_GROUPS: NavGroup[] = [
-  { label: "Overview", items: [{ href: "/admin/dashboard", label: "Dashboard" }] },
+  {
+    label: "Overview",
+    items: [
+      { href: "/admin/dashboard", label: "Dashboard" },
+      { href: "/admin/analytics", label: "Analytics" },
+    ],
+  },
   {
     label: "Content",
     items: [

@@ -10,6 +10,55 @@ a planning question explicitly references it.
 
 ---
 
+## Phase 3 — Content & analytics
+
+### Session C3 — Analytics — `done`
+
+**Original spec:**
+Add Plausible Analytics to all public pages.
+- Install @vercel/analytics or the Plausible Next.js package (propose which and why).
+- Script only on public pages (not admin).
+- No cookie banner required for Plausible.
+- Verify it does not appear in admin routes.
+Read AppShell.tsx and layout.tsx before writing.
+
+**Build outcome (2026-08-30) — rescoped by Hussain to GoatCounter + an in-admin dashboard.**
+The Plausible build was completed first, then reverted on Hussain's call: Plausible is paid
+SaaS with no pre-launch value, and its external-only dashboard didn't answer his "why is there
+nothing in admin?" GoatCounter (free, hosted, cookieless, open JSON API) replaced it, and an
+in-admin stats page was added on top of the original one-tag scope.
+
+- **Tracking (public, one tag):** `components/site/Analytics.tsx` (`SiteAnalytics`) renders a
+  single `next/script` `https://gc.zgo.at/count.js` with
+  `data-goatcounter="https://{NEXT_PUBLIC_GOATCOUNTER_CODE}.goatcounter.com/count"`,
+  `async`/`afterInteractive`. Mounted in `AppShell`'s public branch (below the
+  `if (isAdmin) return` short-circuit) so it never loads on `/admin/*` — structural, not a
+  runtime check. Unset code → returns `null`. `count.js` auto-tracks SPA route changes via the
+  History API; cookieless, no banner. No package (no `@vercel/analytics` — Vercel's product,
+  and the site is on Netlify; no `next-plausible`).
+- **In-admin dashboard (new):** `app/admin/(protected)/analytics/page.tsx` (sidebar → Overview →
+  Analytics, added to `AdminSidebarNav`) is an auth-gated server component reading GoatCounter's
+  API server-side via `getGoatCounterStats(30)` (`lib/server/analytics.ts`) — total pageviews +
+  top pages + referrers, last 30 days, in the admin card language with a horizontal-bar list.
+  `/api/v0/stats/{total,hits,toprefs}` with a Bearer token, `next:{revalidate:300}`. **Fail-safe**
+  (try/catch → empty; the server-module smoke test imports it, and a network blip must not 500),
+  env read lazily. Shows a "not configured" panel when either env var is missing, "No data yet."
+  when empty. `/stats/total` is pageviews (not unique visitors), so the headline is pageviews
+  only — no fabricated visitor count. Pure `goatCounterPeriod(now, days)` unit-tested
+  (`test/analytics.test.ts`).
+- **Env:** `NEXT_PUBLIC_GOATCOUNTER_CODE` (public site code) + `GOATCOUNTER_API_TOKEN` (secret,
+  server-only, never `NEXT_PUBLIC_` — admin fetches server-side, only numbers reach the client).
+  Both added to the L1 deploy checklist.
+- **CSP:** `gc.zgo.at` on `script-src`; `https://*.goatcounter.com` on `img-src` (beacon pixel) +
+  `connect-src` (sendBeacon fallback). Admin→API reads are server-side, not a CSP surface.
+- **Security surface:** outbound only (script host + beacon + server API); no new inbound public
+  route; the admin page is auth-gated with no user input; the API token stays server-side.
+- Verified locally: tag present on public pages, absent on `/admin`; admin dashboard renders the
+  configured empty state (GoatCounter ignores localhost, so no data pre-launch). tsc + eslint
+  (0 warnings) + 177 tests green.
+
+---
+
 ## Phase 2 — Preloader & core experience
 
 ### Session D11 — Web development page — `done`

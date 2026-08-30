@@ -63,6 +63,9 @@ Markdown content via react-markdown, public `/blog` + `/blog/[slug]` with catego
 C2 (Open Graph / share-preview images: admin-driven `page_seo.ogImageUrl` wired through a shared
 `buildPublicMetadata` across all 16 public pages + one branded `next/og` fallback card, `metadataBase`;
 admin Share-image field swapped to the `ImageField` picker). Archive §C2.
+C3 (analytics: GoatCounter — free/cookieless — one tracking tag on public pages via `SiteAnalytics`,
+plus an in-admin `/admin/analytics` dashboard reading GoatCounter's API server-side; chosen over
+Plausible on Hussain's call). Archive §C3.
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -99,7 +102,8 @@ longer top-to-bottom — take sessions in exactly this order.
     adoption; plus a dnd-kit `SortableList` hydration fix and the WorkOverlay arc+sway rebuild. Archive §D13.
 12. ~~**C1**~~ ✓ done (blog system, archive §C1) · ~~**C2**~~ ✓ done (OG/share images — admin-driven
     `page_seo.ogImageUrl` + one branded `next/og` fallback card, shared `buildPublicMetadata`, archive §C2) ·
-    **C3** · **P1, P2** · **NFT1, NFT2** — the remaining queue.
+    ~~**C3**~~ ✓ done (analytics — GoatCounter tag + in-admin dashboard, archive §C3) ·
+    **P1, P2** · **NFT1, NFT2** — the remaining queue.
 
 Hard dependencies, stated once so no session has to re-derive them:
 `C4 → D6` · `T1 → T2` · `D9b → D9` · `D2b → D4`'s homepage transition · everything → `D13`.
@@ -200,15 +204,7 @@ complete.
 
 ## Phase 3 — Content & analytics
 
-### Session C3 — Plausible Analytics — `pending`
-Add Plausible Analytics to all public pages.
-
-- Install @vercel/analytics or the Plausible Next.js package (propose which and why).
-- Script only on public pages (not admin).
-- No cookie banner required for Plausible.
-- Verify it does not appear in admin routes.
-
-Read AppShell.tsx and layout.tsx before writing.
+_C3 done — see SESSION-ARCHIVE.md §C3._
 
 ---
 

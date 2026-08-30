@@ -19,6 +19,11 @@ const isDev = process.env.NODE_ENV !== "production";
  *   iframes from toEmbedUrl (showreel embed, lightbox) — need frame-src.
  * - Instagram post embeds: www.instagram.com iframes on the dancing page
  *   (admin-picked post/reel URLs via toInstagramEmbedUrl) — need frame-src.
+ * - GoatCounter Analytics: count.js from gc.zgo.at (script-src) sending a
+ *   cookieless pageview beacon to {code}.goatcounter.com/count (img-src pixel
+ *   + connect-src sendBeacon fallback). Public pages only, loaded by
+ *   SiteAnalytics when NEXT_PUBLIC_GOATCOUNTER_CODE is set. The /admin/analytics
+ *   dashboard reads GoatCounter's API server-side, so it is not a CSP surface.
  * - Fonts are self-hosted (geist via next/font) — no external font origin.
  *
  * `script-src` keeps 'unsafe-inline': Next's App Router injects inline hydration
@@ -29,12 +34,12 @@ const isDev = process.env.NODE_ENV !== "production";
  */
 const cspDirectives = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' https://upload-widget.cloudinary.com${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://upload-widget.cloudinary.com https://gc.zgo.at${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://res.cloudinary.com",
+  "img-src 'self' data: blob: https://res.cloudinary.com https://*.goatcounter.com",
   "media-src 'self' blob: https://res.cloudinary.com",
   "font-src 'self' data:",
-  `connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com https://upload-widget.cloudinary.com${isDev ? " ws: http://localhost:*" : ""}`,
+  `connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com https://upload-widget.cloudinary.com https://*.goatcounter.com${isDev ? " ws: http://localhost:*" : ""}`,
   "frame-src https://upload-widget.cloudinary.com https://www.openstreetmap.org https://www.youtube-nocookie.com https://player.vimeo.com https://www.instagram.com",
   "worker-src 'self' blob:",
   "object-src 'none'",

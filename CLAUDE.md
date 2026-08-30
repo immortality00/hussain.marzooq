@@ -32,7 +32,10 @@ re-verify the full CSP in a browser on the live origin (Cloudinary images/video,
 widget, the `/testimonials` OpenStreetMap embed, the globe texture from `/public/globe/`);
 (4) confirm `/admin/*` returns `no-store` + `noindex`; (5) set `NEXT_PUBLIC_SITE_URL` to the
 live origin so OG/share-preview image URLs resolve absolute (feeds `metadataBase` — C2; unset,
-they point at localhost). The code side of L1 (README rewrite, admin config-error copy, this
+they point at localhost); (6) set `NEXT_PUBLIC_GOATCOUNTER_CODE` (the GoatCounter
+site code) and `GOATCOUNTER_API_TOKEN` (a read-statistics API key) so the tracking tag renders
+and the `/admin/analytics` dashboard populates (C3; unset, no analytics load + admin shows a
+"not configured" panel). The code side of L1 (README rewrite, admin config-error copy, this
 section) shipped 2026-08-20.
 
 ## Stack
@@ -625,8 +628,41 @@ admin-picked `page_seo.ogImageUrl` only; empty → one site-wide branded fallbac
 - **No CSP change** — Cloudinary is already an allowed image host and the fallback card is
   same-origin.
 
-## Analytics
-Plausible, one script tag, public pages only (Phase 3, queue §C3).
+## Analytics — shipped (C3, 2026-08-30)
+**GoatCounter** — free, hosted, cookieless — chosen over Plausible on Hussain's call
+(2026-08-30): Plausible is paid SaaS and pre-launch had no value, and GoatCounter's open
+JSON API lets us mirror stats **into admin**. Two halves:
+
+**Tracking (public, one tag).** `components/site/Analytics.tsx` (`SiteAnalytics`) renders a
+single `next/script` `https://gc.zgo.at/count.js` with
+`data-goatcounter="https://{NEXT_PUBLIC_GOATCOUNTER_CODE}.goatcounter.com/count"`, `async`,
+`afterInteractive`. Mounted **inside `AppShell`'s public branch only** — below `AppShell`'s
+`if (isAdmin) return <>{children}</>` short-circuit, so it can never load on `/admin/*`
+(structural guarantee, not a runtime check). No package (no `@vercel/analytics` — that's
+Vercel's product, and this site is on Netlify), just the tag. `count.js` auto-tracks SPA
+route changes via the History API. **No cookie banner** (GoatCounter is cookieless).
+
+**In-admin dashboard.** `app/admin/(protected)/analytics/page.tsx` (sidebar → Overview →
+Analytics) is an auth-gated server component that reads GoatCounter's API **server-side** via
+`getGoatCounterStats(days=30)` (`lib/server/analytics.ts`) — total pageviews + top pages +
+referrers over the last 30 days, rendered in the admin card language. Fetches
+`/api/v0/stats/{total,hits,toprefs}` with a Bearer token, `next:{revalidate:300}`. The lib is
+**fail-safe** (try/catch → empty; the server-module smoke test imports it, and a network blip
+must never 500 the page) and reads env lazily. GoatCounter's `/stats/total` returns pageviews,
+not unique visitors, so the dashboard shows **pageviews only** — no fabricated visitor count.
+Pure `goatCounterPeriod(now, days)` is unit-tested (`test/analytics.test.ts`).
+
+- **Empty means empty:** with `NEXT_PUBLIC_GOATCOUNTER_CODE` unset, `SiteAnalytics` returns
+  `null` (no tag loads); with either env var unset, the admin page shows a **"not configured"**
+  panel. So both stay dormant on localhost/dev until the env vars are set at deploy.
+- **Two env vars:** `NEXT_PUBLIC_GOATCOUNTER_CODE` is a public identifier (the GoatCounter site
+  code) — correctly `NEXT_PUBLIC_`. `GOATCOUNTER_API_TOKEN` is a **secret** (read-statistics API
+  key), server-only, **never** `NEXT_PUBLIC_` — the admin page fetches server-side, so only
+  rendered numbers cross to the client, never the token.
+- **CSP:** `gc.zgo.at` on `script-src` (count.js), `https://*.goatcounter.com` on `img-src`
+  (beacon pixel) + `connect-src` (sendBeacon fallback), in `next.config.ts`. Do not strip these
+  in a security pass — without them the browser silently blocks the tracking beacon. The
+  admin→API reads are server-side and **not** a CSP surface.
 
 ## Admin design
 Visual consistency with the portfolio (dark theme, same typography/tokens/shadcn styling).
