@@ -2842,3 +2842,54 @@ skip the card machinery for it. `getAllPageSettings()` now includes `"blog"`; th
 route's `VALID_SLUGS` gained `"blog"`. When inactive, `/blog` + `/blog/[slug]` redirect home (tolerant
 `getBlogActive()`) and the footer's Blog link drops. Verified: `tsc` clean, `eslint --max-warnings 0`
 clean, 173 tests pass (new `reading-time` suite + smoke). CLAUDE.md updated in the same commit.
+
+---
+
+## Session P1 — Performance audit — `done` (2026-08-31)
+Audit the full public site for performance.
+
+- Lighthouse scores on homepage, photography, videography, NFT, dancing pages.
+- Identify and fix the largest performance issues.
+- Verify Three.js scenes are disposed correctly on unmount.
+- Verify GSAP ScrollTrigger instances are killed on unmount.
+- Verify Lenis is destroyed and reinitiated correctly on route change.
+- Image optimization: verify all Cloudinary images use appropriate quality and format settings.
+- Caching strategy — confirm which pages genuinely need per-request freshness.
+- N+1 on `/people`: one `media.find()` per person inside `Promise.all(docs.map(...))`.
+- Search has no supporting index: unanchored case-insensitive regex over six fields.
+- `ensure-indexes.mjs` drift: dead `{status:1}` testimonials index + testimonials index missing `approvedAt`.
+- `HeroBokeh` statically imported — measure `three` in the homepage bundle, do not change the hero.
+
+**Outcome (2026-08-31).**
+- **N+1 fixed** — `getPublicPeople` (`lib/server/public-people.ts`) now runs exactly 2 queries: the
+  people query, then a single `media` query with `$or: [{peopleIds:{$in}}, {people:{$in}}]` over all
+  ids/names, grouped in application code (per-person dedupe by media id, newest-first featured image,
+  photo/video counts). Was N+1; now O(1) round-trips. Uses the existing `{peopleIds,isPublic,createdAt}` index.
+- **Testimonials index fixed** — `ensure-indexes.mjs` now creates
+  `{isApproved:1, sortOrder:1, approvedAt:-1, createdAt:-1}` to match `getPublicTestimonials`'s sort
+  (no more in-memory sort); the dead `{status:1, createdAt:-1}` index (no code writes `status`) was dropped.
+  On an existing DB the old indexes must be `dropIndex`'d manually; on first deploy they are created fresh.
+- **Search index — DECISION, not a code change.** Left as-is. A MongoDB `$text` index is word/stem-based
+  and would break the as-you-type substring search; the correct scalable fix is Atlas Search (`$search`
+  autocomplete), a deploy-time Atlas config. At portfolio scale a bounded scan is fine. Do it only when
+  the library grows. Logged in the CLAUDE.md defect table under "at/after deploy".
+- **Lifecycle audit — all clean.** Three.js disposal (`HeroBokeh`, `PhotographyCylinder`) disposes
+  renderer/geometry/materials/textures, cancels RAF, removes listeners, kills GSAP tweens. `AnimatedText`
+  uses `useGSAP({scope})` (auto-reverts tweens + ScrollTriggers). Lenis is a single instance in `AppShell`,
+  destroyed on cleanup, keyed `[isAdmin]` so it is not recreated per route.
+- **Cloudinary images correct** — loader emits `w_<width>,c_limit,q_auto,f_auto` (per-browser AVIF/WebP,
+  no upscale). No change.
+- **Caching directives correct** — the queue's "4 pages have no directive" note was stale; S9 already
+  added `revalidate = 300` to about/blog/dancing/web-development. All 15 real public routes carry a
+  directive; `contact`/`services`/`g/[slug]` `force-dynamic` is justified. No change.
+- **HeroBokeh** — statically imported at `HomeHero.tsx:3`, putting ~140–160 KB gzip of `three` in the
+  homepage initial bundle while its WebGL siblings are `dynamic({ssr:false})`. Reported only; hero untouched.
+- **Lighthouse NOT run** — the sandbox cannot reach Atlas so the dev server 500s. Owner: Hussain, at
+  deploy/local — `npx lighthouse http://localhost:3000/ --view` across home/photography/videography/nft/dancing.
+- **Transition bug fixed in the same session** (reported by Hussain mid-session): the contact-sheet page
+  transition drew only `type:"image"` media into its pool, so a sparse/mostly-video library collapsed to a
+  1-image pool and filled all 40 cells with the same photo. `TransitionContext.navigate()` now dedupes the
+  pool and, when fewer than 2 distinct photos exist, plays the quick fade instead of the grid. Recorded in
+  CLAUDE.md → "Page transitions".
+- **Verified:** `tsc --noEmit` clean, `eslint --max-warnings 0` clean, 177 tests pass. `/people` and the
+  people-profile transition confirmed working by Hussain. CLAUDE.md updated in the same commit.

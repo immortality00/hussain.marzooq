@@ -63,6 +63,10 @@ Markdown content via react-markdown, public `/blog` + `/blog/[slug]` with catego
 C2 (Open Graph / share-preview images: admin-driven `page_seo.ogImageUrl` wired through a shared
 `buildPublicMetadata` across all 16 public pages + one branded `next/og` fallback card, `metadataBase`;
 admin Share-image field swapped to the `ImageField` picker). Archive §C2.
+P1 (performance audit: `/people` N+1 → 2 queries, testimonials index fixed + dead `{status:1}` dropped,
+Three.js/GSAP/Lenis disposal + caching + Cloudinary audit clean, contact-sheet transition fade-guard when
+the photo pool has <2 distinct images; search-index → Atlas Search deferred to deploy, Lighthouse owed on
+a live machine). Archive §P1.
 C3 (analytics: GoatCounter — free/cookieless — one tracking tag on public pages via `SiteAnalytics`,
 plus an in-admin `/admin/analytics` dashboard reading GoatCounter's API server-side; chosen over
 Plausible on Hussain's call). Archive §C3.
@@ -103,7 +107,9 @@ longer top-to-bottom — take sessions in exactly this order.
 12. ~~**C1**~~ ✓ done (blog system, archive §C1) · ~~**C2**~~ ✓ done (OG/share images — admin-driven
     `page_seo.ogImageUrl` + one branded `next/og` fallback card, shared `buildPublicMetadata`, archive §C2) ·
     ~~**C3**~~ ✓ done (analytics — GoatCounter tag + in-admin dashboard, archive §C3) ·
-    **P1, P2** · **NFT1, NFT2** — the remaining queue.
+    ~~**P1**~~ ✓ done (performance audit — /people N+1 fixed, testimonials index fixed, lifecycle/
+    caching/image audit clean, transition fade guard; Lighthouse + Atlas Search deferred to deploy) ·
+    **P2** · **NFT1, NFT2** — the remaining queue.
 
 Hard dependencies, stated once so no session has to re-derive them:
 `C4 → D6` · `T1 → T2` · `D9b → D9` · `D2b → D4`'s homepage transition · everything → `D13`.
@@ -210,45 +216,10 @@ _C3 done — see SESSION-ARCHIVE.md §C3._
 
 ## Phase 4 — People & launch prep
 
-### Session P1 — Performance audit — `pending`
-Audit the full public site for performance.
-
-- Lighthouse scores on homepage, photography, videography, NFT, dancing pages.
-- Identify and fix the largest performance issues.
-- Verify Three.js scenes are disposed correctly on unmount.
-- Verify GSAP ScrollTrigger instances are killed on unmount.
-- Verify Lenis is destroyed and reinitiated correctly on route change.
-- Image optimization: verify all Cloudinary images use appropriate quality and format settings.
-- Caching strategy — **the old numbers here were wrong; re-counted 2026-08-17.** There are
-  **28 `page.tsx` files in total, not 39 — and only 16 are outside `app/admin/`.** One of
-  those 16 is the content-free `app/videography/videos/page.tsx` redirect stub, leaving 15
-  real public routes. Across those 15: 3 use `force-dynamic` (`contact`, `services`,
-  `g/[slug]` — the last also redundantly sets `revalidate = 0`), 8 use `revalidate = 300`,
-  and **4 have no directive at all** (`about`, `blog`, `dancing`, `web-development`) so they
-  are fully static and only ever refresh on demand. The `videos` stub has no directive
-  either, but it only redirects, so it is harmless. That last
-  group is the actual problem — see §S9. `revalidatePath` **is** already used, in 15 files
-  (e.g. `app/api/media/[id]/route.ts:310-314,349-353`). Confirm which pages genuinely need
-  per-request freshness.
-- **N+1 on `/people`:** `lib/server/public-people.ts:76-114` issues one `media.find()` per
-  person profile inside `Promise.all(docs.map(...))`. Replace with a single `$in` query
-  grouped in application code.
-- **Search has no supporting index.** `media/list-public/route.ts:65-88` and
-  `media/admin-list/route.ts:97-109` build unanchored case-insensitive regexes over six
-  fields per keystroke; nothing in `scripts/ensure-indexes.mjs` can serve them, so every
-  search is a collection scan. Decide between a text index and a narrower prefix strategy.
-- **`ensure-indexes.mjs` has drifted from the schema.** Line 90 creates
-  `{status:1, createdAt:-1}` on `testimonials`, but **no code anywhere writes a `status`
-  field** — only `isApproved` exists. Dead index, pure write cost; drop it. And
-  `getPublicTestimonials()` sorts `{sortOrder:1, approvedAt:-1, createdAt:-1}`
-  (`lib/server/testimonials.ts:59`) while the index (line 89) is
-  `{isApproved:1, sortOrder:1, createdAt:-1}` — missing `approvedAt`, forcing an in-memory
-  sort. Fix the index to match the sort.
-- **`HeroBokeh` is statically imported** (`HomeHero.tsx:3`), so `three` is in the homepage's
-  initial bundle while its siblings are `dynamic({ssr:false})`. **Measure it here and report
-  the number — do not change the hero without Hussain asking.**
-
-Report all findings before fixing anything.
+_P1 done — see SESSION-ARCHIVE.md §P1. `/people` N+1 collapsed to 2 queries; testimonials index
+fixed + dead `{status:1}` dropped; lifecycle/caching/image audit clean; search index deferred to
+Atlas Search at deploy; Lighthouse still owed on a live/local machine; plus a contact-sheet
+transition fix (fade when the photo pool has <2 distinct images)._
 
 ---
 

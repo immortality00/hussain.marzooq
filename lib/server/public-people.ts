@@ -129,47 +129,101 @@ export async function getPublicPeople(): Promise<PublicPersonIndexItem[]> {
     .sort({ updatedAt: -1, createdAt: -1 })
     .toArray();
 
-  const items = await Promise.all(
-    docs.map(async (doc): Promise<PublicPersonIndexItem> => {
-      const personId = String(doc._id);
-      const name = typeof doc.name === "string" ? doc.name : "";
+  if (docs.length === 0) return [];
 
-      const linked = await db
-        .collection("media")
-        .find(buildPersonMediaQuery(personId, name))
-        .project({ _id: 1, type: 1, secureUrl: 1, createdAt: 1 })
-        .sort({ createdAt: -1 })
-        .toArray();
+  const ids = docs.map((doc) => String(doc._id));
+  const names = docs
+    .map((doc) => (typeof doc.name === "string" ? doc.name : ""))
+    .filter((name) => name.length > 0);
 
-      const deduped = new Map<string, Record<string, unknown>>();
-      for (const item of linked) {
-        deduped.set(String(item._id), item as Record<string, unknown>);
-      }
+  const nameToIds = new Map<string, string[]>();
+  for (const doc of docs) {
+    const name = typeof doc.name === "string" ? doc.name : "";
+    if (!name) continue;
+    const bucket = nameToIds.get(name) ?? [];
+    bucket.push(String(doc._id));
+    nameToIds.set(name, bucket);
+  }
+  const idSet = new Set(ids);
 
-      const dedupedItems = Array.from(deduped.values());
-      const photoCount = dedupedItems.filter((item) => !isVideoType(item.type)).length;
-      const videoCount = dedupedItems.filter((item) => isVideoType(item.type)).length;
-
-      const featuredImage =
-        dedupedItems.find(
-          (item): item is Record<string, unknown> & { secureUrl: string } =>
-            typeof item.secureUrl === "string" && item.secureUrl.trim().length > 0
-        )?.secureUrl ?? null;
-
-      return {
-        id: personId,
-        name,
-        slug: typeof doc.slug === "string" ? doc.slug : "",
-        bio: typeof doc.bio === "string" ? doc.bio : null,
-        avatarUrl: typeof doc.avatarUrl === "string" ? doc.avatarUrl : null,
-        photoCount,
-        videoCount,
-        featuredImage,
-      };
+  const mediaDocs = await db
+    .collection("media")
+    .find({
+      $and: [
+        {
+          $or: [
+            { peopleIds: { $in: ids } },
+            ...(names.length ? [{ people: { $in: names } }] : []),
+          ],
+        },
+        { $or: [{ isPublic: true }, { isPublic: { $exists: false } }] },
+      ],
     })
-  );
+    .project({ _id: 1, type: 1, secureUrl: 1, createdAt: 1, peopleIds: 1, people: 1 })
+    .sort({ createdAt: -1 })
+    .toArray();
 
-  return items;
+  type Accumulator = {
+    photoCount: number;
+    videoCount: number;
+    featuredImage: string | null;
+    seen: Set<string>;
+  };
+  const acc = new Map<string, Accumulator>();
+  for (const id of ids) {
+    acc.set(id, { photoCount: 0, videoCount: 0, featuredImage: null, seen: new Set() });
+  }
+
+  for (const media of mediaDocs) {
+    const mediaId = String(media._id);
+    const matched = new Set<string>();
+
+    if (Array.isArray(media.peopleIds)) {
+      for (const pid of media.peopleIds) {
+        const key = String(pid);
+        if (idSet.has(key)) matched.add(key);
+      }
+    }
+    if (Array.isArray(media.people)) {
+      for (const personName of media.people) {
+        if (typeof personName !== "string") continue;
+        for (const pid of nameToIds.get(personName) ?? []) matched.add(pid);
+      }
+    }
+
+    if (matched.size === 0) continue;
+
+    const isVideo = isVideoType(media.type);
+    const url =
+      typeof media.secureUrl === "string" && media.secureUrl.trim().length > 0
+        ? media.secureUrl
+        : null;
+
+    for (const pid of matched) {
+      const bucket = acc.get(pid);
+      if (!bucket || bucket.seen.has(mediaId)) continue;
+      bucket.seen.add(mediaId);
+      if (isVideo) bucket.videoCount += 1;
+      else bucket.photoCount += 1;
+      if (!bucket.featuredImage && url) bucket.featuredImage = url;
+    }
+  }
+
+  return docs.map((doc): PublicPersonIndexItem => {
+    const personId = String(doc._id);
+    const bucket = acc.get(personId);
+
+    return {
+      id: personId,
+      name: typeof doc.name === "string" ? doc.name : "",
+      slug: typeof doc.slug === "string" ? doc.slug : "",
+      bio: typeof doc.bio === "string" ? doc.bio : null,
+      avatarUrl: typeof doc.avatarUrl === "string" ? doc.avatarUrl : null,
+      photoCount: bucket?.photoCount ?? 0,
+      videoCount: bucket?.videoCount ?? 0,
+      featuredImage: bucket?.featuredImage ?? null,
+    };
+  });
 }
 
 export async function getPublicPersonBySlug(slug: string): Promise<PublicPersonDetail | null> {

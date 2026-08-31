@@ -328,6 +328,11 @@ Do **not** revive per-route transitions; there is no registry, no variant system
   Hussain reported). `collectImagePool(main img)` remains only as a fallback when the server
   pool is empty. **Because the pool is fetched in the root layout, `getTransitionImages` must
   never throw — keep the try/catch that returns `[]`, or a failed query breaks every page.**
+  **The pool is deduped and, when it holds fewer than 2 distinct photos, `navigate()` plays
+  the quick fade instead of the contact sheet (P1)** — a 1-image pool would fill all 40 cells
+  with the same photo, which reads as broken. The server pool only draws `type:"image"` media,
+  so a library that is still mostly video/NFT (or mid-hand-entry) yields a sparse pool; the
+  fade guard keeps that from ever rendering an all-identical grid. Do not remove the `< 2` guard.
 - `ContactSheetTransition.tsx` + `contactSheet.ts` (pure, unit-tested) — the grid: 8×5 cells
   drawn from the pool (shuffled — NOT one image sliced; **that was rejected, twice**). Cells
   **hold covering the screen until the destination route commits** (watched via `usePathname`,
@@ -1086,9 +1091,10 @@ Do not "discover" these again; do not fix them outside their session.
 | Admin login rate limiter keys on `ip\|userAgent`, so a UA change resets the lockout | `app/admin/page.tsx:32-34` | §S10 |
 | Public form fields are interpolated raw into notification email HTML | `lib/server/email.ts:19-29,45-55` | §S10 |
 | `POST /api/testimonials/reorder` is fully built and called from nowhere; testimonials cannot be reordered (**deferred out of D9b** — bulk-select was wired instead; wire the reorder or delete it in a later pass) | `app/api/testimonials/reorder/route.ts` | unassigned |
-| Public media search has no supporting index; `ensure-indexes.mjs` creates a dead `{status:1}` index and misses `approvedAt` | `ensure-indexes.mjs:89,90` | §P1 |
-| N+1 query on `/people` (one `media.find()` per person) | `lib/server/public-people.ts:76-114` | §P1 |
+| Public media search has no supporting index (unanchored case-insensitive regex over 6 fields) — **DECISION (P1): left as-is, not `$text`.** A word-based text index would break the as-you-type substring search; the correct scalable fix is Atlas Search (`$search` autocomplete), which is a deploy-time Atlas config, not a `createIndex`. At portfolio scale a bounded scan is fine. Do this only when the library grows enough to feel it. | `list-public/route.ts:69`, `admin-list/route.ts:98` | at/after deploy |
 | `README.md` is unedited create-next-app boilerplate telling the reader to deploy on Vercel | `README.md:32-36` | §L1 |
+
+Resolved in P1 (2026-08-31): the `/people` N+1 is gone — `getPublicPeople` now runs 2 queries total (people + one `$in` over media, grouped in app code). The testimonials index was fixed to `{isApproved,sortOrder,approvedAt,createdAt}` (matches the sort, no in-memory sort) and the dead `{status:1}` index dropped. Three.js disposal (HeroBokeh, PhotographyCylinder), GSAP ScrollTrigger (`useGSAP` scope), and Lenis lifecycle were all audited and confirmed clean. Cloudinary images already use `q_auto,f_auto,c_limit` (correct). Caching directives are correct on all 15 real public routes (the old "4 have no directive" note was stale — S9 fixed it). **Lighthouse scores were NOT run** (sandbox can't reach Atlas → dev server 500s) — run them on a live/local machine at deploy. `HeroBokeh` static import puts ~140–160 KB gzip of `three` in the homepage initial bundle (reported, hero untouched by decision).
 
 Resolved in D13: `SmartMediaPreview` empty/embed states are now flat `bg-muted`; dead `toPublicTestimonial` deleted. **`page_seo.title`/`.headerTitle` reverting to defaults when blanked is now a DECISION, not a defect** — a blank `<title>` is bad SEO, so the truthy-gate stays and the default is the safety net (unlike the optional description/OG fields).
 

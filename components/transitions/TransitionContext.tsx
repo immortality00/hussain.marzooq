@@ -95,7 +95,8 @@ export function TransitionProvider({
       // One consistent gallery pool for every page so the transition reads the
       // same everywhere; fall back to the current page's photos only if the
       // server pool is empty. Skip when there's no material or we're already here.
-      const pool = images && images.length > 0 ? images : collectImagePool(imageUrl ?? "");
+      const rawPool = images && images.length > 0 ? images : collectImagePool(imageUrl ?? "");
+      const pool = Array.from(new Set(rawPool.filter(Boolean)));
       if (path === pathname || pool.length === 0) {
         router.push(href);
         return;
@@ -103,7 +104,7 @@ export function TransitionProvider({
 
       playing.current = true;
 
-      if (prefersReducedMotion()) {
+      if (prefersReducedMotion() || pool.length < 2) {
         setReduced(true);
         window.setTimeout(() => router.push(href), REDUCED_MS / 2);
         window.setTimeout(() => {
