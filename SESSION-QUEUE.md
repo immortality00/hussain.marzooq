@@ -109,7 +109,13 @@ longer top-to-bottom — take sessions in exactly this order.
     ~~**C3**~~ ✓ done (analytics — GoatCounter tag + in-admin dashboard, archive §C3) ·
     ~~**P1**~~ ✓ done (performance audit — /people N+1 fixed, testimonials index fixed, lifecycle/
     caching/image audit clean, transition fade guard; Lighthouse + Atlas Search deferred to deploy) ·
-    **P2** · **NFT1, NFT2** — the remaining queue.
+    ~~**P2**~~ ✓ done · ~~**A1**~~ ✓ done.
+13. **Phase L — L2 → L3 → L4 → L5 (Block A), then L6 → L7 → L8 → L10 (Block B), then L9,
+    then L11 last.**
+    Set 2026-09-01 from an audit cross-checked against the code. **This is the launch path and it
+    runs before NFT1/NFT2.** Order is load-bearing: L2 before L3 (L2's fix is L3's only throttle),
+    L5 last in Block A so the release gate runs once.
+14. **NFT1, NFT2** — after launch.
 
 Hard dependencies, stated once so no session has to re-derive them:
 `C4 → D6` · `T1 → T2` · `D9b → D9` · `D2b → D4`'s homepage transition · everything → `D13`.
@@ -128,9 +134,13 @@ Going live does **not** require the whole queue. The launch-blocking set is:
 | 4 | ~~**S8, S9**~~ ✓ done | S8 was a runaway rAF loop; S9 meant a deactivated page stayed publicly reachable. Both fixed. |
 | 5 | **L1** (code ✓, deploy checklist pending) | Code/docs done. Still owed at first deploy: rotate `ADMIN_COOKIE_SECRET`, verify hash login + CSP against the live origin. Checklist in CLAUDE.md → "Domain & deployment status". |
 
-Everything else — T1/T2, D4, D5, D7–D13, C1–C3, P1/P2, NFT — can ship after launch.
-D10/D11/D12 pages stay behind their `isActive` toggle until they are built, which is exactly
-what that toggle exists for.
+| 6 | **L2, L3, L4, L5** (Block A) | Rate limits are bypassable via a spoofed `x-forwarded-for`; the testimonial cleanup route deletes any Cloudinary folder whose id is printed on `/testimonials`; no error/404 boundaries over read modules that have no try/catch; `next@16.2.6` carries CVE-2026-64641 (Server Action DoS) and the admin login is a Server Action. See Phase L. |
+| 7 | **L6, L7, L8** (Block B) | Browsing cannot reach item 61; private-gallery assets are permanent public Cloudinary URLs behind a password-only route; no robots/sitemap/canonical, email sends from Resend's testing domain to a mistyped domain, and there is no privacy policy or publication consent. See Phase L. |
+
+**L9 (Block C) may trail launch by a few days; L10 runs in Block B; L11 runs last, after
+every other Phase L session.** Everything else — T1/T2, D4, D5, D7–D13,
+C1–C3, P1/P2, NFT — can ship after launch. D10/D11/D12 pages stay behind their `isActive`
+toggle until they are built, which is exactly what that toggle exists for.
 
 ---
 
@@ -140,12 +150,14 @@ Only genuinely-open items live here. Anything already scheduled has been moved o
 old list mixed "RESOLVED, scheduled as Session X" entries under a header saying "not
 sessions yet", which read as still-open to anyone skimming.
 
-1. **Deeper test coverage — still open.** S3 shipped a Vitest baseline (auth unit tests +
+1. **Deeper test coverage — RESOLVED 2026-09-01: it runs before launch, as Session L10
+   (Phase L, Block B).** Leave this entry here until L10 is done, then retire it with the
+   session. Background: S3 shipped a Vitest baseline (auth unit tests +
    a server-module import smoke test) and CI running typecheck + lint + test (archive §S3).
    It is thin by design: the smoke test only asserts modules import, `admin-route.test.ts`
    mocks the admin guard it is testing around, `lib/private-galleries.ts` has zero coverage,
    and nothing tests rate limiting, query builders or `revalidatePath` wiring. Decide
-   whether a real coverage session runs before launch or after.
+   what that session covers — now specified in L10.
 
 **Closed since the last revision (do not reopen):**
 - Homepage design → scheduled, Phase 2a §D2b. Direction decided 2026-08-17; CLAUDE.md
@@ -234,6 +246,445 @@ _A1 done (2026-09-01) — see SESSION-ARCHIVE.md §A1. Admin mobile redesign: bo
 horizontal-scroll; media + private-gallery forms are Next/Back wizards (`MediaWizard`, `GalleryWizard`,
 shared `WizardTabs`); and admin uploads moved off the mobile-broken Cloudinary widget to a native file
 input (`CloudinaryUploadButton`, no CSP change). Verified on-device in the logged-in Chrome._
+
+---
+
+## Phase L — Launch readiness — set 2026-09-01
+
+Produced from an external audit cross-checked line-by-line against the code. **Nothing in
+this phase is optional and the site does not go live before Block A + Block B are done.**
+
+Verified state when this phase was written: `tsc --noEmit` clean · `eslint --max-warnings 0`
+clean · tree clean · branch `v2-portfolio` · lockfile `next@16.2.6`.
+**`npm test` and `npm run build` were NOT verified** — run both on the Mac.
+
+Order matters: **L2 before L3** (L2's fix is the only throttle L3's endpoint has), and
+**L5 last in Block A** so the full release gate runs once, not five times.
+
+---
+
+### Block A — launch blockers
+
+### Session L2 — Trusted client IP + request-guard correctness — `pending`
+
+**Why.** `app/api/_lib/public-form-security.ts:5-7` reads the first entry of the
+client-supplied `x-forwarded-for`. Netlify documents that header as spoofable and names
+`context.ip` / `x-nf-client-connection-ip` as the trusted value. Every rate limit in the app
+keys on this function: admin login lockout, testimonial submit, testimonial upload-signature,
+the destructive testimonial cleanup route, the People password gate, the private-gallery
+password gate. A random `X-Forwarded-For` per request bypasses all of them — which silently
+re-opens the §S10 login-lockout defect (S10 removed the user-agent from the key, but the key
+itself is still attacker-controlled).
+
+Files:
+- `app/api/_lib/public-form-security.ts` — `getClientAddress` prefers
+  `x-nf-client-connection-ip`; `x-forwarded-for` / `x-real-ip` accepted **only** when
+  `NODE_ENV !== "production"`. In production, no trusted header → `"anonymous"`, never a
+  spoofable fallback.
+- `lib/server/request-guards.ts:104` — `limited: count > limit`. It currently increments then
+  compares `count >= limit`, so `MAX_LOGIN_ATTEMPTS = 5` actually allows 4.
+- `lib/server/request-guards.ts:123-150` — `claimDuplicateWindow` is `findOne` then
+  `updateOne`; two simultaneous identical requests both pass. Collapse to one atomic
+  `findOneAndUpdate` upsert.
+- `test/client-address.test.ts` (new) + a rate-limit boundary test.
+
+Gate 1 security: no new trust boundary — this narrows an existing one. No secret crosses to
+the client. No new input; it removes trust in attacker-controlled input.
+
+---
+
+### Session L3 — Testimonial upload-session ownership — `pending`
+
+**Why — P0, exploitable today by anyone who opens `/testimonials`.**
+`app/api/testimonials/upload-session/cleanup/route.ts:29-36` accepts any syntactically valid
+`uploadSessionId`, builds `hm_visuals/testimonials/<id>`, and calls
+`deleteManagedCloudinaryFolderTree` (`lib/server/cloudinary-assets.ts:356`) which deletes by
+prefix plus `/pfp` and `/photos`. There is no ownership proof. The ids are `crypto.randomUUID()`
+(`components/testimonials/review-form/utils.ts:31`) so they are not guessable — but they do not
+need to be: `lib/server/testimonial-serializers.ts:33-34` publishes `profilePhotoUrl` and
+`photoUrls`, and `components/testimonials/PublicReviewForm.tsx:50-56` puts the session id
+directly in the Cloudinary path. **Every victim's folder name is printed on the public page.**
+
+Second path: `app/api/testimonials/submit/route.ts:139,207` accepts an arbitrary
+`uploadSessionId` and never verifies the submitted `photoUrls` live inside it, then stores it as
+`reviewAssetFolder`; `app/api/testimonials/[id]/route.ts:121-124` deletes that folder when an
+admin deletes the testimonial. Spam-submit against a victim's id, wait for the admin to delete
+the spam, and the server destroys the victim's photos.
+
+Third: `PublicReviewForm.tsx` calls `setTimeout(resetForm, 1200)` after a successful submit
+while `hasUploadedFiles` is still true, so the `beforeunload` beacon — and `handleClose()` —
+delete a testimonial's images *after* it is committed to MongoDB.
+
+Design (server-issued capability, not a client-chosen folder name):
+- New collection `testimonial_upload_sessions` `{ _id, token(hash), status: "pending"|"committed",
+  createdAt, expiresAt }` + TTL index in `scripts/ensure-indexes.mjs`.
+- New route `POST /api/testimonials/upload-session` — rate-limited, returns `{ sessionId, token }`.
+- `app/api/testimonials/upload-signature/route.ts` — require the token; sign **only**
+  `hm_visuals/testimonials/<sessionId>/pfp` and `/photos`; add `allowed_formats` and
+  `max_file_size` to the signed params (they are currently absent from `ALLOWED_SIGN_KEYS`, so
+  the 12-file / image-only limits are client-side decoration).
+- `app/api/testimonials/submit/route.ts` — verify the token, reject any `profilePhotoUrl` /
+  `photoUrls` entry outside that folder, flip `pending → committed` atomically in the same write.
+- `app/api/testimonials/upload-session/cleanup/route.ts` — delete only when the session is
+  `pending`, uncommitted, and the token matches. A committed folder is never deletable from a
+  public route.
+- `components/testimonials/PublicReviewForm.tsx` — mark the session committed client-side the
+  instant the submit succeeds, before the 1.2s reset, so neither `beforeunload` nor
+  `handleClose` can fire cleanup on a committed session.
+- Abandoned uploads are reaped by TTL expiry, not by handing browsers a destructive capability.
+
+Tests (required, same session): cross-session delete attempt is refused · cleanup after commit
+is refused · a submit referencing another session's URLs is refused · signature request without
+a token is refused.
+
+Gate 1 security: replaces an unauthenticated destructive capability with a token-bound one.
+The token is httpOnly-cookie or response-body bound to one browser, never logged. New input is
+validated and rate-limited. No secret crosses to the client beyond the per-session token.
+
+---
+
+### Session L4 — Resilience & error surfaces — `pending`
+
+**Why.** There is no `not-found.tsx`, no `error.tsx` and no `global-error.tsx` anywhere in
+`app/` — every `notFound()` and every thrown error renders Next's unbranded default screen.
+And `lib/server/public-people.ts`, `public-services.ts`, `public-nfts.ts`, `testimonials.ts`,
+`tag-pages.ts`, `public-media-tags.ts` and `db.ts` contain **zero** `catch`. Every route using
+them carries `revalidate = 300` with no `force-dynamic`, so Next prerenders them at build: if
+Atlas is unreachable during the Netlify build **the deploy fails**, and at runtime a DB blip
+500s those pages.
+
+Files:
+- `app/not-found.tsx`, `app/error.tsx`, `app/global-error.tsx` — house language, `.section-shell`,
+  `PageHeader`, a `Button` back to `/`. No gradients, no eyebrows.
+- Fail-safe wrappers (try/catch → `[]` / `null`) on the six read modules above, matching the
+  pattern already used by `getTransitionImages` (`lib/server/public-media.ts:36-42`) and
+  `lib/server/public-blog.ts`.
+- Empty results must render `components/shared/NoResults.tsx`, not a thrown page.
+
+Gate 1 security: no security surface.
+
+---
+
+### Session L5 — Dependency upgrade — `pending`
+
+**Why.** Lockfile is `next@16.2.6`. Correct exposure, checked against the advisories — **not**
+what the audit claimed: the two August criticals do **not** apply (CVE-2026-75604 is Windows
+filesystem only and Netlify Functions run Linux; GHSA-2xp9-vwfh-vxw4 needs Next's Image
+Optimization API, which this repo bypasses via `loader: "custom"` and which Netlify rewrites to
+its own CDN). What **does** apply is from the July release: **CVE-2026-64641 — DoS in App Router
+using Server Actions (High)**; the admin login is a Server Action. Plus CVE-2026-64643
+(Server Function endpoint ID disclosure, Medium).
+
+- `next` + `eslint-config-next` → `16.3.3` (Active LTS).
+- `react` / `react-dom` → current stable.
+- Regenerate `package-lock.json`, rerun the full gate.
+- Add a `npm run build` step to `.github/workflows/ci.yml` — permanently. The current file
+  explicitly skips it, which is how an unbuildable tree can pass CI.
+
+Gate 1 security: dependency-only; no app trust boundary changes.
+
+---
+
+### Block B — before the domain goes public
+
+### Session L6 — Real pagination on browsing — `pending`
+
+**Why.** `components/media/useMediaSearch.ts:169` — `loadMore()` returns early on
+`!hasActiveSearch`; `components/media/MediaGrid.tsx:46` — `showLoadMore` requires
+`hasActiveSearch`. So cursor pagination works when searching and **not** when browsing, and
+`lib/server/public-media.ts:55,63` caps both disciplines at 60. Photo 61 is unreachable.
+
+- Make `loadMore()` + the Load-more button work without an active search; keep the cursor path
+  the single source for both modes.
+- Drop the first server batch to 24–30 (also improves LCP / initial payload).
+- Same treatment for `lib/server/public-people.ts` `.limit(80)` and
+  `lib/server/testimonials.ts:52` `limit = 60`.
+- `lib/server/public-media.ts:122` `getExhibitionCities` `.limit(500)` — project only the fields
+  the globe needs instead of serializing whole media docs.
+
+Gate 1 security: no security surface (the endpoint is unchanged; see L9 for its rate limit).
+
+---
+
+### Session L7 — Private galleries: authenticated delivery + expiring downloads — `pending`
+
+**Decision, Hussain 2026-09-01: move to authenticated Cloudinary assets with short-lived
+download URLs.** Do not ship the current behaviour.
+
+**Constraint established before specifying — verified against Cloudinary's own docs.** Cloudinary's
+genuinely-expiring *delivery* URLs come from token/cookie-based authentication, which is
+**Advanced plan or higher and requires a Custom Delivery Hostname (CNAME)**. Plain signed URLs
+(`sign_url: true`) **never expire** — Cloudinary support: *"Anybody with the URL will be able to
+see that asset regardless of location, useragent, etc, and this is done by design."* So the
+literal "short-lived Cloudinary delivery URL" is a paid-plan feature. This session implements the
+same guarantee on the current plan, and the result is stronger: access is re-checked against the
+gallery cookie on **every request**, so changing the gallery password revokes access instantly —
+a bearer token cannot do that.
+
+Today: `lib/server/private-galleries.ts:51` ships the raw public `secureUrl` to the browser;
+`components/media/download.ts` merely rewrites it to `/upload/fl_attachment/`; and
+`app/api/private-galleries/download/[slug]/route.ts:78` 302s straight to a Cloudinary archive
+URL. The password protects the route, never the asset — one leaked URL is public forever.
+
+Three parts:
+
+1. **Convert private-gallery media to `type: authenticated`.** Upload API rename with
+   `to_type: "authenticated"` and identical public id — **no re-upload needed**. New script
+   `scripts/convert-gallery-assets.mjs`, idempotent, run once per gallery. The `/upload/` URL
+   stops resolving, which is the entire point. Store `deliveryType` on the media doc so public
+   portfolio media keeps the existing fast Cloudinary path untouched.
+
+2. **Viewing → a same-origin authenticated proxy.** New route
+   `app/api/private-galleries/asset/[gallerySlug]/[mediaId]/route.ts`: verify the gallery cookie
+   with `verifyPrivateGalleryCookieValue` exactly as the download route already does
+   (`download/[slug]/route.ts:28-36`), then stream the bytes from Cloudinary using a server-side
+   signed URL that never reaches the browser. Accept a `w` param and apply the transform
+   server-side, since `lib/cloudinary-image-loader.ts` passes non-Cloudinary srcs through
+   untouched and will not size these. Respond `Cache-Control: private, max-age=300`.
+   **No CSP change** — `img-src 'self'` already covers it, same pattern as D11's thum.io proxy.
+   `lib/server/private-galleries.ts` stops serialising `secureUrl` for gated media and emits the
+   proxy path instead.
+
+3. **Downloads → genuinely time-limited.** `cloudinary.utils.private_download_url` /
+   `signed_download_url` **is** expiry-capable on any plan (full-resolution, no transformations —
+   exactly right for a download). Generate it server-side per click, after the cookie check.
+   `components/media/download.ts` is deleted; `PrivateGalleryBrowser.tsx:98,213` call a new
+   `POST /api/private-galleries/download-url` that returns a short-lived URL. The ZIP route keeps
+   its cookie check and returns a signed, expiring archive URL rather than a plain one.
+
+Trade-off to accept knowingly: gallery bytes flow through Netlify functions instead of
+Cloudinary's CDN — slower, and counted against function bandwidth. Confined to private galleries
+(a handful of clients at a time); public portfolio media is untouched and still CDN-direct. If
+that ever hurts, the paid alternative is Cloudinary Advanced + CNAME + token auth.
+
+Also in this session:
+- `app/g/[slug]/page.tsx` has **no `generateMetadata` at all** and renders `result.title` +
+  `result.description` in the locked state before authentication. Add `robots: { index: false,
+  follow: false, nocache: true }`, and show a generic "Private gallery" title until unlocked.
+- `next.config.ts` — add `X-Robots-Tag: noindex, nofollow` on `/g/:path*`, matching the
+  `/admin/:path*` block.
+- **Password-gated People profiles have the same hole** (same D12 privacy system).
+  `lib/server/public-people.ts:229-236` correctly filters `isPrivate`, so
+  `app/people/[slug]/page.tsx:18-34` returns `{}` and no name/photo reaches the metadata —
+  **but `{}` also means no `robots` directive**, so the locked page stays crawlable while
+  `PersonPasswordForm` renders that person's `name`, `bio` and `avatarUrl` in the body
+  (`page.tsx:51-58`). Return `robots: { index: false, follow: false }` for the `locked` and
+  `unavailable` states and show a generic locked title, exactly as for `/g/[slug]`.
+
+Delete in this session:
+```
+git rm components/media/download.ts
+```
+
+Gate 1 security: **yes, new trust boundary** — two new authenticated routes. Both verify the
+existing gallery cookie before any Cloudinary call, both rate-limited, both validate `slug` /
+`mediaId` and confirm the media actually belongs to that gallery. No secret crosses to the
+client: the Cloudinary signature is generated and consumed server-side. No CSP change.
+
+---
+
+### Session L8 — SEO, email and legal surfaces — `pending`
+
+**Why.** No `app/robots.ts`, no `app/sitemap.ts`, nothing in `public/`.
+`lib/seo/page-metadata.ts` emits no canonical. `app/services/[slug]/page.tsx` has no
+`generateMetadata` despite being a conversion page. `lib/server/email.ts:6` sends from
+`onboarding@resend.dev` (Resend's testing domain — it only delivers to the account owner), and
+`:30,:58` link to `https://hussainmarzooq.com/admin/...` — **wrong domain, no hyphen** — while
+`lib/server/get-base-url.ts` exists to solve exactly this and is called from **nowhere**.
+
+- `app/robots.ts` + `app/sitemap.ts`, excluding `/admin`, `/g/*` and password-protected People.
+- `alternates.canonical` in `buildPublicMetadata` (`lib/seo/page-metadata.ts`).
+- `generateMetadata` on `app/services/[slug]/page.tsx`.
+- `lib/server/email.ts` — `FROM` from env (verified Resend domain); admin links built with
+  `getBaseUrl()`; the two `.catch(() => {})` on `sendInquiryNotification` /
+  `sendTestimonialNotification` keep the submit succeeding but must log the failure.
+- `app/privacy/page.tsx` — covering the actual processors: MongoDB Atlas, Cloudinary, Netlify,
+  Resend, GoatCounter, and the OSM / YouTube / Vimeo / Instagram embeds.
+- `components/testimonials/PublicReviewForm.tsx` — an explicit publication-consent checkbox for
+  name, review, photos and location, linking to the privacy page. Required to submit; store the
+  consent flag and timestamp on the testimonial doc.
+
+Gate 1 security: one new public page, no input. The consent flag is validated server-side in
+`submit/route.ts` like every other field.
+
+---
+
+### Session L10 — Release-confidence test layer — `pending`
+
+**Why.** This closes the standing "deeper test coverage" decision in *Gaps awaiting a decision*:
+the answer is **after Block A, before the domain is public**. `test/` has 15 entries covering
+utilities well — session tokens, password gates, media tags, appearance sanitisation, HTML
+escaping, analytics, plus a module-import smoke test. None of the flows that can actually hurt
+production are covered, and Block A rewrites two of them.
+
+Add regression coverage for:
+- Private gallery access, cookie expiry, and the new authenticated asset proxy from L7 —
+  including that a valid cookie for gallery A cannot fetch gallery B's assets.
+- Media pagination past 60 in **browse** mode, not just search (the L6 regression).
+- API mutation authorization: every `app/api/admin/*` and `app/api/*/[id]` route rejects an
+  unauthenticated request. Cheap, table-driven, and it closes a whole class of future mistakes.
+- Cloudinary media movement, including the L9 compensating rename when the Mongo write fails.
+- Rate-limit boundary + spoofed-`x-forwarded-for` rejection (pairs with L2).
+
+Then a small browser smoke suite — Playwright, no more than eight specs, run against
+`npm run build && npm start` locally and in CI: homepage renders · photography loads and
+paginates past 60 · videography loads · NFT modal opens · contact form submits · admin login
+succeeds · private gallery locks then unlocks · a bad URL renders the L4 branded 404.
+
+Testimonial upload-session ownership tests are **not** here — they ship inside L3, with the fix.
+
+Gate 1 security: test-only. Fixtures must never carry real credentials; the suite reads
+`.env.test` with throwaway values.
+
+---
+
+### Block C — hardening; may trail launch by a few days
+
+### Session L9 — Accessibility, API hardening and repo cleanup — `pending`
+
+- **`components/shared/ModalPortal.tsx`** has no `role="dialog"`, no `aria-modal`, no
+  labelling, no focus trap and no focus restore — only `WorkOverlay.tsx:188` has dialog
+  semantics. Fixing the shared component fixes MediaLightbox, NftModal, PrivateGalleryBrowser,
+  ExhibitionCityModal, ReviewModal and PublicReviewForm at once.
+- Associate `<label>`/`<input>` with `htmlFor`/`id` across the public forms — start with
+  `components/contact/ContactIdentityFields.tsx`.
+- Rate-limit the three unlimited public routes: `app/api/media/list-public/route.ts`
+  (the search endpoint — `force-dynamic`, `no-store`, unindexed regex over 6 fields on every
+  keystroke), `app/api/work-overlay/route.ts`, and
+  `app/api/private-galleries/download/[slug]/route.ts`.
+- `app/api/blog-categories/route.ts:9` and `app/api/service-categories/route.ts:13` — public
+  `GET`s returning inactive rows plus counts. Gate them or split a public active-only endpoint.
+- `app/api/web-projects/preview/route.ts` — restrict `?url=` to the URLs actually configured in
+  `page_sections["web-development"].projects.urls`, so the domain stops being an open screenshot
+  proxy.
+- `app/api/_lib/media.ts:68` — validate appearance `link` as `http:`/`https:` only; it is stored
+  as an arbitrary 500-char string and rendered as `<a href>` in `MediaDetailsSections.tsx`.
+- Reject negative `startingPrice` (`app/api/services/route.ts:74`) and negative NFT price.
+- `app/api/media/[id]/route.ts` — compensating rename when the Cloudinary move succeeds and the
+  Mongo write then fails.
+- `scripts/ensure-indexes.mjs` — unique partial indexes on `media.publicId` / `media.embedUrl`
+  after confirming production has no duplicates.
+- `netlify.toml` + `.nvmrc` + `engines.node` pinned to Node 22, matching CI.
+- **CLAUDE.md doc drift, verified 2026-09-01.** The Known-defects table still lists the admin
+  login rate-limiter user-agent bypass and the notification-email HTML injection as open under
+  "§S10". Both are fixed in code — `app/admin/page.tsx` keys on `getClientAddress(headerList)`
+  alone, and `lib/server/email.ts` runs every interpolated field through `escapeHtml`. Strike
+  both rows. The README-boilerplate row is stale too (L1 rewrote it). The
+  `POST /api/testimonials/reorder` row is accurate and is closed by the deletion below.
+
+**Deletions (run exactly these — `git rm` for tracked files, plain `rm` for the untracked one):**
+```
+# create-next-app leftovers — verified: zero references in app/, components/, lib/, hooks/
+git rm public/vercel.svg public/next.svg public/file.svg public/window.svg public/globe.svg
+# (public/globe/earth-day.jpg + earth-topology.png are the real globe textures — DO NOT touch)
+
+# dead route: POST /api/testimonials/reorder is fully built and called from nowhere
+git rm -r app/api/testimonials/reorder
+
+# stop tracking generated graph output (326 tracked files); keep it on disk
+git rm -r --cached graphify-out
+printf '\ngraphify-out/\n' >> .gitignore
+
+# untracked scratch left by the 2026-09-01 audit
+rm -rf _to_delete
+```
+After the `git rm --cached`, replace the `graphify-out/cost.json` line in `.gitignore` with the
+directory rule, and note in Gate 3 that `graphify update .` still runs — only the commit step
+in the queue protocol changes (there is no longer a graph commit to make).
+
+Gate 1 security: tightens three public routes and removes two over-sharing GETs. No new trust
+boundary.
+
+---
+
+### Final — runs after every other Phase L session
+
+### Session L11 — Full verification gate — `pending`
+
+**Runs last. L2–L10 must all be `done` before this starts.** This is the session that decides
+whether the code is shippable; it is not a formality and it is not allowed to "fix things while
+it is in there" beyond what is listed below.
+
+**Why it exists as its own session.** `.github/workflows/ci.yml` states outright:
+`# No `next build` — the app is verified with typecheck + lint + tests only`. **This project has
+never been production-built.** Netlify's first deploy would otherwise be the first time Next's
+production compiler, static generation, route compilation, metadata generation and
+server/client boundary checks have ever run on this tree. Typecheck, lint and Vitest passing
+prove none of that.
+
+Run, in order, from a clean tree:
+
+```
+rm -rf node_modules .next
+npm ci
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npm audit
+```
+
+Every command must exit 0. Treat each of the following as a **stop**, not a warning:
+
+- `npm ci` resolving anything other than the committed lockfile.
+- Any `next build` error, including prerender failures on the `revalidate = 300` routes. If the
+  build fails while reaching MongoDB, that is the L4 fail-safe work not holding — fix L4, do not
+  set `MONGODB_URI` to something that hides it.
+- `npm test` failures, including the L10 suite.
+- `npm audit` reporting high or critical in a runtime dependency. Dev-only advisories get
+  recorded here with a one-line reason and do not block.
+
+Then a local production smoke, because `next dev` and `next build` are different programs:
+
+```
+npm run build && npm start
+```
+
+Click every public route and every admin route against that server, not the dev server: `/`,
+`/about`, `/photography` (paginate past 60 — the L6 fix), `/photography/[tag]`, `/videography`,
+`/nft`, `/dancing`, `/web-development`, `/people`, `/people/[slug]` (open and gated),
+`/testimonials` (submit a real review through the L3 flow), `/blog`, `/blog/[slug]`,
+`/services`, `/services/[slug]`, `/contact` (submit), `/g/[slug]` (locked, unlocked, download —
+the L7 flow), a deliberately bad URL (the L4 branded 404), and `/admin` login → dashboard →
+one create, one edit, one delete.
+
+Record the outcome in this session's build note: the six command results, the audit summary,
+and anything the smoke surfaced. Do **not** mark `done` on a partial pass.
+
+**One thing to do now, ahead of L2, not at L11.** Run `npm run build` once today as a throwaway
+check. It has never been run, so if this tree does not build, that fact should shape the order
+of Phase L rather than surface after ten sessions of work. It is a two-minute command and it
+does not count as starting L11.
+
+Gate 1 security: verification only, no code change. `npm audit` findings that need code are
+recorded here and scheduled as their own session, not fixed inline.
+
+---
+
+### After L11 — the release gate and deploy
+
+Not code; cannot be done from a session. Run in this order.
+
+1. **MongoDB Atlas → Network Access → `0.0.0.0/0`.** Netlify build and function IPs are dynamic.
+   Until this is done, prerendering `/people`, `/services`, `/nft`, `/testimonials`,
+   `/photography`, `/videography`, `/about` and `/` **fails the build** (see L4). Do this first.
+2. **Resend: verify the sending domain, add SPF + DKIM.** Start early — DNS is slow.
+3. **Netlify env vars** — the full L1 list, plus separate `PERSON_GATE_COOKIE_SECRET` and
+   `PRIVATE_GALLERY_COOKIE_SECRET` (both currently fall back to `ADMIN_COOKIE_SECRET` at
+   `lib/password-gate.ts:90-91` and `lib/private-galleries.ts:31-32`), plus
+   `NEXT_PUBLIC_SITE_URL` at the live origin.
+4. **Point Netlify at `v2-portfolio`.** `origin/HEAD` is `master`; a default-branch deploy ships
+   the old landing page.
+5. Session **L11** — the full verification gate. Do not proceed past a partial pass.
+6. `npm run db:indexes` against the production database — confirm the URI before running.
+7. Deploy, then run the existing L1 deploy checklist (CLAUDE.md → "Domain & deployment status")
+   against the live origin.
+8. Lighthouse on mobile against the live origin — owed since P1.
+
+**In parallel, and on the critical path: content entry.** The site is empty until media is
+uploaded. The page transition falls back to a plain fade below 2 distinct public photos (P1
+guard), the globe needs exhibited appearances carrying C4 coordinates, and every active
+discipline needs a Work-overlay card image or `/admin/pages` flags it amber.
 
 ---
 
