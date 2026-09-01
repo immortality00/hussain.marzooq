@@ -51,14 +51,9 @@ export default function PhotographyViewer({
 
   return (
     <div className="mt-5">
-      <div className="flex flex-wrap items-center gap-5">
+      <div className="flex flex-wrap items-center gap-3 sm:gap-5">
         <ModeSwitcher mode={mode} onChange={setMode} />
-        {navChips?.length ? (
-          <div className="order-last min-w-0 basis-full sm:order-none sm:ml-12 sm:basis-0 sm:flex-1">
-            <TagChipRow chips={navChips} activeSlug={lockedTag} scroll boxed />
-          </div>
-        ) : null}
-        <div className="w-full sm:w-64 sm:shrink-0">
+        <div className="min-w-0 flex-1 sm:order-last sm:w-64 sm:flex-none">
           <SearchInput
             value={q}
             onValueChange={setQ}
@@ -66,9 +61,14 @@ export default function PhotographyViewer({
             placeholder="Search…"
           />
         </div>
+        {navChips?.length ? (
+          <div className="order-last min-w-0 basis-full sm:order-none sm:ml-12 sm:basis-0 sm:flex-1">
+            <TagChipRow chips={navChips} activeSlug={lockedTag} scroll boxed />
+          </div>
+        ) : null}
       </div>
 
-      <div className="mt-10">
+      <div className="mt-1">
         {mode === "cylinder" ? (
           <PhotographyCylinder items={displayedItems} onSelect={setActive} />
         ) : mode === "horizontal" ? (

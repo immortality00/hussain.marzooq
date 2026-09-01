@@ -57,8 +57,8 @@ export default function ServiceSimpleSection({
           const secondaryDisabled = disableSecondaryWhen ? disableSecondaryWhen(s) : false;
 
           return (
-            <div key={s.id} className="rounded-2xl border p-3 flex items-center justify-between gap-3">
-              <div className="flex min-w-0 items-center gap-3">
+            <div key={s.id} className="rounded-2xl border p-3 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 <BulkCheckbox
                   checked={isSelected(s.id)}
                   onChange={() => onToggleSelect(s.id)}
@@ -70,7 +70,7 @@ export default function ServiceSimpleSection({
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto">
                 <button
                   className={adminButtonClasses("default", "md")}
                   onClick={() => onEdit(s)}

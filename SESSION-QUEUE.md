@@ -221,16 +221,19 @@ fixed + dead `{status:1}` dropped; lifecycle/caching/image audit clean; search i
 Atlas Search at deploy; Lighthouse still owed on a live/local machine; plus a contact-sheet
 transition fix (fade when the photo pool has <2 distinct images)._
 
+_P2 done (2026-08-31) — see SESSION-ARCHIVE.md §P2. Public-tree mobile pass: shared `ModalPortal`
+fixes the footer-covering/scroll-behind bug across ALL content modals; media modals stack on mobile;
+`CustomCursor` is desktop-only; touch-action fixes on the horizontal marquee + Work overlay; cylinder
+size + toolbar + people-grid tuned. Admin was out of scope → now Session A1._
+
 ---
 
-### Session P2 — Mobile adjustment pass — `pending`
-Verify and fix the full mobile experience.
-
-The WebGL homepage, 3D cylinder, and all GSAP effects must work on mobile.
-Where mobile requires layout adjustment (not feature removal): fix it.
-Where performance requires simplification: propose the specific simplification and wait for approval.
-
-Test every public page on mobile viewport. Report all issues before fixing.
+_A1 done (2026-09-01) — see SESSION-ARCHIVE.md §A1. Admin mobile redesign: bottom icon nav
+(`AdminMobileNav` + shared `nav-groups.ts`), tighter mobile padding + `overflow-x-hidden` guard,
+`AdminPageHeader` wraps (killed the services auto-zoom), admin list rows wrap / wide tables
+horizontal-scroll; media + private-gallery forms are Next/Back wizards (`MediaWizard`, `GalleryWizard`,
+shared `WizardTabs`); and admin uploads moved off the mobile-broken Cloudinary widget to a native file
+input (`CloudinaryUploadButton`, no CSP change). Verified on-device in the logged-in Chrome._
 
 ---
 

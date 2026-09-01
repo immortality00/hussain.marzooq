@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { ModalPortal } from "@/components/shared/ModalPortal";
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
 import { LocationSearch } from "./review-form/LocationSearch";
 import { ProfilePhotoField } from "./review-form/ProfilePhotoField";
@@ -220,9 +221,9 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
       </button>
 
       {open ? (
-        <div
+        <ModalPortal
+          onClose={() => void handleClose()}
           className="fixed inset-0 z-[150] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-5"
-          onClick={() => void handleClose()}
         >
           <div
             className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] bg-background text-foreground shadow-2xl ring-1 ring-border/70"
@@ -361,7 +362,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
               </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       ) : null}
     </>
   );

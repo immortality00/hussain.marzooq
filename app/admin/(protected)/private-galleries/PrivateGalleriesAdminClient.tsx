@@ -2,9 +2,8 @@
 
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
-import { GalleryFormFields } from "@/components/admin/private-galleries/GalleryFormFields";
 import { GalleryList } from "@/components/admin/private-galleries/GalleryList";
-import { PrivateGalleryMediaPicker } from "@/components/admin/private-galleries/PrivateGalleryMediaPicker";
+import { GalleryWizard } from "@/components/admin/private-galleries/GalleryWizard";
 import { usePrivateGalleriesAdmin } from "@/components/admin/private-galleries/usePrivateGalleriesAdmin";
 import { useBulkSelection } from "@/components/admin/bulk/useBulkSelection";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
@@ -15,7 +14,7 @@ export default function PrivateGalleriesAdminClient() {
   const selection = useBulkSelection(admin.items.map((g) => g.id));
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-0 py-3 md:px-6 md:py-10">
       <AdminPageHeader
         title="Private Galleries"
         actions={
@@ -80,54 +79,7 @@ export default function PrivateGalleriesAdminClient() {
         />
         </>
       ) : (
-        <section className="mt-8 space-y-6">
-          <GalleryFormFields
-            editing={Boolean(admin.editingId)}
-            title={admin.title}
-            slug={admin.slug}
-            description={admin.description}
-            password={admin.password}
-            expiresAtLocal={admin.expiresAtLocal}
-            isActive={admin.isActive}
-            onTitleChange={admin.setTitle}
-            onSlugChange={admin.setSlug}
-            onDescriptionChange={admin.setDescription}
-            onPasswordChange={admin.setPassword}
-            onExpiresAtLocalChange={admin.setExpiresAtLocal}
-            onIsActiveChange={admin.setIsActive}
-          />
-
-          <PrivateGalleryMediaPicker
-            selectedMediaIds={admin.selectedMediaIds}
-            onToggleMedia={admin.toggleMedia}
-          />
-
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => void admin.save()}
-              disabled={admin.saving}
-              className={adminButtonClasses("solid", "md")}
-            >
-              {admin.saving
-                ? admin.editingId
-                  ? "Updating gallery…"
-                  : "Creating gallery…"
-                : admin.editingId
-                  ? "Update gallery"
-                  : "Create gallery"}
-            </button>
-
-            <button
-              type="button"
-              onClick={admin.backToList}
-              disabled={admin.actionBusy}
-              className={adminButtonClasses("default", "md")}
-            >
-              Cancel
-            </button>
-          </div>
-        </section>
+        <GalleryWizard admin={admin} />
       )}
     </main>
   );

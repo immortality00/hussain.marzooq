@@ -23,6 +23,8 @@ export default function CategoriesTable({
 }) {
   return (
     <div className="mt-8 overflow-hidden rounded-2xl border">
+      <div className="overflow-x-auto">
+      <div className="min-w-[640px]">
       <div className="grid grid-cols-12 gap-2 border-b px-4 py-3 text-xs font-medium text-muted-foreground">
         <div className="col-span-1"> </div>
         <div className="col-span-3">Name</div>
@@ -46,6 +48,8 @@ export default function CategoriesTable({
           />
         ))}
       </SortableList>
+      </div>
+      </div>
     </div>
   );
 }

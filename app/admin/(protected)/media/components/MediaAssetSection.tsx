@@ -1,10 +1,12 @@
 "use client";
 
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
-import { CldUploadWidget } from "next-cloudinary";
-import type { Uploaded, WidgetResult } from "../lib/types";
-import { getString, isRecord } from "../lib/utils";
+import type { Uploaded } from "../lib/types";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { CloudinaryUploadButton } from "@/components/admin/CloudinaryUploadButton";
 
 export default function MediaAssetSection({
   mode,
@@ -27,6 +29,8 @@ export default function MediaAssetSection({
   uploadFolder: string;
   canUpload?: boolean;
 }) {
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
   return (
     <section className="rounded-3xl border p-5">
       <div className="flex flex-wrap gap-2">
@@ -51,35 +55,16 @@ export default function MediaAssetSection({
 
       {mode === "upload" ? (
         <div className="mt-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <CldUploadWidget
-              key={uploadFolder}
-              signatureEndpoint="/api/sign-cloudinary-params"
-              options={{ folder: uploadFolder, multiple: false, resourceType: "auto" }}
-              onSuccess={(result: unknown) => {
-                const r = result as WidgetResult;
-                const info = r?.info;
-                if (!isRecord(info)) return;
-
-                const secureUrl = getString(info.secure_url);
-                const publicId = getString(info.public_id);
-                const resourceType = getString(info.resource_type);
-
-                if (!secureUrl || !publicId || !resourceType) return;
-                setUploaded({ secureUrl, publicId, resourceType });
+          <div className="flex flex-wrap items-center gap-2">
+            <CloudinaryUploadButton
+              folder={uploadFolder}
+              disabled={!canUpload}
+              onUploaded={(u) => {
+                setUploadError(null);
+                setUploaded(u);
               }}
-            >
-              {({ open }) => (
-                <button
-                  type="button"
-                  disabled={!canUpload}
-                  onClick={() => open()}
-                  className={adminButtonClasses("default", "md")}
-                >
-                  Choose file
-                </button>
-              )}
-            </CldUploadWidget>
+              onError={setUploadError}
+            />
 
             <button
               type="button"
@@ -89,6 +74,12 @@ export default function MediaAssetSection({
               Clear
             </button>
           </div>
+
+          {uploadError ? (
+            <div className="rounded-2xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+              {uploadError}
+            </div>
+          ) : null}
 
           {uploaded ? (
             <div className="rounded-2xl border p-3">

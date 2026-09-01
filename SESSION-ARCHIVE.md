@@ -2893,3 +2893,84 @@ Audit the full public site for performance.
   CLAUDE.md → "Page transitions".
 - **Verified:** `tsc --noEmit` clean, `eslint --max-warnings 0` clean, 177 tests pass. `/people` and the
   people-profile transition confirmed working by Hussain. CLAUDE.md updated in the same commit.
+
+---
+
+## Session P2 — Mobile adjustment pass — `done` (2026-08-31)
+
+**Original spec:**
+Verify and fix the full mobile experience. The WebGL homepage, 3D cylinder, and all GSAP effects
+must work on mobile. Where mobile requires layout adjustment (not feature removal): fix it. Where
+performance requires simplification: propose the specific simplification and wait for approval.
+Test every public page on mobile viewport. Report all issues before fixing.
+
+**Build outcome:**
+Public-tree only (admin deliberately out of scope — CLAUDE.md's "never touch admin unless the
+session is for admin"). Verification was code-level: the sandbox can't reach Atlas so the dev
+server 500s; Hussain confirmed the fixes on his own machine at mobile widths.
+
+Audit found the grids, nav drawer, footer, testimonials, contact, and `PhotographyCylinder`
+(`touch-none` + mobile hint) already responsive. Fixes shipped:
+- **Content-modal footer/scroll bug fixed site-wide via a new shared `components/shared/ModalPortal.tsx`**
+  (portal to `document.body` + `useScrollLock` + Escape). The D12 portal fix had been applied only to
+  `MediaLightbox`; every other modal (NftModal, PrivateGalleryBrowser, ExhibitionCityModal, ReviewModal,
+  PublicReviewForm) was footer-covered and scrolled behind. All six now route through `ModalPortal`;
+  `MediaLightbox` was refactored onto it too (dedup). `WorkOverlay` stays separate (top-level GSAP
+  takeover, not footer-trapped). Hussain's explicit callout: the fix must be consistent across the site,
+  not one instance.
+- **Media modals stack on mobile:** `grid-rows-[45vh_minmax(0,1fr)] lg:grid-rows-none` so the
+  `fill`/`object-contain` media no longer collapses as detail content grows (MediaLightbox, NftModal,
+  PrivateGalleryBrowser).
+- **`CustomCursor` desktop-only:** effect bails unless `(pointer: fine)` — no rAF loop / `cursor:none`
+  on touch.
+- **`PhotographyHorizontal`** marquee track got `touch-pan-y` (vertical page scroll passes through,
+  horizontal drag captured). **`WorkOverlay`** grab area got `touch-none` (the browser was stealing the
+  touch, so the cylinder wouldn't drag on mobile).
+- **Cylinder size:** `FIT_MARGIN` 1.12 → 1.28 and mobile floor 440px → 380px; controls→viewer gap
+  `mt-10` → `mt-1` (Hussain: "reduce it more").
+- **Photography toolbar:** search input now shares the row with the mode buttons on mobile (was its own
+  line); tag chips take the line below.
+- **People grid:** 2 columns minimum on mobile (`grid-cols-2`, was 1).
+- **Verified:** `tsc --noEmit` clean, `eslint --max-warnings 0` clean, 177 tests pass. All surfaces
+  confirmed working on mobile by Hussain. CLAUDE.md updated (ModalPortal + mobile facts) in the same commit.
+
+---
+
+## Session A1 — Admin mobile redesign + media/gallery form wizards — `done` (2026-09-01)
+
+**Original spec:** Redesign the admin experience. Half 1 — admin mobile chrome (mobile only, `< md`,
+desktop untouched): replace the sidebar with a fixed bottom icon nav (5 groups; tap opens the group's
+tabs), reduce edge/dead space. Half 2 — media form → Next/Back step wizard (mobile AND desktop) with a
+persistent shrinking upload preview, preserving all `useMediaEditorController` behaviour. Later expanded by
+Hussain to: the private-gallery form gets the same wizard; fix every admin page's mobile layout; and fix
+the media upload that "opens the Cloudinary popup but can't tap anything" on mobile.
+
+**Build outcome (verified on-device in Hussain's logged-in Chrome at 390–430px, not just compiled):**
+- **Bottom icon nav** `components/admin/AdminMobileNav.tsx` + shared `components/admin/nav-groups.ts`
+  (`NAV_GROUPS` extracted from `AdminSidebarNav`, + a lucide icon per group). `(protected)/layout.tsx`
+  sidebar `hidden md:block`, bottom nav on mobile, tighter padding, **`overflow-x-hidden`** root guard.
+  Desktop admin byte-identical.
+- **`AdminPageHeader` wraps** (`flex-col sm:flex-row`) — this fixed the services-page **iOS auto-zoom**
+  (root cause: the header's wide action buttons overflowed the viewport, inflating the layout viewport).
+- **Admin list rows/tables made mobile-safe:** action buttons wrap to their own line (services
+  `SortableServiceItem` + name/badges row, `ServiceSimpleSection`, people rows, removal-requests rows);
+  the fixed multi-column tables scroll horizontally inside their card (`overflow-x-auto` + `min-w`:
+  inquiries `InquirySection`, service-categories `CategoriesTable`). Every admin page was checked at phone
+  width; dashboard/analytics/pages/tags/blog/testimonials were already fine.
+- **Media + gallery form wizards:** `MediaWizard` (Category → Media → Details → Appearances → Review +
+  persistent `MediaWizardPreview`) and `GalleryWizard` (Details → Media → Review), both on the shared
+  `components/admin/wizard/WizardTabs.tsx` (active step scrolls into view). Presentation/flow only — no
+  controller/validation/data-model change. `page.tsx` slimmed to header + feedback + `<MediaWizard>`.
+- **Native upload replaces the Cloudinary widget (the real mobile-upload fix).** Diagnosed on-device: the
+  `CldUploadWidget` desktop multi-pane layout collapses to a blank pane on narrow screens. New
+  `components/admin/CloudinaryUploadButton.tsx` — hidden `<input type="file">` → sign via
+  `/api/sign-cloudinary-params` → direct POST to `api.cloudinary.com/.../auto/upload` (already in
+  `connect-src`, **no CSP change**). Adopted by `MediaAssetSection`, people avatar, `ServiceEditorModal`,
+  and shared `ImageField` (blog/sections/OG). Verified end-to-end: a real image uploaded at 430px and
+  rendered its preview. Public testimonials review form (`ProfilePhotoField`, `ReviewPhotosField`) keeps
+  `CldUploadWidget` (unauthenticated visitor path — different signing; a public equivalent is a later task).
+- A defensive nav-hide mechanism added mid-session (dispatching `hm_admin_overlay_*`) was **reverted** —
+  it was the wrong fix and regressed the navbar; removed entirely.
+- **Verified:** `tsc --noEmit` clean, `eslint --max-warnings 0` clean, 177 tests pass; every admin page
+  confirmed at phone width in the logged-in Chrome (`pageOverflow: 0`). No security surface (no new routes,
+  auth, env, or CSP change). CLAUDE.md updated in the same commit.

@@ -32,7 +32,7 @@ export default function PeopleIndex({ items }: { items: PublicPersonIndexItem[] 
       {filtered.length === 0 ? (
         <NoResults>No people match this search.</NoResults>
       ) : (
-        <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-4">
           {filtered.map((item) => (
             <article key={item.id} className="rounded-[2rem] border bg-background/60 p-4">
               <div className="flex flex-col items-center text-center">

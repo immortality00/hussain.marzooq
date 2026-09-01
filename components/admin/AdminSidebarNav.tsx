@@ -3,49 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-
-type NavItem = { href: string; label: string };
-type NavGroup = { label: string; items: NavItem[] };
-
-const NAV_GROUPS: NavGroup[] = [
-  {
-    label: "Overview",
-    items: [
-      { href: "/admin/dashboard", label: "Dashboard" },
-      { href: "/admin/analytics", label: "Analytics" },
-    ],
-  },
-  {
-    label: "Content",
-    items: [
-      { href: "/admin/media/list", label: "Media" },
-      { href: "/admin/tags", label: "Tags" },
-      { href: "/admin/blog", label: "Blog" },
-      { href: "/admin/blog-categories", label: "Blog Categories" },
-      { href: "/admin/pages", label: "Pages" },
-    ],
-  },
-  {
-    label: "People",
-    items: [
-      { href: "/admin/people", label: "People" },
-      { href: "/admin/removal-requests", label: "Removal Requests" },
-      { href: "/admin/testimonials", label: "Testimonials" },
-      { href: "/admin/inquiries", label: "Inquiries" },
-    ],
-  },
-  {
-    label: "Services",
-    items: [
-      { href: "/admin/services", label: "Services" },
-      { href: "/admin/service-categories", label: "Service Categories" },
-    ],
-  },
-  {
-    label: "Private",
-    items: [{ href: "/admin/private-galleries", label: "Private Galleries" }],
-  },
-];
+import { NAV_GROUPS } from "./nav-groups";
 
 export function AdminSidebarNav({ notificationCount = 0 }: { notificationCount?: number }) {
   const pathname = usePathname();

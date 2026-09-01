@@ -141,7 +141,7 @@ export default function PhotographyHorizontal({
     <div className="relative ml-[calc(50%-50vw)] flex h-[calc(100vh-20rem)] min-h-[360px] w-screen items-center justify-center overflow-hidden">
       <div
         ref={trackRef}
-        className="flex h-full w-max cursor-grab items-center gap-8 px-[6vw] select-none will-change-transform active:cursor-grabbing"
+        className="flex h-full w-max cursor-grab touch-pan-y items-center gap-8 px-[6vw] select-none will-change-transform active:cursor-grabbing"
       >
         {items.map((m, idx) => {
           const height = HEIGHTS[idx % HEIGHTS.length];

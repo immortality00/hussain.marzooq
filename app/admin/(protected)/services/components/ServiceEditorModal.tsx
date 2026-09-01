@@ -2,20 +2,10 @@
 
 import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { CldUploadWidget } from "next-cloudinary";
 import { CLOUDINARY_SERVICES_FOLDER } from "@/lib/cloudinary-folders";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { CloudinaryUploadButton } from "@/components/admin/CloudinaryUploadButton";
 import type { Service, ServiceCategory } from "../lib/types";
-
-type WidgetResult = { info?: unknown };
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
-
-function getString(v: unknown): string | undefined {
-  return typeof v === "string" ? v : undefined;
-}
 
 export default function ServiceEditorModal({
   open,
@@ -146,27 +136,12 @@ export default function ServiceEditorModal({
             <div className="text-sm space-y-2 col-span-2">
               <div className="text-muted-foreground">Service Image</div>
               <div className="flex items-center gap-2">
-                <CldUploadWidget
-                  signatureEndpoint="/api/sign-cloudinary-params"
-                  options={{ folder: CLOUDINARY_SERVICES_FOLDER, multiple: false, resourceType: "image" }}
-                  onSuccess={(result: unknown) => {
-                    const r = result as WidgetResult;
-                    const info = r?.info;
-                    if (!isRecord(info)) return;
-                    const secureUrl = getString((info as Record<string, unknown>).secure_url);
-                    if (secureUrl) setImageUrl(secureUrl);
-                  }}
-                >
-                  {({ open }) => (
-                    <button
-                      type="button"
-                      onClick={() => open?.()}
-                      className={adminButtonClasses("default", "md")}
-                    >
-                      Upload Image
-                    </button>
-                  )}
-                </CldUploadWidget>
+                <CloudinaryUploadButton
+                  folder={CLOUDINARY_SERVICES_FOLDER}
+                  accept="image/*"
+                  label="Upload Image"
+                  onUploaded={(u) => setImageUrl(u.secureUrl)}
+                />
 
                 <button
                   type="button"

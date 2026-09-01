@@ -39,6 +39,7 @@ export function CustomCursor() {
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (!window.matchMedia("(pointer: fine)").matches) return;
 
     const dot = dotRef.current;
     const ring = ringRef.current;

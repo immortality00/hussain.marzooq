@@ -51,6 +51,8 @@ export default function InquirySection({
         <div className="text-xs text-muted-foreground">{list.length} item(s)</div>
       </div>
 
+      <div className="overflow-x-auto">
+      <div className="min-w-[680px]">
       <div className="flex items-center gap-2 border-b px-4 py-3 text-xs font-medium text-muted-foreground">
         {list.length > 0 && (
           <BulkCheckbox
@@ -157,6 +159,8 @@ export default function InquirySection({
       })}
 
       {list.length === 0 ? <div className="p-6 text-sm text-muted-foreground">No items.</div> : null}
+      </div>
+      </div>
     </div>
   );
 }

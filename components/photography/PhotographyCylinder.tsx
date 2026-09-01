@@ -26,7 +26,7 @@ const KEY_SPEED = 0.02; // rotation while an arrow key is held
 const RESUME_MS = 1500;
 
 const FOV = 55;
-const FIT_MARGIN = 1.12; // breathing room around the front photo
+const FIT_MARGIN = 1.28; // breathing room around the front photo
 
 /**
  * Distance needed for the front plane to fit BOTH axes at this aspect ratio.
@@ -296,7 +296,7 @@ export default function PhotographyCylinder({
   }
 
   return (
-    <div className="relative box-border h-[calc(100vh-21rem)] min-h-[440px] w-full overflow-hidden">
+    <div className="relative box-border h-[calc(100vh-23rem)] min-h-[380px] w-full overflow-hidden">
       <canvas ref={canvasRef} className="h-full w-full cursor-grab touch-none active:cursor-grabbing" />
       <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full border border-white/15 bg-black/40 px-4 py-1.5 text-xs text-white/70 backdrop-blur">
         <span className="hidden sm:inline">Drag to rotate · click a photo to open</span>

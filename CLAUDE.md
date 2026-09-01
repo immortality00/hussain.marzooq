@@ -677,6 +677,38 @@ active-highlighting sidebar via `AdminSidebarNav`, reversed "HM Visuals / Admin"
 `components/admin/AdminButton.tsx` (see "Reusable components"). Admin **inputs** were left as a
 later pass (deliberately out of D9's approved button scope).
 
+**Admin mobile pass (A1, shipped 2026-09-01).** Two halves.
+- **Mobile chrome (MOBILE ONLY, `< md`; desktop admin untouched).** The `(protected)/layout.tsx`
+  sidebar is `hidden md:block`; below `md` a **fixed bottom icon nav** (`components/admin/AdminMobileNav.tsx`,
+  Instagram/Twitter style) shows the 5 groups (Overview · Content · People · Services · Private) — tapping
+  one opens a sheet of that group's tabs. **`NAV_GROUPS` now lives in `components/admin/nav-groups.ts`**
+  (plain module + a lucide icon per group), shared by `AdminSidebarNav` (desktop) and `AdminMobileNav`.
+  Mobile padding was tightened across admin (`layout.tsx` container `px-2`, content card `p-3`, every page
+  `main` `px-0` on mobile) and the layout root carries **`overflow-x-hidden`** so no admin content can
+  inflate the mobile layout viewport (which would trigger iOS auto-zoom). **`AdminPageHeader` now wraps**
+  (`flex-col sm:flex-row`) so wide action-button clusters don't overflow → this alone killed the
+  services-page auto-zoom. **Admin list rows/tables were made mobile-safe:** action buttons wrap to their
+  own line on narrow screens (services, people, removal-requests rows), and the fixed multi-column tables
+  scroll horizontally inside their card via `overflow-x-auto` + a `min-w` (inquiries `InquirySection`,
+  service-categories `CategoriesTable`) — never let an admin row/table overflow the page.
+- **Media + private-gallery forms are step wizards (MOBILE AND DESKTOP).** The long media editor and the
+  gallery form are now Next/Back wizards: `MediaWizard` (Category → Media → Details → Appearances → Review,
+  with a persistent shrinking upload preview `MediaWizardPreview` from the Details step on) and
+  `GalleryWizard` (Details → Media → Review), both driven by the shared `components/admin/wizard/WizardTabs.tsx`
+  (clickable step tabs that scroll the active step into view). **Presentation only** — no change to
+  `useMediaEditorController`, the save/validation, the appearance name-required gate, or the gated-person
+  rules; the sections are unchanged and just conditionally rendered per step.
+- **Uploads use a native file input, NOT the Cloudinary upload widget.** The `CldUploadWidget`'s desktop
+  multi-pane layout **collapses to a blank pane on narrow screens** (the "can't tap anything on mobile" bug —
+  diagnosed on-device). All **admin** uploaders now use `components/admin/CloudinaryUploadButton.tsx`: a
+  hidden `<input type="file">` that signs via `/api/sign-cloudinary-params` and POSTs the file straight to
+  `https://api.cloudinary.com/v1_1/<cloud>/auto/upload` (already in `connect-src` — **no CSP change**).
+  Adopted by the media form (`MediaAssetSection`), people avatar, service editor, and the shared `ImageField`
+  (so blog covers / page sections / OG images). **Do not reintroduce `CldUploadWidget` in admin** — it is
+  mobile-broken. The **public testimonials review form** (`ProfilePhotoField`, `ReviewPhotosField`) still uses
+  `CldUploadWidget` deliberately — it uploads as an unauthenticated visitor through a different signing path,
+  so `CloudinaryUploadButton` (admin-gated endpoint) cannot drop in there; a public equivalent is a later task.
+
 **Admin structure (D9b, structural pass — done).** The sidebar (`(protected)/layout.tsx`) is
 **grouped**: Overview (Dashboard) · Content (Media, Tags, Pages) · People (People, Testimonials,
 Inquiries, **Removal Requests** [added in D12]) · Services (Services, Service Categories) · Private
@@ -820,17 +852,42 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   Adds a `beforeunload` prompt **and** a document capture-phase click interceptor that
   `confirm()`s before internal-link navigation while dirty. Wired into `/admin/pages`; reuse
   it on any admin surface holding unsaved drafts rather than hand-rolling another.
+- `components/shared/ModalPortal.tsx` — **the shared content-modal shell (P2).** Portals its
+  children to `document.body` (escapes `AppShell`'s `z-10` stacking context so the footer can
+  never paint over a modal — the D12 bug, previously fixed only on `MediaLightbox`), runs
+  `useScrollLock` (stop Lenis + lock scroll), and closes on Escape (`closeOnEscape`, default on).
+  Props: `{ onClose, className, closeOnEscape?, children }` — `className` styles the backdrop
+  (which carries the `onClick={onClose}`); the caller's inner content stops propagation.
+  **Every content modal now routes through it:** MediaLightbox, NftModal, PrivateGalleryBrowser,
+  ExhibitionCityModal, ReviewModal, PublicReviewForm — so the overlay-consolidation task from D12
+  is done for the card modals. **`WorkOverlay` deliberately stays separate** — it is a
+  top-level, GSAP-animated full-screen takeover (not footer-trapped) with `bg-black/92`; do not
+  fold it onto `ModalPortal`.
 - `hooks/useScrollLock.ts` — the shared overlay scroll-lock (D12). Stops Lenis
   (`window.lenis`, attached in `AppShell`) and sets `documentElement` overflow hidden while
-  mounted, restoring on unmount. Use it in any full-screen overlay. **`MediaLightbox` renders
-  through a `createPortal(document.body)` at `z-[120]`** so it escapes `AppShell`'s `z-10`
-  stacking context (otherwise the footer painted over it — the D12 bug) and uses this hook +
-  Escape-to-close. The other hand-rolled overlays (NftModal, PrivateGalleryBrowser, WorkOverlay,
-  Review modals) still need the full portal/scroll-lock treatment — a later overlay-consolidation
-  task. **D13 did unify their scrim: every content modal now uses `bg-black/70`** (MediaLightbox,
-  NftModal, PrivateGalleryBrowser, ReviewModal, PublicReviewForm). **WorkOverlay keeps `bg-black/92`
-  deliberately** — it is a full-screen takeover, not a card modal. `components/ui/dialog.tsx` and
-  `sheet.tsx` (imported by nothing) were **deleted** in D13; don't re-add an unused primitive.
+  mounted, restoring on unmount. Consumed by `ModalPortal`; use it directly in any other
+  full-screen overlay. **D13 unified the content-modal scrim to `bg-black/70`** (MediaLightbox,
+  NftModal, PrivateGalleryBrowser, ReviewModal, PublicReviewForm); **WorkOverlay keeps
+  `bg-black/92`** as a full-screen takeover. `components/ui/dialog.tsx` and `sheet.tsx`
+  (imported by nothing) were **deleted** in D13; don't re-add an unused primitive.
+- **Content modals stack media above details on mobile (P2):** MediaLightbox / NftModal /
+  PrivateGalleryBrowser use `grid h-[82vh] grid-rows-[45vh_minmax(0,1fr)] lg:grid-rows-none
+  lg:grid-cols-[…]` — a fixed media block + scrollable detail below on small screens, resetting
+  to the two-column split at `lg`. Do not drop the mobile row template: a single-column `h-[82vh]`
+  grid let the `fill`/`object-contain` media collapse as detail content grew.
+- **`CustomCursor` is desktop-only (P2):** its effect bails unless `(pointer: fine)` (as well as
+  reduced-motion), so no rAF loop or `cursor:none` runs on touch devices. `PhotographyCylinder`
+  and `WorkOverlay`'s grab area carry `touch-none`; `PhotographyHorizontal`'s marquee carries
+  `touch-pan-y` (vertical page scroll passes through, horizontal drag is captured).
+- `components/admin/CloudinaryUploadButton.tsx` — **the admin uploader (A1).** Hidden
+  `<input type="file">` → sign via `/api/sign-cloudinary-params` → direct POST to
+  `api.cloudinary.com/.../auto/upload`. Replaced `CldUploadWidget` in every admin upload (it collapses
+  on mobile). Props `{ folder, accept?, label?, disabled?, onUploaded, onError? }`. **No CSP change.**
+  Do not re-add `CldUploadWidget` to admin.
+- `components/admin/nav-groups.ts` — the shared admin `NAV_GROUPS` (A1): group label + lucide icon +
+  tabs, consumed by `AdminSidebarNav` (desktop) and `AdminMobileNav` (mobile bottom bar). Edit nav here.
+- `components/admin/wizard/WizardTabs.tsx` — the shared admin step-wizard tab strip (A1): clickable
+  numbered step tabs that scroll the active step into view. Used by `MediaWizard` and `GalleryWizard`.
 - `lib/password-gate.ts` — the shared password-gate primitives (D12): scrypt `hashPassword`/
   `verifyPassword`, `makeAccessToken`, `createPersonGateCookieValue`/`verifyPersonGateCookieValue`
   (HMAC, timing-safe), `personGateCookieName`, `getPersonGateSecret`. Runtime-agnostic
@@ -845,7 +902,8 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   field-mapping and cleanup stay in each route.
 - `components/admin/media-picker/MediaPickerModal.tsx` + `ImageField.tsx` — all admin
   image pick/upload flows (N7). Don't build another picker. `ImageField` takes an optional
-  `folder` prop (default `CLOUDINARY_SECTIONS_FOLDER`; C1 passes `CLOUDINARY_BLOG_FOLDER`).
+  `folder` prop (default `CLOUDINARY_SECTIONS_FOLDER`; C1 passes `CLOUDINARY_BLOG_FOLDER`). **Its
+  Upload button is `CloudinaryUploadButton` (A1), not `CldUploadWidget`.**
 - `components/admin/sortable/SortableList.tsx` — **all** admin drag-to-reorder (T1).
   `<SortableList ids onReorder(activeId,overId) className>` owns the sensors + `DndContext`
   (closestCenter) + vertical `SortableContext`; each row calls the `useSortableRow(id)` hook

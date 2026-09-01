@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect } from "react";
-import { createPortal } from "react-dom";
 import SmartImage from "@/components/shared/SmartImage";
-import { useScrollLock } from "@/hooks/useScrollLock";
+import { ModalPortal } from "@/components/shared/ModalPortal";
 import MediaDetailsSections from "./MediaDetailsSections";
 import type { MediaItem, TagLink } from "./types";
 import { toEmbedUrl } from "./utils";
@@ -71,20 +69,8 @@ export default function MediaLightbox({
   onClose: () => void;
   tagLinks?: Record<string, TagLink>;
 }) {
-  useScrollLock();
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  if (typeof document === "undefined") return null;
-
-  return createPortal(
-    <div className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4" onClick={onClose}>
+  return (
+    <ModalPortal onClose={onClose} className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4">
       <div
         className="mx-auto w-full max-w-6xl overflow-hidden rounded-[2rem] border bg-background shadow-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -103,7 +89,7 @@ export default function MediaLightbox({
           </button>
         </div>
 
-        <div className="grid h-[82vh] min-h-0 lg:grid-cols-[1.25fr_0.75fr]">
+        <div className="grid h-[82vh] min-h-0 grid-rows-[45vh_minmax(0,1fr)] lg:grid-rows-none lg:grid-cols-[1.25fr_0.75fr]">
           <div className="min-h-0 bg-black/5 p-4">
             <MediaSurface active={active} />
           </div>
@@ -113,7 +99,6 @@ export default function MediaLightbox({
           </div>
         </div>
       </div>
-    </div>,
-    document.body
+    </ModalPortal>
   );
 }
