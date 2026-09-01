@@ -4,26 +4,15 @@ import Link from "next/link";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-import MediaAppearancesSection from "./components/MediaAppearancesSection";
-import MediaAssetSection from "./components/MediaAssetSection";
-import MediaDetailsSection from "./components/MediaDetailsSection";
-import MediaNftSection from "./components/MediaNftSection";
-import MediaPlacementSection from "./components/MediaPlacementSection";
-import { getCloudinaryMediaFolderForCategory } from "@/lib/cloudinary-folders";
+import MediaWizard from "./components/MediaWizard";
 import { useMediaEditorController } from "./lib/useMediaEditorController";
 
 export default function AdminMediaPage() {
   const { editor, busy, busyAction, banner, save, remove, startNewUpload } =
     useMediaEditorController();
 
-  const allowEmbed =
-    (editor.primaryCategory === "videography" || editor.primaryCategory === "showreel") &&
-    !editor.isNft;
-
-  const uploadFolder = getCloudinaryMediaFolderForCategory(editor.primaryCategory);
-
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10">
+    <main className="mx-auto max-w-5xl px-0 py-3 md:px-6 md:py-10">
       <AdminPageHeader
         title={editor.editingId ? "Edit Media" : "Upload Media"}
         actions={
@@ -48,106 +37,13 @@ export default function AdminMediaPage() {
 
       <AdminActionFeedback feedback={banner} />
 
-      <div className="mt-8 space-y-6">
-        <MediaPlacementSection
-          primaryCategory={editor.primaryCategory}
-          setPrimaryCategory={editor.setPrimaryCategory}
-          categories={editor.categories}
-          toggleCategory={editor.toggleCategory}
-          isPublic={editor.isPublic}
-          setIsPublic={editor.setIsPublic}
-        />
-
-        <MediaAssetSection
-          mode={editor.mode}
-          setMode={editor.setMode}
-          uploaded={editor.uploaded}
-          setUploaded={editor.setUploaded}
-          embedUrl={editor.embedUrl}
-          setEmbedUrl={editor.setEmbedUrl}
-          allowEmbed={allowEmbed}
-          uploadFolder={uploadFolder}
-          canUpload={Boolean(editor.primaryCategory)}
-        />
-
-        {editor.isNft ? (
-          <MediaNftSection
-            nftPrice={editor.nftPrice}
-            setNftPrice={editor.setNftPrice}
-            nftCurrency={editor.nftCurrency}
-            setNftCurrency={editor.setNftCurrency}
-            nftEditionType={editor.nftEditionType}
-            setNftEditionType={editor.setNftEditionType}
-            nftEditionsTotal={editor.nftEditionsTotal}
-            setNftEditionsTotal={editor.setNftEditionsTotal}
-            nftEditionsRemaining={editor.nftEditionsRemaining}
-            setNftEditionsRemaining={editor.setNftEditionsRemaining}
-            nftOpenUntil={editor.nftOpenUntil}
-            setNftOpenUntil={editor.setNftOpenUntil}
-            nftStatus={editor.nftStatus}
-            setNftStatus={editor.setNftStatus}
-            nftMarketplaceUrl={editor.nftMarketplaceUrl}
-            setNftMarketplaceUrl={editor.setNftMarketplaceUrl}
-          />
-        ) : null}
-
-        <MediaDetailsSection
-          title={editor.title}
-          setTitle={editor.setTitle}
-          year={editor.year}
-          setYear={editor.setYear}
-          description={editor.description}
-          setDescription={editor.setDescription}
-          selectedLocation={editor.selectedLocation}
-          setLocationFromOption={editor.setLocationFromOption}
-          clearLocation={editor.clearLocation}
-          event={editor.event}
-          setEvent={editor.setEvent}
-          selectedTagSlugs={editor.selectedTagSlugs}
-          addTag={editor.addTag}
-          removeTag={editor.removeTag}
-          selectedPeopleIds={editor.selectedPeopleIds}
-          selectedPeopleNames={editor.selectedPeopleNames}
-          setSelectedPeople={editor.setSelectedPeople}
-        />
-
-        <MediaAppearancesSection
-          appearances={editor.appearances}
-          addAppearance={editor.addAppearance}
-          updateAppearance={editor.updateAppearance}
-          removeAppearance={editor.removeAppearance}
-        />
-
-        <section className="rounded-3xl border p-5">
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void save()}
-              className={adminButtonClasses("solid", "md")}
-            >
-              {busyAction === "save"
-                ? editor.editingId
-                  ? "Updating…"
-                  : "Creating…"
-                : editor.editingId
-                  ? "Update"
-                  : "Save"}
-            </button>
-
-            {editor.editingId ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void remove()}
-                className={adminButtonClasses("danger", "md")}
-              >
-                {busyAction === "delete" ? "Deleting…" : "Delete"}
-              </button>
-            ) : null}
-          </div>
-        </section>
-      </div>
+      <MediaWizard
+        editor={editor}
+        busy={busy}
+        busyAction={busyAction}
+        save={save}
+        remove={remove}
+      />
     </main>
   );
 }

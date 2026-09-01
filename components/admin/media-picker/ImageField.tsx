@@ -2,20 +2,12 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { CldUploadWidget } from "next-cloudinary";
 import { CLOUDINARY_SECTIONS_FOLDER } from "@/lib/cloudinary-folders";
 import { EMPTY_SECTION_IMAGE } from "@/lib/page-sections-shared";
 import type { SectionImage } from "@/lib/page-sections-shared";
 import { MediaPickerModal } from "./MediaPickerModal";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === "object" && v !== null;
-}
-
-function getString(v: unknown): string {
-  return typeof v === "string" ? v : "";
-}
+import { CloudinaryUploadButton } from "@/components/admin/CloudinaryUploadButton";
 
 // Reusable admin image control: pick an existing library image OR upload a new
 // one to Cloudinary, plus remove. Uploaded images carry a publicId (cleaned up
@@ -32,6 +24,7 @@ export function ImageField({
   folder?: string;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const image = value ?? EMPTY_SECTION_IMAGE;
 
   return (
@@ -58,27 +51,16 @@ export function ImageField({
             Pick from library
           </button>
 
-          <CldUploadWidget
-            signatureEndpoint="/api/sign-cloudinary-params"
-            options={{ folder, multiple: false, resourceType: "image" }}
-            onSuccess={(result: unknown) => {
-              const info = isRecord(result) ? result.info : null;
-              if (!isRecord(info)) return;
-              const url = getString(info.secure_url);
-              const publicId = getString(info.public_id);
-              if (url) onChange({ url, publicId });
+          <CloudinaryUploadButton
+            folder={folder}
+            accept="image/*"
+            label="Upload"
+            onUploaded={(u) => {
+              setUploadError(null);
+              onChange({ url: u.secureUrl, publicId: u.publicId });
             }}
-          >
-            {({ open }) => (
-              <button
-                type="button"
-                onClick={() => open()}
-                className={adminButtonClasses("default", "md")}
-              >
-                Upload
-              </button>
-            )}
-          </CldUploadWidget>
+            onError={setUploadError}
+          />
 
           {image.url ? (
             <button
@@ -91,6 +73,12 @@ export function ImageField({
           ) : null}
         </div>
       </div>
+
+      {uploadError ? (
+        <div className="rounded-xl border border-destructive/40 bg-destructive/10 p-2 text-xs text-destructive">
+          {uploadError}
+        </div>
+      ) : null}
 
       {pickerOpen ? (
         <MediaPickerModal onPick={onChange} onClose={() => setPickerOpen(false)} />

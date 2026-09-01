@@ -29,7 +29,7 @@ export default function SortableServiceItem({
     <div
       ref={setNodeRef}
       style={style}
-      className="flex items-center gap-3 rounded-2xl border p-3 transition-colors hover:bg-accent/20"
+      className="flex flex-wrap items-center gap-3 rounded-2xl border p-3 transition-colors hover:bg-accent/20"
     >
       <BulkCheckbox checked={selected} onChange={onToggleSelect} label={`Select ${service.name}`} />
       <button
@@ -61,20 +61,20 @@ export default function SortableServiceItem({
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <div className="truncate font-medium">{service.name}</div>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+          <div className="w-full truncate font-medium sm:w-auto">{service.name}</div>
 
           {!service.isActive ? (
-            <span className="rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground">
+            <span className="shrink-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground">
               inactive
             </span>
           ) : (
-            <span className="rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground">
+            <span className="shrink-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground">
               active
             </span>
           )}
 
-          <span className="rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground">
+          <span className="shrink-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground">
             inquiries: {service.inquiriesCount}
           </span>
         </div>
@@ -85,7 +85,7 @@ export default function SortableServiceItem({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
         <button
           type="button"
           onClick={() => onEdit(service)}

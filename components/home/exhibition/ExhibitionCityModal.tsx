@@ -1,6 +1,7 @@
 "use client";
 
 import MediaCardGrid from "@/components/media/MediaCardGrid";
+import { ModalPortal } from "@/components/shared/ModalPortal";
 import type { MediaItem } from "@/components/media/types";
 import type { ExhibitionCity } from "@/lib/server/public-media";
 
@@ -16,7 +17,7 @@ export function ExhibitionCityModal({
   const place = [city.city, city.country].filter(Boolean).join(", ");
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 p-4" onClick={onClose}>
+    <ModalPortal onClose={onClose} className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4">
       <div
         className="mx-auto flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border bg-background shadow-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -37,6 +38,6 @@ export function ExhibitionCityModal({
           <MediaCardGrid items={city.works} onSelect={onSelectItem} />
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

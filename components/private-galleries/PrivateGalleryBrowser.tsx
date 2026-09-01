@@ -6,6 +6,7 @@ import { downloadCloudinaryFile } from "@/components/media/download";
 import SmartMediaPreview from "@/components/media/SmartMediaPreview";
 import type { MediaItem } from "@/components/media/types";
 import { useModalNavbarLock } from "@/components/media/useModalNavbarLock";
+import { ModalPortal } from "@/components/shared/ModalPortal";
 
 const EAGER_GRID_IMAGE_COUNT = 3;
 
@@ -108,9 +109,9 @@ export default function PrivateGalleryBrowser({
       </section>
 
       {active ? (
-        <div
-          className="fixed inset-0 z-50 bg-black/70 p-4"
-          onClick={() => setActive(null)}
+        <ModalPortal
+          onClose={() => setActive(null)}
+          className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4"
         >
           <div
             className="mx-auto w-full max-w-6xl overflow-hidden rounded-[2rem] border bg-background shadow-2xl"
@@ -134,7 +135,7 @@ export default function PrivateGalleryBrowser({
               </button>
             </div>
 
-            <div className="grid h-[82vh] min-h-0 lg:grid-cols-[1.1fr_0.9fr]">
+            <div className="grid h-[82vh] min-h-0 grid-rows-[45vh_minmax(0,1fr)] lg:grid-rows-none lg:grid-cols-[1.1fr_0.9fr]">
               <div className="min-h-0 bg-black/5 p-4">
                 <div className="h-full w-full overflow-hidden rounded-[2rem] border bg-black">
                   {active.secureUrl ? (
@@ -223,7 +224,7 @@ export default function PrivateGalleryBrowser({
               </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       ) : null}
     </div>
   );

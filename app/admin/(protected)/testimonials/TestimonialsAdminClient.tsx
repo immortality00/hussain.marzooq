@@ -161,7 +161,7 @@ export default function TestimonialsAdminClient() {
   }
 
   return (
-    <main className="mx-auto max-w-7xl px-6 pb-10 pt-4">
+    <main className="mx-auto max-w-7xl px-0 pb-10 pt-3 md:px-6 md:pt-4">
       <div className="grid gap-6 lg:grid-cols-[1fr_420px] lg:items-start">
         <div>
           <h1 className="text-4xl font-semibold tracking-[-0.06em]">Testimonials</h1>

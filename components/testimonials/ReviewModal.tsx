@@ -1,4 +1,5 @@
 import type { PublicTestimonial } from "@/lib/server/testimonials";
+import { ModalPortal } from "@/components/shared/ModalPortal";
 import { Avatar } from "./Avatar";
 import { SafeImage } from "./SafeImage";
 
@@ -18,7 +19,7 @@ export function ReviewModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 z-[120] bg-black/70 p-4 backdrop-blur-sm" onClick={onClose}>
+    <ModalPortal onClose={onClose} className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm">
       <div
         className="mx-auto mt-5 w-full max-w-6xl overflow-hidden rounded-[2rem] bg-background text-foreground shadow-2xl ring-1 ring-border/80"
         onClick={(event) => event.stopPropagation()}
@@ -83,6 +84,6 @@ export function ReviewModal({
           </div>
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

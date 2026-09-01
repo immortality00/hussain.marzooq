@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import { CldUploadWidget } from "next-cloudinary";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { useBulkSelection } from "@/components/admin/bulk/useBulkSelection";
@@ -10,16 +9,7 @@ import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { usePeopleAdmin } from "@/hooks/usePeopleAdmin";
-
-type WidgetResult = { info?: unknown };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function getString(value: unknown) {
-  return typeof value === "string" ? value : "";
-}
+import { CloudinaryUploadButton } from "@/components/admin/CloudinaryUploadButton";
 
 function statusLabel(item: { isPublic: boolean; isPrivate: boolean }) {
   if (item.isPublic === false) return "Hidden";
@@ -96,7 +86,7 @@ export default function PeopleAdminClient() {
   const selection = useBulkSelection(items.map((p) => p.id));
 
   return (
-    <main className="mx-auto max-w-6xl px-6 py-10">
+    <main className="mx-auto max-w-6xl px-0 py-3 md:px-6 md:py-10">
       <AdminPageHeader
         title="People"
         actions={
@@ -157,7 +147,7 @@ export default function PeopleAdminClient() {
             ) : (
               items.map((item) => (
                 <article key={item.id} className="rounded-[2rem] border p-4">
-                  <div className="flex items-center gap-4">
+                  <div className="flex flex-wrap items-center gap-4">
                     <BulkCheckbox
                       checked={selection.isSelected(item.id)}
                       onChange={() => selection.toggle(item.id)}
@@ -183,7 +173,7 @@ export default function PeopleAdminClient() {
                       </div>
                     </div>
 
-                    <div className="flex gap-2">
+                    <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto">
                       <button
                         type="button"
                         disabled={actionBusy}
@@ -256,28 +246,13 @@ export default function PeopleAdminClient() {
               <label className="text-sm font-medium">Avatar</label>
 
               <div className="flex flex-wrap gap-2">
-                <CldUploadWidget
-                  signatureEndpoint="/api/sign-cloudinary-params"
-                  options={{ folder: CLOUDINARY_PEOPLE_FOLDER, multiple: false, resourceType: "image" }}
-                  onSuccess={(result: unknown) => {
-                    const r = result as WidgetResult;
-                    const info = r?.info;
-                    if (!isRecord(info)) return;
-                    const secureUrl = getString(info.secure_url);
-                    if (secureUrl) setAvatarUrl(secureUrl);
-                  }}
-                >
-                  {({ open }) => (
-                    <button
-                      type="button"
-                      disabled={actionBusy}
-                      onClick={() => open()}
-                      className={adminButtonClasses("default", "md")}
-                    >
-                      Upload avatar
-                    </button>
-                  )}
-                </CldUploadWidget>
+                <CloudinaryUploadButton
+                  folder={CLOUDINARY_PEOPLE_FOLDER}
+                  accept="image/*"
+                  label="Upload avatar"
+                  disabled={actionBusy}
+                  onUploaded={(u) => setAvatarUrl(u.secureUrl)}
+                />
 
                 <button
                   type="button"

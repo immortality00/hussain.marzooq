@@ -204,7 +204,7 @@ export function WorkOverlay({ open, onClose }: Props) {
       <div
         style={{ perspective: "1200px", transform: `scale(${scale})` }}
         onPointerDown={onPointerDown}
-        className="relative z-10 cursor-grab select-none active:cursor-grabbing"
+        className="relative z-10 cursor-grab touch-none select-none active:cursor-grabbing"
       >
         <div
           ref={cylinderRef}

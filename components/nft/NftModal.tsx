@@ -1,5 +1,6 @@
 import SmartImage from "@/components/shared/SmartImage";
 import Link from "next/link";
+import { ModalPortal } from "@/components/shared/ModalPortal";
 import type { PublicNftItem } from "@/lib/server/public-nfts";
 import { formatDates } from "@/components/media/utils";
 import {
@@ -24,7 +25,7 @@ export default function NftModal({
   const shownStatus = displayStatus(item);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 p-4" onClick={onClose}>
+    <ModalPortal onClose={onClose} className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4">
       <div
         className="mx-auto w-full max-w-6xl overflow-hidden rounded-[2rem] border bg-background shadow-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -43,7 +44,7 @@ export default function NftModal({
           </button>
         </div>
 
-        <div className="grid h-[82vh] min-h-0 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid h-[82vh] min-h-0 grid-rows-[45vh_minmax(0,1fr)] lg:grid-rows-none lg:grid-cols-[1.1fr_0.9fr]">
           <div className="min-h-0 bg-black/5 p-4">
             <div className="h-full w-full overflow-hidden rounded-[2rem] border bg-black">
               {item.mediaUrl ? (
@@ -208,6 +209,6 @@ export default function NftModal({
           </div>
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

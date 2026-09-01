@@ -112,7 +112,7 @@ export default function RemovalRequestsClient({
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-10">
+    <main className="mx-auto max-w-5xl px-0 py-3 md:px-6 md:py-10">
       <AdminPageHeader
         title="Removal Requests"
         description="People who asked to have their profile taken off the public site. Approving hides their linked media and locks the profile behind a password you set."
@@ -128,7 +128,7 @@ export default function RemovalRequestsClient({
         ) : (
           rows.map((item) => (
             <article key={item.id} className="rounded-[2rem] border p-4">
-              <div className="flex items-start gap-4">
+              <div className="flex flex-wrap items-start gap-4">
                 <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border bg-muted">
                   {item.avatarUrl ? (
                     <Image src={item.avatarUrl} alt={item.name} fill className="object-cover" sizes="56px" />
@@ -160,7 +160,7 @@ export default function RemovalRequestsClient({
                   ) : null}
                 </div>
 
-                <div className="flex shrink-0 gap-2">
+                <div className="flex w-full flex-wrap justify-end gap-2 sm:w-auto sm:shrink-0">
                   {approvingId === item.id ? null : (
                     <>
                       <button

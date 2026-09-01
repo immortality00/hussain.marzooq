@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { AdminSidebarNav } from "@/components/admin/AdminSidebarNav";
+import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { getAdminNotificationCount } from "@/lib/server/admin-dashboard";
 
@@ -19,9 +20,9 @@ export default async function AdminProtectedLayout({
   const notificationCount = await getAdminNotificationCount();
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-8 flex items-center justify-between gap-4">
+    <div className="min-h-screen overflow-x-hidden bg-background">
+      <div className="mx-auto max-w-6xl px-2 pt-4 pb-24 md:px-4 md:py-8">
+        <div className="mb-6 flex items-center justify-between gap-4 md:mb-8">
           <div>
             <div className="text-xl font-semibold tracking-tight">HM Visuals</div>
             <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
@@ -41,15 +42,17 @@ export default async function AdminProtectedLayout({
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[220px_1fr]">
-          <aside className="rounded-2xl border bg-card p-3 shadow-[var(--shadow-soft)]">
+          <aside className="hidden rounded-2xl border bg-card p-3 shadow-[var(--shadow-soft)] md:block">
             <AdminSidebarNav notificationCount={notificationCount} />
           </aside>
 
-          <section className="rounded-2xl border bg-card p-5 shadow-[var(--shadow-soft)]">
+          <section className="rounded-2xl border bg-card p-3 shadow-[var(--shadow-soft)] md:p-5">
             {children}
           </section>
         </div>
       </div>
+
+      <AdminMobileNav notificationCount={notificationCount} />
     </div>
   );
 }
