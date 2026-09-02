@@ -2974,3 +2974,44 @@ the media upload that "opens the Cloudinary popup but can't tap anything" on mob
 - **Verified:** `tsc --noEmit` clean, `eslint --max-warnings 0` clean, 177 tests pass; every admin page
   confirmed at phone width in the logged-in Chrome (`pageOverflow: 0`). No security surface (no new routes,
   auth, env, or CSP change). CLAUDE.md updated in the same commit.
+
+---
+
+## §L2 — Trusted client IP + request-guard correctness (2026-09-02) — `done`
+
+**Why.** `app/api/_lib/public-form-security.ts:5-7` read the first entry of the
+client-supplied `x-forwarded-for`. Netlify documents that header as spoofable and names
+`context.ip` / `x-nf-client-connection-ip` as the trusted value. Every rate limit in the app
+keys on this function: admin login lockout, testimonial submit, testimonial upload-signature,
+the destructive testimonial cleanup route, the People password gate, the private-gallery
+password gate. A random `X-Forwarded-For` per request bypassed all of them — which silently
+re-opened the §S10 login-lockout defect (S10 removed the user-agent from the key, but the key
+itself was still attacker-controlled).
+
+Files:
+- `app/api/_lib/public-form-security.ts` — `getClientAddress` prefers
+  `x-nf-client-connection-ip`; `x-forwarded-for` / `x-real-ip` accepted **only** when
+  `NODE_ENV !== "production"`. In production, no trusted header → `"anonymous"`, never a
+  spoofable fallback.
+- `lib/server/request-guards.ts` — `limited: count > limit` in **both** helpers
+  (`getFixedWindowRateLimitStatus` + `consumeFixedWindowRateLimit`); the old `count >= limit`
+  meant `MAX_LOGIN_ATTEMPTS = 5` actually allowed 4. Both changed so the two helpers share one
+  predicate and a `limit` of N allows exactly N.
+- `lib/server/request-guards.ts` — `claimDuplicateWindow` was `findOne` then `updateOne`
+  (two simultaneous identical requests both passed). Collapsed to one atomic `findOneAndUpdate`
+  aggregation-pipeline upsert with `returnDocument: "before"`: a live prior window → duplicate
+  (window not slid); missing/expired → claimed. Return shape `{ duplicated, expiresAt }`
+  unchanged, so the inquiries caller is untouched.
+- `test/client-address.test.ts` (new) + `test/request-guards.test.ts` (new) — getClientAddress
+  production lockdown + dev fallback; rate-limit boundary (`> limit`); dedupe atomicity
+  (single call, no read-first, live/expired/missing branches).
+
+Gate 1 security: no new trust boundary — this narrows an existing one. No secret crosses to
+the client. No new input; it removes trust in attacker-controlled input. No CSP/auth-constant
+change.
+
+**Outcome — shipped 2026-09-02.** `tsc --noEmit` clean · `eslint --max-warnings 0` clean ·
+`npm test` 188 passed (19 files), incl. the 11 new tests. Server-only logic, no browser
+surface — the production IP-trust behavior is re-verified at the L1 deploy-time checklist
+against the live Netlify origin. CLAUDE.md security rules updated in the same commit
+(trusted-IP source + the two request-guard invariants).

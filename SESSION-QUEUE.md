@@ -265,33 +265,11 @@ Order matters: **L2 before L3** (L2's fix is the only throttle L3's endpoint has
 
 ### Block A — launch blockers
 
-### Session L2 — Trusted client IP + request-guard correctness — `pending`
-
-**Why.** `app/api/_lib/public-form-security.ts:5-7` reads the first entry of the
-client-supplied `x-forwarded-for`. Netlify documents that header as spoofable and names
-`context.ip` / `x-nf-client-connection-ip` as the trusted value. Every rate limit in the app
-keys on this function: admin login lockout, testimonial submit, testimonial upload-signature,
-the destructive testimonial cleanup route, the People password gate, the private-gallery
-password gate. A random `X-Forwarded-For` per request bypasses all of them — which silently
-re-opens the §S10 login-lockout defect (S10 removed the user-agent from the key, but the key
-itself is still attacker-controlled).
-
-Files:
-- `app/api/_lib/public-form-security.ts` — `getClientAddress` prefers
-  `x-nf-client-connection-ip`; `x-forwarded-for` / `x-real-ip` accepted **only** when
-  `NODE_ENV !== "production"`. In production, no trusted header → `"anonymous"`, never a
-  spoofable fallback.
-- `lib/server/request-guards.ts:104` — `limited: count > limit`. It currently increments then
-  compares `count >= limit`, so `MAX_LOGIN_ATTEMPTS = 5` actually allows 4.
-- `lib/server/request-guards.ts:123-150` — `claimDuplicateWindow` is `findOne` then
-  `updateOne`; two simultaneous identical requests both pass. Collapse to one atomic
-  `findOneAndUpdate` upsert.
-- `test/client-address.test.ts` (new) + a rate-limit boundary test.
-
-Gate 1 security: no new trust boundary — this narrows an existing one. No secret crosses to
-the client. No new input; it removes trust in attacker-controlled input.
-
----
+_L2 done (2026-09-02) — see SESSION-ARCHIVE.md §L2. `getClientAddress` trusts only Netlify's
+`x-nf-client-connection-ip` in production (spoofable `x-forwarded-for`/`x-real-ip` honored only in
+dev); both request-guard helpers use `count > limit` (a `limit` of N allows exactly N — login now
+allows 5 attempts, not 4); `claimDuplicateWindow` collapsed to one atomic `findOneAndUpdate` upsert.
+New tests: `client-address.test.ts`, `request-guards.test.ts`._
 
 ### Session L3 — Testimonial upload-session ownership — `pending`
 

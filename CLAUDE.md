@@ -1008,6 +1008,15 @@ keeps them fixed.
   `crypto.timingSafeEqual` (Node). Never `===` on a signature or password.
 - **Every new public API route needs rate limiting** (`lib/server/request-guards.ts`) and
   input validation before it ships. Follow the existing testimonials/inquiries routes.
+- **The rate-limit key comes from `getClientAddress` (`app/api/_lib/public-form-security.ts`),
+  which in production trusts ONLY `x-nf-client-connection-ip`** — Netlify's trusted client IP.
+  `x-forwarded-for` / `x-real-ip` are client-spoofable and are honored **only** when
+  `NODE_ENV !== "production"` (local dev); in production, no trusted header → `"anonymous"`,
+  never a spoofable fallback (L2). Do not reintroduce reading `x-forwarded-for` in production —
+  a per-request spoofed value bypasses every rate limit at once (login lockout, testimonial
+  submit/upload, People + private-gallery gates). `count > limit` is the limit boundary in both
+  request-guard helpers (a `limit` of N allows exactly N), and `claimDuplicateWindow` is a single
+  atomic `findOneAndUpdate` upsert — do not split it back into read-then-write (racy).
 - **No `dangerouslySetInnerHTML`, no `eval`, no `new Function`.** Currently zero in the
   repo — keep it that way.
 - **Never commit `.env*`.** Verified gitignored. If a secret is ever exposed, rotating it
