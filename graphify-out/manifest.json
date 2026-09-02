@@ -370,9 +370,9 @@
     "semantic_hash": "7ae04fb6c55fd9bc957b853efb4271ba"
   },
   "app/api/_lib/public-form-security.ts": {
-    "mtime": 1787075554.3675303,
-    "ast_hash": "2e8249b06d766a9e46c30f35848b8e6e",
-    "semantic_hash": "2e8249b06d766a9e46c30f35848b8e6e"
+    "mtime": 1788279213.2497597,
+    "ast_hash": "4ac373cfff4c354540352456e185a26f",
+    "semantic_hash": "4ac373cfff4c354540352456e185a26f"
   },
   "app/api/admin/page-sections/[slug]/route.ts": {
     "mtime": 1785773807.5692344,
@@ -1165,9 +1165,9 @@
     "semantic_hash": "d6ac3ea416af9868f9859626d91f34fa"
   },
   "lib/server/request-guards.ts": {
-    "mtime": 1781634954.3934746,
-    "ast_hash": "280f0f75d30c0aeb68d833da9ff57aca",
-    "semantic_hash": "280f0f75d30c0aeb68d833da9ff57aca"
+    "mtime": 1788279232.3939328,
+    "ast_hash": "66a59d1447e12aa440f42b5481cb6460",
+    "semantic_hash": "66a59d1447e12aa440f42b5481cb6460"
   },
   "lib/server/section-images.ts": {
     "mtime": 1783447630.054583,
@@ -1280,9 +1280,9 @@
     "semantic_hash": "c698309979460d0f02ba616417844399"
   },
   "CLAUDE.md": {
-    "mtime": 1788247672.421737,
-    "ast_hash": "f6d05a8e8ba671a96357e7c252583d2e",
-    "semantic_hash": "f6d05a8e8ba671a96357e7c252583d2e"
+    "mtime": 1788279288.72278,
+    "ast_hash": "512f2da0079544576ca130fa98d89749",
+    "semantic_hash": "512f2da0079544576ca130fa98d89749"
   },
   "README.md": {
     "mtime": 1787246954.4988809,
@@ -1290,9 +1290,9 @@
     "semantic_hash": "7030b878f3e352238f4fd3a233af0ada"
   },
   "SESSION-QUEUE.md": {
-    "mtime": 1788247707.239355,
-    "ast_hash": "c08f13e7651884d6b8b6d3fe1ece759e",
-    "semantic_hash": "c08f13e7651884d6b8b6d3fe1ece759e"
+    "mtime": 1788329713.6910553,
+    "ast_hash": "8c43a7667e45c19a6352a0071cb22143",
+    "semantic_hash": "8c43a7667e45c19a6352a0071cb22143"
   },
   "public/file.svg": {
     "mtime": 1767717951.7198257,
@@ -1360,9 +1360,9 @@
     "semantic_hash": "a2bdee4fb2783ac465076738c25ce3e0"
   },
   "SESSION-ARCHIVE.md": {
-    "mtime": 1788247738.4768682,
-    "ast_hash": "a572ddec4913e757e833b89a1bd8cd83",
-    "semantic_hash": "a572ddec4913e757e833b89a1bd8cd83"
+    "mtime": 1788329728.9696336,
+    "ast_hash": "0b7cb18a3a1aaaf4f536a69627c3e57f",
+    "semantic_hash": "0b7cb18a3a1aaaf4f536a69627c3e57f"
   },
   "lib/auth/session-token.ts": {
     "mtime": 1785490458.2333324,
@@ -2078,5 +2078,15 @@
     "mtime": 1788218332.4631448,
     "ast_hash": "c4e9f5025649279388a535d507ba2bc7",
     "semantic_hash": "c4e9f5025649279388a535d507ba2bc7"
+  },
+  "test/client-address.test.ts": {
+    "mtime": 1788279243.6856117,
+    "ast_hash": "6ac1ccd0125306661b0fdda1c77b667d",
+    "semantic_hash": "6ac1ccd0125306661b0fdda1c77b667d"
+  },
+  "test/request-guards.test.ts": {
+    "mtime": 1788279272.921203,
+    "ast_hash": "9c04570ff0cfda6b86eed043207fc3d5",
+    "semantic_hash": "9c04570ff0cfda6b86eed043207fc3d5"
   }
 }

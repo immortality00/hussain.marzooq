@@ -44,7 +44,7 @@ export async function getFixedWindowRateLimitStatus(params: {
   const count = typeof doc.count === "number" ? doc.count : 0;
 
   return {
-    limited: count >= limit,
+    limited: count > limit,
     count,
     resetAt: doc.resetAt.toISOString(),
   };
@@ -106,7 +106,7 @@ export async function consumeFixedWindowRateLimit(params: {
     result?.resetAt instanceof Date ? result.resetAt.toISOString() : nextReset.toISOString();
 
   return {
-    limited: count >= limit,
+    limited: count > limit,
     count,
     resetAt,
   };
@@ -132,39 +132,34 @@ export async function claimDuplicateWindow(params: {
   const expiresAt = new Date(now.getTime() + windowMs);
   const id = `dedupe:${bucket}:${key}`;
 
-  const existing = await collection.findOne({ _id: id });
-
-  if (
-    existing &&
-    existing.expiresAt instanceof Date &&
-    existing.expiresAt.getTime() > now.getTime()
-  ) {
-    return {
-      duplicated: true,
-      expiresAt: existing.expiresAt.toISOString(),
-    };
-  }
-
-  await collection.updateOne(
+  const previous = await collection.findOneAndUpdate(
     { _id: id },
-    {
-      $set: {
-        _id: id,
-        type: "dedupe",
-        bucket,
-        key,
-        expiresAt,
-        updatedAt: now,
+    [
+      { $set: { live: { $gt: ["$expiresAt", now] } } },
+      {
+        $set: {
+          type: "dedupe",
+          bucket,
+          key,
+          expiresAt: { $cond: ["$live", "$expiresAt", expiresAt] },
+          createdAt: { $ifNull: ["$createdAt", now] },
+          updatedAt: now,
+        },
       },
-      $setOnInsert: {
-        createdAt: now,
-      },
-    },
-    { upsert: true }
+      { $unset: "live" },
+    ],
+    { upsert: true, returnDocument: "before" }
   );
 
+  const wasLive =
+    !!previous &&
+    previous.expiresAt instanceof Date &&
+    previous.expiresAt.getTime() > now.getTime();
+
+  const effectiveExpiry = wasLive ? (previous.expiresAt as Date) : expiresAt;
+
   return {
-    duplicated: false,
-    expiresAt: expiresAt.toISOString(),
+    duplicated: wasLive,
+    expiresAt: effectiveExpiry.toISOString(),
   };
 }

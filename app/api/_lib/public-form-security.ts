@@ -2,9 +2,17 @@ type HeaderGetter = { get(name: string): string | null };
 
 export function getClientAddress(source: Request | HeaderGetter) {
   const headers: HeaderGetter = "get" in source ? source : source.headers;
-  const forwardedFor = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const realIp = headers.get("x-real-ip")?.trim();
-  return forwardedFor || realIp || "anonymous";
+
+  const netlifyIp = headers.get("x-nf-client-connection-ip")?.trim();
+  if (netlifyIp) return netlifyIp;
+
+  if (process.env.NODE_ENV !== "production") {
+    const forwardedFor = headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+    const realIp = headers.get("x-real-ip")?.trim();
+    return forwardedFor || realIp || "anonymous";
+  }
+
+  return "anonymous";
 }
 
 export function isValidEmail(value: string) {
