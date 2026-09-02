@@ -27,11 +27,3 @@ export function isLocationOption(value: unknown): value is LocationOption {
     (value.source === "dataset" || value.source === "fallback")
   );
 }
-
-export function createUploadSessionId() {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return crypto.randomUUID();
-  }
-
-  return `review-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-}

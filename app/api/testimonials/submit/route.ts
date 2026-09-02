@@ -18,6 +18,13 @@ import {
   isValidFormStartedAt,
 } from "@/app/api/_lib/public-form-security";
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
+import {
+  commitUploadSession,
+  isUrlInSession,
+  readUploadCookie,
+  sessionFolder,
+  verifyUploadSession,
+} from "@/lib/server/testimonial-upload-sessions";
 
 export const dynamic = "force-dynamic";
 
@@ -136,7 +143,6 @@ export async function POST(req: Request) {
   const locationId = (asNullableString(body.locationId) ?? "").trim().slice(0, 120);
   const locationLabel = (asNullableString(body.locationLabel) ?? "").trim().slice(0, 180);
   const review = (asNullableString(body.review) ?? "").trim().slice(0, 3000);
-  const uploadSessionId = (asNullableString(body.uploadSessionId) ?? "").trim().slice(0, 120);
   const rating = normalizeRating(asNumberOrNull(body.rating));
   const profilePhotoUrl = normalizeOptionalPhotoUrl(asNullableString(body.profilePhotoUrl) ?? "");
   const photoUrls = asStringArray(body.photoUrls, 12)
@@ -190,6 +196,33 @@ export async function POST(req: Request) {
   const db = await getDb();
   const now = new Date();
 
+  const uploadedUrls = [profilePhotoUrl, ...photoUrls].filter((value): value is string =>
+    Boolean(value)
+  );
+
+  let verifiedSessionId: string | null = null;
+
+  if (uploadedUrls.length > 0) {
+    const session = await verifyUploadSession(db, readUploadCookie(req), { requirePending: true });
+
+    if (!session) {
+      return noStoreJson(
+        { ok: false, error: "Upload session is missing or invalid." },
+        { status: 403 }
+      );
+    }
+
+    const allInSession = uploadedUrls.every((url) => isUrlInSession(url, session.sessionId));
+    if (!allInSession) {
+      return noStoreJson(
+        { ok: false, error: "Uploaded files do not belong to this session." },
+        { status: 400 }
+      );
+    }
+
+    verifiedSessionId = session.sessionId;
+  }
+
   const firstExisting = await db
     .collection("testimonials")
     .find({}, { projection: { sortOrder: 1 } })
@@ -204,9 +237,7 @@ export async function POST(req: Request) {
 
   const nextSortOrder = currentSmallestSortOrder - 1;
 
-  const reviewAssetFolder = uploadSessionId
-    ? `${TESTIMONIALS_FOLDER}/${uploadSessionId}`
-    : null;
+  const reviewAssetFolder = verifiedSessionId ? sessionFolder(verifiedSessionId) : null;
 
   await db.collection("testimonials").insertOne({
     name,
@@ -222,7 +253,7 @@ export async function POST(req: Request) {
     rating,
     profilePhotoUrl,
     photoUrls,
-    uploadSessionId: uploadSessionId || null,
+    uploadSessionId: verifiedSessionId,
     reviewAssetFolder,
     reviewProfileFolder: reviewAssetFolder ? `${reviewAssetFolder}/pfp` : null,
     reviewPhotosFolder: reviewAssetFolder ? `${reviewAssetFolder}/photos` : null,
@@ -231,6 +262,10 @@ export async function POST(req: Request) {
     createdAt: now,
     updatedAt: now,
   });
+
+  if (verifiedSessionId) {
+    await commitUploadSession(db, verifiedSessionId);
+  }
 
   sendTestimonialNotification({ name, email, review, rating, about: about || null }).catch(() => {});
 

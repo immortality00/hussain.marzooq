@@ -271,55 +271,13 @@ dev); both request-guard helpers use `count > limit` (a `limit` of N allows exac
 allows 5 attempts, not 4); `claimDuplicateWindow` collapsed to one atomic `findOneAndUpdate` upsert.
 New tests: `client-address.test.ts`, `request-guards.test.ts`._
 
-### Session L3 — Testimonial upload-session ownership — `pending`
-
-**Why — P0, exploitable today by anyone who opens `/testimonials`.**
-`app/api/testimonials/upload-session/cleanup/route.ts:29-36` accepts any syntactically valid
-`uploadSessionId`, builds `hm_visuals/testimonials/<id>`, and calls
-`deleteManagedCloudinaryFolderTree` (`lib/server/cloudinary-assets.ts:356`) which deletes by
-prefix plus `/pfp` and `/photos`. There is no ownership proof. The ids are `crypto.randomUUID()`
-(`components/testimonials/review-form/utils.ts:31`) so they are not guessable — but they do not
-need to be: `lib/server/testimonial-serializers.ts:33-34` publishes `profilePhotoUrl` and
-`photoUrls`, and `components/testimonials/PublicReviewForm.tsx:50-56` puts the session id
-directly in the Cloudinary path. **Every victim's folder name is printed on the public page.**
-
-Second path: `app/api/testimonials/submit/route.ts:139,207` accepts an arbitrary
-`uploadSessionId` and never verifies the submitted `photoUrls` live inside it, then stores it as
-`reviewAssetFolder`; `app/api/testimonials/[id]/route.ts:121-124` deletes that folder when an
-admin deletes the testimonial. Spam-submit against a victim's id, wait for the admin to delete
-the spam, and the server destroys the victim's photos.
-
-Third: `PublicReviewForm.tsx` calls `setTimeout(resetForm, 1200)` after a successful submit
-while `hasUploadedFiles` is still true, so the `beforeunload` beacon — and `handleClose()` —
-delete a testimonial's images *after* it is committed to MongoDB.
-
-Design (server-issued capability, not a client-chosen folder name):
-- New collection `testimonial_upload_sessions` `{ _id, token(hash), status: "pending"|"committed",
-  createdAt, expiresAt }` + TTL index in `scripts/ensure-indexes.mjs`.
-- New route `POST /api/testimonials/upload-session` — rate-limited, returns `{ sessionId, token }`.
-- `app/api/testimonials/upload-signature/route.ts` — require the token; sign **only**
-  `hm_visuals/testimonials/<sessionId>/pfp` and `/photos`; add `allowed_formats` and
-  `max_file_size` to the signed params (they are currently absent from `ALLOWED_SIGN_KEYS`, so
-  the 12-file / image-only limits are client-side decoration).
-- `app/api/testimonials/submit/route.ts` — verify the token, reject any `profilePhotoUrl` /
-  `photoUrls` entry outside that folder, flip `pending → committed` atomically in the same write.
-- `app/api/testimonials/upload-session/cleanup/route.ts` — delete only when the session is
-  `pending`, uncommitted, and the token matches. A committed folder is never deletable from a
-  public route.
-- `components/testimonials/PublicReviewForm.tsx` — mark the session committed client-side the
-  instant the submit succeeds, before the 1.2s reset, so neither `beforeunload` nor
-  `handleClose` can fire cleanup on a committed session.
-- Abandoned uploads are reaped by TTL expiry, not by handing browsers a destructive capability.
-
-Tests (required, same session): cross-session delete attempt is refused · cleanup after commit
-is refused · a submit referencing another session's URLs is refused · signature request without
-a token is refused.
-
-Gate 1 security: replaces an unauthenticated destructive capability with a token-bound one.
-The token is httpOnly-cookie or response-body bound to one browser, never logged. New input is
-validated and rate-limited. No secret crosses to the client beyond the per-session token.
-
----
+_L3 done (2026-09-02) — see SESSION-ARCHIVE.md §L3. Testimonial uploads are now a server-issued,
+cookie-bound capability (`testimonial_upload_sessions` + `lib/server/testimonial-upload-sessions.ts`):
+the signature route only signs the cookie session's own `/pfp`+`/photos` folder, submit rejects any
+photo URL outside it and atomically flips the session `pending→committed`, and cleanup can only delete
+an uncommitted session it owns — closing the public folder-delete and spam-then-delete holes. Format/size
+limits are client-side on the widget (signing them breaks `CldUploadWidget`). The widget now mounts only
+once its folder is ready (no orphaned root uploads) and the review modal sets `closeOnEscape={false}`._
 
 ### Session L4 — Resilience & error surfaces — `pending`
 

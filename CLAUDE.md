@@ -1008,6 +1008,21 @@ keeps them fixed.
   `crypto.timingSafeEqual` (Node). Never `===` on a signature or password.
 - **Every new public API route needs rate limiting** (`lib/server/request-guards.ts`) and
   input validation before it ships. Follow the existing testimonials/inquiries routes.
+- **Testimonial photo uploads are a server-issued capability (L3), not a client-chosen folder.**
+  `POST /api/testimonials/upload-session` mints a session (`testimonial_upload_sessions` collection,
+  `{_id, tokenHash, status: "pending"|"committed", expiresAt}` + TTL index) and binds it to the
+  browser via an **httpOnly cookie** `hm_testimonial_upload = <sessionId>.<token>` (the token is a
+  32-byte secret; the DB stores only `sha256(token)`, compared timing-safe). Primitives live in
+  `lib/server/testimonial-upload-sessions.ts`. The signature route signs **only** that session's
+  `/pfp`+`/photos` folder; submit rejects any photo URL outside it and atomically flips
+  `pending→committed`; cleanup deletes only an uncommitted session it owns. **Never revert to a
+  client-supplied `uploadSessionId`** — that was the public folder-delete + spam-then-delete hole.
+  The cookie is the only mechanism because `CldUploadWidget` gives no way to inject a token into its
+  signature request. Format/size limits are **client-side on the widget only** (`clientAllowedFormats`
+  + `maxFileSize`) — `next-cloudinary` signs only the params it uploads, so signing `allowed_formats`/
+  `max_file_size` breaks every upload. The widget must mount **only once its `folder` is ready** (it
+  bakes `options.folder` once, on idle after its `<Script>` loads) or uploads orphan in the Cloudinary
+  root; the review modal sets `closeOnEscape={false}` so the widget's Escape can't reset the form.
 - **The rate-limit key comes from `getClientAddress` (`app/api/_lib/public-form-security.ts`),
   which in production trusts ONLY `x-nf-client-connection-ip`** — Netlify's trusted client IP.
   `x-forwarded-for` / `x-real-ip` are client-spoofable and are honored **only** when

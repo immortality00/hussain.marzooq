@@ -107,6 +107,8 @@ async function ensureIndexes() {
   await createIndex(db, "testimonials", { isApproved: 1, sortOrder: 1, approvedAt: -1, createdAt: -1 });
   await createIndex(db, "testimonials", { email: 1, createdAt: -1 }, { sparse: true });
 
+  await createIndex(db, "testimonial_upload_sessions", { expiresAt: 1 }, { expireAfterSeconds: 0 });
+
   await createIndex(db, "inquiries", { status: 1, isArchived: 1, createdAt: -1 });
   await createIndex(db, "inquiries", { serviceId: 1, isArchived: 1, createdAt: -1 });
   await createIndex(db, "inquiries", { category: 1, createdAt: -1 });

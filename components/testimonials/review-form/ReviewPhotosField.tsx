@@ -24,32 +24,44 @@ export function ReviewPhotosField({
         <label className="text-sm font-medium">Photos</label>
 
         <div className="flex flex-wrap gap-2">
-          <CldUploadWidget
-            signatureEndpoint="/api/testimonials/upload-signature"
-            options={{
-              folder,
-              multiple: true,
-              maxFiles: 12,
-              resourceType: "image",
-            }}
-            onSuccess={(result: unknown) => {
-              const info = (result as WidgetResult)?.info;
-              if (!isRecord(info)) return;
+          {folder ? (
+            <CldUploadWidget
+              signatureEndpoint="/api/testimonials/upload-signature"
+              options={{
+                folder,
+                multiple: true,
+                maxFiles: 12,
+                resourceType: "image",
+                clientAllowedFormats: ["png", "jpg", "jpeg", "webp", "gif", "heic", "heif"],
+                maxFileSize: 10_485_760,
+              }}
+              onSuccess={(result: unknown) => {
+                const info = (result as WidgetResult)?.info;
+                if (!isRecord(info)) return;
 
-              const secureUrl = getString(info.secure_url);
-              if (secureUrl) onUploaded(secureUrl);
-            }}
-          >
-            {({ open }) => (
-              <button
-                type="button"
-                onClick={() => open()}
-                className="rounded-full border border-border/70 bg-background px-4 py-2 text-sm transition-colors hover:bg-muted"
-              >
-                Upload photos
-              </button>
-            )}
-          </CldUploadWidget>
+                const secureUrl = getString(info.secure_url);
+                if (secureUrl) onUploaded(secureUrl);
+              }}
+            >
+              {({ open }) => (
+                <button
+                  type="button"
+                  onClick={() => open()}
+                  className="rounded-full border border-border/70 bg-background px-4 py-2 text-sm transition-colors hover:bg-muted"
+                >
+                  Upload photos
+                </button>
+              )}
+            </CldUploadWidget>
+          ) : (
+            <button
+              type="button"
+              disabled
+              className="rounded-full border border-border/70 bg-background px-4 py-2 text-sm opacity-60"
+            >
+              Upload photos
+            </button>
+          )}
 
           {photoUrls.length > 0 ? (
             <button
