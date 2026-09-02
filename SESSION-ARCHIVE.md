@@ -3084,3 +3084,44 @@ async let the `CldUploadWidget` (created once on idle after its `<Script>` loads
 `folder` is set (`ProfilePhotoField`/`ReviewPhotosField` render a disabled button until then);
 (2) the widget's own Escape bubbled to `ModalPortal` and reset the form — fixed with
 `closeOnEscape={false}` on the review modal.
+
+### Session L4 — Resilience & error surfaces — `done` (2026-09-02)
+
+**Why.** There is no `not-found.tsx`, no `error.tsx` and no `global-error.tsx` anywhere in
+`app/` — every `notFound()` and every thrown error renders Next's unbranded default screen.
+And `lib/server/public-people.ts`, `public-services.ts`, `public-nfts.ts`, `testimonials.ts`,
+`tag-pages.ts`, `public-media-tags.ts` and `db.ts` contain **zero** `catch`. Every route using
+them carries `revalidate = 300` with no `force-dynamic`, so Next prerenders them at build: if
+Atlas is unreachable during the Netlify build **the deploy fails**, and at runtime a DB blip
+500s those pages.
+
+Files:
+- `app/not-found.tsx`, `app/error.tsx`, `app/global-error.tsx` — house language, `.section-shell`,
+  `PageHeader`, a `Button` back to `/`. No gradients, no eyebrows.
+- Fail-safe wrappers (try/catch → `[]` / `null`) on the six read modules above, matching the
+  pattern already used by `getTransitionImages` (`lib/server/public-media.ts:36-42`) and
+  `lib/server/public-blog.ts`.
+- Empty results must render `components/shared/NoResults.tsx`, not a thrown page.
+
+Gate 1 security: no security surface.
+
+**Outcome (shipped 2026-09-02).** Three boundaries added: `app/not-found.tsx` (server),
+`app/error.tsx` + `app/global-error.tsx` (client, `{error,reset}`; global-error renders its own
+`<html className="dark"><body>` and imports `globals.css`, dependency-light — a native-navigation
+button, not a `<Link>`/`<a>`, to satisfy `no-html-link-for-pages` and force a hard reload). All six
+named modules wrapped fail-safe. **Part C (approved extension):** the audit named six modules but
+missed `public-media.ts` (flagged as "has catch" because only `getTransitionImages` was wrapped) —
+`getPhotographyItems`/`getVideographyItems`/`getMediaByTag`/`getExhibitionCities`/`getShowreelItem`
+had none, and they power `/photography`, `/videography` and the homepage globe; wrapped all five.
+**Critical extra, surfaced in live Gate-2 testing (Atlas genuinely unreachable in the sandbox):**
+`page-settings.ts` `getAllPageSettings`/`getPageSettings` had no catch (the file's only catch was
+`getBlogActive`), and because `SiteFooter` (shared root layout) awaits `getAllPageSettings`, its
+throw 500'd **every** page — including the new 404 — before any page-level fail-safe could run;
+wrapped both with the module's own all-active defaults. Long functions use the private-impl +
+thin-wrapper idiom (no body re-indent). `db.ts` intentionally not wrapped. Empty states were already
+handled by every consumer (`PortfolioFallbackPanel`/`NoResults`) — no page edits needed. Verified on
+both paths: DB down → branded 404 + empty fallbacks + zero 500s; DB live → real content (person
+"Yulia", NFTs, services, globe cities NYC/Delhi/Beijing/Amman/Paris/Amsterdam), a real tag subpage
+renders, and a genuinely-unknown tag still 404s. `tsc` clean · `eslint` 0/0 · 206 tests pass.
+CLAUDE.md gained an "Error boundaries & fail-safe reads" section + a note that `getAllPageSettings`
+is a second must-never-throw layout dependency alongside `getTransitionImages`.

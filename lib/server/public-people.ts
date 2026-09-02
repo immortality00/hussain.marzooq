@@ -117,7 +117,7 @@ async function buildPersonDetail(
   };
 }
 
-export async function getPublicPeople(): Promise<PublicPersonIndexItem[]> {
+async function getPublicPeopleImpl(): Promise<PublicPersonIndexItem[]> {
   const db = await getDb();
 
   const docs = await db
@@ -226,21 +226,33 @@ export async function getPublicPeople(): Promise<PublicPersonIndexItem[]> {
   });
 }
 
-export async function getPublicPersonBySlug(slug: string): Promise<PublicPersonDetail | null> {
-  const db = await getDb();
-
-  const doc = await db.collection("people_profiles").findOne({
-    slug,
-    $or: [{ isPublic: true }, { isPublic: { $exists: false } }],
-    isPrivate: { $ne: true },
-  });
-
-  if (!doc) return null;
-
-  return buildPersonDetail(db, doc as Record<string, unknown>);
+export async function getPublicPeople(): Promise<PublicPersonIndexItem[]> {
+  try {
+    return await getPublicPeopleImpl();
+  } catch {
+    return [];
+  }
 }
 
-export async function getPersonPageBySlug(slug: string): Promise<PersonPageState> {
+export async function getPublicPersonBySlug(slug: string): Promise<PublicPersonDetail | null> {
+  try {
+    const db = await getDb();
+
+    const doc = await db.collection("people_profiles").findOne({
+      slug,
+      $or: [{ isPublic: true }, { isPublic: { $exists: false } }],
+      isPrivate: { $ne: true },
+    });
+
+    if (!doc) return null;
+
+    return await buildPersonDetail(db, doc as Record<string, unknown>);
+  } catch {
+    return null;
+  }
+}
+
+async function getPersonPageBySlugImpl(slug: string): Promise<PersonPageState> {
   const db = await getDb();
 
   const doc = (await db.collection("people_profiles").findOne({ slug })) as Record<
@@ -282,4 +294,12 @@ export async function getPersonPageBySlug(slug: string): Promise<PersonPageState
   }
 
   return { state: "locked", slug, name, bio, avatarUrl };
+}
+
+export async function getPersonPageBySlug(slug: string): Promise<PersonPageState> {
+  try {
+    return await getPersonPageBySlugImpl(slug);
+  } catch {
+    return { state: "missing" };
+  }
 }

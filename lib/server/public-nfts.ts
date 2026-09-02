@@ -30,7 +30,7 @@ function normalizeStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((x): x is string => typeof x === "string") : [];
 }
 
-export async function getPublicNfts(): Promise<PublicNftItem[]> {
+async function getPublicNftsImpl(): Promise<PublicNftItem[]> {
   const db = await getDb();
 
   const docs = await db
@@ -86,4 +86,12 @@ export async function getPublicNfts(): Promise<PublicNftItem[]> {
           : null,
     }))
     .filter((item): item is PublicNftItem => !!item.nft);
+}
+
+export async function getPublicNfts(): Promise<PublicNftItem[]> {
+  try {
+    return await getPublicNftsImpl();
+  } catch {
+    return [];
+  }
 }

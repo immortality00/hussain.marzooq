@@ -15,15 +15,23 @@ function readCardImage(value: unknown): SectionImage {
   return isSectionImage(value) ? value : EMPTY_SECTION_IMAGE;
 }
 
+function defaultPageSettings(slug: string): PageSettings {
+  return { slug, isActive: true, cardImage: EMPTY_SECTION_IMAGE, updatedAt: new Date() };
+}
+
 export async function getPageSettings(slug: string): Promise<PageSettings> {
-  const db = await getDb();
-  const doc = await db.collection("page_settings").findOne({ slug });
-  return {
-    slug,
-    isActive: typeof doc?.isActive === "boolean" ? doc.isActive : true,
-    cardImage: readCardImage(doc?.cardImage),
-    updatedAt: doc?.updatedAt instanceof Date ? doc.updatedAt : new Date(),
-  };
+  try {
+    const db = await getDb();
+    const doc = await db.collection("page_settings").findOne({ slug });
+    return {
+      slug,
+      isActive: typeof doc?.isActive === "boolean" ? doc.isActive : true,
+      cardImage: readCardImage(doc?.cardImage),
+      updatedAt: doc?.updatedAt instanceof Date ? doc.updatedAt : new Date(),
+    };
+  } catch {
+    return defaultPageSettings(slug);
+  }
 }
 
 // Blog is a whole-page on/off switch (not a discipline — it has no Work-overlay
@@ -41,16 +49,20 @@ export async function getBlogActive(): Promise<boolean> {
 
 export async function getAllPageSettings(): Promise<PageSettings[]> {
   const SLUGS = ["photography", "videography", "nft", "dancing", "web-development", "blog"];
-  const db = await getDb();
-  const docs = await db.collection("page_settings").find({ slug: { $in: SLUGS } }).toArray();
-  const map = new Map(docs.map((d) => [d.slug as string, d]));
-  return SLUGS.map((slug) => {
-    const doc = map.get(slug);
-    return {
-      slug,
-      isActive: typeof doc?.isActive === "boolean" ? doc.isActive : true,
-      cardImage: readCardImage(doc?.cardImage),
-      updatedAt: doc?.updatedAt instanceof Date ? doc.updatedAt : new Date(),
-    };
-  });
+  try {
+    const db = await getDb();
+    const docs = await db.collection("page_settings").find({ slug: { $in: SLUGS } }).toArray();
+    const map = new Map(docs.map((d) => [d.slug as string, d]));
+    return SLUGS.map((slug) => {
+      const doc = map.get(slug);
+      return {
+        slug,
+        isActive: typeof doc?.isActive === "boolean" ? doc.isActive : true,
+        cardImage: readCardImage(doc?.cardImage),
+        updatedAt: doc?.updatedAt instanceof Date ? doc.updatedAt : new Date(),
+      };
+    });
+  } catch {
+    return SLUGS.map(defaultPageSettings);
+  }
 }

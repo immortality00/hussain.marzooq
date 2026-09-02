@@ -49,7 +49,7 @@ function toPublicTestimonial(doc: Record<string, unknown>): PublicTestimonial {
   };
 }
 
-export async function getPublicTestimonials(limit = 60): Promise<PublicTestimonialsData> {
+async function getPublicTestimonialsImpl(limit: number): Promise<PublicTestimonialsData> {
   const db = await getDb();
   const testimonials = db.collection("testimonials");
 
@@ -82,4 +82,12 @@ export async function getPublicTestimonials(limit = 60): Promise<PublicTestimoni
     totalReviews,
     averageRating,
   };
+}
+
+export async function getPublicTestimonials(limit = 60): Promise<PublicTestimonialsData> {
+  try {
+    return await getPublicTestimonialsImpl(limit);
+  } catch {
+    return { items: [], totalReviews: 0, averageRating: 0 };
+  }
 }

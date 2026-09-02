@@ -931,12 +931,34 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   `if (isAdmin) return <>{children}</>` gate, so none of them render on `/admin/*`. `SiteFooter`
   is an async Server Component and `AppShell` is a client component, so the footer is passed in
   as the `footer` prop from `app/layout.tsx` (`<AppShell footer={<SiteFooter />}>`) — a server
-  component rendered by a client parent via props. `CustomCursor` is imported and rendered
-  directly inside `AppShell`'s public branch. Do not re-mount either as a sibling in `layout.tsx`.
+  component rendered by a client parent via props. **`SiteFooter` awaits `getAllPageSettings`, so
+  that read is a second must-never-throw layout dependency alongside `getTransitionImages` (L4) —
+  a throw there 500s every page before any page-level fail-safe runs; `getAllPageSettings`/
+  `getPageSettings` are fail-safe (try/catch → all-active defaults), keep them so.** `CustomCursor`
+  is imported and rendered directly inside `AppShell`'s public branch. Do not re-mount either as a
+  sibling in `layout.tsx`.
   **`TransitionProvider` (D4) also lives here**, wrapping `children` + the footer and taking an
   `images` prop (the server transition pool from `layout.tsx`). The page transition plays on
   **every** public route via a global click interceptor — see "Page transitions" above. Do not
   build a second page-transition mechanism; the interceptor already catches all internal links.
+
+## Error boundaries & fail-safe reads (L4, shipped 2026-09-02)
+`app/not-found.tsx`, `app/error.tsx` (client, `{error,reset}`) and `app/global-error.tsx` (client,
+renders its own `<html className="dark"><body>` + imports `globals.css`, kept dependency-light so it
+can't itself break) render house language — `.section-shell` + `PageHeader` + `Button` back to `/`,
+no gradients/eyebrows. A `notFound()` or thrown error now shows a branded page, not Next's default
+screen.
+**Every public server read module is fail-safe (try/catch → `[]`/`null`/defaults), matching
+`getTransitionImages`/`public-blog.ts`,** so a DB blip renders the empty state (and Atlas being
+unreachable during the Netlify build no longer fails the deploy). Covered: `public-people.ts`,
+`public-services.ts`, `public-nfts.ts`, `testimonials.ts`, `tag-pages.ts`, `public-media-tags.ts`,
+`page-settings.ts`, and the `public-media.ts` reads (`getPhotographyItems`/`getVideographyItems`/
+`getMediaByTag`/`getExhibitionCities`/`getShowreelItem`). Long functions use the repo's private-impl
++ thin-wrapper idiom (like `listPublicMedia`/`getTransitionImages`) so the wrap adds no body
+re-indentation. `db.ts` is deliberately NOT wrapped — it only returns a client; its callers catch.
+**Do not remove these catches** — a bare read that can throw in the root layout or a `revalidate`
+page breaks the build or 500s the route. Empty results render `NoResults`/the page's fallback panel,
+never a thrown page.
 
 ## Code quality rules
 - **Any code that can become a reusable component must be refactored into one.** Reuse

@@ -279,25 +279,12 @@ an uncommitted session it owns — closing the public folder-delete and spam-the
 limits are client-side on the widget (signing them breaks `CldUploadWidget`). The widget now mounts only
 once its folder is ready (no orphaned root uploads) and the review modal sets `closeOnEscape={false}`._
 
-### Session L4 — Resilience & error surfaces — `pending`
-
-**Why.** There is no `not-found.tsx`, no `error.tsx` and no `global-error.tsx` anywhere in
-`app/` — every `notFound()` and every thrown error renders Next's unbranded default screen.
-And `lib/server/public-people.ts`, `public-services.ts`, `public-nfts.ts`, `testimonials.ts`,
-`tag-pages.ts`, `public-media-tags.ts` and `db.ts` contain **zero** `catch`. Every route using
-them carries `revalidate = 300` with no `force-dynamic`, so Next prerenders them at build: if
-Atlas is unreachable during the Netlify build **the deploy fails**, and at runtime a DB blip
-500s those pages.
-
-Files:
-- `app/not-found.tsx`, `app/error.tsx`, `app/global-error.tsx` — house language, `.section-shell`,
-  `PageHeader`, a `Button` back to `/`. No gradients, no eyebrows.
-- Fail-safe wrappers (try/catch → `[]` / `null`) on the six read modules above, matching the
-  pattern already used by `getTransitionImages` (`lib/server/public-media.ts:36-42`) and
-  `lib/server/public-blog.ts`.
-- Empty results must render `components/shared/NoResults.tsx`, not a thrown page.
-
-Gate 1 security: no security surface.
+_L4 done (2026-09-02) — see SESSION-ARCHIVE.md §L4. Three branded boundaries (`app/not-found.tsx`,
+`error.tsx`, `global-error.tsx`) in house language; every public server read is fail-safe
+(try/catch → `[]`/`null`/defaults) — the six named modules, the five `public-media.ts` reads
+(Part C), and `page-settings.ts` (`getAllPageSettings` is a second must-never-throw layout
+dependency via `SiteFooter`, surfaced in live testing). Verified DB-down and DB-live. No security
+surface._
 
 ---
 
