@@ -8,7 +8,7 @@ import { ProfilePhotoField } from "./review-form/ProfilePhotoField";
 import { ReviewPhotosField } from "./review-form/ReviewPhotosField";
 import { StarPicker } from "./review-form/StarPicker";
 import type { BannerState, LocationOption } from "./review-form/types";
-import { createUploadSessionId, isValidEmail } from "./review-form/utils";
+import { isValidEmail } from "./review-form/utils";
 import { useModalVisibilityEvents } from "./review-form/useModalVisibilityEvents";
 
 export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?: boolean }) {
@@ -27,10 +27,33 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
   const [submitting, setSubmitting] = useState(false);
   const [banner, setBanner] = useState<BannerState>(null);
   const [formStartedAt, setFormStartedAt] = useState(Date.now());
-  const [uploadSessionId, setUploadSessionId] = useState(createUploadSessionId());
-  const uploadSessionIdRef = useRef(uploadSessionId);
+  const [uploadSessionId, setUploadSessionId] = useState<string | null>(null);
+  const uploadSessionIdRef = useRef<string | null>(uploadSessionId);
+  const committedRef = useRef(false);
 
   useModalVisibilityEvents(open);
+
+  useEffect(() => {
+    if (!open || uploadSessionIdRef.current) return;
+
+    let cancelled = false;
+
+    void (async () => {
+      try {
+        const res = await fetch("/api/testimonials/upload-session", { method: "POST" });
+        const data = (await res.json().catch(() => null)) as { sessionId?: string } | null;
+        if (!cancelled && res.ok && data?.sessionId) {
+          setUploadSessionId(data.sessionId);
+        }
+      } catch {
+        // Uploads stay disabled until a session is available.
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
 
   const selectedLocationPayload = useMemo(
     () =>
@@ -47,12 +70,12 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
   );
 
   const profilePhotoFolder = useMemo(
-    () => `${CLOUDINARY_TESTIMONIALS_FOLDER}/${uploadSessionId}/pfp`,
+    () => (uploadSessionId ? `${CLOUDINARY_TESTIMONIALS_FOLDER}/${uploadSessionId}/pfp` : ""),
     [uploadSessionId]
   );
 
   const photosFolder = useMemo(
-    () => `${CLOUDINARY_TESTIMONIALS_FOLDER}/${uploadSessionId}/photos`,
+    () => (uploadSessionId ? `${CLOUDINARY_TESTIMONIALS_FOLDER}/${uploadSessionId}/photos` : ""),
     [uploadSessionId]
   );
 
@@ -62,34 +85,28 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
 
   const hasUploadedFiles = Boolean(profilePhotoUrl || photoUrls.length > 0 || hasPendingUploads);
 
-  async function cleanupUploadSession(sessionId: string) {
-    if (!sessionId || !hasUploadedFiles) return;
+  async function cleanupUploadSession() {
+    if (committedRef.current || !hasUploadedFiles) return;
 
     try {
-      await fetch("/api/testimonials/upload-session/cleanup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ uploadSessionId: sessionId }),
-      });
+      await fetch("/api/testimonials/upload-session/cleanup", { method: "POST" });
     } catch {
       // Best-effort cleanup only.
     }
   }
 
   async function handleClose() {
-    await cleanupUploadSession(uploadSessionIdRef.current);
+    await cleanupUploadSession();
     resetForm();
     setOpen(false);
   }
 
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (!hasUploadedFiles) return;
+      if (!hasUploadedFiles || committedRef.current) return;
 
       try {
-        const payload = JSON.stringify({ uploadSessionId: uploadSessionIdRef.current });
-        const blob = new Blob([payload], { type: "application/json" });
-        navigator.sendBeacon("/api/testimonials/upload-session/cleanup", blob);
+        navigator.sendBeacon("/api/testimonials/upload-session/cleanup");
       } catch {
         // Best-effort cleanup only.
       }
@@ -113,7 +130,8 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
     setSubmitting(false);
     setBanner(null);
     setFormStartedAt(Date.now());
-    setUploadSessionId(createUploadSessionId());
+    setUploadSessionId(null);
+    committedRef.current = false;
   }
 
   function handleProfilePhotoUploaded(url: string) {
@@ -182,7 +200,6 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
           photoUrls,
           website,
           formStartedAt,
-          uploadSessionId,
         }),
       });
 
@@ -193,6 +210,8 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
         setSubmitting(false);
         return;
       }
+
+      committedRef.current = true;
 
       setBanner({
         type: "ok",
@@ -223,6 +242,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
       {open ? (
         <ModalPortal
           onClose={() => void handleClose()}
+          closeOnEscape={false}
           className="fixed inset-0 z-[150] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-5"
         >
           <div

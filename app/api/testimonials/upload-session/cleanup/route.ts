@@ -1,14 +1,20 @@
-import { isRecord, asNullableString, noStoreJson } from "@/app/api/_lib/common";
+import { noStoreJson } from "@/app/api/_lib/common";
 import { getClientAddress } from "@/app/api/_lib/public-form-security";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { deleteManagedCloudinaryFolderTree } from "@/lib/server/cloudinary-assets";
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
+import { getDb } from "@/lib/server/db";
+import {
+  deleteUploadSession,
+  readUploadCookie,
+  sessionFolder,
+  verifyUploadSession,
+} from "@/lib/server/testimonial-upload-sessions";
 
 export const dynamic = "force-dynamic";
 
 const CLEANUP_RATE_LIMIT_WINDOW_MS = 60_000;
 const CLEANUP_RATE_LIMIT_MAX = 12;
-const SESSION_ID_PATTERN = /^[A-Za-z0-9_-]+$/;
 
 export async function POST(request: Request) {
   const clientKey = getClientAddress(request);
@@ -24,16 +30,17 @@ export async function POST(request: Request) {
     return noStoreJson({ ok: false, error: "Too many cleanup attempts. Try again later." }, { status: 429 });
   }
 
-  const bodyUnknown = (await request.json().catch(() => null)) as unknown;
-  const body = isRecord(bodyUnknown) ? bodyUnknown : {};
-  const uploadSessionId = (asNullableString(body.uploadSessionId) ?? "").trim().slice(0, 120);
+  const db = await getDb();
+  const session = await verifyUploadSession(db, readUploadCookie(request), { requirePending: true });
 
-  if (!uploadSessionId || !SESSION_ID_PATTERN.test(uploadSessionId)) {
-    return noStoreJson({ ok: false, error: "Invalid upload session id." }, { status: 400 });
+  if (!session) {
+    return noStoreJson({ ok: true });
   }
 
-  const sessionFolder = `${CLOUDINARY_TESTIMONIALS_FOLDER}/${uploadSessionId}`;
-  const cleanupResults = await deleteManagedCloudinaryFolderTree(sessionFolder, [CLOUDINARY_TESTIMONIALS_FOLDER]);
+  const cleanupResults = await deleteManagedCloudinaryFolderTree(
+    sessionFolder(session.sessionId),
+    [CLOUDINARY_TESTIMONIALS_FOLDER]
+  );
   const failedResult = cleanupResults.find((result) => !result.ok);
 
   if (failedResult) {
@@ -42,6 +49,8 @@ export async function POST(request: Request) {
       { status: 502 },
     );
   }
+
+  await deleteUploadSession(db, session.sessionId);
 
   return noStoreJson({ ok: true });
 }

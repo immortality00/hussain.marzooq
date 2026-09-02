@@ -2,22 +2,21 @@ import { isRecord, noStoreJson } from "@/app/api/_lib/common";
 import { getClientAddress } from "@/app/api/_lib/public-form-security";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { signCloudinaryParams } from "@/lib/server/cloudinary";
-import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
+import { getDb } from "@/lib/server/db";
+import {
+  readUploadCookie,
+  sessionPhotosFolder,
+  sessionProfileFolder,
+  verifyUploadSession,
+} from "@/lib/server/testimonial-upload-sessions";
 
 export const dynamic = "force-dynamic";
 
-const TESTIMONIALS_FOLDER = CLOUDINARY_TESTIMONIALS_FOLDER;
 const MAX_TIMESTAMP_AGE_SECONDS = 10 * 60;
 const SIGNATURE_RATE_LIMIT_WINDOW_MS = 60_000;
 const SIGNATURE_RATE_LIMIT_MAX = 18;
 
-const ALLOWED_SIGN_KEYS = new Set([
-  "folder",
-  "timestamp",
-  "upload_preset",
-  "source",
-  "custom_coordinates",
-]);
+const ALLOWED_SIGN_KEYS = new Set(["timestamp", "upload_preset", "source", "custom_coordinates"]);
 
 function toValidTimestamp(value: unknown) {
   const timestamp = typeof value === "number" ? value : Number(value);
@@ -33,34 +32,19 @@ function toValidTimestamp(value: unknown) {
   return roundedTimestamp;
 }
 
-function isSafeTestimonialFolder(value: string) {
-  if (!value.startsWith(`${TESTIMONIALS_FOLDER}/`) && value !== TESTIMONIALS_FOLDER) {
-    return false;
-  }
+function sanitizeParamsToSign(rawParams: Record<string, unknown>, sessionId: string) {
+  const allowedFolders = new Set([sessionProfileFolder(sessionId), sessionPhotosFolder(sessionId)]);
+  const requestedFolder =
+    typeof rawParams.folder === "string" ? rawParams.folder.trim() : "";
 
-  if (value.includes("..")) {
-    return false;
-  }
+  if (!allowedFolders.has(requestedFolder)) return null;
 
-  return /^[A-Za-z0-9_\/-]+$/.test(value);
-}
-
-function sanitizeParamsToSign(rawParams: Record<string, unknown>) {
-  const paramsToSign: Record<string, string | number> = {
-    folder: TESTIMONIALS_FOLDER,
-  };
+  const paramsToSign: Record<string, string | number> = { folder: requestedFolder };
 
   for (const [key, value] of Object.entries(rawParams)) {
+    if (key === "folder") continue;
     if (!ALLOWED_SIGN_KEYS.has(key)) continue;
     if (typeof value !== "string" && typeof value !== "number") continue;
-
-    if (key === "folder") {
-      const folderValue = String(value).trim();
-      if (isSafeTestimonialFolder(folderValue)) {
-        paramsToSign.folder = folderValue;
-      }
-      continue;
-    }
 
     paramsToSign[key] = value;
   }
@@ -90,6 +74,13 @@ export async function POST(request: Request) {
     return noStoreJson({ error: "Too many upload attempts. Try again later." }, { status: 429 });
   }
 
+  const db = await getDb();
+  const session = await verifyUploadSession(db, readUploadCookie(request), { requirePending: true });
+
+  if (!session) {
+    return noStoreJson({ error: "Upload session is missing or invalid." }, { status: 403 });
+  }
+
   const bodyUnknown = (await request.json().catch(() => null)) as unknown;
   const body = isRecord(bodyUnknown) ? bodyUnknown : {};
   const rawParams = body.paramsToSign;
@@ -98,7 +89,11 @@ export async function POST(request: Request) {
     return noStoreJson({ error: "Missing paramsToSign." }, { status: 400 });
   }
 
-  const paramsToSign = sanitizeParamsToSign(rawParams);
+  const paramsToSign = sanitizeParamsToSign(rawParams, session.sessionId);
+
+  if (!paramsToSign) {
+    return noStoreJson({ error: "Upload folder is not allowed for this session." }, { status: 400 });
+  }
 
   const timestamp = toValidTimestamp(paramsToSign.timestamp);
   if (timestamp === null) {
