@@ -34,7 +34,7 @@ function seoSlugFor(category: TagDiscipline) {
   return `${category}-tag`;
 }
 
-export async function getDisciplineTagNav({
+async function getDisciplineTagNavImpl({
   category,
   mediaMode,
 }: {
@@ -55,6 +55,17 @@ export async function getDisciplineTagNav({
   return { chips, tagLinks };
 }
 
+export async function getDisciplineTagNav(args: {
+  category: TagDiscipline;
+  mediaMode: "image" | "video";
+}): Promise<{ chips: TagChip[]; tagLinks: Record<string, TagLink> }> {
+  try {
+    return await getDisciplineTagNavImpl(args);
+  } catch {
+    return { chips: [], tagLinks: {} };
+  }
+}
+
 export async function getTagMeta({
   category,
   tagSlug,
@@ -62,15 +73,19 @@ export async function getTagMeta({
   category: TagDiscipline;
   tagSlug: string;
 }): Promise<{ tag: PublicMediaTag; seo: PageSeo } | null> {
-  const [tag, seo] = await Promise.all([
-    getPublicMediaTag(tagSlug),
-    getPageSeo(seoSlugFor(category)),
-  ]);
-  if (!tag) return null;
-  return { tag, seo };
+  try {
+    const [tag, seo] = await Promise.all([
+      getPublicMediaTag(tagSlug),
+      getPageSeo(seoSlugFor(category)),
+    ]);
+    if (!tag) return null;
+    return { tag, seo };
+  } catch {
+    return null;
+  }
 }
 
-export async function getTagPage({
+async function getTagPageImpl({
   category,
   mediaMode,
   tagSlug,
@@ -98,4 +113,12 @@ export async function getTagPage({
     },
     stickyCta: sections.stickyCta,
   };
+}
+
+export async function getTagPage(input: TagPageInput): Promise<TagPageData | null> {
+  try {
+    return await getTagPageImpl(input);
+  } catch {
+    return null;
+  }
 }

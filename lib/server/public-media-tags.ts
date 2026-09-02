@@ -34,15 +34,19 @@ function disciplineMatch(category: string, mediaMode: MediaMode) {
 }
 
 export async function getPublicMediaTag(slug: string): Promise<PublicMediaTag | null> {
-  const db = await getDb();
-  const doc = await db.collection("media_tags").findOne({ slug, isActive: true });
-  return doc ? serialize(doc as Record<string, unknown>) : null;
+  try {
+    const db = await getDb();
+    const doc = await db.collection("media_tags").findOne({ slug, isActive: true });
+    return doc ? serialize(doc as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
 }
 
 // A tag earns a subpage/chip purely from the media: any active tag that at
 // least one public item in this discipline carries. The `disciplines` field on
 // media_tags is admin metadata only and does not gate the public page.
-export async function getDisciplineTags({
+async function getDisciplineTagsImpl({
   category,
   mediaMode,
 }: {
@@ -82,4 +86,15 @@ export async function getDisciplineTags({
       };
     })
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+}
+
+export async function getDisciplineTags(args: {
+  category: TagDiscipline;
+  mediaMode: MediaMode;
+}): Promise<DisciplineTag[]> {
+  try {
+    return await getDisciplineTagsImpl(args);
+  } catch {
+    return [];
+  }
 }

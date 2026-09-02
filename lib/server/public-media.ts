@@ -49,24 +49,32 @@ export const getTransitionImages = unstable_cache(
 );
 
 export async function getPhotographyItems(): Promise<PublicMediaItem[]> {
-  return listPublicMedia({
-    type: "image",
-    category: "photography",
-    limit: 60,
-  });
+  try {
+    return await listPublicMedia({
+      type: "image",
+      category: "photography",
+      limit: 60,
+    });
+  } catch {
+    return [];
+  }
 }
 
 export async function getVideographyItems(): Promise<PublicMediaItem[]> {
-  const all = await listPublicMedia({
-    type: "all",
-    category: "videography",
-    limit: 60,
-  });
+  try {
+    const all = await listPublicMedia({
+      type: "all",
+      category: "videography",
+      limit: 60,
+    });
 
-  return all.filter((item) => item.type === "video" || item.type === "embed");
+    return all.filter((item) => item.type === "video" || item.type === "embed");
+  } catch {
+    return [];
+  }
 }
 
-export async function getMediaByTag({
+async function getMediaByTagImpl({
   category,
   mediaMode,
   tagSlug,
@@ -98,6 +106,19 @@ export async function getMediaByTag({
   return docs.map((doc) => toPublicMediaItem(doc as Record<string, unknown>));
 }
 
+export async function getMediaByTag(args: {
+  category: string;
+  mediaMode: "image" | "video";
+  tagSlug: string;
+  limit?: number;
+}): Promise<PublicMediaItem[]> {
+  try {
+    return await getMediaByTagImpl(args);
+  } catch {
+    return [];
+  }
+}
+
 export type ExhibitionCity = {
   locationId: string;
   city: string;
@@ -107,7 +128,7 @@ export type ExhibitionCity = {
   works: PublicMediaItem[];
 };
 
-export async function getExhibitionCities(): Promise<ExhibitionCity[]> {
+async function getExhibitionCitiesImpl(): Promise<ExhibitionCity[]> {
   const db = await getDb();
 
   const docs = await db
@@ -158,20 +179,32 @@ export async function getExhibitionCities(): Promise<ExhibitionCity[]> {
   );
 }
 
+export async function getExhibitionCities(): Promise<ExhibitionCity[]> {
+  try {
+    return await getExhibitionCitiesImpl();
+  } catch {
+    return [];
+  }
+}
+
 export async function getShowreelItem(): Promise<PublicMediaItem | null> {
-  const db = await getDb();
+  try {
+    const db = await getDb();
 
-  const doc = await db
-    .collection("media")
-    .find({
-      $and: [
-        buildPublicMediaQuery({ type: "all", category: "showreel" }),
-        { type: { $in: ["video", "embed"] } },
-      ],
-    })
-    .sort({ createdAt: -1, _id: -1 })
-    .limit(1)
-    .next();
+    const doc = await db
+      .collection("media")
+      .find({
+        $and: [
+          buildPublicMediaQuery({ type: "all", category: "showreel" }),
+          { type: { $in: ["video", "embed"] } },
+        ],
+      })
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(1)
+      .next();
 
-  return doc ? toPublicMediaItem(doc as Record<string, unknown>) : null;
+    return doc ? toPublicMediaItem(doc as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
 }

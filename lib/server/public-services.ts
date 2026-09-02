@@ -49,7 +49,7 @@ export function workLinkForCategory(categorySlug: string): { href: string; label
   return { href: DISCIPLINE_HREF[slug], label: WORK_LINK_LABEL[slug] };
 }
 
-export async function getActiveServicesForContact() {
+async function getActiveServicesForContactImpl() {
   const db = await getDb();
 
   const docs = await db
@@ -68,7 +68,15 @@ export async function getActiveServicesForContact() {
   }));
 }
 
-export async function getPublicServicesData() {
+export async function getActiveServicesForContact() {
+  try {
+    return await getActiveServicesForContactImpl();
+  } catch {
+    return [];
+  }
+}
+
+async function getPublicServicesDataImpl() {
   const db = await getDb();
 
   const [rawCategories, rawServices] = await Promise.all([
@@ -109,4 +117,12 @@ export async function getPublicServicesData() {
     .sort((a, b) => a.order - b.order);
 
   return { services, categories };
+}
+
+export async function getPublicServicesData() {
+  try {
+    return await getPublicServicesDataImpl();
+  } catch {
+    return { services: [] as PublicServiceItem[], categories: [] as PublicServiceCategoryItem[] };
+  }
 }
