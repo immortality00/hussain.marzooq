@@ -35,15 +35,14 @@ export function MediaGrid({
     displayedItems,
     isSearching,
     searchError,
-    nextCursor,
     isLoadingMore,
-    hasActiveSearch,
+    canLoadMore,
     loadMore,
   } = useMediaSearch({ items, mediaMode, searchCategory, lockedTag });
 
   useModalNavbarLock(Boolean(active));
 
-  const showLoadMore = Boolean(searchCategory) && hasActiveSearch && Boolean(nextCursor);
+  const showLoadMore = canLoadMore;
 
   return (
     <div

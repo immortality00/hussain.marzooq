@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { encodeMediaCursor, PUBLIC_MEDIA_PAGE_SIZE } from "@/lib/media-cursor";
 import type { MediaItem } from "./types";
 
 type PublicMediaSearchMode = "image" | "video";
@@ -70,6 +71,7 @@ export function useMediaSearch({
   const [activeTag, setActiveTag] = useState<string>("");
   const [remoteItems, setRemoteItems] = useState<MediaItem[]>(items);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [browseHasMore, setBrowseHasMore] = useState(items.length >= PUBLIC_MEDIA_PAGE_SIZE);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [searchError, setSearchError] = useState("");
@@ -88,6 +90,7 @@ export function useMediaSearch({
   useEffect(() => {
     setRemoteItems(items);
     setNextCursor(null);
+    setBrowseHasMore(items.length >= PUBLIC_MEDIA_PAGE_SIZE);
   }, [items]);
 
   useEffect(() => {
@@ -97,6 +100,7 @@ export function useMediaSearch({
       requestIdRef.current += 1;
       setRemoteItems(items);
       setNextCursor(null);
+      setBrowseHasMore(items.length >= PUBLIC_MEDIA_PAGE_SIZE);
       setIsSearching(false);
       setSearchError("");
       return;
@@ -154,19 +158,38 @@ export function useMediaSearch({
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
-    for (const it of hasActiveSearch ? remoteItems : items) {
+    for (const it of remoteItems) {
       for (const t of it.tags) set.add(t);
     }
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [hasActiveSearch, items, remoteItems]);
+  }, [remoteItems]);
 
   const displayedItems = useMemo(() => {
     if (hasDbSearch && hasActiveSearch) return remoteItems;
-    return localFilterItems(items, q, activeTag);
-  }, [activeTag, hasActiveSearch, hasDbSearch, items, q, remoteItems]);
+    return localFilterItems(remoteItems, q, activeTag);
+  }, [activeTag, hasActiveSearch, hasDbSearch, q, remoteItems]);
+
+  // The same cursor path feeds both modes: an active search paginates the
+  // server-filtered results; browsing paginates the recent-media pool by
+  // building the next cursor from the last loaded item.
+  const canLoadMore = hasDbSearch && (hasActiveSearch ? Boolean(nextCursor) : browseHasMore);
 
   async function loadMore() {
-    if (!hasDbSearch || !searchCategory || !nextCursor || isLoadingMore || !hasActiveSearch) return;
+    if (!hasDbSearch || !searchCategory || isLoadingMore || !canLoadMore) return;
+
+    let cursor: string | null;
+    if (hasActiveSearch) {
+      cursor = nextCursor;
+    } else {
+      const last = remoteItems[remoteItems.length - 1];
+      cursor = last?.createdAt
+        ? encodeMediaCursor({ createdAt: last.createdAt, id: last.id })
+        : null;
+      if (!cursor) {
+        setBrowseHasMore(false);
+        return;
+      }
+    }
 
     setIsLoadingMore(true);
     setSearchError("");
@@ -178,7 +201,7 @@ export function useMediaSearch({
           mode: mediaMode,
           query: cleanQuery,
           tag: effectiveTag,
-          cursor: nextCursor,
+          cursor,
         }),
         { cache: "no-store" }
       );
@@ -193,7 +216,9 @@ export function useMediaSearch({
         const fresh = data.items!.filter((item) => !seen.has(item.id));
         return [...prev, ...fresh];
       });
-      setNextCursor(data.nextCursor ?? null);
+
+      if (hasActiveSearch) setNextCursor(data.nextCursor ?? null);
+      else setBrowseHasMore(Boolean(data.nextCursor));
     } catch (error) {
       setSearchError(error instanceof Error ? error.message : "Could not load more media.");
     } finally {
@@ -214,6 +239,7 @@ export function useMediaSearch({
     isLoadingMore,
     hasDbSearch,
     hasActiveSearch,
+    canLoadMore,
     loadMore,
   };
 }

@@ -172,7 +172,10 @@ they are a section"* and *"why is there a huge padding between sections?"*
 
 **Typefaces are decided: Geist Sans for everything, Geist Mono for micro-labels and
 numerics.** Both are already self-hosted via `next/font`, so `font-src 'self'` stays
-unchanged. Cormorant Garamond stays preloader-only. Do not add a webfont.
+unchanged. Cormorant Garamond stays preloader-only, and since L6 it is loaded via
+`next/font/local` from a self-hosted woff2 in `app/fonts/` — **not** `next/font/google`,
+which fetched the face from Google Fonts at build time and made CI's `npm run build` fail
+intermittently. Do not reintroduce `next/font/google`, and do not add a webfont.
 
 **The palette is achromatic; all colour comes from the work.** The OKLCH tokens carry
 neutral surface/text roles only. Do not add a brand accent colour — the photography is
@@ -921,6 +924,15 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
 - `components/media/useMediaSearch.ts` / `MediaGridResults` / `MediaTagChips` — all
   media search/filter surfaces (D3). `MediaGrid` composes them. `useMediaSearch` takes an
   optional `lockedTag` that scopes every search to one tag (used by the tag subpages).
+  **Cursor pagination runs in BOTH modes (L6):** searching paginates the server-filtered
+  results; browsing paginates the recent-media pool by building the next cursor client-side
+  from the last loaded item via `encodeMediaCursor` (`lib/media-cursor.ts`, the shared,
+  runtime-agnostic base64url encoder the `/api/media/list-public` route also uses). The hook
+  exposes one `canLoadMore` flag — do not re-gate the Load-more button on `hasActiveSearch`
+  (that was the bug that made photo 61 unreachable while browsing). The discipline server
+  reads (`getPhotographyItems`/`getVideographyItems`/`getMediaByTag`) seed the first
+  `PUBLIC_MEDIA_PAGE_SIZE` (30) items; the Load-more button only renders in the photography
+  Grid view (cylinder/horizontal share the same growing pool but have no button).
 - `components/media/TagChipRow.tsx` — **all tag-subpage navigation** (T2). Compact, boxed,
   sideways-scrolling chip row of `<Link>`s (`scroll` + `boxed` props), Lenis-safe. Do not
   hand-roll another tag-nav row. It is distinct from `MediaTagChips` (in-place filter).
@@ -984,8 +996,11 @@ never a thrown page.
 - **Never run `next build` to verify a code change locally.** Local verification stays
   `tsc --noEmit` + `eslint` + `npm test` + the dev server. **CI now also runs `npm run build`
   (added L5, 2026-09-03)** as a launch-readiness gate: `.github/workflows/ci.yml` (Node 22)
-  runs typecheck → lint → test → build on push (`master`, `v2-portfolio`) + PR. The build
-  running in CI does not change the local rule — don't reach for `next build` to check your
+  runs typecheck → lint → test → build on push (`master`, `v2-portfolio`) + PR. **The build
+  must stay free of any build-time network fetch** — the Preloader's Cormorant Garamond was
+  moved off `next/font/google` (a Google-Fonts fetch at build time) to a self-hosted
+  `next/font/local` woff2 in L6 after that fetch failed CI's `npm run build` intermittently.
+  The build running in CI does not change the local rule — don't reach for `next build` to check your
   own work; that's what the dev server is for. The dedicated full production build + smoke
   gate is Session L11.
 - **Coverage today is deliberately minimal:** auth pure functions

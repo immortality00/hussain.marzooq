@@ -302,7 +302,7 @@ not fixed here._
 
 ### Block B — before the domain goes public
 
-### Session L6 — Real pagination on browsing — `pending`
+### Session L6 — Real pagination on browsing — `in-progress`
 
 **Why.** `components/media/useMediaSearch.ts:169` — `loadMore()` returns early on
 `!hasActiveSearch`; `components/media/MediaGrid.tsx:46` — `showLoadMore` requires

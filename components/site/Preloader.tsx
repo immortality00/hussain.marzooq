@@ -3,10 +3,16 @@
 import { useRef, useState } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import { Cormorant_Garamond } from "next/font/google";
+import localFont from "next/font/local";
 import { Camera, Video, Bitcoin, Code2 } from "lucide-react";
 
-const cormorant = Cormorant_Garamond({ subsets: ["latin"], weight: ["300", "400"] });
+const cormorant = localFont({
+  src: [
+    { path: "../../app/fonts/cormorant-garamond-latin.woff2", weight: "300", style: "normal" },
+    { path: "../../app/fonts/cormorant-garamond-latin.woff2", weight: "400", style: "normal" },
+  ],
+  display: "swap",
+});
 
 type FlashItem = { icon: typeof Camera } | { emoji: string };
 

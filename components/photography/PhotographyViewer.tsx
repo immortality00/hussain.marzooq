@@ -36,9 +36,8 @@ export default function PhotographyViewer({
     displayedItems,
     isSearching,
     searchError,
-    nextCursor,
     isLoadingMore,
-    hasActiveSearch,
+    canLoadMore,
     loadMore,
   } = useMediaSearch({ items, mediaMode: "image", searchCategory, lockedTag });
 
@@ -47,7 +46,7 @@ export default function PhotographyViewer({
   // All three views work on every breakpoint — the cylinder included. There is
   // deliberately no viewport gate here: gating on a post-mount matchMedia check
   // made the first paint render the grid, then swap to the cylinder.
-  const showLoadMore = Boolean(searchCategory) && hasActiveSearch && Boolean(nextCursor);
+  const showLoadMore = canLoadMore;
 
   return (
     <div className="mt-5">

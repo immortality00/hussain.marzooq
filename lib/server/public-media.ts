@@ -1,11 +1,30 @@
 import { unstable_cache } from "next/cache";
 import { getDb } from "@/lib/server/db";
 import cloudinaryImageLoader from "@/lib/cloudinary-image-loader";
+import { PUBLIC_MEDIA_PAGE_SIZE } from "@/lib/media-cursor";
 import {
   buildPublicMediaQuery,
   toPublicMediaItem,
   type PublicMediaItem,
 } from "@/lib/server/media-serializers";
+
+const PUBLIC_MEDIA_FIELDS = {
+  type: 1,
+  title: 1,
+  description: 1,
+  location: 1,
+  event: 1,
+  year: 1,
+  tags: 1,
+  categories: 1,
+  people: 1,
+  appearances: 1,
+  secureUrl: 1,
+  publicId: 1,
+  embedUrl: 1,
+  asset: 1,
+  createdAt: 1,
+} as const;
 
 async function listPublicMedia({
   type,
@@ -53,7 +72,7 @@ export async function getPhotographyItems(): Promise<PublicMediaItem[]> {
     return await listPublicMedia({
       type: "image",
       category: "photography",
-      limit: 60,
+      limit: PUBLIC_MEDIA_PAGE_SIZE,
     });
   } catch {
     return [];
@@ -62,13 +81,21 @@ export async function getPhotographyItems(): Promise<PublicMediaItem[]> {
 
 export async function getVideographyItems(): Promise<PublicMediaItem[]> {
   try {
-    const all = await listPublicMedia({
-      type: "all",
-      category: "videography",
-      limit: 60,
-    });
+    const db = await getDb();
 
-    return all.filter((item) => item.type === "video" || item.type === "embed");
+    const docs = await db
+      .collection("media")
+      .find({
+        $and: [
+          buildPublicMediaQuery({ type: "all", category: "videography" }),
+          { type: { $in: ["video", "embed"] } },
+        ],
+      })
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(PUBLIC_MEDIA_PAGE_SIZE)
+      .toArray();
+
+    return docs.map((doc) => toPublicMediaItem(doc as Record<string, unknown>));
   } catch {
     return [];
   }
@@ -78,7 +105,7 @@ async function getMediaByTagImpl({
   category,
   mediaMode,
   tagSlug,
-  limit = 60,
+  limit = PUBLIC_MEDIA_PAGE_SIZE,
 }: {
   category: string;
   mediaMode: "image" | "video";
@@ -139,6 +166,7 @@ async function getExhibitionCitiesImpl(): Promise<ExhibitionCity[]> {
         { appearances: { $elemMatch: { kind: "exhibited" } } },
       ],
     })
+    .project(PUBLIC_MEDIA_FIELDS)
     .sort({ createdAt: -1, _id: -1 })
     .limit(500)
     .toArray();

@@ -30,7 +30,7 @@ function renderStars(value: number) {
 
 export default async function TestimonialsPage() {
   const [data, pageSettings, seo, sections] = await Promise.all([
-    getPublicTestimonials(60),
+    getPublicTestimonials(200),
     getAllPageSettings(),
     getPageSeo("testimonials"),
     getPageSections("testimonials"),
