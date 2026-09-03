@@ -1,16 +1,16 @@
 # Graph Report - hussain.marzooq  (2026-09-03)
 
 ## Corpus Check
-- 415 files · ~220,316 words
+- 415 files · ~220,779 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 2174 nodes · 5232 edges · 211 communities (107 shown, 104 thin omitted)
-- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 18 edges (avg confidence: 0.66)
+- 2164 nodes · 5207 edges · 214 communities (108 shown, 106 thin omitted)
+- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 15 edges (avg confidence: 0.63)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `6d7882bc`
+- Built from commit: `8b540d71`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
@@ -113,6 +113,9 @@
 - resend
 - graphify reference: GitHub clone and cro
 - MediaLightbox.tsx
+- route.ts
+- InstagramFeed.tsx
+- download.ts
 - IconButton.tsx
 - route.ts
 - session-token.ts
@@ -236,8 +239,6 @@
 10. `asNullableString()` - 33 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `BlogCategoriesAdminClient()` --calls--> `useAdminAction()`  [EXTRACTED]
-  app/admin/(protected)/blog-categories/BlogCategoriesAdminClient.tsx → hooks/useAdminAction.ts
 - `InquiryExpandedCard()` --calls--> `adminButtonClasses()`  [EXTRACTED]
   app/admin/(protected)/inquiries/components/InquiryExpandedCard.tsx → components/admin/AdminButton.tsx
 - `MediaDetailsSection()` --calls--> `adminButtonClasses()`  [EXTRACTED]
@@ -246,6 +247,8 @@
   app/admin/(protected)/media/components/TagMultiSelect.tsx → lib/server/media-tags.ts
 - `ServiceEditorModal()` --calls--> `adminButtonClasses()`  [EXTRACTED]
   app/admin/(protected)/services/components/ServiceEditorModal.tsx → components/admin/AdminButton.tsx
+- `ServiceSimpleSection()` --calls--> `adminButtonClasses()`  [EXTRACTED]
+  app/admin/(protected)/services/components/ServiceSimpleSection.tsx → components/admin/AdminButton.tsx
 
 ## Import Cycles
 - None detected.
@@ -256,103 +259,103 @@
 - **Next.js Starter Template UI Icons** — public_file_icon, public_globe_icon, public_window_icon [INFERRED 0.75]
 - **Next.js Starter Template Boilerplate Logos** — public_next_logo, public_vercel_logo [INFERRED 0.85]
 
-## Communities (211 total, 104 thin omitted)
+## Communities (214 total, 106 thin omitted)
 
 ### Community 0 - "route.ts"
-Cohesion: 0.16
-Nodes (13): generateMetadata(), HomePage(), HeroBokeh(), makeBokehTexture(), DISCIPLINE_LINKS, HomeCreativeSystem(), HomeExhibitionGlobe(), HomeFeaturedWork() (+5 more)
+Cohesion: 0.13
+Nodes (30): AdminLoginPage(), getSafeNextPath(), getSearchParamValue(), login(), SearchParams, POST(), asNullableString(), getClientAddress() (+22 more)
 
 ### Community 1 - "types.ts"
-Cohesion: 0.05
-Nodes (58): appearanceLocation(), MediaAppearancesSection(), splitLocationLabel(), MediaDetailsSection(), SelectedPerson, currencies, BusyAction, Editor (+50 more)
+Cohesion: 0.07
+Nodes (46): appearanceLocation(), MediaAppearancesSection(), splitLocationLabel(), MediaDetailsSection(), SelectedPerson, currencies, MediaWizardPreview(), buildMediaPayload() (+38 more)
 
 ### Community 2 - "cn()"
-Cohesion: 0.10
-Nodes (43): AboutPage(), DISCIPLINE_HREFS, generateMetadata(), generateMetadata(), ContactPage(), generateMetadata(), SP, DancingPage() (+35 more)
+Cohesion: 0.12
+Nodes (36): AboutPage(), DISCIPLINE_HREFS, generateMetadata(), generateMetadata(), SP, DancingPage(), generateMetadata(), generateMetadata() (+28 more)
 
 ### Community 3 - "cloudinary-assets.ts"
-Cohesion: 0.23
-Nodes (20): buildInquiryContext(), buildInquiryHref(), currencySymbol, displayStatus(), editionLabel(), editionSubline(), formatStableDateTime(), getNftPublicHref() (+12 more)
+Cohesion: 0.22
+Nodes (21): buildInquiryContext(), buildInquiryHref(), currencySymbol, displayStatus(), editionLabel(), editionSubline(), formatStableDateTime(), getNftPublicHref() (+13 more)
 
 ### Community 4 - "TransitionContext.tsx"
-Cohesion: 0.08
-Nodes (49): GET(), POST(), CLOUDINARY_MANAGED_FOLDERS, getPrivateGalleryCookieSecret(), getPrivateGalleryExpiryDate(), isPrivateGalleryExpired(), isPrivateGalleryUnavailable(), privateGalleryCookieName() (+41 more)
+Cohesion: 0.16
+Nodes (22): buildAccessRateLimitKey(), POST(), GET(), PrivateGalleryPage(), createPrivateGalleryCookieValue(), getPrivateGalleryCookieSecret(), getPrivateGalleryExpiryDate(), isPrivateGalleryExpired() (+14 more)
 
 ### Community 5 - "HomeSectionsForm.tsx"
 Cohesion: 0.08
 Nodes (25): eslint, eslint-config-next, devDependencies, eslint, eslint-config-next, tailwindcss, @tailwindcss/postcss, @tsconfig/recommended (+17 more)
 
 ### Community 6 - "tag-pages.ts"
-Cohesion: 0.10
-Nodes (35): AdminBlogCategoriesPage(), PATCH(), SLUG_TO_PATH, PATCH(), SLUG_TO_PATH, PATCH(), VALID_SLUGS, GET() (+27 more)
+Cohesion: 0.25
+Nodes (11): asDate(), GET(), POST(), GET(), isValidObjectIdString(), parseObjectId(), POST(), isValidReorderItem() (+3 more)
 
 ### Community 7 - "getDb()"
-Cohesion: 0.17
-Nodes (28): DELETE(), DELETE(), ALLOWED, decrementServiceInquiriesCount(), DELETE(), hasValidServiceId(), incrementServiceInquiriesCount(), PATCH() (+20 more)
+Cohesion: 0.13
+Nodes (42): DELETE(), PATCH(), POST(), asDate(), DELETE(), PATCH(), ALLOWED, decrementServiceInquiriesCount() (+34 more)
 
 ### Community 8 - "route.ts"
-Cohesion: 0.14
-Nodes (15): PrivateGalleriesAdminClient(), GalleryFormFields(), GalleryFormFieldsProps, GalleryList(), GalleryListProps, Admin, GalleryWizard(), STEPS (+7 more)
+Cohesion: 0.09
+Nodes (27): PrivateGalleriesAdminClient(), BulkAction, BulkActionBar(), GalleryFormFields(), GalleryFormFieldsProps, GalleryList(), GalleryListProps, Admin (+19 more)
 
 ### Community 9 - "isRecord()"
-Cohesion: 0.13
-Nodes (22): CardsCtaForm(), CtaFields(), CtaOnlyForm(), DancingSectionsForm(), HomeSectionsForm(), AnySections, CTA_ONLY_SLUGS, SectionsGroup() (+14 more)
+Cohesion: 0.18
+Nodes (13): CardsCtaForm(), CtaFields(), CtaOnlyForm(), DancingSectionsForm(), HomeSectionsForm(), AnySections, CTA_ONLY_SLUGS, SectionsGroup() (+5 more)
 
 ### Community 10 - "PagesAdminClient.tsx"
-Cohesion: 0.14
-Nodes (20): BlogMarkdownField(), BlogPostEditor(), EMPTY, TagsInput(), EditBlogPostPage(), createPost(), deletePost(), ERROR_MESSAGES (+12 more)
+Cohesion: 0.12
+Nodes (24): BlogAdminClient(), formatDate(), BlogMarkdownField(), BlogPostEditor(), EMPTY, TagsInput(), EditBlogPostPage(), createPost() (+16 more)
 
 ### Community 11 - "getPageSeo()"
-Cohesion: 0.18
-Nodes (18): ServicesPage(), HomeServicesPreview(), serviceDirections, ServiceCard(), Discipline, DISCIPLINE_HREF, disciplineForCategory(), DisciplineSlug (+10 more)
+Cohesion: 0.12
+Nodes (26): ContactPage(), generateMetadata(), HomePage(), generateMetadata(), ServicesPage(), ServiceDetailPage(), DISCIPLINE_LINKS, HomeCreativeSystem() (+18 more)
 
 ### Community 12 - "testimonials.ts"
 Cohesion: 0.06
 Nodes (30): Accordion / collapse, Animation Recipes, Button press, Drag to dismiss, Drawer / sheet, Dropdown, popover, menu, select, Hold to confirm, Masking a crossfade that won't settle (+22 more)
 
 ### Community 13 - "Animation Recipes"
-Cohesion: 0.12
-Nodes (20): BlogCategoriesAdminClient(), Category, CategoryRow(), CategoryRow(), AdminServiceCategoriesPage(), AdminServicesClient(), ServiceEditorModal(), ServiceSimpleSection() (+12 more)
+Cohesion: 0.14
+Nodes (18): CategoryRow(), CategoryRow(), AdminServiceCategoriesPage(), AdminServicesClient(), ServiceEditorModal(), ServiceSimpleSection(), SortableServiceItem(), Service (+10 more)
 
 ### Community 14 - "page.tsx"
-Cohesion: 0.12
-Nodes (20): MediaAssetSection(), MediaListFilterBar(), Props, CategoriesToolbar(), CategoryFormCard(), ServicesToolbar(), TagsToolbar(), adminButtonClasses() (+12 more)
+Cohesion: 0.09
+Nodes (31): MediaAssetSection(), useMediaEditorController(), MediaListFilterBar(), Props, formatNftQuantity(), MediaItem, MediaListItem(), NftData (+23 more)
 
 ### Community 15 - "compilerOptions"
 Cohesion: 0.06
 Nodes (30): ./*, dom, dom.iterable, esnext, **/*.mts, .next/dev/types/**/*.ts, next-env.d.ts, .next/types/**/*.ts (+22 more)
 
 ### Community 16 - "PhotographyViewer.tsx"
-Cohesion: 0.30
-Nodes (9): CategoriesTable(), createCategoryRequest(), deleteCategoryRequest(), fetchCategories(), patchCategory(), Category, CategoryPatch, getErrorMessage() (+1 more)
+Cohesion: 0.28
+Nodes (10): AdminServiceCategoriesClient(), CategoriesTable(), createCategoryRequest(), deleteCategoryRequest(), fetchCategories(), patchCategory(), Category, CategoryPatch (+2 more)
 
 ### Community 17 - "db.ts"
-Cohesion: 0.11
-Nodes (37): getMediaLists(), MediaLocation, NftCurrency, NftEditionType, NftStatus, normalizeCurrency(), normalizeEditionType(), normalizeStatus() (+29 more)
+Cohesion: 0.06
+Nodes (72): asFiniteLatitude(), asFiniteLongitude(), getMediaLists(), MediaLocation, NftCurrency, NftEditionType, NftStatus, normalizeCurrency() (+64 more)
 
 ### Community 18 - "Animation Standards Reference"
-Cohesion: 0.05
-Nodes (84): AdminLoginPage(), getSafeNextPath(), getSearchParamValue(), login(), SearchParams, POST(), asNullableString(), getClientAddress() (+76 more)
+Cohesion: 0.08
+Nodes (48): isAllowedCloudinaryTestimonialUrl(), NormalizedResolvedLocation, normalizeOptionalPhotoUrl(), normalizeRating(), normalizeResolvedLocation(), POST(), POST(), ALLOWED_SIGN_KEYS (+40 more)
 
 ### Community 19 - "adminButtonClasses()"
 Cohesion: 0.07
 Nodes (25): Aggressive Escalation Triggers, Guidelines, Operating Posture, Part 1 — Findings table (REQUIRED), Part 2 — Verdict (REQUIRED), Remedial Preference Hierarchy, Required Output Format, Reviewing Animations (+17 more)
 
 ### Community 20 - "ContactForm.tsx"
-Cohesion: 0.29
-Nodes (18): asStringArray(), PATCH(), GET(), POST(), hashGalleryPassword(), isFutureDate(), makeGalleryAccessToken(), makeGallerySlug() (+10 more)
+Cohesion: 0.31
+Nodes (17): asBooleanOrNull(), asStringArray(), GET(), PATCH(), GET(), POST(), hashGalleryPassword(), isFutureDate() (+9 more)
 
 ### Community 21 - "PeopleAdminClient.tsx"
-Cohesion: 0.17
-Nodes (19): BlogPage(), BlogPostPage(), generateMetadata(), BlogCard(), formatBlogDate(), readingMinutes(), readingTimeLabel(), getBlogActive() (+11 more)
+Cohesion: 0.16
+Nodes (20): BlogPage(), generateMetadata(), BlogPostPage(), generateMetadata(), BlogCard(), formatBlogDate(), readingMinutes(), readingTimeLabel() (+12 more)
 
 ### Community 22 - "dependencies"
-Cohesion: 0.17
-Nodes (15): ContactActions(), ContactForm(), Props, ContactIdentityFields(), ContactServiceSelector(), CategoryMode, ServiceItem, ServiceMode (+7 more)
+Cohesion: 0.18
+Nodes (14): ContactActions(), Props, ContactIdentityFields(), ContactServiceSelector(), CategoryMode, ServiceItem, ServiceMode, useContactFormState() (+6 more)
 
 ### Community 23 - "What You Must Do When Invoked"
 Cohesion: 0.07
-Nodes (27): After L11 — the release gate and deploy, Block A — launch blockers, Block B — before the domain goes public, Block C — hardening; may trail launch by a few days, Completed so far — full specs + outcomes in SESSION-ARCHIVE.md, Final — runs after every other Phase L session, Gaps awaiting a decision from Hussain, HM Visuals — Session Queue (+19 more)
+Nodes (26): After L11 — the release gate and deploy, Block A — launch blockers, Block B — before the domain goes public, Block C — hardening; may trail launch by a few days, Completed so far — full specs + outcomes in SESSION-ARCHIVE.md, Final — runs after every other Phase L session, Gaps awaiting a decision from Hussain, HM Visuals — Session Queue (+18 more)
 
 ### Community 24 - "devDependencies"
 Cohesion: 0.08
@@ -363,8 +366,8 @@ Cohesion: 0.09
 Nodes (21): 1. Purpose & frequency, 2. Easing & duration, 3. Physicality & origin, 4. Interruptibility, 5. Performance, 6. Accessibility, 7. Cohesion & tokens, 8. Missed opportunities (+13 more)
 
 ### Community 26 - "AdminButton.tsx"
-Cohesion: 0.21
-Nodes (13): TestimonialInspectModal(), ReviewRow(), Avatar(), formatDate(), getInitials(), identityLine(), renderStars(), StatusPill() (+5 more)
+Cohesion: 0.27
+Nodes (11): TestimonialInspectModal(), ReviewRow(), Avatar(), formatDate(), getInitials(), identityLine(), renderStars(), StatusPill() (+3 more)
 
 ### Community 27 - "PublicReviewForm.tsx"
 Cohesion: 0.19
@@ -375,12 +378,12 @@ Cohesion: 0.07
 Nodes (27): class-variance-authority, @dnd-kit/core, @dnd-kit/sortable, @dnd-kit/utilities, framer-motion, gsap, @gsap/react, lucide-react (+19 more)
 
 ### Community 29 - "Apple Design"
-Cohesion: 0.26
-Nodes (17): PATCH(), POST(), asDate(), PATCH(), asFiniteLatitude(), asFiniteLongitude(), asFiniteNumber(), asString() (+9 more)
+Cohesion: 0.15
+Nodes (22): generateMetadata(), PhotographyTagPage(), TagDiscipline, getMediaByTag(), getMediaByTagImpl(), disciplineMatch(), DisciplineTag, getDisciplineTags() (+14 more)
 
 ### Community 30 - "page-sections.ts"
-Cohesion: 0.34
-Nodes (11): asBooleanOrNull(), POST(), ensureUniqueSlug(), PATCH(), slugify(), ensureUniqueSlug(), POST(), slugify() (+3 more)
+Cohesion: 0.13
+Nodes (27): AdminBlogCategoriesPage(), PATCH(), SLUG_TO_PATH, GET(), asNumberOrNull(), POST(), DELETE(), ensureUniqueSlug() (+19 more)
 
 ### Community 31 - "types.ts"
 Cohesion: 0.10
@@ -395,8 +398,8 @@ Cohesion: 0.10
 Nodes (19): Code Quality, Color and Surfaces, Component Patterns, Content, Design Audit, Fix Priority, How This Works, Iconography (+11 more)
 
 ### Community 34 - "media-serializers.ts"
-Cohesion: 0.09
-Nodes (27): BlogAdminClient(), formatDate(), AdminInquiriesPage(), formatNftQuantity(), MediaItem, MediaListItem(), NftData, statusClasses() (+19 more)
+Cohesion: 0.16
+Nodes (11): AdminInquiriesPage(), PeopleAdminClient(), statusLabel(), VISIBILITY_OPTIONS, AdminTagsClient(), TestimonialsAdminClient(), runBulkAction(), useBulkSelection() (+3 more)
 
 ### Community 35 - "route.ts"
 Cohesion: 0.11
@@ -407,12 +410,12 @@ Cohesion: 0.11
 Nodes (17): Animation Vocabulary, Easing — how speed changes over an animation, Entrances & Exits — how elements appear and disappear, Examples, Feedback & Interaction — responding to the user's actions, Glossary, Instructions, Looping & Ambient Motion — animations that run on their own (+9 more)
 
 ### Community 37 - "media-picker-utils.ts"
-Cohesion: 0.05
-Nodes (61): NftMeta, buildCursorCondition(), buildQuery(), Cursor, escapeRegExp(), GET(), makeCursor(), parseCursor() (+53 more)
+Cohesion: 0.12
+Nodes (27): NftMeta, buildCursorCondition(), buildQuery(), Cursor, escapeRegExp(), GET(), makeCursor(), parseCursor() (+19 more)
 
 ### Community 38 - "Glossary"
-Cohesion: 0.19
-Nodes (13): CardImageWarning(), SLUG_LABELS, ImageField(), MediaPickerModal(), CTA_LABELS, EMPTY_SECTION_IMAGE, FEATURED_CARD_SLUGS, FeaturedCard (+5 more)
+Cohesion: 0.16
+Nodes (15): CardImageWarning(), SLUG_LABELS, RepeatingCardListEditor(), CTA_LABELS, CtaCopy, EMPTY_SECTION_IMAGE, FEATURED_CARD_SLUGS, FeaturedCard (+7 more)
 
 ### Community 39 - "AdminServicesClient.tsx"
 Cohesion: 0.11
@@ -427,32 +430,32 @@ Cohesion: 0.21
 Nodes (16): ServicesBanner(), archiveService(), createService(), deleteServiceForever(), getError(), JsonObject, patchService(), readJson() (+8 more)
 
 ### Community 42 - "page.tsx"
-Cohesion: 0.19
-Nodes (10): GET(), generateMetadata(), PersonDetailPage(), ServiceDetailPage(), SmartImage(), defaultPageSettings(), getAllPageSettings(), readCardImage() (+2 more)
+Cohesion: 0.12
+Nodes (14): generateMetadata(), PersonDetailPage(), AboutDisciplineCard(), HeroBokeh(), makeBokehTexture(), DISCIPLINE_ORDER, HomeHero(), AnimatedText() (+6 more)
 
 ### Community 43 - "Design Direction (measured spec)"
 Cohesion: 0.14
 Nodes (20): IconButton(), InquiriesToolbar(), InquiryExpandedCard(), ArchiveIcon(), DeleteIcon(), RestoreIcon(), InquirySection(), archiveInquiry() (+12 more)
 
 ### Community 44 - "Page Content CMS (3 collections)"
-Cohesion: 0.24
-Nodes (12): asNumberOrNull(), GET(), POST(), CleanupResult, cleanupTestimonialCloudinary(), collectTestimonialAssetUrls(), deleteAssetsByPublicIds(), getErrorMessage() (+4 more)
+Cohesion: 0.21
+Nodes (14): CleanupResult, cleanupTestimonialCloudinary(), collectTestimonialAssetUrls(), DELETE(), deleteAssetsByPublicIds(), GET(), getErrorMessage(), getPublicIdsFromUrls() (+6 more)
 
 ### Community 45 - "Finding Animation Opportunities"
-Cohesion: 0.17
-Nodes (20): PeoplePage(), createPersonGateCookieValue(), getPersonGateSecret(), personGateCookieName(), scryptAsync(), signGatePayload(), timingSafeStringEqual(), verifyPassword() (+12 more)
+Cohesion: 0.19
+Nodes (18): createPersonGateCookieValue(), getPersonGateSecret(), personGateCookieName(), scryptAsync(), signGatePayload(), timingSafeStringEqual(), verifyPassword(), verifyPersonGateCookieValue() (+10 more)
 
 ### Community 46 - "session-token.ts"
-Cohesion: 0.09
-Nodes (23): AppearanceBlock(), MediaFilterBar(), MediaGrid(), MediaSurface(), MediaTagChips(), TagChip, TagChipRow(), MediaItem (+15 more)
+Cohesion: 0.12
+Nodes (20): HomeExhibitionGlobe(), MediaFilterBar(), MediaGrid(), MediaSurface(), MediaTagChips(), TagChip, TagChipRow(), MediaItem (+12 more)
 
 ### Community 47 - "page.tsx"
-Cohesion: 0.25
-Nodes (11): createSessionValue(), isSessionValueFresh(), isWithinTtl(), parseIssuedAt(), safeEqual(), config, isAdminAuthed(), isPublicAdminRoute() (+3 more)
+Cohesion: 0.22
+Nodes (13): hmacHex(), verifyPair(), createSessionValue(), isSessionValueFresh(), isWithinTtl(), parseIssuedAt(), safeEqual(), config (+5 more)
 
 ### Community 48 - "route.ts"
-Cohesion: 0.20
-Nodes (10): CardImageGroup(), GroupCard(), GroupTint, ICON_TINTS, TINTS, SectionsData, SeoDraft, SeoPageForm() (+2 more)
+Cohesion: 0.21
+Nodes (11): CardImageGroup(), GroupCard(), GroupTint, ICON_TINTS, TINTS, PageEditorBody(), SectionsData, SeoDraft (+3 more)
 
 ### Community 49 - "api.ts"
 Cohesion: 0.40
@@ -471,24 +474,24 @@ Cohesion: 0.20
 Nodes (10): Phase 4 — People & launch prep, Session D13 — Final public consistency pass — `done` — shipped 2026-08-29, Session D4 — Page transition system — `done` (complete 2026-08-27), Session D4 — Page transition system (engine + homepage shipped 2026-08-20), Session D5 — Cursor enhancements — `done` (2026-08-20), Session D7 — NFT page redesign — `done` (2026-08-21), Session D8 — Magnetic button effect — `done` (2026-08-27), Session D9 — Admin visual redesign — `done` (+2 more)
 
 ### Community 53 - "SmartMediaPreview.tsx"
-Cohesion: 0.33
-Nodes (6): downloadCloudinaryFile(), toCloudinaryAttachmentUrl(), useModalNavbarLock(), PrivateGalleryBrowser(), ModalPortal(), useScrollLock()
+Cohesion: 0.14
+Nodes (17): ExhibitionCityIndex(), ExhibitionCityModal(), buildHomeMarker(), buildMarker(), DUBAI, ExhibitionGlobe(), GlobeDatum, HOME_VIEW (+9 more)
 
 ### Community 54 - "public-media.ts"
-Cohesion: 0.27
-Nodes (10): buildMediaQuery(), MediaListResponse, mediaMetaText(), mergeMediaItems(), PrivateGalleryMediaCard(), PrivateGalleryMediaCardProps, PrivateGalleryMediaPickerProps, MediaItem (+2 more)
+Cohesion: 0.19
+Nodes (14): AdminDashboard(), CATEGORY_ICONS, PAGE_ROWS, pageNeedsImage(), AdminPagesPage(), AdminPageEditor(), PageEditorClient(), PATCH() (+6 more)
 
 ### Community 55 - "components/site/AppShell.tsx"
-Cohesion: 0.21
-Nodes (9): Navbar(), ARC_RADIUS, DisciplineCard, maxSway(), Props, WorkOverlay(), magneticOffset(), Options (+1 more)
+Cohesion: 0.22
+Nodes (12): GET(), ALWAYS_ON_PRIMARY, PRIMARY_DISCIPLINE_SLUGS, SiteFooter(), Discipline, DISCIPLINE_HREF, DISCIPLINES, DisciplineSlug (+4 more)
 
 ### Community 56 - "check job"
 Cohesion: 0.22
 Nodes (9): Phase 1 — Navigation & global systems, Session N1 — Minimal nav + Work overlay — `done`, Session N2 — Page activity toggle system — `done`, Session N3 — SEO + page metadata admin control — `done`, Session N4 — Page header content (extend page_seo) — `done`, Session N5 — Section-level content CMS (homepage + interim pages) — `done`, Session N6 — Homepage section redesign — `done`, Session N7 — Admin-selectable card images (Work overlay + Featured Work) — `done` (+1 more)
 
 ### Community 57 - "The list"
-Cohesion: 0.27
-Nodes (10): check job, lint (eslint), Node.js 22, npm ci (install), pull_request trigger, push trigger: master branch, push trigger: v2-portfolio branch, test (vitest) (+2 more)
+Cohesion: 0.21
+Nodes (10): BusyAction, Editor, MediaWizard(), STEPS, CLOUDINARY_MEDIA_CATEGORY_FOLDER_MAP, CLOUDINARY_MEDIA_CATEGORY_FOLDERS, CloudinaryMediaCategory, getCloudinaryMediaFolderForCategory() (+2 more)
 
 ### Community 58 - "route.ts"
 Cohesion: 0.20
@@ -499,16 +502,16 @@ Cohesion: 0.33
 Nodes (6): AdminAnalytics(), AnalyticsRow, AnalyticsStats, getGoatCounterStats(), goatCounterPeriod(), toRows()
 
 ### Community 60 - "SmartMediaPreview.tsx"
-Cohesion: 0.14
-Nodes (16): AdminProtectedLayout(), AdminMobileNav(), AdminSidebarNav(), NAV_GROUPS, NavGroup, NavItem, WizardTabs(), Button() (+8 more)
+Cohesion: 0.13
+Nodes (18): AdminProtectedLayout(), AdminMobileNav(), AdminSidebarNav(), AdminThemeToggle(), useIsMounted(), NAV_GROUPS, NavGroup, NavItem (+10 more)
 
 ### Community 61 - "page.tsx"
-Cohesion: 0.23
-Nodes (8): BaseProps, Button(), buttonClasses(), ButtonProps, ButtonVariant, VARIANT, PortfolioCard(), PortfolioCardProps
+Cohesion: 0.19
+Nodes (9): BaseProps, Button(), buttonClasses(), ButtonProps, ButtonVariant, VARIANT, PageHeader(), PortfolioCard() (+1 more)
 
 ### Community 62 - "package.json"
-Cohesion: 0.14
-Nodes (22): HomeTestimonialCard(), Avatar(), getInitials(), getIdentityLine(), renderStars(), ReviewModal(), ReviewPhotoStrip(), SafeImage() (+14 more)
+Cohesion: 0.13
+Nodes (24): HomeTestimonialCard(), HomeTrust(), Avatar(), getInitials(), getIdentityLine(), renderStars(), ReviewModal(), ReviewPhotoStrip() (+16 more)
 
 ### Community 63 - "Design Engineering"
 Cohesion: 0.22
@@ -519,16 +522,16 @@ Cohesion: 0.29
 Nodes (7): Design direction — SPECIFIED. This section is the spec., Homepage section order — approved 2026-08-17, Still open — a session must ask, not guess, The button system — decided 2026-08-17, re-decided 2026-08-18, The hero is fixed, The section system — decided 2026-08-17, The style is not invented — it is measured from the code
 
 ### Community 65 - "ExhibitionGlobe.tsx"
-Cohesion: 0.35
-Nodes (8): AdminRemovalRequestsPage(), RemovalRequestsClient(), countPendingRemovalRequests(), getRemovalRequestHistory(), getRemovalRequestQueue(), RemovalDecisionItem, RemovalRequestItem, toIso()
+Cohesion: 0.16
+Nodes (13): BlogCategoriesAdminClient(), Category, AdminRemovalRequestsPage(), RemovalRequestsClient(), AdminActionFeedbackType, AdminToggle(), useAdminAction(), countPendingRemovalRequests() (+5 more)
 
 ### Community 66 - "scripts"
 Cohesion: 0.50
 Nodes (4): Gate 1 — Plan, Gate 2 — Execute, Gate 3 — Commit, Queue protocol — triggered by exactly "Continue queue"
 
 ### Community 67 - "Component Building Principles"
-Cohesion: 0.08
-Nodes (30): metadata, RootLayout(), SiteAnalytics(), AppShell(), CustomCursor(), stepSpring(), stretchFor(), cormorant (+22 more)
+Cohesion: 0.06
+Nodes (35): metadata, RootLayout(), SiteAnalytics(), AppShell(), CustomCursor(), stepSpring(), stretchFor(), Navbar() (+27 more)
 
 ### Community 68 - "api.ts"
 Cohesion: 0.25
@@ -547,8 +550,8 @@ Cohesion: 0.25
 Nodes (8): Animate enter states with @starting-style, Buttons must feel responsive, Component Building Principles, Make popovers origin-aware, Never animate from scale(0), Tooltips: skip delay on subsequent hovers, Use blur to mask imperfect transitions, Use CSS transitions over keyframes for interruptible UI
 
 ### Community 72 - "What is NOT in the design (bans)"
-Cohesion: 0.17
-Nodes (11): PrivateGalleryPage(), generateMetadata(), renderStars(), TestimonialsPage(), AnimatedText(), AnimatedTextProps, Tag, PortfolioFallbackPanel() (+3 more)
+Cohesion: 0.27
+Nodes (5): AppearanceBlock(), formatDates(), formatMonthYear(), formatPlace(), MONTH_NAMES
 
 ### Community 77 - "clip-path for Animation"
 Cohesion: 0.33
@@ -583,8 +586,8 @@ Cohesion: 0.33
 Nodes (6): Damping at boundaries, Friction instead of hard stops, Gesture and Drag Interactions, Momentum-based dismissal, Multi-touch protection, Pointer capture for drag
 
 ### Community 85 - "ServiceEditorModal.tsx"
-Cohesion: 0.67
-Nodes (3): §L2 — Trusted client IP + request-guard correctness (2026-09-02) — `done`, Session L3 — Testimonial upload-session ownership — `done`, Session L4 — Resilience & error surfaces — `done` (2026-09-02)
+Cohesion: 0.50
+Nodes (4): §L2 — Trusted client IP + request-guard correctness (2026-09-02) — `done`, Session L3 — Testimonial upload-session ownership — `done`, Session L4 — Resilience & error surfaces — `done` (2026-09-02), Session L5 — Dependency upgrade — `done` (2026-09-03)
 
 ### Community 87 - "WorkOverlay.tsx"
 Cohesion: 0.67
@@ -621,6 +624,10 @@ Nodes (5): Interruptibility advantage, Spring Animations, Spring-based mouse int
 ### Community 98 - "MediaLightbox.tsx"
 Cohesion: 0.05
 Nodes (36): About page — rebuilt (D2c, shipped 2026-08-18), Admin design, Analytics — shipped (C3, 2026-08-30), Animation stack status, Blog (C1, shipped 2026-08-29), Claude tooling for this project, Code quality rules, Commit message format (+28 more)
+
+### Community 99 - "route.ts"
+Cohesion: 0.52
+Nodes (5): PATCH(), VALID_SLUGS, collectSectionImagePublicIds(), resolveOptionalCardImage(), deleteReplacedSectionImages()
 
 ### Community 103 - "IconButton.tsx"
 Cohesion: 0.70
@@ -659,8 +666,8 @@ Cohesion: 0.67
 Nodes (3): Phase 3 — Content & analytics, Session C4 — Media locations: validated city + stored coordinates — `done`, Session D6 — Exhibition globe — `done`
 
 ### Community 133 - "apple-design skill"
-Cohesion: 0.13
-Nodes (22): AdminDashboard(), CATEGORY_ICONS, PageEditorBody(), PAGE_ROWS, pageGroup, pageNeedsImage(), PageRow, AdminPagesPage() (+14 more)
+Cohesion: 0.18
+Nodes (15): pageGroup, PageRow, GROUPS, PagesAdminClient(), EMPTY_SEO_DRAFT, SettingsDraft, usePagesAdmin(), useUnsavedChangesGuard() (+7 more)
 
 ### Community 136 - "Emil Kowalski animation philosophy"
 Cohesion: 0.67
@@ -671,24 +678,24 @@ Cohesion: 0.67
 Nodes (3): Phase T — Tag taxonomy & discipline subpages, Session T1 — Tag taxonomy: `media_tags` + `/admin/tags` — `done`, Session T2 — `/photography/[tag]` and `/videography/[tag]` — `done`
 
 ## Knowledge Gaps
-- **728 isolated node(s):** `DISCIPLINE_HREFS`, `Category`, `EMPTY`, `ERROR_MESSAGES`, `CATEGORY_ICONS` (+723 more)
+- **724 isolated node(s):** `Who this is for`, `The site`, `Domain & deployment status`, `Stack`, `Image pipeline — Next's optimizer is bypassed (2026-07-31)` (+719 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **104 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **106 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `getDb()` connect `tag-pages.ts` to `route.ts`, `cn()`, `cloudinary-assets.ts`, `TransitionContext.tsx`, `apple-design skill`, `getDb()`, `isRecord()`, `PagesAdminClient.tsx`, `getPageSeo()`, `Animation Recipes`, `db.ts`, `Animation Standards Reference`, `ContactForm.tsx`, `PeopleAdminClient.tsx`, `PublicReviewForm.tsx`, `Apple Design`, `page-sections.ts`, `media-picker-utils.ts`, `page.tsx`, `Page Content CMS (3 collections)`, `Finding Animation Opportunities`, `SmartMediaPreview.tsx`, `package.json`, `ExhibitionGlobe.tsx`?**
-  _High betweenness centrality (0.144) - this node is a cross-community bridge._
+- **Why does `getDb()` connect `page-sections.ts` to `route.ts`, `cn()`, `cloudinary-assets.ts`, `TransitionContext.tsx`, `apple-design skill`, `tag-pages.ts`, `getDb()`, `PagesAdminClient.tsx`, `getPageSeo()`, `Animation Recipes`, `db.ts`, `Animation Standards Reference`, `ContactForm.tsx`, `PeopleAdminClient.tsx`, `PublicReviewForm.tsx`, `Apple Design`, `media-picker-utils.ts`, `Glossary`, `page.tsx`, `Page Content CMS (3 collections)`, `Finding Animation Opportunities`, `SmartMediaPreview.tsx`, `public-media.ts`, `components/site/AppShell.tsx`, `SmartMediaPreview.tsx`, `package.json`, `ExhibitionGlobe.tsx`, `route.ts`?**
+  _High betweenness centrality (0.128) - this node is a cross-community bridge._
 - **Why does `dependencies` connect `page.tsx` to `Component Building Principles`, `Frontend Design`, `Animation Audit Playbook (AUDIT.md)`, `lucide-react`, `ensure-indexes.mjs`, `The Animation Decision Framework`, `AdminServiceCategoriesClient.tsx`, `Strong custom easing curve tokens`, `import-geonames-cities.mjs`, `Never scale(0) entrance`, `layout.tsx`, `graphify CLAUDE.md Integration`, `graphify add URL Ingest`?**
-  _High betweenness centrality (0.065) - this node is a cross-community bridge._
-- **What connects `DISCIPLINE_HREFS`, `Category`, `EMPTY` to the rest of the system?**
-  _728 weakly-connected nodes found - possible documentation gaps or missing edges._
+  _High betweenness centrality (0.060) - this node is a cross-community bridge._
+- **What connects `Who this is for`, `The site`, `Domain & deployment status` to the rest of the system?**
+  _724 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `route.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.12525252525252525 - nodes in this community are weakly interconnected._
 - **Should `types.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.05209397344228805 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.06506849315068493 - nodes in this community are weakly interconnected._
 - **Should `cn()` be split into smaller, more focused modules?**
-  _Cohesion score 0.09571655208884189 - nodes in this community are weakly interconnected._
-- **Should `TransitionContext.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.08350168350168351 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.12145390070921985 - nodes in this community are weakly interconnected._
 - **Should `HomeSectionsForm.tsx` be split into smaller, more focused modules?**
   _Cohesion score 0.08 - nodes in this community are weakly interconnected._
