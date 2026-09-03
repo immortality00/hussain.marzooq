@@ -845,9 +845,9 @@
     "semantic_hash": "d661fcf6507aa7f3a22bcf912cd1011b"
   },
   "components/private-galleries/PrivateGalleryBrowser.tsx": {
-    "mtime": 1788415206.0909271,
-    "ast_hash": "2775e55db0543f0145c4c10d54770184",
-    "semantic_hash": ""
+    "mtime": 1788162836.485102,
+    "ast_hash": "23041c20c1ee6eaa86bba509f6c249fe",
+    "semantic_hash": "23041c20c1ee6eaa86bba509f6c249fe"
   },
   "components/search/SearchInput.tsx": {
     "mtime": 1782890041.0897558,
@@ -1195,9 +1195,9 @@
     "semantic_hash": "845c04063e3838dfb15d865d9fc650d0"
   },
   "package.json": {
-    "mtime": 1788415077.4808838,
-    "ast_hash": "96d227d02d0a63b5531e6505429b9d91",
-    "semantic_hash": ""
+    "mtime": 1787974986.020385,
+    "ast_hash": "3c84d2886ebea5ceca48fe4c9922eef5",
+    "semantic_hash": "3c84d2886ebea5ceca48fe4c9922eef5"
   },
   "postcss.config.mjs": {
     "mtime": 1767717951.7193127,
@@ -1280,8 +1280,8 @@
     "semantic_hash": "c698309979460d0f02ba616417844399"
   },
   "CLAUDE.md": {
-    "mtime": 1788415303.9308705,
-    "ast_hash": "40c1e07e7823863935edcdaf646307f6",
+    "mtime": 1788336433.6420617,
+    "ast_hash": "d195f6fe1d86a7e8b11ced9dacc49ee1",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1290,8 +1290,8 @@
     "semantic_hash": "7030b878f3e352238f4fd3a233af0ada"
   },
   "SESSION-QUEUE.md": {
-    "mtime": 1788415772.1276467,
-    "ast_hash": "5dcdca62f17d6b7bc4bd2e6c81654166",
+    "mtime": 1788336486.6216116,
+    "ast_hash": "bbfe956d992b943d7a82f49bc6b8b369",
     "semantic_hash": ""
   },
   "public/file.svg": {
@@ -1395,9 +1395,9 @@
     "semantic_hash": "af927f28c26876e0aa0b849f833b7f9a"
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1788415288.9191513,
-    "ast_hash": "e98c01caf631be9d66e1f67e2743c802",
-    "semantic_hash": ""
+    "mtime": 1785741933.7030993,
+    "ast_hash": "99222ae0818276d1987f5fd82c5bec6f",
+    "semantic_hash": "99222ae0818276d1987f5fd82c5bec6f"
   },
   "app/admin/(protected)/pages/components/CardImageWarning.tsx": {
     "mtime": 1785770439.057872,
@@ -2110,8 +2110,8 @@
     "semantic_hash": ""
   },
   "app/global-error.tsx": {
-    "mtime": 1788415265.49859,
-    "ast_hash": "80bbda861044f6f3e9fd25bb67856492",
+    "mtime": 1788335615.8113716,
+    "ast_hash": "456063a307563ca3d99e89feb0ea415a",
     "semantic_hash": ""
   },
   "app/not-found.tsx": {
