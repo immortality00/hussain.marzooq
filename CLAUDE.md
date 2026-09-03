@@ -996,11 +996,18 @@ never a thrown page.
 - **Never run `next build` to verify a code change locally.** Local verification stays
   `tsc --noEmit` + `eslint` + `npm test` + the dev server. **CI now also runs `npm run build`
   (added L5, 2026-09-03)** as a launch-readiness gate: `.github/workflows/ci.yml` (Node 22)
-  runs typecheck → lint → test → build on push (`master`, `v2-portfolio`) + PR. **The build
-  must stay free of any build-time network fetch** — the Preloader's Cormorant Garamond was
-  moved off `next/font/google` (a Google-Fonts fetch at build time) to a self-hosted
-  `next/font/local` woff2 in L6 after that fetch failed CI's `npm run build` intermittently.
-  The build running in CI does not change the local rule — don't reach for `next build` to check your
+  runs typecheck → lint → test → build on push (`master`, `v2-portfolio`) + PR. **CI's build
+  step is given dummy env** (`MONGODB_URI`/`MONGODB_DB_NAME`/`RESEND_API_KEY`, mirroring
+  `vitest.config.ts`) — `lib/mongodb.ts` throws at *import* when `MONGODB_URI` is unset, and
+  that (not fonts) is what failed the first three CI builds after L5 added the build step
+  (runs #58–#60, "Missing MONGODB_URI … Failed to collect page data for /_not-found"). No real
+  DB is reached: the connection is refused and every public read is fail-safe (L4), so pages
+  prerender with empty data. **Keep the loud throw in `lib/mongodb.ts`** — a missing URI in
+  production must fail loudly, not silently serve empty data; the dummy env is a CI/build
+  concession only. **Also keep the build free of build-time network fetches** — the Preloader's
+  Cormorant Garamond was moved off `next/font/google` (which fetches from Google Fonts at build
+  time) to a self-hosted `next/font/local` woff2 in `app/fonts/` (L6) as hardening. The build
+  running in CI does not change the local rule — don't reach for `next build` to check your
   own work; that's what the dev server is for. The dedicated full production build + smoke
   gate is Session L11.
 - **Coverage today is deliberately minimal:** auth pure functions

@@ -44,12 +44,17 @@ boundary are correct for video-only) and `getExhibitionCities` gained a field pr
 person-media 80→200, testimonials 60→200 — testimonials' total count was already accurate. The
 Load-more button renders only in the photography Grid view; cylinder/horizontal share the same
 growing pool but have no button. `tsc`/`eslint`/210 tests/full production build all green.
-**Also fixed in the same commit — a CI build failure surfaced from run #58:** the Preloader's
-Cormorant Garamond was loaded via `next/font/google`, which fetches the face from Google at
-build time; that non-deterministic fetch failed CI's `npm run build`. Self-hosted it via
-`next/font/local` (OFL woff2 in `app/fonts/`), removing the only build-time network dependency —
-clean build verified with zero Google-font artifacts. CLAUDE.md updated (font source + CI
-no-build-fetch rule + browse-pagination facts). No security surface.
+**Also in the same commit — the Preloader's Cormorant Garamond was moved off `next/font/google`
+to a self-hosted `next/font/local` woff2 (`app/fonts/`)**, removing a build-time Google-Fonts
+fetch (hardening — keep the build network-free). This was first believed to be the cause of the
+red CI builds after L5, but it was **not**: the real cause was that CI's `npm run build` had no
+`MONGODB_URI`, and `lib/mongodb.ts` throws at import when it is unset — "Missing MONGODB_URI …
+Failed to collect page data for /_not-found" (runs #58–#60). Fixed in a follow-up
+`fix(ci)` commit that gives the build step dummy env (`MONGODB_URI`/`MONGODB_DB_NAME`/
+`RESEND_API_KEY`, mirroring `vitest.config.ts`); no real DB is reached (connection refused →
+L4 fail-safe reads → empty data). Verified locally under CI-identical conditions (no listener +
+dummy env → build exit 0). CLAUDE.md updated (font source, browse-pagination facts, and the CI
+dummy-env rule). No security surface.
 
 ---
 
