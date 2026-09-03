@@ -1,6 +1,7 @@
 import { ObjectId } from "mongodb";
 import { noStoreJson } from "@/app/api/_lib/common";
 import { getDb } from "@/lib/server/db";
+import { encodeMediaCursor } from "@/lib/media-cursor";
 import {
   buildPublicMediaQuery,
   toPublicMediaItem,
@@ -54,12 +55,7 @@ function parseCursor(value: string | null): Cursor | null {
 function makeCursor(item: { createdAt: string | null; id: string }) {
   if (!item.createdAt || !item.id) return null;
 
-  return Buffer.from(
-    JSON.stringify({
-      createdAt: item.createdAt,
-      id: item.id,
-    })
-  ).toString("base64url");
+  return encodeMediaCursor({ createdAt: item.createdAt, id: item.id });
 }
 
 function buildSearchConditions(query: string, tag: string) {

@@ -92,7 +92,7 @@ async function buildPersonDetail(
     .collection("media")
     .find(buildPersonMediaQuery(personId, name, includeHidden))
     .sort({ createdAt: -1 })
-    .limit(80)
+    .limit(200)
     .toArray();
 
   const deduped = new Map<string, Record<string, unknown>>();

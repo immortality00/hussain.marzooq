@@ -84,7 +84,7 @@ async function getPublicTestimonialsImpl(limit: number): Promise<PublicTestimoni
   };
 }
 
-export async function getPublicTestimonials(limit = 60): Promise<PublicTestimonialsData> {
+export async function getPublicTestimonials(limit = 200): Promise<PublicTestimonialsData> {
   try {
     return await getPublicTestimonialsImpl(limit);
   } catch {
