@@ -22,3 +22,11 @@ jobs:
       - run: npm run lint
       - run: npm test
       - run: npm run build
+        env:
+          # Dummy values so modules that read env at import time don't throw during
+          # the build (lib/mongodb.ts throws without MONGODB_URI). No real DB is
+          # reached — the connection is refused and every public read is fail-safe
+          # (L4), so pages prerender with empty data. Mirrors vitest.config.ts.
+          MONGODB_URI: mongodb://127.0.0.1:27017
+          MONGODB_DB_NAME: hm_visuals_ci
+          RESEND_API_KEY: ci_resend_key
