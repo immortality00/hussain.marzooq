@@ -286,25 +286,17 @@ _L4 done (2026-09-02) — see SESSION-ARCHIVE.md §L4. Three branded boundaries 
 dependency via `SiteFooter`, surfaced in live testing). Verified DB-down and DB-live. No security
 surface._
 
----
-
-### Session L5 — Dependency upgrade — `pending`
-
-**Why.** Lockfile is `next@16.2.6`. Correct exposure, checked against the advisories — **not**
-what the audit claimed: the two August criticals do **not** apply (CVE-2026-75604 is Windows
-filesystem only and Netlify Functions run Linux; GHSA-2xp9-vwfh-vxw4 needs Next's Image
-Optimization API, which this repo bypasses via `loader: "custom"` and which Netlify rewrites to
-its own CDN). What **does** apply is from the July release: **CVE-2026-64641 — DoS in App Router
-using Server Actions (High)**; the admin login is a Server Action. Plus CVE-2026-64643
-(Server Function endpoint ID disclosure, Medium).
-
-- `next` + `eslint-config-next` → `16.3.3` (Active LTS).
-- `react` / `react-dom` → current stable.
-- Regenerate `package-lock.json`, rerun the full gate.
-- Add a `npm run build` step to `.github/workflows/ci.yml` — permanently. The current file
-  explicitly skips it, which is how an unbuildable tree can pass CI.
-
-Gate 1 security: dependency-only; no app trust boundary changes.
+_L5 done (2026-09-03) — see SESSION-ARCHIVE.md §L5. `next` + `eslint-config-next` → `16.3.4`
+(16.3 LTS line — one patch past the spec's 16.3.3, same minor; closes the July Server-Action
+CVEs 64641/64643), `react`/`react-dom` → `19.2.8`; `npm audit fix` cleared 6 transitive
+dev/build-tooling advisories → `npm audit` clean. `npm run build` added to CI permanently (the
+build itself runs in L11, not L5). 16.3.4's new `no-location-assign-relative-destination` lint
+rule flagged two `window.location` uses → `global-error.tsx` "Back home" button became `<a href="/">`
+(full reload is the correct global-boundary recovery; one scoped eslint-disable) and
+`PrivateGalleryBrowser.tsx`'s download button became `<a … data-no-transition>`. Full gate
+(tsc/lint/test) green, 206 tests. No security surface. A pre-existing private-gallery ZIP bug
+(mixed image/video resource types in one `download_zip_url`) was found and logged into the L7 spec,
+not fixed here._
 
 ---
 
@@ -374,6 +366,11 @@ Three parts:
    `components/media/download.ts` is deleted; `PrivateGalleryBrowser.tsx:98,213` call a new
    `POST /api/private-galleries/download-url` that returns a short-lived URL. The ZIP route keeps
    its cookie check and returns a signed, expiring archive URL rather than a plain one.
+   **Known live defect to fix here (found L5, 2026-09-03):** the current ZIP download "downloads
+   but won't open" — `download/[slug]/route.ts:70` builds one `download_zip_url` over
+   `fully_qualified_public_ids` that mix `image/upload/…` and `video/upload/…`; a Cloudinary
+   archive spanning resource types returns an error body the browser saves as a `.zip`. Split the
+   archive per resource type (or archive images only + handle video separately) when you rework it.
 
 Trade-off to accept knowingly: gallery bytes flow through Netlify functions instead of
 Cloudinary's CDN — slower, and counted against function bandwidth. Confined to private galleries

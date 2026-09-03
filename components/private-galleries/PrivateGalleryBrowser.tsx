@@ -23,21 +23,17 @@ export default function PrivateGalleryBrowser({
 
   const downloadableItems = useMemo(() => items.filter((item) => !!item.secureUrl), [items]);
 
-  function downloadGallery() {
-    window.location.href = `/api/private-galleries/download/${encodeURIComponent(gallerySlug)}`;
-  }
-
   return (
     <div className="mt-10 space-y-6">
       {downloadableItems.length > 0 ? (
         <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={downloadGallery}
+          <a
+            href={`/api/private-galleries/download/${encodeURIComponent(gallerySlug)}`}
+            data-no-transition
             className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
           >
             Download gallery
-          </button>
+          </a>
         </div>
       ) : null}
 

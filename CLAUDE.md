@@ -981,9 +981,13 @@ never a thrown page.
 - **Runner: Vitest.** `npm test` (= `vitest run`), `npm run test:watch` for the loop. Config in
   `vitest.config.ts` (node env, `@/*` alias, dummy `MONGODB_URI`/`RESEND_API_KEY` so
   import-time reads don't throw or hit the network). Tests live in `test/`.
-- **Never run `next build` to verify.** The verification chain is `tsc --noEmit` + `eslint`
-  + `npm test` + the dev server. CI (`.github/workflows/ci.yml`, Node 22) runs exactly
-  those three checks on push (`master`, `v2-portfolio`) + PR — no build step.
+- **Never run `next build` to verify a code change locally.** Local verification stays
+  `tsc --noEmit` + `eslint` + `npm test` + the dev server. **CI now also runs `npm run build`
+  (added L5, 2026-09-03)** as a launch-readiness gate: `.github/workflows/ci.yml` (Node 22)
+  runs typecheck → lint → test → build on push (`master`, `v2-portfolio`) + PR. The build
+  running in CI does not change the local rule — don't reach for `next build` to check your
+  own work; that's what the dev server is for. The dedicated full production build + smoke
+  gate is Session L11.
 - **Coverage today is deliberately minimal:** auth pure functions
   (`lib/auth/session-token.ts`, `verifyAdminPassword`) + a smoke test that every
   `lib/server/*.ts` and `app/api/**/route.ts` module imports without throwing. RSC

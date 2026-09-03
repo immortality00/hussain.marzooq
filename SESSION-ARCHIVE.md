@@ -3125,3 +3125,56 @@ both paths: DB down → branded 404 + empty fallbacks + zero 500s; DB live → r
 renders, and a genuinely-unknown tag still 404s. `tsc` clean · `eslint` 0/0 · 206 tests pass.
 CLAUDE.md gained an "Error boundaries & fail-safe reads" section + a note that `getAllPageSettings`
 is a second must-never-throw layout dependency alongside `getTransitionImages`.
+
+---
+
+### Session L5 — Dependency upgrade — `done` (2026-09-03)
+
+**Why.** Lockfile was `next@16.2.6`. Correct exposure, checked against the advisories — **not**
+what the audit claimed: the two August criticals do **not** apply (CVE-2026-75604 is Windows
+filesystem only and Netlify Functions run Linux; GHSA-2xp9-vwfh-vxw4 needs Next's Image
+Optimization API, which this repo bypasses via `loader: "custom"` and which Netlify rewrites to
+its own CDN). What **does** apply is from the July release: **CVE-2026-64641 — DoS in App Router
+using Server Actions (High)**; the admin login is a Server Action. Plus CVE-2026-64643
+(Server Function endpoint ID disclosure, Medium).
+
+- `next` + `eslint-config-next` → `16.3.3` (Active LTS).
+- `react` / `react-dom` → current stable.
+- Regenerate `package-lock.json`, rerun the full gate.
+- Add a `npm run build` step to `.github/workflows/ci.yml` — permanently. The current file
+  explicitly skips it, which is how an unbuildable tree can pass CI.
+
+Gate 1 security: dependency-only; no app trust boundary changes.
+
+**Outcome.** Upgraded via the terminal (documented manual install path) to the newest patch on
+the same 16.3 LTS minor: `next` + `eslint-config-next` → **`16.3.4`** (one patch past the spec's
+16.3.3 — strictly supersedes it; the July Server-Action CVEs 64641/64643 no longer appear in the
+audit), `react`/`react-dom` → **`19.2.8`** (exact pin, matching prior style). `npm audit fix`
+(non-`--force`) cleared 6 transitive dev/build-tooling advisories (`@humanfs/node`,
+`brace-expansion`, `browserslist`, `js-yaml`, `nanoid`, `postcss`) → **`npm audit` clean**.
+`npm run build` added to `.github/workflows/ci.yml` after `npm test`, and the `# No next build`
+comment removed — **but the build itself runs in Session L11, not here**; CLAUDE.md's Testing & CI
+section was updated to say CI now builds while the local "never `next build` to verify" rule is
+unchanged.
+
+16.3.4 shipped a **new lint rule, `@next/next/no-location-assign-relative-destination`**, that
+flagged two pre-existing `window.location` navigations (lint runs `--max-warnings 0`). Neither
+should move to `useRouter` — the rule's suggested fix is wrong for both here:
+`app/global-error.tsx`'s "Back home" button became `<a href="/">` (a full document reload is the
+correct recovery for a boundary that has replaced the root layout; one scoped
+`eslint-disable-next-line @next/next/no-html-link-for-pages` with a reason, matching the repo's
+existing `WebProjectCard.tsx` disable convention), and
+`components/private-galleries/PrivateGalleryBrowser.tsx`'s download button became
+`<a … data-no-transition>` so the D4 site-wide click-interceptor leaves it as a real download
+navigation. Full gate green: `tsc --noEmit` clean · `eslint --max-warnings 0` clean · **206 tests
+pass** · `npm audit` 0 vulnerabilities. No security surface.
+
+A **pre-existing private-gallery ZIP-download defect** surfaced during Hussain's testing
+(`GET /api/private-galleries/download/test` 302s, but the downloaded file "won't open"). Root
+cause: `download/[slug]/route.ts:70` builds one `download_zip_url` over
+`fully_qualified_public_ids` that mix `image/upload/…` and `video/upload/…`; a Cloudinary archive
+spanning resource types returns an error body the browser saves as a `.zip`. **Not caused by L5**
+(the route is untouched; the button→link swap has identical navigation semantics) and **not fixed
+in L5** — the entire private-gallery download flow is rewritten in **L7** (which already says "do
+not ship the current behaviour"). The root cause was logged into the L7 spec so it isn't
+re-derived.

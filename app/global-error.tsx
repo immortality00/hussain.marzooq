@@ -21,15 +21,13 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
             >
               Reload
             </button>
-            <button
-              type="button"
-              onClick={() => {
-                window.location.href = "/";
-              }}
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- global error boundary needs a full document reload; the router context may be unmounted */}
+            <a
+              href="/"
               className="hm-btn bg-white text-black hover:bg-neutral-200"
             >
               Back home
-            </button>
+            </a>
           </div>
         </main>
       </body>
