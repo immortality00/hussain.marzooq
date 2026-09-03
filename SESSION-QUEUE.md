@@ -110,11 +110,13 @@ longer top-to-bottom — take sessions in exactly this order.
     ~~**P1**~~ ✓ done (performance audit — /people N+1 fixed, testimonials index fixed, lifecycle/
     caching/image audit clean, transition fade guard; Lighthouse + Atlas Search deferred to deploy) ·
     ~~**P2**~~ ✓ done · ~~**A1**~~ ✓ done.
-13. **Phase L — L2 → L3 → L4 → L5 (Block A), then L6 → L7 → L8 → L10 (Block B), then L9,
-    then L11 last.**
+13. **Phase L — L2 → L3 → L4 → L5 (Block A) ✓, then A2 → L7 → L8 → L10 (Block B), then L9,
+    then L11 last.** (L6 ✓ done — archive §L6.)
     Set 2026-09-01 from an audit cross-checked against the code. **This is the launch path and it
     runs before NFT1/NFT2.** Order is load-bearing: L2 before L3 (L2's fix is L3's only throttle),
-    L5 last in Block A so the release gate runs once.
+    L5 last in Block A so the release gate runs once. **A2 (batch media upload) was inserted at
+    the head of Block B on 2026-09-03 at Hussain's request** — bulk content entry is on the
+    critical path.
 14. **NFT1, NFT2** — after launch.
 
 Hard dependencies, stated once so no session has to re-derive them:
@@ -302,22 +304,51 @@ not fixed here._
 
 ### Block B — before the domain goes public
 
-### Session L6 — Real pagination on browsing — `in-progress`
+### Session A2 — Batch media upload — `pending`
 
-**Why.** `components/media/useMediaSearch.ts:169` — `loadMore()` returns early on
-`!hasActiveSearch`; `components/media/MediaGrid.tsx:46` — `showLoadMore` requires
-`hasActiveSearch`. So cursor pagination works when searching and **not** when browsing, and
-`lib/server/public-media.ts:55,63` caps both disciplines at 60. Photo 61 is unreachable.
+**Added 2026-09-03 at Hussain's request; runs NEXT, ahead of L7.** Bulk content entry is on
+the launch critical path — the site is empty until media is uploaded, and entering a real
+library one item at a time is the bottleneck — so this admin feature jumps the Phase L queue.
+(L6 shipped just before it; see archive §L6.)
 
-- Make `loadMore()` + the Load-more button work without an active search; keep the cursor path
-  the single source for both modes.
-- Drop the first server batch to 24–30 (also improves LCP / initial payload).
-- Same treatment for `lib/server/public-people.ts` `.limit(80)` and
-  `lib/server/testimonials.ts:52` `limit = 60`.
-- `lib/server/public-media.ts:122` `getExhibitionCities` `.limit(500)` — project only the fields
-  the globe needs instead of serializing whole media docs.
+**Why.** The media editor creates exactly one media doc per submit (`MediaWizard` →
+`app/admin/(protected)/media/lib/useMediaEditorController.ts` → `POST /api/media/create`), and
+`MediaAssetSection` uploads a single file via `components/admin/CloudinaryUploadButton.tsx`.
 
-Gate 1 security: no security surface (the endpoint is unchanged; see L9 for its rate limit).
+**Goal.** Let admin select and upload many files at once and create one media doc per file,
+with as little repeated typing as possible.
+
+**Gate 1 must decide with Hussain (do not guess):**
+1. **Shared vs per-file metadata.** Recommended: shared category + tags + people + appearances
+   + `isPublic` applied to the whole batch, with a per-file **title** (default from filename)
+   and optional per-file description; a Review step lists every file with its title editable
+   inline before save. Alternative: a full independent editor per file.
+2. **Extend `MediaWizard` vs a dedicated `/admin/media/batch` route.** Recommended: a dedicated
+   batch form that reuses the existing sections (`MediaDetailsSection` tag/people pickers,
+   `MediaAppearancesSection`, a multi-file `CloudinaryUploadButton`) so the single-item wizard
+   stays untouched.
+
+**Shape (pending the Gate-1 answers):**
+- `CloudinaryUploadButton` already signs per file and POSTs directly to Cloudinary — extend it
+  (or add a sibling) to accept `multiple` and return an array of `{secureUrl, publicId, type}`.
+  Uploads stay client→Cloudinary via the existing signed path (`/api/sign-cloudinary-params`) —
+  **no CSP change** (`api.cloudinary.com` is already in `connect-src`). Never `CldUploadWidget`
+  (A1 rule — it is mobile-broken).
+- Server: prefer **looping the existing `POST /api/media/create`** per file — it reuses all the
+  current validation/sanitisation, including the gated-person `isPublic:false` rule and the
+  appearance-name-required gate — over a new `batch-create` route, unless per-request overhead
+  proves painful. One code path for validation is the goal.
+- **Type per file** from the uploaded Cloudinary resource type — do not force `image`. v1 may
+  scope to image/video only; NFT metadata rarely applies uniformly to a batch (confirm at Gate 1).
+- Revalidate media surfaces **once** after the whole batch (`revalidateMediaSurfaces` over the
+  union of tags), not per file.
+
+**Reuse, don't reinvent:** `useAdminAction` for feedback, the existing tag/people/appearance
+sections, `AdminButton`, `WizardTabs` if it becomes a wizard.
+
+Gate 1 security: admin-gated surface only. Looping the existing `create` route adds **no new
+trust boundary**. A new `batch-create` route WOULD be one — it must reuse the same `sanitize*`
+helpers + gated-person rule, admin-only. No secret crosses to the client. No CSP change.
 
 ---
 

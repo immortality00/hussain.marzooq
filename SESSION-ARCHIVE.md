@@ -10,6 +10,49 @@ a planning question explicitly references it.
 
 ---
 
+## Phase L — Launch readiness
+
+### Session L6 — Real pagination on browsing — `done`
+
+**Original spec:**
+
+**Why.** `components/media/useMediaSearch.ts:169` — `loadMore()` returns early on
+`!hasActiveSearch`; `components/media/MediaGrid.tsx:46` — `showLoadMore` requires
+`hasActiveSearch`. So cursor pagination works when searching and **not** when browsing, and
+`lib/server/public-media.ts:55,63` caps both disciplines at 60. Photo 61 is unreachable.
+
+- Make `loadMore()` + the Load-more button work without an active search; keep the cursor path
+  the single source for both modes.
+- Drop the first server batch to 24–30 (also improves LCP / initial payload).
+- Same treatment for `lib/server/public-people.ts` `.limit(80)` and
+  `lib/server/testimonials.ts:52` `limit = 60`.
+- `lib/server/public-media.ts:122` `getExhibitionCities` `.limit(500)` — project only the fields
+  the globe needs instead of serializing whole media docs.
+
+Gate 1 security: no security surface (the endpoint is unchanged; see L9 for its rate limit).
+
+**Build outcome (2026-09-03):** Shipped. Browse-mode pagination now runs through the **same
+cursor path** as search: `useMediaSearch` builds the next-page cursor client-side from the last
+loaded item via `encodeMediaCursor` (new shared, runtime-agnostic base64url module
+`lib/media-cursor.ts`, unit-tested `test/media-cursor.test.ts`, also adopted by
+`/api/media/list-public`'s `makeCursor`). The hook exposes one `canLoadMore` flag that both
+`MediaGrid` and `PhotographyViewer` consume — the `hasActiveSearch` gate that made photo 61
+unreachable is gone. Initial discipline batches dropped 60→30 (`PUBLIC_MEDIA_PAGE_SIZE`);
+`getVideographyItems` now queries `video/embed` directly (so the has-more heuristic + cursor
+boundary are correct for video-only) and `getExhibitionCities` gained a field projection.
+**Per-entity caps that lack pagination infra were raised, not paginated** (Hussain's call):
+person-media 80→200, testimonials 60→200 — testimonials' total count was already accurate. The
+Load-more button renders only in the photography Grid view; cylinder/horizontal share the same
+growing pool but have no button. `tsc`/`eslint`/210 tests/full production build all green.
+**Also fixed in the same commit — a CI build failure surfaced from run #58:** the Preloader's
+Cormorant Garamond was loaded via `next/font/google`, which fetches the face from Google at
+build time; that non-deterministic fetch failed CI's `npm run build`. Self-hosted it via
+`next/font/local` (OFL woff2 in `app/fonts/`), removing the only build-time network dependency —
+clean build verified with zero Google-font artifacts. CLAUDE.md updated (font source + CI
+no-build-fetch rule + browse-pagination facts). No security surface.
+
+---
+
 ## Phase 3 — Content & analytics
 
 ### Session C3 — Analytics — `done`
