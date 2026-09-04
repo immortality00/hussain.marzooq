@@ -158,6 +158,9 @@ export default function AdminMediaListPage() {
             <Link href="/admin/media" className={adminButtonClasses("default", "md")}>
               Upload new
             </Link>
+            <Link href="/admin/media/batch" className={adminButtonClasses("default", "md")}>
+              Batch upload
+            </Link>
             <button
               type="button"
               onClick={() => void load("replace")}

@@ -10,6 +10,7 @@ export default function MediaPlacementSection({
   toggleCategory,
   isPublic,
   setIsPublic,
+  categoryOptions = MEDIA_CATEGORIES,
 }: {
   primaryCategory: MediaCategory | null;
   setPrimaryCategory: (value: MediaCategory) => void;
@@ -17,6 +18,7 @@ export default function MediaPlacementSection({
   toggleCategory: (key: MediaCategory) => void;
   isPublic: boolean;
   setIsPublic: (value: boolean) => void;
+  categoryOptions?: Array<{ key: MediaCategory; label: string }>;
 }) {
   const secondary = categories.filter((c) => c !== primaryCategory);
 
@@ -25,7 +27,7 @@ export default function MediaPlacementSection({
       <div className="text-sm font-medium">Category</div>
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {MEDIA_CATEGORIES.map((c) => {
+        {categoryOptions.map((c) => {
           const selected = primaryCategory === c.key;
           return (
             <button
@@ -50,7 +52,7 @@ export default function MediaPlacementSection({
         <div className="space-y-3">
           <div className="text-sm font-medium">Additional placements</div>
           <div className="flex flex-wrap gap-2">
-            {MEDIA_CATEGORIES.filter((c) => c.key !== primaryCategory).map((c) => {
+            {categoryOptions.filter((c) => c.key !== primaryCategory).map((c) => {
               const selected = secondary.includes(c.key);
               return (
                 <button

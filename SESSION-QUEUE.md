@@ -70,6 +70,9 @@ a live machine). Archive §P1.
 C3 (analytics: GoatCounter — free/cookieless — one tracking tag on public pages via `SiteAnalytics`,
 plus an in-admin `/admin/analytics` dashboard reading GoatCounter's API server-side; chosen over
 Plausible on Hussain's call). Archive §C3.
+A2 (batch media upload: dedicated `/admin/media/batch` wizard + `CloudinaryMultiUploadButton`,
+one doc per file by looping the existing `POST /api/media/create`; shared metadata + per-file title;
+shared `MediaPeoplePicker` extracted; single-item `MediaWizard` untouched). Archive §A2.
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -110,8 +113,8 @@ longer top-to-bottom — take sessions in exactly this order.
     ~~**P1**~~ ✓ done (performance audit — /people N+1 fixed, testimonials index fixed, lifecycle/
     caching/image audit clean, transition fade guard; Lighthouse + Atlas Search deferred to deploy) ·
     ~~**P2**~~ ✓ done · ~~**A1**~~ ✓ done.
-13. **Phase L — L2 → L3 → L4 → L5 (Block A) ✓, then A2 → L7 → L8 → L10 (Block B), then L9,
-    then L11 last.** (L6 ✓ done — archive §L6.)
+13. **Phase L — L2 → L3 → L4 → L5 (Block A) ✓, then A2 ✓ → L7 → L8 → L10 (Block B), then L9,
+    then L11 last.** (L6 ✓ done — archive §L6. A2 ✓ done — archive §A2.)
     Set 2026-09-01 from an audit cross-checked against the code. **This is the launch path and it
     runs before NFT1/NFT2.** Order is load-bearing: L2 before L3 (L2's fix is L3's only throttle),
     L5 last in Block A so the release gate runs once. **A2 (batch media upload) was inserted at
@@ -304,51 +307,12 @@ not fixed here._
 
 ### Block B — before the domain goes public
 
-### Session A2 — Batch media upload — `pending`
-
-**Added 2026-09-03 at Hussain's request; runs NEXT, ahead of L7.** Bulk content entry is on
-the launch critical path — the site is empty until media is uploaded, and entering a real
-library one item at a time is the bottleneck — so this admin feature jumps the Phase L queue.
-(L6 shipped just before it; see archive §L6.)
-
-**Why.** The media editor creates exactly one media doc per submit (`MediaWizard` →
-`app/admin/(protected)/media/lib/useMediaEditorController.ts` → `POST /api/media/create`), and
-`MediaAssetSection` uploads a single file via `components/admin/CloudinaryUploadButton.tsx`.
-
-**Goal.** Let admin select and upload many files at once and create one media doc per file,
-with as little repeated typing as possible.
-
-**Gate 1 must decide with Hussain (do not guess):**
-1. **Shared vs per-file metadata.** Recommended: shared category + tags + people + appearances
-   + `isPublic` applied to the whole batch, with a per-file **title** (default from filename)
-   and optional per-file description; a Review step lists every file with its title editable
-   inline before save. Alternative: a full independent editor per file.
-2. **Extend `MediaWizard` vs a dedicated `/admin/media/batch` route.** Recommended: a dedicated
-   batch form that reuses the existing sections (`MediaDetailsSection` tag/people pickers,
-   `MediaAppearancesSection`, a multi-file `CloudinaryUploadButton`) so the single-item wizard
-   stays untouched.
-
-**Shape (pending the Gate-1 answers):**
-- `CloudinaryUploadButton` already signs per file and POSTs directly to Cloudinary — extend it
-  (or add a sibling) to accept `multiple` and return an array of `{secureUrl, publicId, type}`.
-  Uploads stay client→Cloudinary via the existing signed path (`/api/sign-cloudinary-params`) —
-  **no CSP change** (`api.cloudinary.com` is already in `connect-src`). Never `CldUploadWidget`
-  (A1 rule — it is mobile-broken).
-- Server: prefer **looping the existing `POST /api/media/create`** per file — it reuses all the
-  current validation/sanitisation, including the gated-person `isPublic:false` rule and the
-  appearance-name-required gate — over a new `batch-create` route, unless per-request overhead
-  proves painful. One code path for validation is the goal.
-- **Type per file** from the uploaded Cloudinary resource type — do not force `image`. v1 may
-  scope to image/video only; NFT metadata rarely applies uniformly to a batch (confirm at Gate 1).
-- Revalidate media surfaces **once** after the whole batch (`revalidateMediaSurfaces` over the
-  union of tags), not per file.
-
-**Reuse, don't reinvent:** `useAdminAction` for feedback, the existing tag/people/appearance
-sections, `AdminButton`, `WizardTabs` if it becomes a wizard.
-
-Gate 1 security: admin-gated surface only. Looping the existing `create` route adds **no new
-trust boundary**. A new `batch-create` route WOULD be one — it must reuse the same `sanitize*`
-helpers + gated-person rule, admin-only. No secret crosses to the client. No CSP change.
+_A2 done (2026-09-03) — see SESSION-ARCHIVE.md §A2. Batch media upload: a dedicated
+`/admin/media/batch` wizard (Category → Files → Details → Appearances → Review) uploads many files
+at once via the new `CloudinaryMultiUploadButton` and creates one media doc per file by looping the
+existing `POST /api/media/create` — no new route, no new trust boundary. Shared metadata across the
+batch, per-file title (from filename) + optional description. NFT/embed excluded. Extracted the
+shared `MediaPeoplePicker` out of `MediaDetailsSection`; single-item `MediaWizard` untouched._
 
 ---
 

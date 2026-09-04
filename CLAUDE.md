@@ -701,6 +701,23 @@ later pass (deliberately out of D9's approved button scope).
   (clickable step tabs that scroll the active step into view). **Presentation only** — no change to
   `useMediaEditorController`, the save/validation, the appearance name-required gate, or the gated-person
   rules; the sections are unchanged and just conditionally rendered per step.
+
+**Batch media upload (A2, shipped 2026-09-03).** A dedicated `/admin/media/batch` route
+(`app/admin/(protected)/media/batch/` — `page.tsx` + `BatchMediaClient.tsx` + `lib/useBatchMediaState.ts`,
+linked from the media-list header) uploads **many files at once** and creates **one media doc per file**.
+It is its own `WizardTabs` flow (Category → Files → Details → Appearances → Review) — the single-item
+`MediaWizard` is **untouched**. Metadata is **shared across the batch** (category+placements, `isPublic`,
+tags, people, location, event, year, appearances) with **per-file title (default from the filename) +
+optional description** editable inline on the Review step. Scope is **image/video uploads only — NFT and
+embed are excluded** (`MediaPlacementSection` gained an optional `categoryOptions` prop so the batch can
+hide the NFT card without duplication; type is derived per file from the Cloudinary `resource_type`).
+**Save loops the existing `POST /api/media/create` once per file** (`Promise.allSettled`) — deliberately
+**not** a new `batch-create` route, so every validation path (gated-person `isPublic:false`, appearance-
+name gate, category/showreel rules) is reused unchanged and **no new trust boundary** is added. One
+consequence: `revalidateMediaSurfaces` runs per file (inside `create`), not once — acceptable at batch
+scale; do not "fix" it by inventing a batch route. Partial failures are reported per file and the failed
+files stay in the list so only they are retried. Files upload client→Cloudinary via `CloudinaryMultiUploadButton`
+(see Reusable components) — **no CSP change**.
 - **Uploads use a native file input, NOT the Cloudinary upload widget.** The `CldUploadWidget`'s desktop
   multi-pane layout **collapses to a blank pane on narrow screens** (the "can't tap anything on mobile" bug —
   diagnosed on-device). All **admin** uploaders now use `components/admin/CloudinaryUploadButton.tsx`: a
@@ -887,6 +904,18 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   `api.cloudinary.com/.../auto/upload`. Replaced `CldUploadWidget` in every admin upload (it collapses
   on mobile). Props `{ folder, accept?, label?, disabled?, onUploaded, onError? }`. **No CSP change.**
   Do not re-add `CldUploadWidget` to admin.
+- `components/admin/CloudinaryMultiUploadButton.tsx` — **the multi-file admin uploader (A2).** The
+  `multiple` sibling of `CloudinaryUploadButton` (the single one is untouched, since it is used in 4
+  places). Hidden `<input multiple>`, signs+uploads each file through the same `/api/sign-cloudinary-params`
+  path **sequentially** (shows `Uploading n/total…`), and calls `onUploaded(files[])` with an array of
+  `{ secureUrl, publicId, resourceType, originalFilename }` (deduped by `publicId` upstream). Props
+  `{ folder, accept?, label?, disabled?, maxFiles?, onUploaded, onError? }`, `maxFiles` default 50.
+  **No CSP change** — same `connect-src` host as the single button. Used only by the batch-upload surface.
+- `app/admin/(protected)/media/components/MediaPeoplePicker.tsx` — **the shared media people-picker
+  (A2).** The profiles-fetch + search + selected-chips + gated-profile amber warning + "create new
+  profile" link, extracted verbatim out of `MediaDetailsSection` so the single editor and the batch
+  form share one implementation. Props `{ selectedPeopleIds, selectedPeopleNames, setSelectedPeople }`.
+  Reuse it for any admin surface that links people to media; don't re-inline the picker.
 - `components/admin/nav-groups.ts` — the shared admin `NAV_GROUPS` (A1): group label + lucide icon +
   tabs, consumed by `AdminSidebarNav` (desktop) and `AdminMobileNav` (mobile bottom bar). Edit nav here.
 - `components/admin/wizard/WizardTabs.tsx` — the shared admin step-wizard tab strip (A1): clickable

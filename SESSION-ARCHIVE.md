@@ -3226,3 +3226,100 @@ spanning resource types returns an error body the browser saves as a `.zip`. **N
 in L5** — the entire private-gallery download flow is rewritten in **L7** (which already says "do
 not ship the current behaviour"). The root cause was logged into the L7 spec so it isn't
 re-derived.
+
+---
+
+## Session A2 — Batch media upload — `done` (2026-09-03)
+
+**Added 2026-09-03 at Hussain's request; ran NEXT, ahead of L7.** Bulk content entry is on
+the launch critical path — the site is empty until media is uploaded, and entering a real
+library one item at a time is the bottleneck — so this admin feature jumped the Phase L queue.
+(L6 shipped just before it; see archive §L6.)
+
+**Why.** The media editor creates exactly one media doc per submit (`MediaWizard` →
+`app/admin/(protected)/media/lib/useMediaEditorController.ts` → `POST /api/media/create`), and
+`MediaAssetSection` uploads a single file via `components/admin/CloudinaryUploadButton.tsx`.
+
+**Goal.** Let admin select and upload many files at once and create one media doc per file,
+with as little repeated typing as possible.
+
+**Gate 1 must decide with Hussain (do not guess):**
+1. **Shared vs per-file metadata.** Recommended: shared category + tags + people + appearances
+   + `isPublic` applied to the whole batch, with a per-file **title** (default from filename)
+   and optional per-file description; a Review step lists every file with its title editable
+   inline before save. Alternative: a full independent editor per file.
+2. **Extend `MediaWizard` vs a dedicated `/admin/media/batch` route.** Recommended: a dedicated
+   batch form that reuses the existing sections (`MediaDetailsSection` tag/people pickers,
+   `MediaAppearancesSection`, a multi-file `CloudinaryUploadButton`) so the single-item wizard
+   stays untouched.
+
+**Shape (pending the Gate-1 answers):**
+- `CloudinaryUploadButton` already signs per file and POSTs directly to Cloudinary — extend it
+  (or add a sibling) to accept `multiple` and return an array of `{secureUrl, publicId, type}`.
+  Uploads stay client→Cloudinary via the existing signed path (`/api/sign-cloudinary-params`) —
+  **no CSP change** (`api.cloudinary.com` is already in `connect-src`). Never `CldUploadWidget`
+  (A1 rule — it is mobile-broken).
+- Server: prefer **looping the existing `POST /api/media/create`** per file — it reuses all the
+  current validation/sanitisation, including the gated-person `isPublic:false` rule and the
+  appearance-name-required gate — over a new `batch-create` route, unless per-request overhead
+  proves painful. One code path for validation is the goal.
+- **Type per file** from the uploaded Cloudinary resource type — do not force `image`. v1 may
+  scope to image/video only; NFT metadata rarely applies uniformly to a batch (confirm at Gate 1).
+- Revalidate media surfaces **once** after the whole batch (`revalidateMediaSurfaces` over the
+  union of tags), not per file.
+
+**Reuse, don't reinvent:** `useAdminAction` for feedback, the existing tag/people/appearance
+sections, `AdminButton`, `WizardTabs` if it becomes a wizard.
+
+Gate 1 security: admin-gated surface only. Looping the existing `create` route adds **no new
+trust boundary**. A new `batch-create` route WOULD be one — it must reuse the same `sanitize*`
+helpers + gated-person rule, admin-only. No secret crosses to the client. No CSP change.
+
+### Build outcome
+
+**Gate-1 answers from Hussain (2026-09-03):** (1) **shared metadata + per-file title**;
+(2) **dedicated `/admin/media/batch` route**; (3) **images + video only, no NFT/embed**.
+
+**What shipped.**
+- **`components/admin/CloudinaryMultiUploadButton.tsx`** — a **sibling** to the single uploader,
+  not an extension of it: `CloudinaryUploadButton` is used in four places (media asset, people
+  avatar, service editor, `ImageField`) and was deliberately left untouched to keep the blast
+  radius at zero. Hidden `<input multiple>`, signs + uploads each file **sequentially** through the
+  existing `/api/sign-cloudinary-params` path, reports `Uploading n/total…`, and returns
+  `{secureUrl, publicId, resourceType, originalFilename}[]`. `maxFiles` defaults to 50. Per-file
+  upload failures are surfaced individually and do not abort the rest of the batch.
+- **`app/admin/(protected)/media/batch/`** — `page.tsx` (thin `AdminPageHeader` shell),
+  `BatchMediaClient.tsx` (the wizard), `lib/useBatchMediaState.ts` (shared fields + a `files[]`
+  array carrying per-file `title`/`description`). Its own `WizardTabs` flow —
+  **Category → Files → Details → Appearances → Review** — so the single-item `MediaWizard` is
+  **completely untouched**. Per-file title defaults from the filename (extension stripped,
+  `._-` collapsed to spaces) and is editable inline on Review, with a red invalid state when blank.
+- **`MediaPeoplePicker.tsx`** — the profiles-fetch + search + chips + gated-profile amber warning +
+  "create new profile" link, **extracted verbatim** from `MediaDetailsSection` so both editors share
+  one implementation (the repo's reuse-over-repetition rule). `MediaDetailsSection` now composes it
+  and lost ~110 lines.
+- **`MediaPlacementSection`** gained an optional `categoryOptions` prop (defaults to
+  `MEDIA_CATEGORIES`) so the batch surface can hide the NFT card without duplicating the component.
+- `/admin/media/list` header gained a **Batch upload** link beside "Upload new".
+
+**Deviation from the spec, recorded deliberately.** The spec said "revalidate media surfaces
+**once** after the whole batch, not per file". Because save **loops the existing
+`POST /api/media/create`** (the spec's own stronger preference — one validation code path, no new
+trust boundary), `revalidateMediaSurfaces` necessarily runs inside each call. Revalidating once
+would have required a `batch-create` route, which the spec itself flags as a new trust boundary.
+At batch scale the per-file revalidation is free; **do not "fix" this by inventing a batch route.**
+
+**Save semantics.** `Promise.allSettled` over the files; the banner reports
+`Created X of N` and names the failures; **succeeded files are removed from the list and failed
+ones stay**, so a retry re-sends only what failed. Client-side gates before save mirror the single
+editor: ≥1 category, ≥1 file, every file titled, and the shared appearance-name rule
+(`findFirstAppearanceError`). The server remains the backstop for all of it.
+
+**Security (Gate 1, confirmed at Gate 3).** No new trust boundary — admin-gated surface, and every
+write goes through the existing `create` route with its `resolvePeopleSelection` gated-person
+`isPublic:false` rule, `sanitizeAppearances`, and category/showreel guards intact. No secret crosses
+to the client. **No CSP change** (`api.cloudinary.com` already in `connect-src`).
+
+**Verification.** `tsc --noEmit` clean · `eslint --max-warnings 0` clean · `npm test` 210/210 pass.
+Hussain verified the populated path on his machine (multi-file upload, per-file titles, partial
+failure retry, and the unchanged single-item editor).
