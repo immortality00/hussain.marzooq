@@ -1,5 +1,6 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { getDb } from "@/lib/server/db";
+import { TRANSITION_IMAGES_TAG } from "@/lib/server/public-media";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import {
   asBooleanOrNull,
@@ -21,6 +22,11 @@ import {
   serializePrivateGalleryAdminItem,
   validatePrivateGalleryMediaIds,
 } from "@/lib/server/private-gallery-admin";
+import {
+  formatGalleryConversionError,
+  makeMediaPrivateForGallery,
+  releaseMediaFromPrivateGalleries,
+} from "@/lib/server/private-gallery-assets";
 
 export const dynamic = "force-dynamic";
 
@@ -87,6 +93,18 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     return noStoreJson({ ok: false, error: validatedMedia.error }, { status: 400 });
   }
 
+  const previousMediaIds = asStringArray(existing.mediaIds, 300);
+  const nextMediaIds = validatedMedia.mediaIds;
+  const detachedMediaIds = previousMediaIds.filter((mediaId) => !nextMediaIds.includes(mediaId));
+
+  const madePrivate = await makeMediaPrivateForGallery(db, nextMediaIds);
+  if (madePrivate.failures.length > 0) {
+    return noStoreJson(
+      { ok: false, error: formatGalleryConversionError(madePrivate.failures) },
+      { status: 502 }
+    );
+  }
+
   const slug = await ensureUniquePrivateGallerySlug(db, { title, slugInput, excludeId: id });
 
   const set: Record<string, unknown> = {
@@ -119,8 +137,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const result = await db.collection("private_galleries").updateOne({ _id: oid }, { $set: set });
   if (!result.matchedCount) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
 
+  await releaseMediaFromPrivateGalleries(db, detachedMediaIds);
+
   revalidatePath(`/g/${slug}`);
   if (previousSlug && previousSlug !== slug) revalidatePath(`/g/${previousSlug}`);
+  revalidatePath("/", "layout");
+  revalidateTag(TRANSITION_IMAGES_TAG, "max");
 
   return noStoreJson({ ok: true, slug });
 }
@@ -133,17 +155,22 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   const db = await getDb();
 
   const found = await findByIdOr404(db, "private_galleries", oid, {
-    projection: { slug: 1 },
+    projection: { slug: 1, mediaIds: 1 },
   });
   if (found instanceof Response) return found;
   const existing = found.doc;
 
   const slug = typeof existing.slug === "string" ? existing.slug : null;
+  const releasedMediaIds = asStringArray(existing.mediaIds, 300);
 
   const result = await db.collection("private_galleries").deleteOne({ _id: oid });
   if (!result.deletedCount) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
 
+  await releaseMediaFromPrivateGalleries(db, releasedMediaIds);
+
   if (slug) revalidatePath(`/g/${slug}`);
+  revalidatePath("/", "layout");
+  revalidateTag(TRANSITION_IMAGES_TAG, "max");
 
   return noStoreJson({ ok: true });
 }

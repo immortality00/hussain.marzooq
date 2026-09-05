@@ -71,6 +71,7 @@ export default function MediaWizard({
             toggleCategory={editor.toggleCategory}
             isPublic={editor.isPublic}
             setIsPublic={editor.setIsPublic}
+            privateGalleryTitles={editor.privateGalleryTitles}
           />
         ) : null}
 

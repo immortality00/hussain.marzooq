@@ -9,8 +9,11 @@
  * Cloudinary is already a CDN with a transformation pipeline, so the browser can fetch a
  * correctly-sized, auto-format image directly. No origin round-trip, no re-encode, no timeout.
  *
- * Non-Cloudinary sources pass through untouched.
+ * Non-Cloudinary sources pass through untouched, except the private-gallery asset proxy
+ * (/api/media/asset/...), which is same-origin and takes its width from a `w` query param.
  */
+
+import { isMediaAssetPath } from "@/lib/media-asset-path";
 
 type LoaderArgs = {
   src: string;
@@ -27,6 +30,10 @@ function hasTransform(src: string): boolean {
 }
 
 export default function cloudinaryImageLoader({ src, width, quality }: LoaderArgs): string {
+  if (isMediaAssetPath(src)) {
+    return `${src}${src.includes("?") ? "&" : "?"}w=${width}`;
+  }
+
   if (!src.includes(CLOUDINARY_HOST) || !src.includes(UPLOAD_SEGMENT)) return src;
   if (hasTransform(src)) return src;
 

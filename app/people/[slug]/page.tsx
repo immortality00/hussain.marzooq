@@ -25,7 +25,9 @@ export async function generateMetadata({
     getPublicPersonBySlug(slug),
     getPageSeo("people-detail"),
   ]);
-  if (!person) return {};
+  if (!person) {
+    return { title: "Private profile", robots: { index: false, follow: false } };
+  }
   return buildPublicMetadata({
     title: seo.title.replaceAll("{name}", person.name),
     description: seo.description.replaceAll("{name}", person.name),

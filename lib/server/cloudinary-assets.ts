@@ -6,6 +6,14 @@ export type CloudinaryResourceType = "image" | "video" | "raw";
 type ParsedCloudinaryAsset = {
   publicId: string;
   resourceType: CloudinaryResourceType;
+  deliveryType: "upload" | "authenticated";
+};
+
+type CloudinaryAssetRef = {
+  url?: string | null;
+  publicId?: string | null;
+  resourceType?: string | null;
+  deliveryType?: string | null;
 };
 
 type CloudinaryCleanupResult = {
@@ -37,9 +45,23 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function getErrorMessage(error: unknown) {
+export function cloudinaryErrorMessage(error: unknown) {
   if (error instanceof Error) return error.message;
   if (typeof error === "string") return error;
+
+  if (error && typeof error === "object") {
+    const record = error as Record<string, unknown>;
+    const nested = record.error;
+    const message =
+      typeof record.message === "string"
+        ? record.message
+        : nested && typeof nested === "object" && typeof (nested as Record<string, unknown>).message === "string"
+          ? ((nested as Record<string, unknown>).message as string)
+          : "";
+
+    if (message) return message;
+  }
+
   return "Unknown Cloudinary error.";
 }
 
@@ -88,7 +110,7 @@ export function parseCloudinaryAssetFromUrl(url: string): ParsedCloudinaryAsset 
     const resourceTypeRaw = parts[1];
     const action = parts[2];
 
-    if (action !== "upload") return null;
+    if (action !== "upload" && action !== "authenticated") return null;
     if (resourceTypeRaw !== "image" && resourceTypeRaw !== "video" && resourceTypeRaw !== "raw") {
       return null;
     }
@@ -111,6 +133,7 @@ export function parseCloudinaryAssetFromUrl(url: string): ParsedCloudinaryAsset 
     return {
       publicId: normalizedParts.join("/"),
       resourceType: resourceTypeRaw,
+      deliveryType: action,
     };
   } catch {
     return null;
@@ -125,28 +148,30 @@ export function isAllowedCloudinaryUrl(url: string, allowedFolders: readonly str
 
 // Overloads: strict=false (default) returns boolean, strict=true returns CloudinaryCleanupResult
 export async function deleteManagedCloudinaryAsset(
-  input: { url?: string | null; publicId?: string | null; resourceType?: string | null },
+  input: CloudinaryAssetRef,
   allowedFolders: readonly string[],
   strict?: false
 ): Promise<boolean>;
 export async function deleteManagedCloudinaryAsset(
-  input: { url?: string | null; publicId?: string | null; resourceType?: string | null },
+  input: CloudinaryAssetRef,
   allowedFolders: readonly string[],
   strict: true
 ): Promise<CloudinaryCleanupResult>;
 export async function deleteManagedCloudinaryAsset(
-  input: { url?: string | null; publicId?: string | null; resourceType?: string | null },
+  input: CloudinaryAssetRef,
   allowedFolders: readonly string[],
   strict = false
 ): Promise<boolean | CloudinaryCleanupResult> {
   let publicId = (input.publicId ?? "").trim();
   let resourceType = (input.resourceType ?? "").trim() as CloudinaryResourceType | "";
+  let deliveryType = input.deliveryType === "authenticated" ? "authenticated" : "upload";
 
   if (!publicId && input.url) {
     const parsed = parseCloudinaryAssetFromUrl(input.url);
     if (parsed) {
       publicId = parsed.publicId;
       resourceType = parsed.resourceType;
+      deliveryType = parsed.deliveryType;
     }
   }
 
@@ -175,13 +200,14 @@ export async function deleteManagedCloudinaryAsset(
   try {
     await cloudinary.uploader.destroy(publicId, {
       resource_type: safeResourceType,
+      type: deliveryType,
       invalidate: true,
     });
     if (!strict) return true;
     return { ok: true, target: publicId, action: "delete-asset" };
   } catch (error) {
     if (!strict) return false;
-    return { ok: false, target: publicId, action: "delete-asset", error: getErrorMessage(error) };
+    return { ok: false, target: publicId, action: "delete-asset", error: cloudinaryErrorMessage(error) };
   }
 }
 
@@ -242,7 +268,7 @@ export async function deleteManagedCloudinaryResourcesByPrefix(
     return { ok: true, target: normalizedPrefix, action: "delete-prefix" };
   } catch (error) {
     if (!strict) return false;
-    return { ok: false, target: normalizedPrefix, action: "delete-prefix", error: getErrorMessage(error) };
+    return { ok: false, target: normalizedPrefix, action: "delete-prefix", error: cloudinaryErrorMessage(error) };
   }
 }
 
@@ -297,7 +323,7 @@ async function deleteFolderViaAdminApi(folder: string): Promise<CloudinaryCleanu
       error: `Cloudinary folder delete failed with ${response.status}${responseText ? `: ${responseText}` : ""}`,
     };
   } catch (error) {
-    return { ok: false, target: normalizedFolder, action: "delete-folder", error: getErrorMessage(error) };
+    return { ok: false, target: normalizedFolder, action: "delete-folder", error: cloudinaryErrorMessage(error) };
   }
 }
 

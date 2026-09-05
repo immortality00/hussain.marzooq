@@ -1,12 +1,30 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import GalleryPasswordForm from "./GalleryPasswordForm";
-import { getPrivateGalleryPublicBySlug } from "@/lib/server/private-galleries";
+import {
+  getPrivateGalleryMetaBySlug,
+  getPrivateGalleryPublicBySlug,
+} from "@/lib/server/private-galleries";
 import PrivateGalleryBrowser from "@/components/private-galleries/PrivateGalleryBrowser";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { PageHeader } from "@/components/shared/PageHeader";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const meta = await getPrivateGalleryMetaBySlug(slug);
+
+  return {
+    title: meta.title || "Private gallery",
+    robots: { index: false, follow: false, nocache: true },
+  };
+}
 
 export default async function PrivateGalleryPage({
   params,

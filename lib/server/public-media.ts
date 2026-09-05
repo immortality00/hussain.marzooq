@@ -47,6 +47,8 @@ async function listPublicMedia({
   return docs.map((doc) => toPublicMediaItem(doc as Record<string, unknown>));
 }
 
+export const TRANSITION_IMAGES_TAG = "transition-images";
+
 // A single, consistent gallery pool for the page transition — recent public
 // photos, sized down for the grid. Used on every page so the transition reads
 // the same everywhere instead of depending on the current page's own images.
@@ -64,7 +66,7 @@ export const getTransitionImages = unstable_cache(
     }
   },
   ["transition-images"],
-  { revalidate: 300 },
+  { revalidate: 300, tags: [TRANSITION_IMAGES_TAG] },
 );
 
 export async function getPhotographyItems(): Promise<PublicMediaItem[]> {

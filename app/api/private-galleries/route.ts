@@ -1,6 +1,7 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
+import { TRANSITION_IMAGES_TAG } from "@/lib/server/public-media";
 import {
   asBooleanOrNull,
   asNullableString,
@@ -21,6 +22,10 @@ import {
   serializePrivateGalleryAdminItem,
   validatePrivateGalleryMediaIds,
 } from "@/lib/server/private-gallery-admin";
+import {
+  formatGalleryConversionError,
+  makeMediaPrivateForGallery,
+} from "@/lib/server/private-gallery-assets";
 
 export const dynamic = "force-dynamic";
 
@@ -93,6 +98,14 @@ export async function POST(req: Request) {
     return noStoreJson({ ok: false, error: validatedMedia.error }, { status: 400 });
   }
 
+  const madePrivate = await makeMediaPrivateForGallery(db, validatedMedia.mediaIds);
+  if (madePrivate.failures.length > 0) {
+    return noStoreJson(
+      { ok: false, error: formatGalleryConversionError(madePrivate.failures) },
+      { status: 502 }
+    );
+  }
+
   const slug = await ensureUniquePrivateGallerySlug(db, { title, slugInput });
   const passwordHash = await hashGalleryPassword(password);
   const accessToken = makeGalleryAccessToken();
@@ -114,6 +127,8 @@ export async function POST(req: Request) {
   });
 
   revalidatePath(`/g/${slug}`);
+  revalidatePath("/", "layout");
+  revalidateTag(TRANSITION_IMAGES_TAG, "max");
 
   return noStoreJson({ ok: true, id: String(result.insertedId), slug });
 }

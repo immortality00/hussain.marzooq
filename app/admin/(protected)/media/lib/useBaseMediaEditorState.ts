@@ -23,6 +23,7 @@ export function useBaseMediaEditorState() {
   const [selectedPeopleNames, setSelectedPeopleNames] = useState<string[]>([]);
   const [categories, setCategories] = useState<MediaCategory[]>([]);
   const [isPublic, setIsPublic] = useState(true);
+  const [privateGalleryTitles, setPrivateGalleryTitles] = useState<string[]>([]);
 
   const tags = useMemo(() => selectedTagSlugs.slice(0, 60), [selectedTagSlugs]);
   const peopleIds = useMemo(() => selectedPeopleIds.slice(0, 60), [selectedPeopleIds]);
@@ -101,6 +102,7 @@ export function useBaseMediaEditorState() {
     setSelectedPeopleNames([]);
     setCategories([]);
     setIsPublic(true);
+    setPrivateGalleryTitles([]);
   }
 
   function loadBaseIntoState(m: MediaItem) {
@@ -138,6 +140,7 @@ export function useBaseMediaEditorState() {
     setSelectedPeopleNames(m.people ?? []);
     setCategories((m.categories ?? []) as MediaCategory[]);
     setIsPublic(Boolean(m.isPublic));
+    setPrivateGalleryTitles(m.privateGalleryTitles ?? []);
   }
 
   return {
@@ -180,6 +183,7 @@ export function useBaseMediaEditorState() {
     isNft,
     isPublic,
     setIsPublic,
+    privateGalleryTitles,
     tags,
     peopleIds,
     people,

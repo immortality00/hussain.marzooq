@@ -10,6 +10,7 @@ export default function MediaPlacementSection({
   toggleCategory,
   isPublic,
   setIsPublic,
+  privateGalleryTitles = [],
   categoryOptions = MEDIA_CATEGORIES,
 }: {
   primaryCategory: MediaCategory | null;
@@ -18,9 +19,11 @@ export default function MediaPlacementSection({
   toggleCategory: (key: MediaCategory) => void;
   isPublic: boolean;
   setIsPublic: (value: boolean) => void;
+  privateGalleryTitles?: string[];
   categoryOptions?: Array<{ key: MediaCategory; label: string }>;
 }) {
   const secondary = categories.filter((c) => c !== primaryCategory);
+  const lockedByGallery = privateGalleryTitles.length > 0;
 
   return (
     <section className="space-y-5 rounded-3xl border p-5">
@@ -72,9 +75,21 @@ export default function MediaPlacementSection({
       ) : null}
 
       <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={isPublic} onChange={(e) => setIsPublic(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={isPublic && !lockedByGallery}
+          disabled={lockedByGallery}
+          onChange={(e) => setIsPublic(e.target.checked)}
+        />
         Public
       </label>
+
+      {lockedByGallery ? (
+        <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
+          Delivered privately for {privateGalleryTitles.join(", ")}. Remove it from the private
+          gallery to publish it.
+        </div>
+      ) : null}
     </section>
   );
 }

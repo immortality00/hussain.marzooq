@@ -100,6 +100,16 @@ export async function findPrivateGalleriesUsingMedia(db: Db, mediaId: string) {
     .toArray();
 }
 
+export async function getPrivateGalleryTitlesForMedia(db: Db, mediaId: string) {
+  const galleries = await findPrivateGalleriesUsingMedia(db, mediaId);
+
+  return galleries.map((gallery) => {
+    const title = typeof gallery.title === "string" ? gallery.title.trim() : "";
+    const slug = typeof gallery.slug === "string" ? gallery.slug.trim() : "";
+    return title || (slug ? `/g/${slug}` : "Untitled private gallery");
+  });
+}
+
 export function formatPrivateGalleryMediaDeleteBlocker(galleries: Record<string, unknown>[]) {
   const names = galleries
     .map((gallery) => {
