@@ -16,6 +16,7 @@ import {
   sanitizeAppearances,
 } from "@/app/api/_lib/media";
 import { toEmbedUrl } from "@/components/media/utils";
+import { getPrivateGalleryTitlesForMedia } from "@/lib/server/private-gallery-admin";
 import {
   getPrimaryMediaFolder,
   normalizeUploadedMediaAsset,
@@ -122,7 +123,18 @@ export async function POST(req: Request) {
 
   const db = await getDb();
   const resolvedPeople = await resolvePeopleSelection(db, { peopleIds });
-  const isPublic = resolvedPeople.gatedPersonName ? false : requestedPublic;
+
+  const existingByAsset = normalizedAsset
+    ? await db
+        .collection("media")
+        .findOne({ publicId: normalizedAsset.publicId }, { projection: { _id: 1 } })
+    : null;
+  const galleryTitles = existingByAsset
+    ? await getPrivateGalleryTitlesForMedia(db, String(existingByAsset._id))
+    : [];
+
+  const isPublic =
+    resolvedPeople.gatedPersonName || galleryTitles.length > 0 ? false : requestedPublic;
   const now = new Date();
 
   const doc = {

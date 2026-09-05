@@ -1,5 +1,6 @@
 import { asNullableString, asNumberOrNull, asStringArray, isRecord } from "@/app/api/_lib/common";
 import { sanitizeAppearances, type Appearance, type NftMeta } from "@/app/api/_lib/media";
+import { mediaAssetPath } from "@/lib/media-asset-path";
 
 export type PublicMediaItem = {
   id: string;
@@ -132,10 +133,12 @@ export function toPublicMediaItem(doc: Record<string, unknown>): PublicMediaItem
 
 export function toAdminMediaListItem(doc: Record<string, unknown>): AdminMediaListItem {
   const asset = getAssetRecord(doc);
-  const secureUrl =
+  const storedUrl =
     asNullableString(doc.secureUrl) ??
     asNullableString(asset.secureUrl) ??
     asNullableString((asset as Record<string, unknown>).secure_url);
+  const secureUrl =
+    doc.deliveryType === "authenticated" ? mediaAssetPath(String(doc._id)) : storedUrl;
   const embedUrl = asNullableString(doc.embedUrl) ?? asNullableString(asset.embedUrl);
 
   return {

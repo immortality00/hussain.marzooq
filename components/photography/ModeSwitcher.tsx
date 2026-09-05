@@ -4,6 +4,12 @@ import { Box, LayoutGrid, MoveHorizontal } from "lucide-react";
 
 export type ViewerMode = "cylinder" | "horizontal" | "grid";
 
+export const VIEWER_MODE_STORAGE_KEY = "hm.photography.view";
+
+export function isViewerMode(value: string): value is ViewerMode {
+  return value === "cylinder" || value === "horizontal" || value === "grid";
+}
+
 const MODES: { mode: ViewerMode; label: string; Icon: typeof Box }[] = [
   { mode: "cylinder", label: "Cylinder", Icon: Box },
   { mode: "horizontal", label: "Scroll", Icon: MoveHorizontal },

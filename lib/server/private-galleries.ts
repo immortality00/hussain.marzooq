@@ -8,6 +8,7 @@ import {
   privateGalleryCookieName,
   verifyPrivateGalleryCookieValue,
 } from "@/lib/private-galleries";
+import { mediaAssetPath } from "@/lib/media-asset-path";
 import { getDb } from "@/lib/server/db";
 
 export type PrivateGallerySummary = {
@@ -35,7 +36,7 @@ function normalizeStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((x): x is string => typeof x === "string") : [];
 }
 
-function toMediaItem(doc: Record<string, unknown>): MediaItem {
+function toMediaItem(doc: Record<string, unknown>, gallerySlug: string): MediaItem {
   return {
     id: String(doc._id),
     type: typeof doc.type === "string" ? doc.type : "image",
@@ -48,7 +49,10 @@ function toMediaItem(doc: Record<string, unknown>): MediaItem {
     categories: normalizeStringArray(doc.categories),
     people: normalizeStringArray(doc.people),
     appearances: sanitizeAppearances(doc.appearances),
-    secureUrl: typeof doc.secureUrl === "string" ? doc.secureUrl : null,
+    secureUrl:
+      typeof doc.publicId === "string" && doc.publicId
+        ? mediaAssetPath(String(doc._id), gallerySlug)
+        : null,
     embedUrl: typeof doc.embedUrl === "string" ? doc.embedUrl : null,
     createdAt:
       doc.createdAt instanceof Date
@@ -56,6 +60,30 @@ function toMediaItem(doc: Record<string, unknown>): MediaItem {
         : typeof doc.createdAt === "string"
           ? doc.createdAt
           : null,
+  };
+}
+
+export async function getPrivateGalleryMetaBySlug(slug: string) {
+  const db = await getDb();
+
+  const doc = await db
+    .collection("private_galleries")
+    .findOne({ slug }, { projection: { title: 1, accessToken: 1, isActive: 1, expiresAtUtc: 1, expiresAt: 1 } });
+
+  if (!doc || isPrivateGalleryUnavailable(doc as Record<string, unknown>)) {
+    return { exists: false, unlocked: false, title: "" };
+  }
+
+  const id = String(doc._id);
+  const accessToken = typeof doc.accessToken === "string" ? doc.accessToken : "";
+  const jar = await cookies();
+  const cookieValue = jar.get(privateGalleryCookieName(id))?.value ?? "";
+  const unlocked = verifyPrivateGalleryCookieValue({ galleryId: id, accessToken, cookieValue });
+
+  return {
+    exists: true,
+    unlocked,
+    title: unlocked && typeof doc.title === "string" ? doc.title : "",
   };
 }
 
@@ -159,7 +187,7 @@ export async function getPrivateGalleryPublicBySlug(
   const orderMap = new Map(mediaIds.map((value, index) => [value, index]));
   const mediaItems = mediaDocs
     .sort((a, b) => (orderMap.get(String(a._id)) ?? 0) - (orderMap.get(String(b._id)) ?? 0))
-    .map((doc) => toMediaItem(doc as Record<string, unknown>));
+    .map((doc) => toMediaItem(doc as Record<string, unknown>, slug));
 
   return {
     state: "open",

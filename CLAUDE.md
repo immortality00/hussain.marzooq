@@ -59,7 +59,11 @@ connections — every image 500'd. Cloudinary already resizes at the edge.
 Consequences for any session touching images:
 - **Never add `unoptimized`** to a Cloudinary `next/image`. It bypasses the loader and
   pulls the full original (this was the S6 bug — archive §S6).
-- Non-Cloudinary srcs pass through untouched — no resizing, but nothing breaks.
+- Non-Cloudinary srcs pass through untouched — no resizing, but nothing breaks. **The one
+  exception is the private-gallery asset proxy** (`/api/media/asset/...`, L7): the loader appends
+  `?w=<width>` so `next/image` still gets a responsive `srcset` through a same-origin route, and
+  the proxy applies the Cloudinary transform server-side. Do not remove that branch — without it
+  every private-gallery image downloads at full resolution.
 - URLs that already carry a transform are left alone (the loader checks).
 - WebGL textures use a separate helper, `components/photography/lib.ts`
   (`cloudinaryTextureUrl`), with its own smaller width budget. Two paths, same idea.
@@ -295,6 +299,14 @@ drag + ping-pong (Hussain rejected a ScrollTrigger pin — "the lock is ruining 
 experience"; do not reintroduce scroll-jacking). Modes 1–2 are
 `next/dynamic({ ssr:false })`. Full deviations: archive §D3.
 
+**The chosen view survives a refresh (L7).** `ModeSwitcher` owns `VIEWER_MODE_STORAGE_KEY`
+(`hm.photography.view`) + `isViewerMode`, and `PhotographyViewer` holds the mode in
+`hooks/usePersistedChoice.ts` instead of `useState`. That hook reads localStorage through
+`useSyncExternalStore` — server snapshot is always the fallback, so React reconciles the stored
+value after hydration with **no hydration mismatch and no `setState`-in-effect** (the lint rule
+bans the latter, and a plain effect would reintroduce the first-paint swap D3 already fixed).
+The `/photography/[tag]` subpages share the same key deliberately — it is the same viewer.
+
 **All three views run on every breakpoint, cylinder included — switcher always visible
 (changed 2026-07-31, reversing D3's "mobile falls back to Grid" decision).** Do not
 reintroduce a viewport gate: the old post-mount `matchMedia` check made the first paint
@@ -439,6 +451,88 @@ removal requests), computed by `getAdminNotificationCount()` in the protected la
 **No CSP change; no new remote host.** New trust boundaries are the two public routes (`access`,
 `removal-request`) — both validated + rate-limited; `passwordHash` is never serialized (admin GET returns
 only a `hasPassword` boolean).
+
+## Private galleries — authenticated delivery (L7, shipped 2026-09-04)
+Before L7 the password protected the *route*, never the *asset*: `lib/server/private-galleries.ts`
+shipped the raw public Cloudinary `secureUrl` to the browser, so one leaked URL was public forever.
+Now gallery media is delivered as Cloudinary **`type: authenticated`** and every byte is re-checked
+against the gallery cookie on each request — so changing a gallery's password revokes access
+instantly, which a bearer token cannot do.
+
+**Cloudinary constraint, verified against their docs — do not "fix" this with a shorter TTL.**
+Genuinely expiring *delivery* URLs need token/cookie auth, which is Advanced plan + a Custom
+Delivery Hostname. Plain `sign_url: true` URLs **never expire**. So signed URLs are generated and
+consumed **server-side only** and never reach the browser. `private_download_url` **is**
+expiry-capable on any plan and is what the download buttons use.
+
+- **`deliveryType` on the media doc** (`"upload"` | `"authenticated"`, absent = upload) is the
+  switch. Public portfolio media stays `upload` and keeps the fast CDN-direct path untouched.
+- **Conversion is automatic, not a manual step.** Attaching media to a gallery
+  (`POST /api/private-galleries`, `PATCH /api/private-galleries/[id]`) converts it via
+  `convertAssetDeliveryType` (a Cloudinary `rename` with the same public id + `to_type`, **no
+  re-upload**). Detaching it from its last gallery converts it back to `upload`; deleting a
+  gallery releases all of its media. `scripts/convert-gallery-assets.mjs`
+  (`npm run galleries:convert`) is a one-time **backfill** for galleries built before L7, not the
+  primary mechanism.
+- **Hiding is a single `updateMany` over the whole member set and never depends on Cloudinary.**
+  `makeMediaPrivateForGallery` sets `isPublic:false` on **every** member first, then attempts the
+  delivery conversions. Two rules that exist because the first cut got them wrong:
+  **(1) PATCH re-applies to the full `mediaIds` set, not just the newly attached ones** — that is
+  what makes any gallery save self-heal a gallery built before L7 (attached-only left older
+  members public). **(2) A Cloudinary "deleted resource"/"not found" error is not a failure** —
+  there is no file left to leak, so the item stays hidden and the save proceeds. A genuine
+  conversion error still fails the save (502) and `formatGalleryConversionError` names the items
+  and says plainly that they are already hidden — do not reintroduce a "nothing was saved"
+  message, because the hide has in fact been applied.
+- **Cloudinary rejections are often plain objects, not `Error`s.** Read them through
+  `cloudinaryErrorMessage` (`lib/server/cloudinary-assets.ts`, unit-tested) — a bare
+  `error instanceof Error` check surfaced `[object Object]` in the field and made the
+  missing-asset case unclassifiable.
+- **Gallery writes call `revalidateTag(TRANSITION_IMAGES_TAG, "max")`** as well as
+  `revalidatePath("/", "layout")`. `getTransitionImages` is `unstable_cache`, which
+  `revalidatePath` does **not** clear, so without the tag the contact-sheet transition kept
+  serving now-converted (404) photo URLs for up to 5 minutes.
+- **Media in a private gallery cannot be public.** Same shape as the D12 gated-person rule:
+  `media/create` and `media/[id]` PATCH force `isPublic:false` when the item is in a gallery, the
+  media editor disables the Public checkbox and shows an amber note naming the gallery
+  (`MediaPlacementSection`), and `GET /api/media/[id]` returns `privateGalleryTitles`.
+- **Viewing → `GET /api/media/asset/[mediaId]`** (`app/api/media/asset/[mediaId]/route.ts`), a
+  same-origin proxy that streams the bytes from a server-side signed URL. **One route, two
+  authorizations:** an admin session, **or** `?g=<gallerySlug>` plus a valid gallery cookie *and*
+  proof the media belongs to that gallery. The admin branch exists because an `/authenticated/`
+  URL is a broken thumbnail in `/admin/media` — `toAdminMediaListItem` and the media GET emit the
+  proxy path for authenticated docs. Accepts `?w=` (clamped 16–3840), forwards `Range` and passes
+  206/`Content-Range` through so `<video>` scrubbing works, `Cache-Control: private, max-age=300`,
+  rate-limited (`gallery-asset`). **No CSP change** — `img-src`/`media-src 'self'` already cover
+  it, same pattern as D11's thum.io proxy.
+- **Downloads.** Per item: `POST /api/private-galleries/download-url` → cookie check →
+  `private_download_url` with a 5-minute `expires_at` (rate-limited, `gallery-download-url`).
+  `components/media/download.ts` is **deleted** — do not reintroduce a client-side
+  `fl_attachment` rewrite. The gallery ZIP (`download/[slug]`) keeps its cookie check and now
+  passes **`resource_type: "auto"`** with `fully_qualified_public_ids` shaped
+  `<resource_type>/<delivery_type>/<public_id>` plus `expires_at`. **That `auto` is the fix for the
+  L5 "downloads but won't open" bug** — `fully_qualified_public_ids` is only honoured when
+  `resource_type` is `auto`, so the old archive silently errored on any gallery mixing images and
+  video. Do not set a concrete `resource_type` back on that call.
+- **The whole media lifecycle now carries the delivery type.** `parseCloudinaryAssetFromUrl`
+  accepts an `/authenticated/` action and returns `deliveryType`; `StoredMediaAsset` carries it;
+  `uploader.destroy` and `uploader.rename` are both given `type`. **Without this, deleting or
+  re-categorising a converted item silently no-ops at Cloudinary and orphans the asset.**
+  A PATCH whose incoming `secureUrl` is a proxy path is treated as "asset unchanged"
+  (`isMediaAssetPath`), so editing gallery media does not trip the upload validator.
+- **Known and accepted:** gallery bytes flow through Netlify functions instead of Cloudinary's CDN
+  — slower, counted against function bandwidth. Confined to private galleries; public media is
+  untouched. The paid alternative is Cloudinary Advanced + CNAME + token auth. Also: after a
+  *revert* to `upload`, the item's versioned URL can 404 for a few minutes until Cloudinary's CDN
+  drops its cached 404 (`invalidate: true` is already requested). That is the safe direction.
+- **`/g/[slug]` and gated People profiles are no longer indexable.** `app/g/[slug]/page.tsx` gained
+  `generateMetadata` (`robots: index:false, follow:false, nocache:true`, and a generic
+  "Private gallery" title until the cookie unlocks it, via the projection-only
+  `getPrivateGalleryMetaBySlug`); `next.config.ts` adds `X-Robots-Tag: noindex, nofollow` on
+  `/g/:path*` next to the `/admin/:path*` block; and `app/people/[slug]` returns
+  `{ title: "Private profile", robots: { index:false, follow:false } }` whenever
+  `getPublicPersonBySlug` yields nothing — the locked page renders that person's name, bio and
+  avatar, so it must not be crawlable.
 
 ## Dancing page — shipped (D10, 2026-08-28)
 `app/dancing/page.tsx` = `PageHeader` (admin `page_seo` title/description) → an
@@ -883,6 +977,9 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   is done for the card modals. **`WorkOverlay` deliberately stays separate** — it is a
   top-level, GSAP-animated full-screen takeover (not footer-trapped) with `bg-black/92`; do not
   fold it onto `ModalPortal`.
+- `hooks/usePersistedChoice.ts` — one remembered UI choice (a view mode, a tab) in localStorage,
+  read via `useSyncExternalStore` so it is hydration-safe (L7). Used by the photography
+  `ModeSwitcher`. Reuse it rather than reading localStorage in an effect.
 - `hooks/useScrollLock.ts` — the shared overlay scroll-lock (D12). Stops Lenis
   (`window.lenis`, attached in `AppShell`) and sets `documentElement` overflow hidden while
   mounted, restoring on unmount. Consumed by `ModalPortal`; use it directly in any other
@@ -920,6 +1017,21 @@ aggregation — D6 must query `media` directly and aggregate in Mongo (see queue
   tabs, consumed by `AdminSidebarNav` (desktop) and `AdminMobileNav` (mobile bottom bar). Edit nav here.
 - `components/admin/wizard/WizardTabs.tsx` — the shared admin step-wizard tab strip (A1): clickable
   numbered step tabs that scroll the active step into view. Used by `MediaWizard` and `GalleryWizard`.
+- `lib/server/cloudinary-private.ts` — **every authenticated-delivery Cloudinary call (L7).**
+  `normalizeDeliveryType`/`normalizeAssetResourceType` (the "absent means upload / not-video means
+  image" rules), `cloudinaryFormatFromUrl`, `signedDeliveryUrl` (server-side only — never send its
+  output to a browser), `expiringDownloadUrl`, `fullyQualifiedPublicId` + `expiringArchiveUrl`,
+  and `convertAssetDeliveryType`. Unit-tested (`test/cloudinary-private.test.ts`).
+- `lib/media-asset-path.ts` — the one place the private-gallery proxy path is built and detected
+  (`mediaAssetPath`, `isMediaAssetPath`, L7). Runtime-agnostic, so the image loader, the server
+  serializers and the API routes all agree on the shape. Unit-tested.
+- `app/api/private-galleries/_lib/gallery-access.ts` — the gallery cookie guard shared by the ZIP
+  and download-URL routes (L7): `openUnlockedGallery(slug)` returns the unlocked gallery or the
+  exact `Response` to send, `findGalleryMedia` enforces membership, `listGalleryMedia` loads the
+  set. Don't re-inline the cookie check.
+- `lib/server/private-gallery-assets.ts` — `makeMediaPrivateForGallery` /
+  `releaseMediaFromPrivateGalleries` / `formatGalleryConversionError` (L7): the attach/detach
+  delivery-type sync. The gallery routes are the only callers.
 - `lib/password-gate.ts` — the shared password-gate primitives (D12): scrypt `hashPassword`/
   `verifyPassword`, `makeAccessToken`, `createPersonGateCookieValue`/`verifyPersonGateCookieValue`
   (HMAC, timing-safe), `personGateCookieName`, `getPersonGateSecret`. Runtime-agnostic
@@ -1085,6 +1197,11 @@ keeps them fixed.
   `crypto.timingSafeEqual` (Node). Never `===` on a signature or password.
 - **Every new public API route needs rate limiting** (`lib/server/request-guards.ts`) and
   input validation before it ships. Follow the existing testimonials/inquiries routes.
+- **Private-gallery assets are never delivered by URL (L7).** `GET /api/media/asset/[mediaId]` and
+  `POST /api/private-galleries/download-url` re-verify the gallery cookie on **every** request and
+  confirm the media belongs to that gallery — a cookie for gallery A can never fetch gallery B's
+  assets. The Cloudinary signature is generated and consumed server-side and must never be
+  serialized to the client. See "Private galleries — authenticated delivery".
 - **Testimonial photo uploads are a server-issued capability (L3), not a client-chosen folder.**
   `POST /api/testimonials/upload-session` mints a session (`testimonial_upload_sessions` collection,
   `{_id, tokenHash, status: "pending"|"committed", expiresAt}` + TTL index) and binds it to the

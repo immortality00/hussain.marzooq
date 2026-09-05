@@ -4,6 +4,7 @@ import {
   getCloudinaryMediaFolderForCategory,
 } from "@/lib/cloudinary-folders";
 import { ensureCloudinaryConfigured } from "@/lib/server/cloudinary";
+import { normalizeDeliveryType } from "@/lib/server/cloudinary-private";
 import {
   deleteManagedCloudinaryAsset,
   isAllowedCloudinaryPublicId,
@@ -16,6 +17,7 @@ export type StoredMediaAsset = {
   secureUrl: string | null;
   publicId: string | null;
   resourceType: string | null;
+  deliveryType?: string | null;
 };
 
 export type MovedCloudinaryAsset = {
@@ -37,6 +39,7 @@ export function getStoredMediaAsset(doc: Record<string, unknown>): StoredMediaAs
     secureUrl: typeof doc.secureUrl === "string" ? doc.secureUrl : null,
     publicId: typeof doc.publicId === "string" ? doc.publicId : null,
     resourceType: typeof doc.resourceType === "string" ? doc.resourceType : null,
+    deliveryType: normalizeDeliveryType(doc.deliveryType),
   };
 }
 
@@ -148,6 +151,7 @@ export async function moveStoredMediaAssetToFolder(
 
   const renameResult = (await cloudinary.uploader.rename(publicId, destinationPublicId, {
     resource_type: resourceType,
+    type: normalizeDeliveryType(asset.deliveryType),
     invalidate: true,
     overwrite: false,
   })) as unknown;

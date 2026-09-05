@@ -73,6 +73,9 @@ Plausible on Hussain's call). Archive §C3.
 A2 (batch media upload: dedicated `/admin/media/batch` wizard + `CloudinaryMultiUploadButton`,
 one doc per file by looping the existing `POST /api/media/create`; shared metadata + per-file title;
 shared `MediaPeoplePicker` extracted; single-item `MediaWizard` untouched). Archive §A2.
+L7 (private galleries → Cloudinary `type: authenticated` + a same-origin asset proxy re-checking the
+gallery cookie on every request, expiring `private_download_url` downloads, the mixed-type ZIP fix,
+`/g/*` + gated-people noindex; plus the photography view mode now surviving a refresh). Archive §L7.
 D2 (homepage WebGL scene) was removed from the queue entirely, not completed.
 
 ---
@@ -113,8 +116,8 @@ longer top-to-bottom — take sessions in exactly this order.
     ~~**P1**~~ ✓ done (performance audit — /people N+1 fixed, testimonials index fixed, lifecycle/
     caching/image audit clean, transition fade guard; Lighthouse + Atlas Search deferred to deploy) ·
     ~~**P2**~~ ✓ done · ~~**A1**~~ ✓ done.
-13. **Phase L — L2 → L3 → L4 → L5 (Block A) ✓, then A2 ✓ → L7 → L8 → L10 (Block B), then L9,
-    then L11 last.** (L6 ✓ done — archive §L6. A2 ✓ done — archive §A2.)
+13. **Phase L — L2 → L3 → L4 → L5 (Block A) ✓, then A2 ✓ → L7 ✓ → L8 → L10 (Block B), then L9,
+    then L11 last.** (L6 ✓ done — archive §L6. A2 ✓ done — archive §A2. L7 ✓ done — archive §L7.)
     Set 2026-09-01 from an audit cross-checked against the code. **This is the launch path and it
     runs before NFT1/NFT2.** Order is load-bearing: L2 before L3 (L2's fix is L3's only throttle),
     L5 last in Block A so the release gate runs once. **A2 (batch media upload) was inserted at
@@ -140,7 +143,7 @@ Going live does **not** require the whole queue. The launch-blocking set is:
 | 5 | **L1** (code ✓, deploy checklist pending) | Code/docs done. Still owed at first deploy: rotate `ADMIN_COOKIE_SECRET`, verify hash login + CSP against the live origin. Checklist in CLAUDE.md → "Domain & deployment status". |
 
 | 6 | **L2, L3, L4, L5** (Block A) | Rate limits are bypassable via a spoofed `x-forwarded-for`; the testimonial cleanup route deletes any Cloudinary folder whose id is printed on `/testimonials`; no error/404 boundaries over read modules that have no try/catch; `next@16.2.6` carries CVE-2026-64641 (Server Action DoS) and the admin login is a Server Action. See Phase L. |
-| 7 | **L6, L7, L8** (Block B) | Browsing cannot reach item 61; private-gallery assets are permanent public Cloudinary URLs behind a password-only route; no robots/sitemap/canonical, email sends from Resend's testing domain to a mistyped domain, and there is no privacy policy or publication consent. See Phase L. |
+| 7 | ~~**L6, L7**~~ ✓ done, **L8** (Block B) | L6: browsing could not reach item 61. L7: private-gallery assets were permanent public Cloudinary URLs behind a password-only route — now authenticated delivery re-checked per request. Still open in L8: no robots/sitemap/canonical, email sends from Resend's testing domain to a mistyped domain, and there is no privacy policy or publication consent. See Phase L. |
 
 **L9 (Block C) may trail launch by a few days; L10 runs in Block B; L11 runs last, after
 every other Phase L session.** Everything else — T1/T2, D4, D5, D7–D13,
@@ -314,87 +317,15 @@ existing `POST /api/media/create` — no new route, no new trust boundary. Share
 batch, per-file title (from filename) + optional description. NFT/embed excluded. Extracted the
 shared `MediaPeoplePicker` out of `MediaDetailsSection`; single-item `MediaWizard` untouched._
 
----
-
-### Session L7 — Private galleries: authenticated delivery + expiring downloads — `pending`
-
-**Decision, Hussain 2026-09-01: move to authenticated Cloudinary assets with short-lived
-download URLs.** Do not ship the current behaviour.
-
-**Constraint established before specifying — verified against Cloudinary's own docs.** Cloudinary's
-genuinely-expiring *delivery* URLs come from token/cookie-based authentication, which is
-**Advanced plan or higher and requires a Custom Delivery Hostname (CNAME)**. Plain signed URLs
-(`sign_url: true`) **never expire** — Cloudinary support: *"Anybody with the URL will be able to
-see that asset regardless of location, useragent, etc, and this is done by design."* So the
-literal "short-lived Cloudinary delivery URL" is a paid-plan feature. This session implements the
-same guarantee on the current plan, and the result is stronger: access is re-checked against the
-gallery cookie on **every request**, so changing the gallery password revokes access instantly —
-a bearer token cannot do that.
-
-Today: `lib/server/private-galleries.ts:51` ships the raw public `secureUrl` to the browser;
-`components/media/download.ts` merely rewrites it to `/upload/fl_attachment/`; and
-`app/api/private-galleries/download/[slug]/route.ts:78` 302s straight to a Cloudinary archive
-URL. The password protects the route, never the asset — one leaked URL is public forever.
-
-Three parts:
-
-1. **Convert private-gallery media to `type: authenticated`.** Upload API rename with
-   `to_type: "authenticated"` and identical public id — **no re-upload needed**. New script
-   `scripts/convert-gallery-assets.mjs`, idempotent, run once per gallery. The `/upload/` URL
-   stops resolving, which is the entire point. Store `deliveryType` on the media doc so public
-   portfolio media keeps the existing fast Cloudinary path untouched.
-
-2. **Viewing → a same-origin authenticated proxy.** New route
-   `app/api/private-galleries/asset/[gallerySlug]/[mediaId]/route.ts`: verify the gallery cookie
-   with `verifyPrivateGalleryCookieValue` exactly as the download route already does
-   (`download/[slug]/route.ts:28-36`), then stream the bytes from Cloudinary using a server-side
-   signed URL that never reaches the browser. Accept a `w` param and apply the transform
-   server-side, since `lib/cloudinary-image-loader.ts` passes non-Cloudinary srcs through
-   untouched and will not size these. Respond `Cache-Control: private, max-age=300`.
-   **No CSP change** — `img-src 'self'` already covers it, same pattern as D11's thum.io proxy.
-   `lib/server/private-galleries.ts` stops serialising `secureUrl` for gated media and emits the
-   proxy path instead.
-
-3. **Downloads → genuinely time-limited.** `cloudinary.utils.private_download_url` /
-   `signed_download_url` **is** expiry-capable on any plan (full-resolution, no transformations —
-   exactly right for a download). Generate it server-side per click, after the cookie check.
-   `components/media/download.ts` is deleted; `PrivateGalleryBrowser.tsx:98,213` call a new
-   `POST /api/private-galleries/download-url` that returns a short-lived URL. The ZIP route keeps
-   its cookie check and returns a signed, expiring archive URL rather than a plain one.
-   **Known live defect to fix here (found L5, 2026-09-03):** the current ZIP download "downloads
-   but won't open" — `download/[slug]/route.ts:70` builds one `download_zip_url` over
-   `fully_qualified_public_ids` that mix `image/upload/…` and `video/upload/…`; a Cloudinary
-   archive spanning resource types returns an error body the browser saves as a `.zip`. Split the
-   archive per resource type (or archive images only + handle video separately) when you rework it.
-
-Trade-off to accept knowingly: gallery bytes flow through Netlify functions instead of
-Cloudinary's CDN — slower, and counted against function bandwidth. Confined to private galleries
-(a handful of clients at a time); public portfolio media is untouched and still CDN-direct. If
-that ever hurts, the paid alternative is Cloudinary Advanced + CNAME + token auth.
-
-Also in this session:
-- `app/g/[slug]/page.tsx` has **no `generateMetadata` at all** and renders `result.title` +
-  `result.description` in the locked state before authentication. Add `robots: { index: false,
-  follow: false, nocache: true }`, and show a generic "Private gallery" title until unlocked.
-- `next.config.ts` — add `X-Robots-Tag: noindex, nofollow` on `/g/:path*`, matching the
-  `/admin/:path*` block.
-- **Password-gated People profiles have the same hole** (same D12 privacy system).
-  `lib/server/public-people.ts:229-236` correctly filters `isPrivate`, so
-  `app/people/[slug]/page.tsx:18-34` returns `{}` and no name/photo reaches the metadata —
-  **but `{}` also means no `robots` directive**, so the locked page stays crawlable while
-  `PersonPasswordForm` renders that person's `name`, `bio` and `avatarUrl` in the body
-  (`page.tsx:51-58`). Return `robots: { index: false, follow: false }` for the `locked` and
-  `unavailable` states and show a generic locked title, exactly as for `/g/[slug]`.
-
-Delete in this session:
-```
-git rm components/media/download.ts
-```
-
-Gate 1 security: **yes, new trust boundary** — two new authenticated routes. Both verify the
-existing gallery cookie before any Cloudinary call, both rate-limited, both validate `slug` /
-`mediaId` and confirm the media actually belongs to that gallery. No secret crosses to the
-client: the Cloudinary signature is generated and consumed server-side. No CSP change.
+_L7 done (2026-09-04) — see SESSION-ARCHIVE.md §L7. Private-gallery media is now Cloudinary
+`type: authenticated`, converted automatically on attach and released on detach, and delivered
+through `GET /api/media/asset/[mediaId]` — a same-origin proxy that re-checks the gallery cookie
+(or an admin session) on **every** request, so changing a gallery password revokes access instantly
+and the old public `/upload/` URL 404s. Per-item downloads use an expiring `private_download_url`;
+the ZIP's `resource_type: "auto"` fixes the L5 mixed image/video bug. Media in a gallery cannot be
+public (guard applied to the whole member set, independent of Cloudinary). `/g/*` and gated People
+profiles are noindex. Also fixed here at Hussain's request: the photography view mode now survives
+a refresh (`hooks/usePersistedChoice.ts`)._
 
 ---
 

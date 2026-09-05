@@ -2,7 +2,6 @@
 
 import SmartImage from "@/components/shared/SmartImage";
 import { useMemo, useState } from "react";
-import { downloadCloudinaryFile } from "@/components/media/download";
 import SmartMediaPreview from "@/components/media/SmartMediaPreview";
 import type { MediaItem } from "@/components/media/types";
 import { useModalNavbarLock } from "@/components/media/useModalNavbarLock";
@@ -18,10 +17,37 @@ export default function PrivateGalleryBrowser({
   gallerySlug: string;
 }) {
   const [active, setActive] = useState<MediaItem | null>(null);
+  const [downloadError, setDownloadError] = useState("");
 
   useModalNavbarLock(Boolean(active));
 
   const downloadableItems = useMemo(() => items.filter((item) => !!item.secureUrl), [items]);
+
+  async function download(mediaId: string) {
+    setDownloadError("");
+
+    const res = await fetch("/api/private-galleries/download-url", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ slug: gallerySlug, mediaId }),
+    }).catch(() => null);
+
+    const data = (await res?.json().catch(() => null)) as
+      | { ok?: boolean; url?: string; error?: string }
+      | null;
+
+    if (!res?.ok || !data?.ok || !data.url) {
+      setDownloadError(data?.error ?? "Download link could not be created.");
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = data.url;
+    link.rel = "noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  }
 
   return (
     <div className="mt-10 space-y-6">
@@ -35,6 +61,10 @@ export default function PrivateGalleryBrowser({
             Download gallery
           </a>
         </div>
+      ) : null}
+
+      {downloadError ? (
+        <div className="rounded-2xl border p-4 text-sm text-muted-foreground">{downloadError}</div>
       ) : null}
 
       <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
@@ -91,7 +121,7 @@ export default function PrivateGalleryBrowser({
                   {secureUrl ? (
                     <button
                       type="button"
-                      onClick={() => downloadCloudinaryFile(secureUrl)}
+                      onClick={() => download(item.id)}
                       className="flex-1 rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
                     >
                       Download
@@ -206,7 +236,7 @@ export default function PrivateGalleryBrowser({
                   {active.secureUrl ? (
                     <button
                       type="button"
-                      onClick={() => downloadCloudinaryFile(active.secureUrl as string)}
+                      onClick={() => download(active.id)}
                       className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
                     >
                       Download

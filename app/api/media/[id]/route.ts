@@ -30,7 +30,10 @@ import {
 import {
   findPrivateGalleriesUsingMedia,
   formatPrivateGalleryMediaDeleteBlocker,
+  getPrivateGalleryTitlesForMedia,
 } from "@/lib/server/private-gallery-admin";
+import { isMediaAssetPath, mediaAssetPath } from "@/lib/media-asset-path";
+import { normalizeDeliveryType } from "@/lib/server/cloudinary-private";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +50,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const rawPeopleIds = asStringArray(doc.peopleIds);
   const rawPeople = asStringArray(doc.people);
   const resolvedPeople = await resolvePeopleSelection(db, { peopleIds: rawPeopleIds });
+  const privateGalleryTitles = await getPrivateGalleryTitlesForMedia(db, String(doc._id));
+  const isPrivateDelivery = normalizeDeliveryType(doc.deliveryType) === "authenticated";
 
   const item = {
     id: String(doc._id),
@@ -67,7 +72,12 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     appearances: sanitizeAppearances(doc.appearances),
     nft: doc.nft && typeof doc.nft === "object" ? doc.nft : null,
     isPublic: typeof doc.isPublic === "boolean" ? doc.isPublic : true,
-    secureUrl: typeof doc.secureUrl === "string" ? doc.secureUrl : null,
+    privateGalleryTitles,
+    secureUrl: isPrivateDelivery
+      ? mediaAssetPath(String(doc._id))
+      : typeof doc.secureUrl === "string"
+        ? doc.secureUrl
+        : null,
     publicId: typeof doc.publicId === "string" ? doc.publicId : null,
     resourceType: typeof doc.resourceType === "string" ? doc.resourceType : null,
     embedUrl: typeof doc.embedUrl === "string" ? doc.embedUrl : null,
@@ -148,6 +158,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   const oldAsset = getStoredMediaAsset(existingMedia);
   const resolvedPeople = await resolvePeopleSelection(db, { peopleIds });
+  const galleryTitles = await getPrivateGalleryTitlesForMedia(db, String(oid));
 
   const set: Record<string, unknown> = {
     title,
@@ -168,7 +179,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     updatedAt: new Date(),
   };
 
-  if (resolvedPeople.gatedPersonName) {
+  if (resolvedPeople.gatedPersonName || galleryTitles.length > 0) {
     set.isPublic = false;
   } else if (typeof isPublic === "boolean") {
     set.isPublic = isPublic;
@@ -195,6 +206,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const hasIncomingAsset =
     typeof incomingSecureUrl === "string" &&
     incomingSecureUrl.length > 0 &&
+    !isMediaAssetPath(incomingSecureUrl) &&
     typeof incomingPublicId === "string" &&
     incomingPublicId.length > 0 &&
     typeof incomingResourceType === "string" &&
@@ -263,6 +275,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         secureUrl: movedAsset.secureUrl,
         publicId: movedAsset.publicId,
         resourceType: movedAsset.resourceType,
+        deliveryType: oldAsset.deliveryType,
       };
     } else {
       if (!normalizedAsset.asset.isAlreadyInTargetFolder) {
@@ -304,6 +317,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       secureUrl: movedAsset.secureUrl,
       publicId: movedAsset.publicId,
       resourceType: movedAsset.resourceType,
+      deliveryType: oldAsset.deliveryType,
     };
   }
 

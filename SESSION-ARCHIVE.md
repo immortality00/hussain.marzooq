@@ -3323,3 +3323,149 @@ to the client. **No CSP change** (`api.cloudinary.com` already in `connect-src`)
 **Verification.** `tsc --noEmit` clean · `eslint --max-warnings 0` clean · `npm test` 210/210 pass.
 Hussain verified the populated path on his machine (multi-file upload, per-file titles, partial
 failure retry, and the unchanged single-item editor).
+
+
+---
+
+## §L7 — Private galleries: authenticated delivery + expiring downloads — `done` (2026-09-04)
+
+**Decision, Hussain 2026-09-01: move to authenticated Cloudinary assets with short-lived
+download URLs.** Do not ship the current behaviour.
+
+**Constraint established before specifying — verified against Cloudinary's own docs.** Cloudinary's
+genuinely-expiring *delivery* URLs come from token/cookie-based authentication, which is
+**Advanced plan or higher and requires a Custom Delivery Hostname (CNAME)**. Plain signed URLs
+(`sign_url: true`) **never expire** — Cloudinary support: *"Anybody with the URL will be able to
+see that asset regardless of location, useragent, etc, and this is done by design."* So the
+literal "short-lived Cloudinary delivery URL" is a paid-plan feature. This session implements the
+same guarantee on the current plan, and the result is stronger: access is re-checked against the
+gallery cookie on **every request**, so changing the gallery password revokes access instantly —
+a bearer token cannot do that.
+
+Today: `lib/server/private-galleries.ts:51` ships the raw public `secureUrl` to the browser;
+`components/media/download.ts` merely rewrites it to `/upload/fl_attachment/`; and
+`app/api/private-galleries/download/[slug]/route.ts:78` 302s straight to a Cloudinary archive
+URL. The password protects the route, never the asset — one leaked URL is public forever.
+
+Three parts:
+
+1. **Convert private-gallery media to `type: authenticated`.** Upload API rename with
+   `to_type: "authenticated"` and identical public id — **no re-upload needed**. New script
+   `scripts/convert-gallery-assets.mjs`, idempotent, run once per gallery. The `/upload/` URL
+   stops resolving, which is the entire point. Store `deliveryType` on the media doc so public
+   portfolio media keeps the existing fast Cloudinary path untouched.
+
+2. **Viewing → a same-origin authenticated proxy.** New route
+   `app/api/private-galleries/asset/[gallerySlug]/[mediaId]/route.ts`: verify the gallery cookie
+   with `verifyPrivateGalleryCookieValue` exactly as the download route already does
+   (`download/[slug]/route.ts:28-36`), then stream the bytes from Cloudinary using a server-side
+   signed URL that never reaches the browser. Accept a `w` param and apply the transform
+   server-side, since `lib/cloudinary-image-loader.ts` passes non-Cloudinary srcs through
+   untouched and will not size these. Respond `Cache-Control: private, max-age=300`.
+   **No CSP change** — `img-src 'self'` already covers it, same pattern as D11's thum.io proxy.
+   `lib/server/private-galleries.ts` stops serialising `secureUrl` for gated media and emits the
+   proxy path instead.
+
+3. **Downloads → genuinely time-limited.** `cloudinary.utils.private_download_url` /
+   `signed_download_url` **is** expiry-capable on any plan (full-resolution, no transformations —
+   exactly right for a download). Generate it server-side per click, after the cookie check.
+   `components/media/download.ts` is deleted; `PrivateGalleryBrowser.tsx:98,213` call a new
+   `POST /api/private-galleries/download-url` that returns a short-lived URL. The ZIP route keeps
+   its cookie check and returns a signed, expiring archive URL rather than a plain one.
+   **Known live defect to fix here (found L5, 2026-09-03):** the current ZIP download "downloads
+   but won't open" — `download/[slug]/route.ts:70` builds one `download_zip_url` over
+   `fully_qualified_public_ids` that mix `image/upload/…` and `video/upload/…`; a Cloudinary
+   archive spanning resource types returns an error body the browser saves as a `.zip`. Split the
+   archive per resource type (or archive images only + handle video separately) when you rework it.
+
+Trade-off to accept knowingly: gallery bytes flow through Netlify functions instead of
+Cloudinary's CDN — slower, and counted against function bandwidth. Confined to private galleries
+(a handful of clients at a time); public portfolio media is untouched and still CDN-direct. If
+that ever hurts, the paid alternative is Cloudinary Advanced + CNAME + token auth.
+
+Also in this session:
+- `app/g/[slug]/page.tsx` has **no `generateMetadata` at all** and renders `result.title` +
+  `result.description` in the locked state before authentication. Add `robots: { index: false,
+  follow: false, nocache: true }`, and show a generic "Private gallery" title until unlocked.
+- `next.config.ts` — add `X-Robots-Tag: noindex, nofollow` on `/g/:path*`, matching the
+  `/admin/:path*` block.
+- **Password-gated People profiles have the same hole** (same D12 privacy system).
+  `lib/server/public-people.ts:229-236` correctly filters `isPrivate`, so
+  `app/people/[slug]/page.tsx:18-34` returns `{}` and no name/photo reaches the metadata —
+  **but `{}` also means no `robots` directive**, so the locked page stays crawlable while
+  `PersonPasswordForm` renders that person's `name`, `bio` and `avatarUrl` in the body
+  (`page.tsx:51-58`). Return `robots: { index: false, follow: false }` for the `locked` and
+  `unavailable` states and show a generic locked title, exactly as for `/g/[slug]`.
+
+Delete in this session:
+```
+git rm components/media/download.ts
+```
+
+Gate 1 security: **yes, new trust boundary** — two new authenticated routes. Both verify the
+existing gallery cookie before any Cloudinary call, both rate-limited, both validate `slug` /
+`mediaId` and confirm the media actually belongs to that gallery. No secret crosses to the
+client: the Cloudinary signature is generated and consumed server-side. No CSP change.
+
+**Build outcome (2026-09-04).** Shipped, with four deliberate deviations from the spec above.
+
+1. **One proxy route, not `private-galleries/asset/[gallerySlug]/[mediaId]`.**
+   `app/api/media/asset/[mediaId]/route.ts` serves **two** authorizations — an admin session, or
+   `?g=<gallerySlug>` + a valid gallery cookie + proof of membership. The admin branch is not
+   optional: an `/authenticated/` URL is a broken thumbnail everywhere in `/admin/media`, and admin
+   has no gallery slug to put in the spec's path. Accepts `?w=` (clamped 16–3840), forwards `Range`
+   and passes 206/`Content-Range` through, `Cache-Control: private, max-age=300`, rate-limited.
+2. **Conversion is automatic on attach, not a manual script** (Hussain chose this over the
+   spec-literal script, 2026-09-04: *"private galleries media should not appear in public .. so
+   it's good to have this guard"*). Consequence he accepted: **media in a private gallery cannot be
+   public.** `scripts/convert-gallery-assets.mjs` (`npm run galleries:convert`) survives as backfill.
+3. **The `?kind=` archive split was dropped.** The real cause of the L5 "downloads but won't open"
+   bug is that `fully_qualified_public_ids` is only honoured when `resource_type` is `"auto"`. With
+   `auto` set, one archive handles mixed image/video **and** mixed delivery types, so the
+   Download-gallery button stays a plain `<a>`.
+4. **`deliveryType` was threaded through the whole media lifecycle** (not in the spec):
+   `parseCloudinaryAssetFromUrl` accepts an `/authenticated/` action, `StoredMediaAsset` carries it,
+   and `uploader.destroy`/`uploader.rename` are both given `type`. Without this, deleting or
+   re-categorising a converted item silently no-ops at Cloudinary and orphans the asset.
+
+**Two defects were found in the first cut during Hussain's review and fixed before commit.**
+He reported *"some photos are not getting hidden even though they are in the private gallery"*.
+Cause, diagnosed against his live data: 3 of the 19 members of the `test` gallery had **deleted
+Cloudinary files**, so `rename` threw "Cannot change type of a deleted resource" — and (a) the
+failure aborted the save *after* already mutating media docs while reporting "Nothing was saved",
+and (b) PATCH only processed **newly attached** ids, so re-saving never repaired existing members.
+Fixes: hiding is now one `updateMany` over the **whole member set**, applied before any Cloudinary
+call, so the guard cannot be defeated by a Cloudinary error; PATCH re-applies to the full
+`mediaIds` set (any save self-heals a pre-L7 gallery); a "deleted resource / not found" error is
+classified as *missing*, not *failed* (no file left to leak); and Cloudinary rejections — which are
+often plain objects, not `Error`s, which is why the script printed `[object Object]` — go through
+the shared `cloudinaryErrorMessage`. A knock-on bug was fixed too: `getTransitionImages` is
+`unstable_cache`, which `revalidatePath` does **not** clear, so gallery writes now also call
+`revalidateTag(TRANSITION_IMAGES_TAG, "max")`.
+
+**Also fixed this session, at Hussain's request (outside the L7 spec).** The photography viewer
+reset to Cylinder on every refresh. `PhotographyViewer` now holds the mode in the new
+`hooks/usePersistedChoice.ts`, which reads localStorage through `useSyncExternalStore` — server
+snapshot is the fallback, so React reconciles after hydration with no mismatch and no
+`setState`-in-effect (a plain effect would have reintroduced the first-paint swap D3 fixed).
+
+**New:** `lib/server/cloudinary-private.ts`, `lib/media-asset-path.ts`,
+`lib/server/private-gallery-assets.ts`, `app/api/private-galleries/_lib/gallery-access.ts`,
+`app/api/media/asset/[mediaId]/`, `app/api/private-galleries/download-url/`,
+`scripts/convert-gallery-assets.mjs`, `hooks/usePersistedChoice.ts`, and three test files.
+**Deleted:** `components/media/download.ts`.
+
+**Verification.** `tsc --noEmit` clean · `eslint --max-warnings 0` clean · **238 tests pass**
+(was 206). Verified end-to-end against the live Cloudinary account and database: attaching media
+converts it and **the old public `/upload/` URL 404s**; the proxy returns 403 anonymous, 200 for
+admin, 200 for a gallery member, and **403 for an item not in that gallery**; `?w=200` → 5.7 KB vs
+`?w=800` → 53.7 KB; the unlocked page emits only proxy paths with a correct responsive `srcSet`;
+per-item download returns a real 8.2 MB file through a 5-minute URL; the ZIP returns a valid
+15 MB `application/zip`; `/g/[slug]` sends `X-Robots-Tag: noindex, nofollow` with a generic title;
+deleting the gallery reverts the media to `upload` (confirmed via Cloudinary's Admin API).
+Hussain confirmed the fixed guard and the persisted view on his machine.
+
+**Not verifiable here, owed at content-entry time:** the library holds no video, so the
+`Range`-forwarding path and the **mixed image+video ZIP** were never exercised against real data.
+Check both once a video is in a gallery. Also note: after a *revert* to `upload`, the item's
+versioned URL can 404 for a few minutes until Cloudinary's CDN drops its cached 404.

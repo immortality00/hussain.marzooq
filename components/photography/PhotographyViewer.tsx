@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import dynamic from "next/dynamic";
+import { usePersistedChoice } from "@/hooks/usePersistedChoice";
 import { SearchInput } from "@/components/search/SearchInput";
 import { TagChipRow, type TagChip } from "@/components/media/TagChipRow";
 import MediaGridResults from "@/components/media/MediaGridResults";
@@ -9,7 +10,11 @@ import MediaLightbox from "@/components/media/MediaLightbox";
 import type { MediaItem, TagLink } from "@/components/media/types";
 import { useMediaSearch } from "@/components/media/useMediaSearch";
 import { useModalNavbarLock } from "@/components/media/useModalNavbarLock";
-import ModeSwitcher, { type ViewerMode } from "./ModeSwitcher";
+import ModeSwitcher, {
+  VIEWER_MODE_STORAGE_KEY,
+  isViewerMode,
+  type ViewerMode,
+} from "./ModeSwitcher";
 
 const PhotographyCylinder = dynamic(() => import("./PhotographyCylinder"), { ssr: false });
 const PhotographyHorizontal = dynamic(() => import("./PhotographyHorizontal"), { ssr: false });
@@ -27,7 +32,11 @@ export default function PhotographyViewer({
   tagLinks?: Record<string, TagLink>;
   navChips?: TagChip[];
 }) {
-  const [mode, setMode] = useState<ViewerMode>("cylinder");
+  const [mode, setMode] = usePersistedChoice<ViewerMode>(
+    VIEWER_MODE_STORAGE_KEY,
+    "cylinder",
+    isViewerMode
+  );
   const [active, setActive] = useState<MediaItem | null>(null);
 
   const {

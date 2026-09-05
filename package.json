@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:indexes": "node scripts/ensure-indexes.mjs"
+    "db:indexes": "node scripts/ensure-indexes.mjs",
+    "galleries:convert": "node scripts/convert-gallery-assets.mjs"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
