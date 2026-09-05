@@ -126,8 +126,6 @@
   "124": "extraction-spec.md",
   "125": "cloudinary",
   "126": "clsx",
-  "127": "cloudinary.ts",
-  "128": "location-search.ts",
   "129": "eslint.config.mjs",
   "130": "geist",
   "131": "get-base-url.ts",
@@ -135,10 +133,7 @@
   "133": "next",
   "134": "next-cloudinary",
   "135": "radix-ui",
-  "136": "PageHeader.tsx",
   "137": "resend",
-  "138": "route.ts",
-  "139": "requireAdminOr401",
   "140": "postcss.config.mjs",
   "141": "File Document Icon",
   "142": "Next.js Logo (starter boilerplate)",
@@ -228,12 +223,5 @@
   "226": "Session N6 — Homepage section redesign",
   "227": "Phase S2 — Defects from the 2026-08-17 full-repo audit",
   "228": "Phase T — Tag taxonomy & discipline subpages",
-  "229": "Design & motion skills — which to load, when",
-  "230": "route.ts",
-  "231": "getClientAddress",
-  "232": "ExhibitionGlobe.tsx",
-  "233": "route.ts",
-  "234": "revalidate.ts",
-  "235": "RemovalRequestButton.tsx",
-  "236": "private-galleries.test.ts"
+  "229": "Design & motion skills — which to load, when"
 }
