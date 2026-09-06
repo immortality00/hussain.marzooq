@@ -1190,8 +1190,8 @@
     "semantic_hash": ""
   },
   "package.json": {
-    "mtime": 1788514392.1455774,
-    "ast_hash": "2fcc47874ca13840a45102639c1afdcb",
+    "mtime": 1788692137.6248329,
+    "ast_hash": "751aac22b79e4e6276f030f594cd26e7",
     "semantic_hash": ""
   },
   "postcss.config.mjs": {
@@ -1275,8 +1275,8 @@
     "semantic_hash": "c698309979460d0f02ba616417844399"
   },
   "CLAUDE.md": {
-    "mtime": 1788685783.707067,
-    "ast_hash": "378db40bdcae70d37083d029ec7a745f",
+    "mtime": 1788692403.9158912,
+    "ast_hash": "5f7b7b899efea9c33ab203fc6ae4bb77",
     "semantic_hash": ""
   },
   "README.md": {
@@ -1285,8 +1285,8 @@
     "semantic_hash": "7030b878f3e352238f4fd3a233af0ada"
   },
   "SESSION-QUEUE.md": {
-    "mtime": 1788685825.950828,
-    "ast_hash": "4eea69a9c70cb86a5200676e44a0b09f",
+    "mtime": 1788697428.0029294,
+    "ast_hash": "fcd1d1c289df947e671aa2e704c039f2",
     "semantic_hash": ""
   },
   "public/file.svg": {
@@ -1355,8 +1355,8 @@
     "semantic_hash": "a2bdee4fb2783ac465076738c25ce3e0"
   },
   "SESSION-ARCHIVE.md": {
-    "mtime": 1788685812.799836,
-    "ast_hash": "63ba30a35bdadb17d8e10a197462d302",
+    "mtime": 1788697403.9539557,
+    "ast_hash": "b244d001997d591f86df4c705ce76cb4",
     "semantic_hash": ""
   },
   "lib/auth/session-token.ts": {
@@ -1390,9 +1390,9 @@
     "semantic_hash": "af927f28c26876e0aa0b849f833b7f9a"
   },
   ".github/workflows/ci.yml": {
-    "mtime": 1788429046.3507955,
-    "ast_hash": "ff3f3377d5cbe0df3f953c9ad97dd48a",
-    "semantic_hash": "ff3f3377d5cbe0df3f953c9ad97dd48a"
+    "mtime": 1788692154.1669087,
+    "ast_hash": "9df181930b1c57cba735d7938b2af097",
+    "semantic_hash": ""
   },
   "app/admin/(protected)/pages/components/CardImageWarning.tsx": {
     "mtime": 1785770439.057872,
@@ -1625,9 +1625,9 @@
     "semantic_hash": "a2866d430ec72099dc522eadd23524f1"
   },
   "app/api/media-tags/route.ts": {
-    "mtime": 1787135723.2831538,
-    "ast_hash": "4e407f24633590ce877c79f2c5d918b5",
-    "semantic_hash": "4e407f24633590ce877c79f2c5d918b5"
+    "mtime": 1788687124.7490754,
+    "ast_hash": "1e2aa750b32b1b86a5dc9ccd7250a084",
+    "semantic_hash": ""
   },
   "components/admin/sortable/SortableList.tsx": {
     "mtime": 1787963146.793254,
@@ -2150,8 +2150,8 @@
     "semantic_hash": "8c7e782f7d925b70c545ddc9e83844cd"
   },
   "app/api/media/asset/[mediaId]/route.ts": {
-    "mtime": 1788514017.872791,
-    "ast_hash": "c6c4b7b906ad7d6414d0f16d05b1d84e",
+    "mtime": 1788687019.3367734,
+    "ast_hash": "751053b56e690f3849e26ec20574af5e",
     "semantic_hash": ""
   },
   "app/api/private-galleries/_lib/gallery-access.ts": {
@@ -2237,6 +2237,56 @@
   "test/site-url.test.ts": {
     "mtime": 1788684527.9845333,
     "ast_hash": "60906b2063928c102fceb04e342dc73f",
+    "semantic_hash": ""
+  },
+  "e2e/fixtures.ts": {
+    "mtime": 1788692377.1897707,
+    "ast_hash": "0712a4654db858c2f730483dc35aee47",
+    "semantic_hash": ""
+  },
+  "e2e/smoke.spec.ts": {
+    "mtime": 1788692476.7351453,
+    "ast_hash": "708b0bfde234457cf0b62e09cf19a8b5",
+    "semantic_hash": ""
+  },
+  "playwright.config.ts": {
+    "mtime": 1788692032.783675,
+    "ast_hash": "8f0a88b314eb63aae8b70e02b1748666",
+    "semantic_hash": ""
+  },
+  "scripts/seed-e2e.mjs": {
+    "mtime": 1788692377.1688533,
+    "ast_hash": "694c8ff26be0072a943d1aea180863da",
+    "semantic_hash": ""
+  },
+  "test/api/asset-proxy.test.ts": {
+    "mtime": 1788686978.331266,
+    "ast_hash": "5cdf3d6a8802f9bd35eb882bd40165d0",
+    "semantic_hash": ""
+  },
+  "test/api/gallery-access.test.ts": {
+    "mtime": 1788687048.947619,
+    "ast_hash": "1b374e0e5a711ada319161fcc5480a14",
+    "semantic_hash": ""
+  },
+  "test/api/list-public-pagination.test.ts": {
+    "mtime": 1788692170.3629365,
+    "ast_hash": "bc03cbd1bb9f2a25fbf49806cb6264d6",
+    "semantic_hash": ""
+  },
+  "test/api/route-authorization.test.ts": {
+    "mtime": 1788687104.696138,
+    "ast_hash": "64f50202b4c3c63621b9abb97cfd1bc3",
+    "semantic_hash": ""
+  },
+  "test/media-asset-management.test.ts": {
+    "mtime": 1788687458.773192,
+    "ast_hash": "9e93d7ba6a32a0aff55f1567c8c74263",
+    "semantic_hash": ""
+  },
+  "test/media-search.test.ts": {
+    "mtime": 1788687375.6200836,
+    "ast_hash": "cdfed1b607a592aa95243f400197d135",
     "semantic_hash": ""
   }
 }

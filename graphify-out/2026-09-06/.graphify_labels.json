@@ -127,18 +127,12 @@
   "125": "cloudinary",
   "126": "clsx",
   "127": "cloudinary.ts",
-  "128": "media-serializers.ts",
   "129": "eslint.config.mjs",
   "130": "geist",
   "131": "HomeHero.tsx",
   "132": "mongodb",
   "133": "next",
   "134": "next-cloudinary",
-  "135": "radix-ui",
-  "136": "escape-html.ts",
-  "137": "resend",
-  "138": "useModalVisibilityEvents.ts",
-  "139": "WebProjectCard.tsx",
   "140": "postcss.config.mjs",
   "141": "File Document Icon",
   "142": "Next.js Logo (starter boilerplate)",
@@ -228,6 +222,5 @@
   "226": "Session N6 — Homepage section redesign",
   "227": "Phase S2 — Defects from the 2026-08-17 full-repo audit",
   "228": "Phase T — Tag taxonomy & discipline subpages",
-  "229": "Design & motion skills — which to load, when",
-  "230": "get-base-url.ts"
+  "229": "Design & motion skills — which to load, when"
 }
