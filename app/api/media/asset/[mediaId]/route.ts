@@ -23,7 +23,10 @@ const MIN_WIDTH = 16;
 const MAX_WIDTH = 3840;
 
 function parseWidth(value: string | null) {
-  const width = Number(value);
+  const raw = (value ?? "").trim();
+  if (!raw) return null;
+
+  const width = Number(raw);
   if (!Number.isFinite(width)) return null;
   return Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(width)));
 }

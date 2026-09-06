@@ -45,13 +45,13 @@ function serializeTag(doc: Record<string, unknown>, counts: Map<string, number>)
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const scope = url.searchParams.get("scope");
-  const db = await getDb();
 
   if (scope === "admin") {
     if (!(await isAdminAuthedServer())) {
       return noStoreJson({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
 
+    const db = await getDb();
     const [docs, counts] = await Promise.all([
       db.collection("media_tags").find({}).sort({ order: 1, createdAt: -1 }).toArray(),
       tagCounts(db),
@@ -71,6 +71,7 @@ export async function GET(req: Request) {
     return noStoreJson({ ok: false, error: "Too many requests. Try again later." }, { status: 429 });
   }
 
+  const db = await getDb();
   const docs = await db
     .collection("media_tags")
     .find({ isActive: true })

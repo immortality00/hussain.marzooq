@@ -30,3 +30,43 @@ jobs:
           MONGODB_URI: mongodb://127.0.0.1:27017
           MONGODB_DB_NAME: hm_visuals_ci
           RESEND_API_KEY: ci_resend_key
+
+  e2e:
+    runs-on: ubuntu-latest
+    services:
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # The seed script refuses any database whose name is not an e2e/test one,
+      # and playwright.config.ts forces the same name onto the server it starts.
+      MONGODB_URI: mongodb://127.0.0.1:27017
+      MONGODB_DB_NAME: hm_visuals_e2e
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run db:seed-e2e
+
+      - run: npm run test:e2e
+
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

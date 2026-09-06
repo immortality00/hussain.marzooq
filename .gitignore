@@ -49,3 +49,9 @@ cities1000.zip
 # Grapity
 graph.json
 graphify-out/cost.json
+
+# playwright
+/test-results
+/playwright-report
+/blob-report
+/playwright/.cache
