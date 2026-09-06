@@ -157,6 +157,13 @@ export async function POST(req: Request) {
   if (!review) return noStoreJson({ ok: false, error: "Review is required." }, { status: 400 });
   if (!rating) return noStoreJson({ ok: false, error: "Star rating is required." }, { status: 400 });
 
+  if (body.consent !== true) {
+    return noStoreJson(
+      { ok: false, error: "Publication consent is required." },
+      { status: 400 }
+    );
+  }
+
   if (!isValidFormStartedAt(body.formStartedAt, MINIMUM_FORM_TIME_MS)) {
     return noStoreJson(
       { ok: false, error: "Submission was too fast. Please try again." },
@@ -257,6 +264,8 @@ export async function POST(req: Request) {
     reviewAssetFolder,
     reviewProfileFolder: reviewAssetFolder ? `${reviewAssetFolder}/pfp` : null,
     reviewPhotosFolder: reviewAssetFolder ? `${reviewAssetFolder}/photos` : null,
+    publicationConsent: true,
+    publicationConsentAt: now,
     isApproved: false,
     sortOrder: nextSortOrder,
     createdAt: now,
@@ -267,7 +276,11 @@ export async function POST(req: Request) {
     await commitUploadSession(db, verifiedSessionId);
   }
 
-  sendTestimonialNotification({ name, email, review, rating, about: about || null }).catch(() => {});
+  sendTestimonialNotification({ name, email, review, rating, about: about || null }).catch(
+    (error) => {
+      console.error("Testimonial notification email failed", error);
+    }
+  );
 
   return noStoreJson({ ok: true });
 }

@@ -52,6 +52,12 @@ export const PAGE_ROWS: PageRow[] = [
     sectionsSlug: "web-development",
   },
   { key: "services", label: "Services", seoSlug: "services" },
+  {
+    key: "services-detail",
+    label: "Services — detail page",
+    seoSlug: "services-detail",
+    seoDetailPage: true,
+  },
   { key: "people", label: "People", seoSlug: "people", sectionsSlug: "people" },
   {
     key: "people-detail",
@@ -76,6 +82,7 @@ export const PAGE_ROWS: PageRow[] = [
   },
   { key: "contact", label: "Contact", seoSlug: "contact" },
   { key: "testimonials", label: "Testimonials", seoSlug: "testimonials", sectionsSlug: "testimonials" },
+  { key: "privacy", label: "Privacy", seoSlug: "privacy" },
 ];
 
 export type PageGroup = "main" | "discipline" | "template";

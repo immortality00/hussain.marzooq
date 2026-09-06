@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ModalPortal } from "@/components/shared/ModalPortal";
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
@@ -23,6 +24,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
   const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [hasPendingUploads, setHasPendingUploads] = useState(false);
+  const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [banner, setBanner] = useState<BannerState>(null);
@@ -126,6 +128,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
     setProfilePhotoUrl("");
     setPhotoUrls([]);
     setHasPendingUploads(false);
+    setConsent(false);
     setWebsite("");
     setSubmitting(false);
     setBanner(null);
@@ -183,6 +186,11 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
       return;
     }
 
+    if (!consent) {
+      setBanner({ type: "err", text: "Publication consent is required." });
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -198,6 +206,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
           rating,
           profilePhotoUrl,
           photoUrls,
+          consent,
           website,
           formStartedAt,
         }),
@@ -368,10 +377,35 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                     </div>
                   ) : null}
 
-                  <div className="rounded-[2rem] border border-border/60 bg-muted/20 p-4">
+                  <div className="space-y-4 rounded-[2rem] border border-border/60 bg-muted/20 p-4">
+                    <label
+                      htmlFor="review-consent"
+                      className="flex items-start gap-3 text-sm leading-6 text-muted-foreground"
+                    >
+                      <input
+                        id="review-consent"
+                        type="checkbox"
+                        checked={consent}
+                        onChange={(event) => setConsent(event.target.checked)}
+                        className="mt-1 size-4 shrink-0 accent-foreground"
+                      />
+                      <span>
+                        I agree to my name, review, photos and location being published on this
+                        site. See the{" "}
+                        <Link
+                          href="/privacy"
+                          target="_blank"
+                          className="underline underline-offset-4 hover:text-foreground"
+                        >
+                          privacy page
+                        </Link>
+                        .
+                      </span>
+                    </label>
+
                     <button
                       type="button"
-                      disabled={submitting}
+                      disabled={submitting || !consent}
                       onClick={() => void submit()}
                       className="w-full rounded-full bg-foreground px-5 py-3 text-sm font-medium text-background hover:opacity-90 disabled:opacity-60"
                     >

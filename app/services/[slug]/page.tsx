@@ -1,12 +1,51 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import SmartImage from "@/components/shared/SmartImage";
 import { notFound } from "next/navigation";
 import { getDb } from "@/lib/server/db";
+import { getPageSeo } from "@/lib/server/page-seo";
+import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { workLinkForCategory } from "@/lib/server/public-services";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 
 export const revalidate = 300;
+
+type PublicService = { name: string; description: string; imageUrl: string };
+
+async function getPublicService(slug: string): Promise<PublicService | null> {
+  try {
+    const db = await getDb();
+    const doc = await db
+      .collection("services")
+      .findOne({ slug, isActive: true, isArchived: { $ne: true } });
+    if (!doc) return null;
+    return {
+      name: typeof doc.name === "string" ? doc.name : "",
+      description: typeof doc.description === "string" ? doc.description : "",
+      imageUrl: typeof doc.imageUrl === "string" ? doc.imageUrl : "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const [service, seo] = await Promise.all([getPublicService(slug), getPageSeo("services-detail")]);
+  if (!service) return {};
+
+  return buildPublicMetadata({
+    title: seo.title.replaceAll("{name}", service.name),
+    description: service.description.slice(0, 200) || seo.description.replaceAll("{name}", service.name),
+    path: `/services/${slug}`,
+    image: service.imageUrl,
+  });
+}
 
 export default async function ServiceDetailPage({
   params,

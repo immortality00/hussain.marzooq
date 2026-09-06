@@ -90,6 +90,24 @@ const DEFAULTS: Record<string, SeoDefaults> = {
     headerDescription:
       "Photography, film, dance, creative direction, web systems, and digital work shaped around the tone of the project.",
   },
+  // Template for every /services/[slug] page — {name} is replaced with the
+  // service name at render time. The on-page header is the service's own name
+  // (edited in the Services admin), so only the search & social fields apply.
+  "services-detail": {
+    title: "{name} — HM Visuals",
+    description:
+      "{name} by Hussain Marzooq — scope, starting price, and booking for this service.",
+    headerTitle: "{name}",
+    headerDescription: "",
+  },
+  privacy: {
+    title: "Privacy — HM Visuals",
+    description:
+      "How HM Visuals handles the information you send through this site, and the services that process it.",
+    headerTitle: "Privacy",
+    headerDescription:
+      "What this site collects, why, and which services process it.",
+  },
   people: {
     title: "People — HM Visuals",
     description:

@@ -1,9 +1,27 @@
 import { Resend } from "resend";
 import { escapeHtml } from "@/lib/server/escape-html";
+import { getBaseUrl } from "@/lib/server/get-base-url";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 const TO = process.env.NOTIFICATION_EMAIL ?? "";
-const FROM = "HM Visuals <onboarding@resend.dev>";
+
+const RESEND_TEST_FROM = "HM Visuals <onboarding@resend.dev>";
+
+let warnedAboutFrom = false;
+
+function fromAddress() {
+  const configured = process.env.RESEND_FROM?.trim();
+  if (configured) return configured;
+
+  if (!warnedAboutFrom) {
+    warnedAboutFrom = true;
+    console.warn(
+      "RESEND_FROM is not set — falling back to Resend's testing domain, which only delivers to the Resend account owner."
+    );
+  }
+
+  return RESEND_TEST_FROM;
+}
 
 export async function sendInquiryNotification(data: {
   name: string;
@@ -13,10 +31,11 @@ export async function sendInquiryNotification(data: {
   category: string | null;
 }) {
   if (!TO) return;
+  const baseUrl = await getBaseUrl();
   const name = escapeHtml(data.name);
   const email = escapeHtml(data.email);
   await resend.emails.send({
-    from: FROM,
+    from: fromAddress(),
     to: TO,
     subject: `New inquiry from ${data.name}`,
     html: `
@@ -27,7 +46,7 @@ export async function sendInquiryNotification(data: {
       ${data.category ? `<p><strong>Category:</strong> ${escapeHtml(data.category)}</p>` : ""}
       <p><strong>Message:</strong></p>
       <blockquote style="border-left:3px solid #ccc;padding-left:12px;color:#555">${escapeHtml(data.message).replace(/\n/g, "<br>")}</blockquote>
-      <p style="margin-top:24px"><a href="https://hussainmarzooq.com/admin/inquiries">View in admin →</a></p>
+      <p style="margin-top:24px"><a href="${baseUrl}/admin/inquiries">View in admin →</a></p>
     `,
   });
 }
@@ -40,11 +59,12 @@ export async function sendTestimonialNotification(data: {
   about: string | null;
 }) {
   if (!TO) return;
+  const baseUrl = await getBaseUrl();
   const stars = data.rating ? "★".repeat(data.rating) + "☆".repeat(5 - data.rating) : "—";
   const name = escapeHtml(data.name);
   const email = escapeHtml(data.email);
   await resend.emails.send({
-    from: FROM,
+    from: fromAddress(),
     to: TO,
     subject: `New testimonial from ${data.name} — pending approval`,
     html: `
@@ -55,7 +75,7 @@ export async function sendTestimonialNotification(data: {
       <p><strong>Rating:</strong> ${stars}</p>
       <p><strong>Review:</strong></p>
       <blockquote style="border-left:3px solid #ccc;padding-left:12px;color:#555">${escapeHtml(data.review).replace(/\n/g, "<br>")}</blockquote>
-      <p style="margin-top:24px"><a href="https://hussainmarzooq.com/admin/testimonials">Review &amp; approve →</a></p>
+      <p style="margin-top:24px"><a href="${baseUrl}/admin/testimonials">Review &amp; approve →</a></p>
     `,
   });
 }

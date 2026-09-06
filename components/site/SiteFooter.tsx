@@ -77,7 +77,12 @@ export async function SiteFooter() {
 
         <div className="mt-10 flex flex-col gap-3 border-t pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <div>HM Visuals — Dubai based, available worldwide.</div>
-          <div>Built for clarity, atmosphere, and strong visual storytelling.</div>
+          <div className="flex items-center gap-4">
+            <Link href="/privacy" className="hover:text-foreground">
+              Privacy
+            </Link>
+            <span>Built for clarity, atmosphere, and strong visual storytelling.</span>
+          </div>
         </div>
       </div>
     </footer>

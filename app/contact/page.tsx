@@ -12,6 +12,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return buildPublicMetadata({
     title: seo.title,
     description: seo.description,
+    path: "/contact",
     image: seo.ogImageUrl,
   });
 }

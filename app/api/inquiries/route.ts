@@ -214,7 +214,9 @@ export async function POST(req: Request) {
     );
   }
 
-  sendInquiryNotification({ name, email, message, serviceName, category }).catch(() => {});
+  sendInquiryNotification({ name, email, message, serviceName, category }).catch((error) => {
+    console.error("Inquiry notification email failed", error);
+  });
 
   return noStoreJson({ ok: true, id: String(insertResult.insertedId) });
 }

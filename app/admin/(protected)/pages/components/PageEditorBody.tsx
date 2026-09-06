@@ -61,6 +61,7 @@ export function PageEditorBody({
             onChange={onSeoChange}
             detailPage={row.seoDetailPage}
             detailToken={row.seoSlug?.endsWith("-tag") ? "tag" : "name"}
+            shareImage={row.key !== "services-detail"}
           />
         )}
 

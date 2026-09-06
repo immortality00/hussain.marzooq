@@ -6,8 +6,7 @@ import "./globals.css";
 import { AppShell } from "@/components/site/AppShell";
 import { SiteFooter } from "@/components/site/SiteFooter";
 import { getTransitionImages } from "@/lib/server/public-media";
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://hussain-marzooq.com";
+import { SITE_URL } from "@/lib/seo/site-url";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

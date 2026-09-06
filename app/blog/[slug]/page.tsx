@@ -29,6 +29,7 @@ export async function generateMetadata({
   return buildPublicMetadata({
     title,
     description,
+    path: `/blog/${slug}`,
     image: post.ogImageUrl,
     type: "article",
   });

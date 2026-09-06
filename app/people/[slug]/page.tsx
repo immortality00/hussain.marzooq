@@ -31,6 +31,7 @@ export async function generateMetadata({
   return buildPublicMetadata({
     title: seo.title.replaceAll("{name}", person.name),
     description: seo.description.replaceAll("{name}", person.name),
+    path: `/people/${slug}`,
     image: person.featuredImage ?? person.avatarUrl ?? undefined,
     type: "profile",
   });

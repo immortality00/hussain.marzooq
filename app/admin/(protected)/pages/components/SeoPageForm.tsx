@@ -17,6 +17,7 @@ export function SeoPageForm({
   onChange,
   detailPage = false,
   detailToken = "name",
+  shareImage = true,
 }: {
   draft: SeoDraft;
   onChange: (field: keyof SeoDraft, value: string) => void;
@@ -25,6 +26,7 @@ export function SeoPageForm({
   // value at render time.
   detailPage?: boolean;
   detailToken?: "name" | "tag";
+  shareImage?: boolean;
 }) {
   const detailNoun = detailToken === "tag" ? "tag" : "person";
   return (
@@ -87,19 +89,21 @@ export function SeoPageForm({
             {draft.description.length} chars — recommended 120–160
           </p>
         </div>
-        <div>
-          <label className="mb-1 block text-xs font-medium text-muted-foreground">
-            Share image
-          </label>
-          <ImageField
-            value={{ url: draft.ogImageUrl, publicId: "" }}
-            onChange={(image) => onChange("ogImageUrl", image.url)}
-          />
-          <p className="mt-1 text-xs text-muted-foreground">
-            Shown when this page&apos;s link is shared on social or messaging. Leave empty to
-            use the HM Visuals card.
-          </p>
-        </div>
+        {shareImage && (
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">
+              Share image
+            </label>
+            <ImageField
+              value={{ url: draft.ogImageUrl, publicId: "" }}
+              onChange={(image) => onChange("ogImageUrl", image.url)}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Shown when this page&apos;s link is shared on social or messaging. Leave empty to
+              use the HM Visuals card.
+            </p>
+          </div>
+        )}
       </GroupCard>
     </>
   );

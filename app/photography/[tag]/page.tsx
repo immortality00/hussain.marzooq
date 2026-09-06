@@ -21,6 +21,7 @@ export async function generateMetadata({
   return buildPublicMetadata({
     title: meta.seo.title.replaceAll("{tag}", meta.tag.label),
     description: meta.seo.description.replaceAll("{tag}", meta.tag.label),
+    path: `/photography/${meta.tag.slug}`,
     image: meta.seo.ogImageUrl,
   });
 }
