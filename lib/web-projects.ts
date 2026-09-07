@@ -33,3 +33,7 @@ export function projectUrlLabel(input: string): string {
   const url = new URL(normalized);
   return url.hostname.replace(/^www\./, "");
 }
+
+export function isConfiguredProjectUrl(normalized: string, configured: string[]): boolean {
+  return configured.some((candidate) => toProjectUrl(candidate) === normalized);
+}

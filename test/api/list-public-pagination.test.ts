@@ -13,6 +13,10 @@ vi.mock("@/lib/server/db", () => ({
   getDb: async () => ({ collection: () => ({ find }) }),
 }));
 
+vi.mock("@/lib/server/request-guards", () => ({
+  consumeFixedWindowRateLimit: async () => ({ limited: false, count: 1, resetAt: "" }),
+}));
+
 import { encodeMediaCursor } from "@/lib/media-cursor";
 import { GET } from "@/app/api/media/list-public/route";
 

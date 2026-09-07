@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { ModalPortal } from "@/components/shared/ModalPortal";
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
 import { LocationSearch } from "./review-form/LocationSearch";
@@ -13,6 +13,11 @@ import { isValidEmail } from "./review-form/utils";
 import { useModalVisibilityEvents } from "./review-form/useModalVisibilityEvents";
 
 export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?: boolean }) {
+  const nameId = useId();
+  const emailId = useId();
+  const aboutId = useId();
+  const starsId = useId();
+  const reviewId = useId();
   const [open, setOpen] = useState(false);
 
   const [name, setName] = useState("");
@@ -251,6 +256,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
       {open ? (
         <ModalPortal
           onClose={() => void handleClose()}
+          label="Leave a review"
           closeOnEscape={false}
           className="fixed inset-0 z-[150] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-5"
         >
@@ -298,8 +304,11 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
 
                       <div className="min-w-0 flex-1 space-y-4">
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Name *</label>
+                          <label htmlFor={nameId} className="text-sm font-medium">
+                            Name *
+                          </label>
                           <input
+                            id={nameId}
                             value={name}
                             onChange={(event) => setName(event.target.value)}
                             className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
@@ -308,8 +317,11 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                         </div>
 
                         <div className="space-y-2">
-                          <label className="text-sm font-medium">Email *</label>
+                          <label htmlFor={emailId} className="text-sm font-medium">
+                            Email *
+                          </label>
                           <input
+                            id={emailId}
                             value={email}
                             onChange={(event) => setEmail(event.target.value)}
                             className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
@@ -322,8 +334,11 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">About you</label>
+                      <label htmlFor={aboutId} className="text-sm font-medium">
+                        About you
+                      </label>
                       <input
+                        id={aboutId}
                         value={about}
                         onChange={(event) => setAbout(event.target.value)}
                         className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
@@ -339,15 +354,20 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                   </div>
 
                   <div className="rounded-[2rem] border border-border/60 bg-muted/20 p-4">
-                    <label className="text-sm font-medium">Stars *</label>
-                    <div className="mt-3">
+                    <div id={starsId} className="text-sm font-medium">
+                      Stars *
+                    </div>
+                    <div className="mt-3" role="group" aria-labelledby={starsId}>
                       <StarPicker rating={rating} setRating={setRating} />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-medium">Review *</label>
+                    <label htmlFor={reviewId} className="text-sm font-medium">
+                      Review *
+                    </label>
                     <textarea
+                      id={reviewId}
                       value={review}
                       onChange={(event) => setReview(event.target.value)}
                       className="min-h-44 w-full rounded-2xl border border-border/70 bg-background px-4 py-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-ring"

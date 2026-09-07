@@ -21,7 +21,7 @@ export function ReviewPhotosField({
   return (
     <div className="rounded-[2rem] border border-border/60 bg-muted/20 p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <label className="text-sm font-medium">Photos</label>
+        <div className="text-sm font-medium">Photos</div>
 
         <div className="flex flex-wrap gap-2">
           {folder ? (

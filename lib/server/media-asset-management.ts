@@ -52,6 +52,12 @@ export function assetIsInsideFolder(publicId: string | null | undefined, folder:
   return normalizedPublicId.startsWith(`${folder}/`);
 }
 
+export function folderOfPublicId(publicId: string | null | undefined) {
+  const normalized = (publicId ?? "").trim().replace(/^\/+/, "");
+  const lastSlash = normalized.lastIndexOf("/");
+  return lastSlash > 0 ? normalized.slice(0, lastSlash) : "";
+}
+
 export function assetsPointToSameCloudinaryFile(a: StoredMediaAsset, b: StoredMediaAsset) {
   return Boolean(a.publicId && b.publicId && a.publicId === b.publicId);
 }

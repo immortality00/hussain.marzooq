@@ -3,7 +3,9 @@ import {
   createPrivateGalleryCookieValue,
   getPrivateGalleryExpiryDate,
   hashGalleryPassword,
+  isFutureDate,
   isPrivateGalleryExpired,
+  isSameExpiryInstant,
   isPrivateGalleryUnavailable,
   makeGalleryAccessToken,
   privateGalleryCookieName,
@@ -107,6 +109,48 @@ describe("private gallery availability", () => {
   test("falls back to the legacy expiresAt field", () => {
     const date = new Date();
     expect(getPrivateGalleryExpiryDate({ expiresAt: date })).toBe(date);
+    expect(getPrivateGalleryExpiryDate({})).toBeNull();
+  });
+});
+
+describe("gallery expiry change detection", () => {
+  test("treats the same instant as unchanged, to the minute", () => {
+    const a = new Date("2026-12-31T19:00:00.000Z");
+    const b = new Date("2026-12-31T19:00:41.000Z");
+
+    expect(isSameExpiryInstant(a, b)).toBe(true);
+    expect(isSameExpiryInstant(a, new Date("2026-12-31T19:01:00.000Z"))).toBe(false);
+  });
+
+  test("a missing side is never 'unchanged'", () => {
+    expect(isSameExpiryInstant(null, new Date())).toBe(false);
+    expect(isSameExpiryInstant(new Date(), null)).toBe(false);
+    expect(isSameExpiryInstant(null, null)).toBe(false);
+  });
+
+  test("resubmitting a past expiry is unchanged, so a PATCH need not extend access", () => {
+    const stored = new Date(Date.now() - 86_400_000);
+    const resubmitted = new Date(stored.getTime());
+
+    expect(isFutureDate(resubmitted)).toBe(false);
+    expect(isSameExpiryInstant(resubmitted, stored)).toBe(true);
+  });
+
+  test("a different past expiry is still rejected", () => {
+    const stored = new Date(Date.now() - 86_400_000);
+    const submitted = new Date(Date.now() - 3_600_000);
+
+    expect(isFutureDate(submitted)).toBe(false);
+    expect(isSameExpiryInstant(submitted, stored)).toBe(false);
+  });
+
+  test("getPrivateGalleryExpiryDate falls back to the legacy expiresAt field", () => {
+    const legacy = new Date("2026-12-31T19:00:00.000Z");
+
+    expect(getPrivateGalleryExpiryDate({ expiresAt: legacy })).toEqual(legacy);
+    expect(getPrivateGalleryExpiryDate({ expiresAtUtc: legacy, expiresAt: new Date(0) })).toEqual(
+      legacy
+    );
     expect(getPrivateGalleryExpiryDate({})).toBeNull();
   });
 });

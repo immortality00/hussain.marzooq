@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getClientAddress } from "@/app/api/_lib/public-form-security";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
-import { toProjectUrl } from "@/lib/web-projects";
+import { isConfiguredProjectUrl, toProjectUrl } from "@/lib/web-projects";
+import { getPageSections } from "@/lib/server/page-sections";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,11 @@ export async function GET(req: Request) {
   });
   if (rate.limited) {
     return NextResponse.json({ ok: false, error: "Too many requests" }, { status: 429 });
+  }
+
+  const sections = await getPageSections("web-development");
+  if (!isConfiguredProjectUrl(normalized, sections.projects?.urls ?? [])) {
+    return NextResponse.json({ ok: false, error: "Unknown project" }, { status: 403 });
   }
 
   const shot = `https://image.thum.io/get/width/${PREVIEW_WIDTH}/crop/${PREVIEW_HEIGHT}/noanimate/${normalized}`;

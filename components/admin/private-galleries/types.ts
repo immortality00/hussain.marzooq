@@ -6,6 +6,7 @@ export type GalleryItem = {
   mediaIds: string[];
   isActive: boolean;
   expiresAtLocal: string;
+  expiresAtUtc?: string | null;
   createdAt?: string | null;
   updatedAt?: string | null;
 };

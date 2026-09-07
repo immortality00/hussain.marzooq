@@ -2,6 +2,8 @@ import {
   listGalleryMedia,
   openUnlockedGallery,
 } from "@/app/api/private-galleries/_lib/gallery-access";
+import { getClientAddress } from "@/app/api/_lib/public-form-security";
+import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import {
   expiringArchiveUrl,
   fullyQualifiedPublicId,
@@ -11,7 +13,19 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: Request, ctx: { params: Promise<{ slug: string }> }) {
+const ARCHIVE_RATE_LIMIT_MAX = 10;
+const ARCHIVE_RATE_LIMIT_WINDOW_MS = 60_000;
+
+export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
+  const rateLimit = await consumeFixedWindowRateLimit({
+    bucket: "gallery-zip",
+    key: getClientAddress(req),
+    limit: ARCHIVE_RATE_LIMIT_MAX,
+    windowMs: ARCHIVE_RATE_LIMIT_WINDOW_MS,
+  });
+
+  if (rateLimit.limited) return new Response("Too many requests", { status: 429 });
+
   const { slug } = await ctx.params;
 
   const unlocked = await openUnlockedGallery(slug);

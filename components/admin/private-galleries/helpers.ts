@@ -8,9 +8,24 @@ export function parseLocalDateTime(value: string) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
+export function isExpiredLocalDateTime(value: string) {
+  const parsed = parseLocalDateTime(value);
+  return parsed ? parsed.getTime() <= Date.now() : false;
+}
+
+export function getGalleryExpiry(item: GalleryItem) {
+  return item.expiresAtUtc
+    ? parseLocalDateTime(item.expiresAtUtc)
+    : parseLocalDateTime(item.expiresAtLocal);
+}
+
+export function isGalleryExpired(item: GalleryItem) {
+  const expiry = getGalleryExpiry(item);
+  return expiry ? expiry.getTime() <= Date.now() : false;
+}
+
 export function getGalleryStatus(item: GalleryItem) {
-  const expiry = parseLocalDateTime(item.expiresAtLocal);
-  const isExpired = expiry ? expiry.getTime() <= Date.now() : false;
+  const isExpired = isGalleryExpired(item);
 
   if (isExpired) {
     return {

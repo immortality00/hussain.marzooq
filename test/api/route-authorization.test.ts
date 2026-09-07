@@ -80,6 +80,12 @@ const routes: Route[] = [
     load: () => import("@/app/api/blog/[id]/route"),
   },
   {
+    name: "GET /api/blog-categories",
+    method: "GET",
+    path: "/api/blog-categories",
+    load: () => import("@/app/api/blog-categories/route"),
+  },
+  {
     name: "POST /api/blog-categories",
     method: "POST",
     path: "/api/blog-categories",
@@ -252,6 +258,12 @@ const routes: Route[] = [
     load: () => import("@/app/api/private-galleries/[id]/route"),
   },
   {
+    name: "GET /api/service-categories",
+    method: "GET",
+    path: "/api/service-categories",
+    load: () => import("@/app/api/service-categories/route"),
+  },
+  {
     name: "POST /api/service-categories",
     method: "POST",
     path: "/api/service-categories",
@@ -329,12 +341,6 @@ const routes: Route[] = [
     path: `/api/testimonials/${OID}`,
     params: { id: OID },
     load: () => import("@/app/api/testimonials/[id]/route"),
-  },
-  {
-    name: "POST /api/testimonials/reorder",
-    method: "POST",
-    path: "/api/testimonials/reorder",
-    load: () => import("@/app/api/testimonials/reorder/route"),
   },
 ];
 

@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 export default function ContactMessageField({
   message,
   setMessage,
@@ -9,6 +11,8 @@ export default function ContactMessageField({
   setMessage: (value: string) => void;
   contextMessage?: string;
 }) {
+  const messageId = useId();
+
   return (
     <div className="space-y-3 sm:col-span-2">
       {contextMessage ? (
@@ -23,8 +27,11 @@ export default function ContactMessageField({
       ) : null}
 
       <div className="space-y-2">
-        <label className="text-sm font-medium">Message *</label>
+        <label htmlFor={messageId} className="text-sm font-medium">
+          Message *
+        </label>
         <textarea
+          id={messageId}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           className="h-32 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"

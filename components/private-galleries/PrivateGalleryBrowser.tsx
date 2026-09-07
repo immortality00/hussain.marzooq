@@ -137,6 +137,7 @@ export default function PrivateGalleryBrowser({
       {active ? (
         <ModalPortal
           onClose={() => setActive(null)}
+          label={active.title || "Gallery item"}
           className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4"
         >
           <div

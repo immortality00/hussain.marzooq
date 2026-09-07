@@ -44,6 +44,18 @@ export type ResolvedPeopleSelection = {
   gatedPersonName: string | null;
 };
 
+export function asHttpUrl(v: unknown, max = 500): string {
+  const raw = asString(v).trim().slice(0, max);
+  if (!raw) return "";
+
+  try {
+    const url = new URL(raw);
+    return url.protocol === "http:" || url.protocol === "https:" ? raw : "";
+  } catch {
+    return "";
+  }
+}
+
 export function sanitizeAppearances(v: unknown): Appearance[] {
   if (!Array.isArray(v)) return [];
   const out: Appearance[] = [];
@@ -65,7 +77,7 @@ export function sanitizeAppearances(v: unknown): Appearance[] {
     const dateFrom = asString(item.dateFrom).trim().slice(0, 32);
     const dateTo = asString(item.dateTo).trim().slice(0, 32);
     const notes = asString(item.notes).trim().slice(0, 2000);
-    const link = asString(item.link).trim().slice(0, 500);
+    const link = asHttpUrl(item.link);
 
     if (!title && !venue) continue;
 
@@ -224,6 +236,7 @@ export function parseNftMeta(
   }
 
   const price = asNumberOrNull(source.price);
+  if (price !== null && price < 0) return { ok: false, error: "NFT price cannot be negative." };
 
   let editionsTotal: number | null = null;
   let editionsRemaining: number | null = null;

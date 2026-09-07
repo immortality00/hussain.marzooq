@@ -1,6 +1,10 @@
 import { ObjectId, type Db } from "mongodb";
 import { asStringArray } from "@/app/api/_lib/common";
-import { makeGallerySlug, normalizeLocalDateTimeString } from "@/lib/private-galleries";
+import {
+  getPrivateGalleryExpiryDate,
+  makeGallerySlug,
+  normalizeLocalDateTimeString,
+} from "@/lib/private-galleries";
 
 export type PrivateGalleryAdminItem = {
   id: string;
@@ -10,6 +14,7 @@ export type PrivateGalleryAdminItem = {
   mediaIds: string[];
   isActive: boolean;
   expiresAtLocal: string;
+  expiresAtUtc: string | null;
   createdAt: string | null;
   updatedAt: string | null;
 };
@@ -28,6 +33,7 @@ export function serializePrivateGalleryAdminItem(
       typeof doc.expiresAtLocal === "string"
         ? normalizeLocalDateTimeString(doc.expiresAtLocal)
         : "",
+    expiresAtUtc: getPrivateGalleryExpiryDate(doc)?.toISOString() ?? null,
     createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : null,
     updatedAt: doc.updatedAt instanceof Date ? doc.updatedAt.toISOString() : null,
   };

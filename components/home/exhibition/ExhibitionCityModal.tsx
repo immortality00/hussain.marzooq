@@ -17,7 +17,11 @@ export function ExhibitionCityModal({
   const place = [city.city, city.country].filter(Boolean).join(", ");
 
   return (
-    <ModalPortal onClose={onClose} className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4">
+    <ModalPortal
+      onClose={onClose}
+      label={`Exhibited works in ${place}`}
+      className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4"
+    >
       <div
         className="mx-auto flex max-h-[88vh] w-full max-w-5xl flex-col overflow-hidden rounded-[2rem] border bg-background shadow-2xl"
         onClick={(e) => e.stopPropagation()}

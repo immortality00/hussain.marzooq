@@ -58,6 +58,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (typeof body.isArchived === "boolean") patch.isArchived = body.isArchived;
 
   const sp = body.startingPrice === null ? null : asNumberOrNull(body.startingPrice);
+  if (sp !== null && sp < 0) {
+    return noStoreJson({ ok: false, error: "Starting price cannot be negative" }, { status: 400 });
+  }
   if (body.startingPrice === null) patch.startingPrice = null;
   else if (sp !== null) patch.startingPrice = sp;
 

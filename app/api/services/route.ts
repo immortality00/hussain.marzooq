@@ -78,6 +78,9 @@ export async function POST(req: Request) {
   if (!slug || slug.includes(" ")) {
     return noStoreJson({ ok: false, error: "Slug is required" }, { status: 400 });
   }
+  if (startingPrice !== null && startingPrice < 0) {
+    return noStoreJson({ ok: false, error: "Starting price cannot be negative" }, { status: 400 });
+  }
 
   if (imageUrl && !isAllowedCloudinaryUrl(imageUrl, [CLOUDINARY_SERVICES_FOLDER])) {
     return noStoreJson(

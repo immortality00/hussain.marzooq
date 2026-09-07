@@ -7,6 +7,9 @@ import { slugifyTag, isValidTagSlug } from "@/lib/server/media-tags";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const deny = await requireAdminOr401();
+  if (deny) return deny;
+
   const db = await getDb();
 
   const [categories, counts] = await Promise.all([

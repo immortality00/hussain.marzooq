@@ -21,6 +21,7 @@ import {
   assetIsInsideFolder,
   assetsPointToSameCloudinaryFile,
   deleteStoredMediaAsset,
+  folderOfPublicId,
   getPrimaryMediaFolder,
   getStoredMediaAsset,
   moveStoredMediaAssetToFolder,
@@ -36,6 +37,11 @@ import { isMediaAssetPath, mediaAssetPath } from "@/lib/media-asset-path";
 import { normalizeDeliveryType } from "@/lib/server/cloudinary-private";
 
 export const dynamic = "force-dynamic";
+
+async function restoreMovedAsset(moved: StoredMediaAsset | null, original: StoredMediaAsset) {
+  if (!moved || !original.publicId) return;
+  await moveStoredMediaAssetToFolder(moved, folderOfPublicId(original.publicId));
+}
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const gate = await requireAdminObjectId(ctx);
@@ -186,6 +192,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }
 
   let replacementAsset: StoredMediaAsset | null = null;
+  let movedAssetOnCloudinary: StoredMediaAsset | null = null;
 
   if (incomingType === "embed") {
     const normalizedEmbedUrl = toEmbedUrl((incomingEmbedUrl ?? "").trim());
@@ -277,6 +284,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
         resourceType: movedAsset.resourceType,
         deliveryType: oldAsset.deliveryType,
       };
+      movedAssetOnCloudinary = replacementAsset;
     } else {
       if (!normalizedAsset.asset.isAlreadyInTargetFolder) {
         return noStoreJson(
@@ -319,10 +327,22 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       resourceType: movedAsset.resourceType,
       deliveryType: oldAsset.deliveryType,
     };
+    movedAssetOnCloudinary = replacementAsset;
   }
 
-  const result = await db.collection("media").updateOne({ _id: oid }, { $set: set });
-  if (!result.matchedCount) return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  let matchedCount = 0;
+  try {
+    const result = await db.collection("media").updateOne({ _id: oid }, { $set: set });
+    matchedCount = result.matchedCount;
+  } catch (error) {
+    await restoreMovedAsset(movedAssetOnCloudinary, oldAsset);
+    throw error;
+  }
+
+  if (!matchedCount) {
+    await restoreMovedAsset(movedAssetOnCloudinary, oldAsset);
+    return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  }
 
   if (oldAsset.publicId) {
     const switchedToEmbed = incomingType === "embed";

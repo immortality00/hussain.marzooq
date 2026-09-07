@@ -50,8 +50,9 @@ export function WorkOverlay({ open, onClose }: Props) {
     fetchedRef.current = true;
     fetch("/api/work-overlay")
       .then((r) => r.json())
-      .then((data: DisciplineCard[]) => {
-        setCards(data);
+      .then((data: unknown) => {
+        if (!Array.isArray(data)) throw new Error("Unexpected work-overlay payload");
+        setCards(data as DisciplineCard[]);
       })
       .catch(() => {
         setCards([
@@ -188,6 +189,7 @@ export function WorkOverlay({ open, onClose }: Props) {
       aria-modal="true"
       role="dialog"
       aria-label="Work disciplines"
+      inert={!open}
     >
       <div className="absolute left-0 right-0 top-0 z-10 flex items-center justify-between px-8 pt-6">
         <p className="text-[11px] tracking-[0.25em] text-white/30 uppercase">Work</p>

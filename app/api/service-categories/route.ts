@@ -11,6 +11,9 @@ import {
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const guard = await requireAdminOr401();
+  if (guard) return guard;
+
   const db = await getDb();
 
   const [categories, services] = await Promise.all([

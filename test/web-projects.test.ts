@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { projectUrlLabel, toProjectUrl } from "@/lib/web-projects";
+import { isConfiguredProjectUrl, projectUrlLabel, toProjectUrl } from "@/lib/web-projects";
 
 describe("toProjectUrl", () => {
   it("accepts https and http URLs, returning the normalized href", () => {
@@ -49,5 +49,29 @@ describe("projectUrlLabel", () => {
 
   it("falls back to the trimmed input when the URL is invalid", () => {
     expect(projectUrlLabel("  not a url  ")).toBe("not a url");
+  });
+});
+
+describe("isConfiguredProjectUrl", () => {
+  const configured = ["example.com", "https://studio.example.co/portfolio"];
+
+  it("matches a configured entry after both sides are normalized", () => {
+    expect(isConfiguredProjectUrl("https://example.com/", configured)).toBe(true);
+    expect(
+      isConfiguredProjectUrl("https://studio.example.co/portfolio", configured),
+    ).toBe(true);
+  });
+
+  it("rejects a URL that is not configured", () => {
+    expect(isConfiguredProjectUrl("https://attacker.test/", configured)).toBe(false);
+    expect(isConfiguredProjectUrl("https://example.com/other", configured)).toBe(false);
+  });
+
+  it("rejects everything when nothing is configured", () => {
+    expect(isConfiguredProjectUrl("https://example.com/", [])).toBe(false);
+  });
+
+  it("ignores configured entries that are themselves invalid", () => {
+    expect(isConfiguredProjectUrl("https://example.com/", ["javascript:alert(1)"])).toBe(false);
   });
 });

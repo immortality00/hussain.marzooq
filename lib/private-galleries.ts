@@ -165,6 +165,11 @@ export function isFutureDate(value: Date | null) {
   return !!value && value.getTime() > Date.now();
 }
 
+export function isSameExpiryInstant(a: Date | null, b: Date | null) {
+  if (!a || !b) return false;
+  return Math.floor(a.getTime() / 60_000) === Math.floor(b.getTime() / 60_000);
+}
+
 export function normalizeLocalDateTimeString(value: string | null | undefined) {
   const raw = (value ?? "").trim();
   const match = raw.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);

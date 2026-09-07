@@ -49,8 +49,42 @@ const client = new MongoClient(uri);
 
 async function createIndex(db, collectionName, keys, options = {}) {
   const collection = db.collection(collectionName);
+
+  try {
+    const indexName = await collection.createIndex(keys, options);
+    console.log(`✓ ${collectionName}: ${indexName}`);
+    return;
+  } catch (error) {
+    if (error?.codeName !== "IndexOptionsConflict" && error?.code !== 85) throw error;
+  }
+
+  const existing = await collection.indexes();
+  const conflicting = existing.find(
+    (index) => JSON.stringify(index.key) === JSON.stringify(keys)
+  );
+  if (conflicting) await collection.dropIndex(conflicting.name);
+
   const indexName = await collection.createIndex(keys, options);
-  console.log(`✓ ${collectionName}: ${indexName}`);
+  console.log(`✓ ${collectionName}: ${indexName} (recreated)`);
+}
+
+async function assertNoDuplicates(db, collectionName, field) {
+  const duplicates = await db
+    .collection(collectionName)
+    .aggregate([
+      { $match: { [field]: { $type: "string" } } },
+      { $group: { _id: `$${field}`, count: { $sum: 1 } } },
+      { $match: { count: { $gt: 1 } } },
+      { $limit: 20 },
+    ])
+    .toArray();
+
+  if (duplicates.length > 0) {
+    const list = duplicates.map((d) => `${d._id} (${d.count})`).join(", ");
+    throw new Error(
+      `${collectionName}.${field} has duplicate values, so a unique index cannot be created: ${list}`
+    );
+  }
 }
 
 async function ensureIndexes() {
@@ -65,8 +99,20 @@ async function ensureIndexes() {
   await createIndex(db, "media", { tags: 1, isPublic: 1, createdAt: -1 });
   await createIndex(db, "media", { location: 1, isPublic: 1, createdAt: -1 });
   await createIndex(db, "media", { event: 1, isPublic: 1, createdAt: -1 });
-  await createIndex(db, "media", { publicId: 1 }, { sparse: true });
-  await createIndex(db, "media", { embedUrl: 1 }, { sparse: true });
+  await assertNoDuplicates(db, "media", "publicId");
+  await assertNoDuplicates(db, "media", "embedUrl");
+  await createIndex(
+    db,
+    "media",
+    { publicId: 1 },
+    { unique: true, partialFilterExpression: { publicId: { $type: "string" } } }
+  );
+  await createIndex(
+    db,
+    "media",
+    { embedUrl: 1 },
+    { unique: true, partialFilterExpression: { embedUrl: { $type: "string" } } }
+  );
   await createIndex(db, "media", { createdAt: -1 });
 
   await createIndex(db, "people_profiles", { slug: 1 }, { unique: true });

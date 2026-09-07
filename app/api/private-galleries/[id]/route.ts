@@ -11,8 +11,10 @@ import {
 } from "@/app/api/_lib/common";
 import {
   MIN_PRIVATE_GALLERY_PASSWORD_LENGTH,
+  getPrivateGalleryExpiryDate,
   hashGalleryPassword,
   isFutureDate,
+  isSameExpiryInstant,
   makeGalleryAccessToken,
   normalizeLocalDateTimeString,
   parseClientLocalDateTimeToUtc,
@@ -74,17 +76,26 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }
 
   const expiresAtUtc = parseClientLocalDateTimeToUtc(expiresAtLocal, timezoneOffsetMinutes);
-  if (!isFutureDate(expiresAtUtc)) {
-    return noStoreJson(
-      { ok: false, error: "Expiry date must be in the future." },
-      { status: 400 }
-    );
+  if (!expiresAtUtc) {
+    return noStoreJson({ ok: false, error: "Expiry date is required." }, { status: 400 });
   }
 
   const db = await getDb();
   const found = await findByIdOr404(db, "private_galleries", oid);
   if (found instanceof Response) return found;
   const existing = found.doc;
+
+  const expiryUnchanged = isSameExpiryInstant(
+    expiresAtUtc,
+    getPrivateGalleryExpiryDate(existing)
+  );
+
+  if (!expiryUnchanged && !isFutureDate(expiresAtUtc)) {
+    return noStoreJson(
+      { ok: false, error: "Expiry date must be in the future." },
+      { status: 400 }
+    );
+  }
 
   const previousSlug = typeof existing.slug === "string" ? existing.slug : null;
 

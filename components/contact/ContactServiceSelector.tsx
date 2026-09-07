@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 import type { ServiceItem, ServiceMode } from "./types";
 
 export default function ContactServiceSelector({
@@ -21,9 +23,13 @@ export default function ContactServiceSelector({
   otherService: string;
   setOtherService: (value: string) => void;
 }) {
+  const fieldId = useId();
+
   return (
     <div className="space-y-2 sm:col-span-2">
-      <label className="text-sm font-medium">Service</label>
+      <label htmlFor={fieldId} className="text-sm font-medium">
+        Service
+      </label>
 
       <div className="flex flex-wrap gap-2">
         <button
@@ -48,6 +54,7 @@ export default function ContactServiceSelector({
 
       {serviceMode === "select" ? (
         <select
+          id={fieldId}
           value={selectedServiceId}
           onChange={(e) => onSelectService(e.target.value)}
           className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
@@ -62,6 +69,7 @@ export default function ContactServiceSelector({
         </select>
       ) : (
         <input
+          id={fieldId}
           value={otherService}
           onChange={(e) => setOtherService(e.target.value)}
           className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"

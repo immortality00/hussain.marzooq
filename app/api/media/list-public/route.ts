@@ -1,5 +1,7 @@
 import { ObjectId } from "mongodb";
 import { noStoreJson } from "@/app/api/_lib/common";
+import { getClientAddress } from "@/app/api/_lib/public-form-security";
+import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { getDb } from "@/lib/server/db";
 import { encodeMediaCursor } from "@/lib/media-cursor";
 import {
@@ -17,6 +19,8 @@ type Cursor = {
 };
 
 const MAX_LIMIT = 60;
+const SEARCH_RATE_LIMIT_MAX = 120;
+const SEARCH_RATE_LIMIT_WINDOW_MS = 60_000;
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -100,6 +104,17 @@ function buildCursorCondition(cursor: Cursor | null) {
 }
 
 export async function GET(req: Request) {
+  const rateLimit = await consumeFixedWindowRateLimit({
+    bucket: "media-search",
+    key: getClientAddress(req),
+    limit: SEARCH_RATE_LIMIT_MAX,
+    windowMs: SEARCH_RATE_LIMIT_WINDOW_MS,
+  });
+
+  if (rateLimit.limited) {
+    return noStoreJson({ error: "Too many requests. Try again later." }, { status: 429 });
+  }
+
   const url = new URL(req.url);
 
   const legacyType = url.searchParams.get("type");

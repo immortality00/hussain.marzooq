@@ -1,5 +1,7 @@
 "use client";
 
+import { isExpiredLocalDateTime } from "./helpers";
+
 type GalleryFormFieldsProps = {
   editing: boolean;
   title: string;
@@ -31,6 +33,8 @@ export function GalleryFormFields({
   onExpiresAtLocalChange,
   onIsActiveChange,
 }: GalleryFormFieldsProps) {
+  const isExpired = isExpiredLocalDateTime(expiresAtLocal);
+
   return (
     <section className="rounded-[2rem] border p-5">
       <div className="grid gap-4 md:grid-cols-2">
@@ -75,7 +79,14 @@ export function GalleryFormFields({
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium">Expiry</label>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium">Expiry</label>
+            {isExpired ? (
+              <span className="rounded-full border border-red-500/30 bg-red-500/10 px-2 py-0.5 text-[11px] text-red-200">
+                Expired
+              </span>
+            ) : null}
+          </div>
           <input
             type="datetime-local"
             value={expiresAtLocal}

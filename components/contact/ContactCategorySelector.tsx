@@ -1,5 +1,7 @@
 "use client";
 
+import { useId } from "react";
+
 import type { CategoryMode, ServiceItem, ServiceMode } from "./types";
 
 export default function ContactCategorySelector({
@@ -23,9 +25,17 @@ export default function ContactCategorySelector({
   setOtherCategory: (value: string) => void;
   categories: string[];
 }) {
+  const fieldId = useId();
+
   return (
     <div className="space-y-2 sm:col-span-2">
-      <label className="text-sm font-medium">Category</label>
+      {serviceMode === "select" ? (
+        <div className="text-sm font-medium">Category</div>
+      ) : (
+        <label htmlFor={fieldId} className="text-sm font-medium">
+          Category
+        </label>
+      )}
 
       {serviceMode === "select" ? (
         <div className="rounded-xl border bg-muted px-3 py-2 text-sm text-muted-foreground">
@@ -56,6 +66,7 @@ export default function ContactCategorySelector({
 
           {categoryMode === "select" ? (
             <select
+              id={fieldId}
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
@@ -68,6 +79,7 @@ export default function ContactCategorySelector({
             </select>
           ) : (
             <input
+              id={fieldId}
               value={otherCategory}
               onChange={(e) => setOtherCategory(e.target.value)}
               className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"

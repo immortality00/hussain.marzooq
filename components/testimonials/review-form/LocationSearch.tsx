@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { LocationOption } from "./types";
 import { isLocationOption } from "./utils";
 
@@ -13,6 +13,7 @@ export function LocationSearch({
   onSelect: (location: LocationOption) => void;
   onClear: () => void;
 }) {
+  const inputId = useId();
   const [query, setQuery] = useState(selectedLocation?.label ?? "");
   const [items, setItems] = useState<LocationOption[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -117,10 +118,13 @@ export function LocationSearch({
 
   return (
     <div className="space-y-2">
-      <label className="text-sm font-medium">Location</label>
+      <label htmlFor={inputId} className="text-sm font-medium">
+        Location
+      </label>
 
       <div className="relative">
         <input
+          id={inputId}
           value={query}
           onChange={(event) => {
             if (selectedLocation) onClear();

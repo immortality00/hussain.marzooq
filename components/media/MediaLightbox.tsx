@@ -70,7 +70,11 @@ export default function MediaLightbox({
   tagLinks?: Record<string, TagLink>;
 }) {
   return (
-    <ModalPortal onClose={onClose} className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4">
+    <ModalPortal
+      onClose={onClose}
+      label={active.title || "Media detail"}
+      className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4"
+    >
       <div
         className="mx-auto w-full max-w-6xl overflow-hidden rounded-[2rem] border bg-background shadow-2xl"
         onClick={(e) => e.stopPropagation()}
