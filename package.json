@@ -13,7 +13,8 @@
     "db:indexes": "node scripts/ensure-indexes.mjs",
     "galleries:convert": "node scripts/convert-gallery-assets.mjs",
     "db:seed-e2e": "node scripts/seed-e2e.mjs",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "media:repair-delivery": "node scripts/repair-media-delivery.mjs"
   },
   "engines": {
     "node": ">=22 <23"

@@ -1,4 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
+import { heightCapForWidth } from "@/lib/cloudinary-limits";
 import { ensureCloudinaryConfigured } from "@/lib/server/cloudinary";
 import { cloudinaryErrorMessage } from "@/lib/server/cloudinary-assets";
 
@@ -36,7 +37,13 @@ export function signedDeliveryUrl(params: {
 
   const transformation =
     params.resourceType === "image" && params.width
-      ? { width: params.width, crop: "limit", quality: "auto", fetch_format: "auto" }
+      ? {
+          width: params.width,
+          height: heightCapForWidth(params.width),
+          crop: "limit",
+          quality: "auto",
+          fetch_format: "auto",
+        }
       : {};
 
   return cloudinary.url(params.publicId, {

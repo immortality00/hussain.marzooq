@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { CloudinaryUploaded } from "@/components/admin/CloudinaryUploadButton";
+import { uploadResultError } from "@/lib/cloudinary-upload-result";
 
 export type CloudinaryUploadedFile = CloudinaryUploaded & {
   originalFilename: string;
@@ -53,9 +54,9 @@ export function CloudinaryMultiUploadButton({
     if (!upRes.ok) throw new Error(`Upload failed for ${file.name}.`);
     const data = await upRes.json();
 
-    if (!data.secure_url || !data.public_id || !data.resource_type) {
-      throw new Error(`Upload did not complete for ${file.name}.`);
-    }
+    const rejection = uploadResultError(data);
+    if (rejection) throw new Error(`${file.name}: ${rejection}`);
+
 
     return {
       secureUrl: data.secure_url,

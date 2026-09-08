@@ -1,5 +1,6 @@
 import { describe, expect, test } from "vitest";
 import cloudinaryImageLoader from "@/lib/cloudinary-image-loader";
+import { heightCapForWidth } from "@/lib/cloudinary-limits";
 import { isMediaAssetPath, mediaAssetPath } from "@/lib/media-asset-path";
 
 describe("mediaAssetPath", () => {
@@ -36,7 +37,9 @@ describe("cloudinaryImageLoader", () => {
         src: "https://res.cloudinary.com/demo/image/upload/v1/a.jpg",
         width: 800,
       })
-    ).toBe("https://res.cloudinary.com/demo/image/upload/w_800,c_limit,q_auto,f_auto/v1/a.jpg");
+    ).toBe(
+      `https://res.cloudinary.com/demo/image/upload/w_800,h_${heightCapForWidth(800)},c_limit,q_auto,f_auto/v1/a.jpg`
+    );
   });
 
   test("leaves unrelated sources untouched", () => {

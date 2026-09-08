@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { uploadResultError } from "@/lib/cloudinary-upload-result";
 
 export type CloudinaryUploaded = {
   secureUrl: string;
@@ -54,9 +55,9 @@ export function CloudinaryUploadButton({
       if (!upRes.ok) throw new Error("Upload failed. Please try again.");
       const data = await upRes.json();
 
-      if (!data.secure_url || !data.public_id || !data.resource_type) {
-        throw new Error("Upload did not complete.");
-      }
+      const rejection = uploadResultError(data);
+      if (rejection) throw new Error(rejection);
+
       onUploaded({
         secureUrl: data.secure_url,
         publicId: data.public_id,

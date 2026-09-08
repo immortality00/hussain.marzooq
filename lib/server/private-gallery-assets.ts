@@ -107,7 +107,12 @@ export async function releaseMediaFromPrivateGalleries(db: Db, mediaIds: string[
       to: "upload",
     });
 
-    if (!converted.ok) continue;
+    if (!converted.ok) {
+      console.error(
+        `Failed to return "${mediaTitle(doc)}" to public delivery — it stays private-only: ${converted.error}`
+      );
+      continue;
+    }
 
     await db
       .collection("media")
