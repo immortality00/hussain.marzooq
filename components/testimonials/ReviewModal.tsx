@@ -55,7 +55,7 @@ export function ReviewModal({
         <div className="max-h-[82vh] overflow-y-auto p-5 sm:p-7" data-lenis-prevent>
           <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr]">
             <div className="space-y-6">
-              <div className="text-xl text-amber-500">{renderStars(item.rating)}</div>
+              <div className="text-xl text-amber-600 dark:text-amber-400">{renderStars(item.rating)}</div>
 
               <blockquote className="rounded-[2rem] border border-border/60 bg-muted/25 p-5 text-xl leading-9 tracking-[-0.02em] sm:text-2xl sm:leading-10">
                 &quot;{item.review}&quot;

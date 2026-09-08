@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { prefersReducedMotion } from "@/lib/reduced-motion";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -32,6 +33,11 @@ export function AnimatedText({
         ".animated-word-inner"
       );
       if (!wordEls?.length) return;
+
+      if (prefersReducedMotion()) {
+        gsap.set(wordEls, { y: "0%", opacity: 1, clearProps: "will-change" });
+        return;
+      }
 
       gsap.set(wordEls, { y: "110%", opacity: 0 });
 

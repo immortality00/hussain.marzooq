@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { prefersReducedMotion } from "@/lib/reduced-motion";
 
 type Options = {
   maxX?: number;
@@ -35,7 +36,7 @@ export function useMagneticHover<T extends HTMLElement = HTMLElement>({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (prefersReducedMotion()) return;
     if (!window.matchMedia("(pointer: fine)").matches) return;
 
     let targetX = 0;

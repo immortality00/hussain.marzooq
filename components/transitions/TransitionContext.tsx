@@ -10,6 +10,7 @@ import {
   CONTACT_SHEET_MAX_WAIT_MS,
   CONTACT_SHEET_OUT_MS,
 } from "./contactSheet";
+import { prefersReducedMotion } from "@/lib/reduced-motion";
 
 const REDUCED_MS = 300;
 
@@ -18,14 +19,6 @@ interface PageTransition {
 }
 
 const TransitionCtx = createContext<PageTransition | null>(null);
-
-function prefersReducedMotion(): boolean {
-  return (
-    typeof window !== "undefined" &&
-    typeof window.matchMedia === "function" &&
-    window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  );
-}
 
 function hrefToPath(href: string): string {
   const q = href.search(/[?#]/);

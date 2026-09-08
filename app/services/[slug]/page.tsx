@@ -8,6 +8,7 @@ import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { workLinkForCategory } from "@/lib/server/public-services";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getAllPageSettings } from "@/lib/server/page-settings";
+import { Button } from "@/components/shared/Button";
 
 export const revalidate = 300;
 
@@ -108,20 +109,15 @@ export default async function ServiceDetailPage({
           ) : null}
 
           <div className="flex flex-wrap gap-3 pt-2">
-            <Link
+            <Button
+              variant="solid"
               href={`/contact?service=${encodeURIComponent(slug)}&category=${encodeURIComponent(category)}`}
-              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
             >
               Book this service
-            </Link>
+            </Button>
 
             {workLinkActive && (
-              <Link
-                href={workLink.href}
-                className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
-              >
-                {workLink.label}
-              </Link>
+              <Button href={workLink.href}>{workLink.label}</Button>
             )}
           </div>
         </div>

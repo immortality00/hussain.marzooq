@@ -12,6 +12,7 @@ import {
   statusClasses,
   statusLabel,
 } from "./lib";
+import { buttonClasses } from "@/components/shared/Button";
 
 export default function NftModal({
   item,
@@ -196,14 +197,14 @@ export default function NftModal({
                     href={item.nft.marketplaceUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+                    className={buttonClasses("solid", "w-full justify-center")}
                   >
                     Buy
                   </a>
                 ) : (
                   <Link
                     href={inquiryHref}
-                    className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 transition-opacity"
+                    className={buttonClasses("solid", "w-full justify-center")}
                   >
                     Inquire
                   </Link>

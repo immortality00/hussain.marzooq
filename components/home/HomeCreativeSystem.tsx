@@ -49,7 +49,7 @@ export function HomeCreativeSystem({
         {creativeLinks.length > 0 && (
           <div className="mt-6 flex flex-wrap gap-2">
             {creativeLinks.map((item) => (
-              <Button key={item.href} href={item.href}>
+              <Button key={item.href} href={item.href} onImage>
                 {item.label}
               </Button>
             ))}

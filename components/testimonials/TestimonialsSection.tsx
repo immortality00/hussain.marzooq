@@ -84,7 +84,7 @@ export default function TestimonialsSection({ items }: { items: PublicTestimonia
                 key={item.id}
                 type="button"
                 onClick={() => goToIndex(index)}
-                className={`h-2 rounded-full transition-all ${
+                className={`h-2 rounded-full transition-[width,background-color] ${
                   index === activeIndex ? "w-8 bg-foreground" : "w-2 bg-muted-foreground/30"
                 }`}
                 aria-label={`Go to review ${index + 1}`}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { prefersReducedMotion } from "@/lib/reduced-motion";
 
 const COUNT = 180;
 
@@ -115,8 +116,11 @@ export function HeroBokeh() {
     let raf: number;
     const timer = new THREE.Timer();
 
+    const reduceMotion = prefersReducedMotion();
+    if (reduceMotion) fadeT = 1;
+
     function animate() {
-      raf = requestAnimationFrame(animate);
+      if (!reduceMotion) raf = requestAnimationFrame(animate);
       timer.update();
       const delta = timer.getDelta();
 

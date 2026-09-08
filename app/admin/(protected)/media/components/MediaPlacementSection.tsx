@@ -38,7 +38,7 @@ export default function MediaPlacementSection({
               type="button"
               onClick={() => setPrimaryCategory(c.key)}
               className={[
-                "relative overflow-hidden rounded-2xl border p-4 text-left text-sm transition-all",
+                "relative overflow-hidden rounded-2xl border p-4 text-left text-sm transition-[background-color,border-color,box-shadow]",
                 "hover:-translate-y-px",
                 selected
                   ? "border-foreground/30 bg-accent/35 ring-2 ring-foreground/15"

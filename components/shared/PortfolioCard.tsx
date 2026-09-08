@@ -82,6 +82,7 @@ export function PortfolioCard({
           className={buttonClasses(
             "ghost",
             "mt-6 group-hover:border-white group-hover:bg-white group-hover:text-black",
+            true,
           )}
         >
           {ctaLabel}

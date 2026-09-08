@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Button } from "@/components/shared/Button";
 
 export default function RemovalRequestButton({ slug }: { slug: string }) {
   const [open, setOpen] = useState(false);
@@ -77,22 +78,12 @@ export default function RemovalRequestButton({ slug }: { slug: string }) {
           />
           {msg ? <div className="text-xs text-muted-foreground">{msg}</div> : null}
           <div className="flex gap-2">
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => void submit()}
-              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:opacity-60"
-            >
+            <Button variant="solid" disabled={loading} onClick={() => void submit()}>
               {loading ? "Sending..." : "Send request"}
-            </button>
-            <button
-              type="button"
-              disabled={loading}
-              onClick={() => setOpen(false)}
-              className="rounded-xl border px-4 py-2 text-sm hover:bg-accent/40 disabled:opacity-60"
-            >
+            </Button>
+            <Button disabled={loading} onClick={() => setOpen(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       ) : (

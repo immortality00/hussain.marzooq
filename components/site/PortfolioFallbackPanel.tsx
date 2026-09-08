@@ -52,9 +52,12 @@ export function PortfolioFallbackPanel({
           </div>
         </div>
 
-        <div className="grid gap-3 p-5 sm:p-6">
+        <div className="grid gap-6 p-6 sm:p-8">
           {items.map((item) => (
-            <article key={item.title} className="rounded-[2rem] border bg-muted/20 p-5">
+            <article
+              key={item.title}
+              className="border-t border-border pt-6 first:border-t-0 first:pt-0"
+            >
               <h3 className="text-lg font-semibold tracking-tight">{item.title}</h3>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.text}</p>
             </article>

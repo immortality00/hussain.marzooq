@@ -51,13 +51,22 @@ export function AppShell({
 
   return (
     <div className="page-shell min-h-screen">
+      <a
+        href="#main-content"
+        data-no-transition
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:inline-flex focus:items-center focus:rounded-full focus:border focus:border-foreground/30 focus:bg-background focus:px-5 focus:py-[0.6875rem] focus:text-sm focus:leading-none focus:text-foreground focus:outline-2 focus:outline-offset-3 focus:outline-foreground"
+      >
+        Skip to content
+      </a>
       {pathname === "/" && <Preloader />}
       <div className="grain-overlay" />
       <CustomCursor />
       <SiteAnalytics />
       <Navbar />
       <TransitionProvider images={transitionImages}>
-        <div className="relative z-10">{children}</div>
+        <div id="main-content" tabIndex={-1} className="relative z-10">
+          {children}
+        </div>
         {footer && <div className="relative z-10">{footer}</div>}
       </TransitionProvider>
     </div>

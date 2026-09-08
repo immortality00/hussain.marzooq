@@ -36,11 +36,11 @@ export function AboutDisciplineCard({
       )}
 
       <div className="absolute inset-x-0 bottom-0 p-6 sm:p-7">
-        <h3
+        <h2
           className={`max-w-lg text-3xl font-semibold leading-[1.02] tracking-[-0.045em] ${hasImage ? "text-white" : "text-foreground"}`}
         >
           {card.title}
-        </h3>
+        </h2>
         <p
           className={`mt-4 max-w-md text-sm leading-6 ${hasImage ? "text-white/70" : "text-muted-foreground"}`}
         >

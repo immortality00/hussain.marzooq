@@ -100,7 +100,7 @@ export default function NftCard({
               <div className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/55">
                 {editionLabel(item)}
               </div>
-              <h3 className="mt-2 truncate text-xl font-semibold tracking-tight">{item.title}</h3>
+              <h2 className="mt-2 truncate text-xl font-semibold tracking-tight">{item.title}</h2>
             </div>
             <span className="shrink-0 rounded-full border border-white/25 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white/80">
               {statusLabel(shownStatus)}
@@ -126,7 +126,7 @@ export default function NftCard({
                 rel="noreferrer"
                 tabIndex={-1}
                 onClick={(e) => e.stopPropagation()}
-                className={buttonClasses("solid", "w-full justify-center")}
+                className={buttonClasses("solid", "w-full justify-center", true)}
               >
                 Buy
               </a>
@@ -135,7 +135,7 @@ export default function NftCard({
               href={inquiryHref}
               tabIndex={-1}
               onClick={(e) => e.stopPropagation()}
-              className={buttonClasses("ghost", `w-full justify-center${canBuy ? "" : " col-span-2"}`)}
+              className={buttonClasses("ghost", `w-full justify-center${canBuy ? "" : " col-span-2"}`, true)}
             >
               Inquire
             </Link>

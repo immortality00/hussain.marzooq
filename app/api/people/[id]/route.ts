@@ -111,7 +111,15 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const db = await getDb();
 
   const found = await findByIdOr404(db, "people_profiles", oid, {
-    projection: { name: 1, slug: 1, avatarUrl: 1, accessToken: 1, isPrivate: 1, removalApprovedAt: 1 },
+    projection: {
+      name: 1,
+      slug: 1,
+      avatarUrl: 1,
+      accessToken: 1,
+      isPublic: 1,
+      isPrivate: 1,
+      removalApprovedAt: 1,
+    },
   });
   if (found instanceof Response) return found;
   const existing = found.doc;
@@ -121,7 +129,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const previousAvatarUrl = typeof existing.avatarUrl === "string" ? existing.avatarUrl : "";
   const existingToken =
     typeof existing.accessToken === "string" && existing.accessToken ? existing.accessToken : "";
-  const wasGated = existing.isPrivate === true || existing.removalApprovedAt instanceof Date;
+  const wasGated =
+    existing.isPrivate === true ||
+    existing.isPublic === false ||
+    existing.removalApprovedAt instanceof Date;
 
   const now = new Date();
   const set: Record<string, unknown> = {
@@ -161,6 +172,15 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   }
 
   const nowPublic = isPublic && !isPrivate;
+  const nowGated = !isPublic || isPrivate;
+
+  if (nowGated) {
+    await db.collection("media").updateMany(
+      { $or: [{ peopleIds: id }, ...(name ? [{ people: name }] : [])], isPublic: true },
+      { $set: { isPublic: false, updatedAt: now }, $addToSet: { removalHiddenBy: id } }
+    );
+  }
+
   if (nowPublic && wasGated) {
     const media = db.collection("media");
     const linked = await media

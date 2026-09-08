@@ -1,6 +1,7 @@
 import SmartImage from "@/components/shared/SmartImage";
 import Link from "next/link";
 import { workLinkForCategory, type PublicServiceItem } from "@/lib/server/public-services";
+import { Button } from "@/components/shared/Button";
 
 // Shared service card used on both the Services page and the homepage Services
 // Preview, so both follow the same design. `preview` trims the price chip and
@@ -66,27 +67,17 @@ export function ServiceCard({
 
         {!preview && (
           <div className="mt-6 flex flex-wrap gap-2">
-            <Link
-              href={`/services/${encodeURIComponent(service.slug)}`}
-              className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
-            >
-              View details
-            </Link>
+            <Button href={`/services/${encodeURIComponent(service.slug)}`}>View details</Button>
 
-            <Link
+            <Button
+              variant="solid"
               href={`/contact?service=${encodeURIComponent(service.slug)}&category=${encodeURIComponent(service.category)}`}
-              className="rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
             >
               Book
-            </Link>
+            </Button>
 
             {activeSet.has(workLink.href.replace("/", "")) && (
-              <Link
-                href={workLink.href}
-                className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
-              >
-                {workLink.label}
-              </Link>
+              <Button href={workLink.href}>{workLink.label}</Button>
             )}
           </div>
         )}

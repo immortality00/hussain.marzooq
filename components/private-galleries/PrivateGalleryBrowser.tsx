@@ -6,6 +6,7 @@ import SmartMediaPreview from "@/components/media/SmartMediaPreview";
 import type { MediaItem } from "@/components/media/types";
 import { useModalNavbarLock } from "@/components/media/useModalNavbarLock";
 import { ModalPortal } from "@/components/shared/ModalPortal";
+import { buttonClasses } from "@/components/shared/Button";
 
 const EAGER_GRID_IMAGE_COUNT = 3;
 
@@ -56,7 +57,7 @@ export default function PrivateGalleryBrowser({
           <a
             href={`/api/private-galleries/download/${encodeURIComponent(gallerySlug)}`}
             data-no-transition
-            className="rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+            className={buttonClasses("ghost")}
           >
             Download gallery
           </a>
@@ -113,7 +114,7 @@ export default function PrivateGalleryBrowser({
                   <button
                     type="button"
                     onClick={() => setActive(item)}
-                    className="flex-1 rounded-xl border px-4 py-2 text-sm transition-colors hover:bg-accent"
+                    className={buttonClasses("ghost", "flex-1 justify-center")}
                   >
                     View
                   </button>
@@ -122,7 +123,7 @@ export default function PrivateGalleryBrowser({
                     <button
                       type="button"
                       onClick={() => download(item.id)}
-                      className="flex-1 rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
+                      className={buttonClasses("solid", "flex-1 justify-center")}
                     >
                       Download
                     </button>
@@ -238,7 +239,7 @@ export default function PrivateGalleryBrowser({
                     <button
                       type="button"
                       onClick={() => download(active.id)}
-                      className="flex w-full items-center justify-center rounded-xl bg-foreground px-4 py-2 text-sm text-background transition-opacity hover:opacity-90"
+                      className={buttonClasses("solid", "w-full justify-center")}
                     >
                       Download
                     </button>

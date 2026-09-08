@@ -5,6 +5,7 @@ import Link from "next/link";
 import SmartImage from "@/components/shared/SmartImage";
 import { gsap } from "gsap";
 import { X } from "lucide-react";
+import { prefersReducedMotion } from "@/lib/reduced-motion";
 
 type DisciplineCard = {
   slug: string;
@@ -73,7 +74,7 @@ export function WorkOverlay({ open, onClose }: Props) {
 
   const startSway = useCallback(() => {
     swayTween.current?.kill();
-    const amp = maxRotRef.current;
+    const amp = prefersReducedMotion() ? 0 : maxRotRef.current;
     if (amp <= 0) {
       rot.current.val = 0;
       applyRotation();

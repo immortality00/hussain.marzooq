@@ -5,6 +5,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import localFont from "next/font/local";
 import { Camera, Video, Bitcoin, Code2 } from "lucide-react";
+import { prefersReducedMotion } from "@/lib/reduced-motion";
 
 const cormorant = localFont({
   src: [
@@ -39,6 +40,11 @@ export function Preloader() {
 
   useGSAP(
     () => {
+      if (prefersReducedMotion()) {
+        setDone(true);
+        return;
+      }
+
       // "Art" ends right of "Hussain."; offsetting it by half that width centers it on screen
       const hussainWidth = hussainRef.current?.offsetWidth ?? 0;
       gsap.set(artRef.current, { x: -hussainWidth / 2 });

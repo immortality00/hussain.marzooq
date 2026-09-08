@@ -66,7 +66,7 @@ export function SingleReviewCard({
             </div>
           </div>
 
-          <div className="shrink-0 text-xs tracking-[0.08em] text-amber-500">
+          <div className="shrink-0 text-xs tracking-[0.08em] text-amber-600 dark:text-amber-400">
             {renderStars(item.rating)}
           </div>
         </div>

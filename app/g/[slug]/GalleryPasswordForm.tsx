@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatedText } from "@/components/shared/AnimatedText";
+import { Button } from "@/components/shared/Button";
 
 export default function GalleryPasswordForm({
   slug,
@@ -69,14 +70,14 @@ export default function GalleryPasswordForm({
 
           {msg ? <div className="text-sm text-muted-foreground">{msg}</div> : null}
 
-          <button
-            type="button"
+          <Button
+            variant="solid"
             disabled={loading}
             onClick={() => void submit()}
-            className="w-full rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:opacity-60"
+            className="w-full justify-center"
           >
             {loading ? "Opening..." : "Open gallery"}
-          </button>
+          </Button>
         </div>
       </section>
     </main>

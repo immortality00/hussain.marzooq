@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AmbientLight, DirectionalLight } from "three";
 import Globe, { type GlobeMethods } from "react-globe.gl";
 import type { ExhibitionCity } from "@/lib/server/public-media";
+import { prefersReducedMotion } from "@/lib/reduced-motion";
 
 const RESUME_AFTER_RELEASE_MS = 2500;
 
@@ -56,7 +57,7 @@ function buildHomeMarker(): HTMLDivElement {
     `<path d="M3 11l9-8 9 8"/><path d="M5 10v10h5v-6h4v6h5V10"/></svg>` +
     `<span style="font-size:13px;font-weight:700;color:#fff;` +
     `text-shadow:0 1px 4px rgba(0,0,0,0.98),0 0 3px rgba(0,0,0,0.95)">Dubai</span>` +
-    `<span style="font-size:10px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;` +
+    `<span style="font-size:11px;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;` +
     `color:rgba(255,255,255,0.85);text-shadow:0 1px 3px rgba(0,0,0,0.95)">Home base</span>` +
     `</span>`;
   return el;
@@ -113,8 +114,9 @@ export default function ExhibitionGlobe({
     const globe = globeRef.current;
     if (!globe) return;
     const controls = globe.controls();
+    const reduceMotion = prefersReducedMotion();
     controls.enableZoom = false;
-    controls.autoRotate = true;
+    controls.autoRotate = !reduceMotion;
     controls.autoRotateSpeed = 0.35;
 
     const stop = () => {
@@ -122,6 +124,7 @@ export default function ExhibitionGlobe({
       if (resumeTimer.current) clearTimeout(resumeTimer.current);
     };
     const resume = () => {
+      if (reduceMotion) return;
       if (resumeTimer.current) clearTimeout(resumeTimer.current);
       resumeTimer.current = setTimeout(() => {
         controls.autoRotate = true;

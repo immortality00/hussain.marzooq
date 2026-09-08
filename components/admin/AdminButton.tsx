@@ -6,7 +6,7 @@ export type AdminButtonVariant = "default" | "solid" | "danger" | "warning" | "g
 export type AdminButtonSize = "xs" | "sm" | "md";
 
 const BASE =
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60";
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl transition-colors active:scale-[0.97] active:transition-transform active:duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60";
 
 const SIZE: Record<AdminButtonSize, string> = {
   xs: "px-2 py-1 text-xs",

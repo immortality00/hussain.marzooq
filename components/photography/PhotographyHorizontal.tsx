@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import SmartMediaPreview from "@/components/media/SmartMediaPreview";
 import type { MediaItem } from "@/components/media/types";
 import { NoResults } from "@/components/shared/NoResults";
+import { prefersReducedMotion } from "@/lib/reduced-motion";
 
 // Editorial, non-uniform heights (vh). Cycled across the track.
 const HEIGHTS = [56, 46, 60, 50, 54];
@@ -24,6 +25,8 @@ export default function PhotographyHorizontal({
   useEffect(() => {
     const track = trackRef.current;
     if (!track || items.length === 0) return;
+
+    const reduceMotion = prefersReducedMotion();
 
     // The strip is centred by the flex container. Translation ping-pongs
     // AROUND that centre: 0 = centred, +max shows the left end, -max the right
@@ -107,7 +110,7 @@ export default function PhotographyHorizontal({
         } else if (Math.abs(velocity) > 0.1) {
           x = clamp(x + velocity);
           velocity *= 0.92;
-        } else if (performance.now() - lastInteract > RESUME_MS) {
+        } else if (!reduceMotion && performance.now() - lastInteract > RESUME_MS) {
           x += dir * AUTO_SPEED;
           if (x <= -maxT) {
             x = -maxT;

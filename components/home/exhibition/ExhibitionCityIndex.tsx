@@ -40,7 +40,7 @@ export function ExhibitionCityIndex({
                 }`}
                 aria-hidden
               />
-              <span className="pl-2 font-mono text-[0.625rem] tabular-nums">
+              <span className="pl-2 font-mono text-[11px] tabular-nums">
                 {city.works.length}
               </span>
             </button>

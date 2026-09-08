@@ -57,7 +57,7 @@ export function Navbar() {
     <>
       <header
         className={[
-          "sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl transition-all duration-300",
+          "sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-300",
           isVisible
             ? "translate-y-0 opacity-100"
             : "pointer-events-none -translate-y-full opacity-0",
@@ -109,7 +109,7 @@ export function Navbar() {
                 ref={bookRef}
                 href="/contact"
                 data-magnetic=""
-                className="hidden rounded-full border border-border/60 px-5 py-1.5 text-[13px] tracking-wide transition-all hover:border-foreground/40 hover:bg-accent md:inline-flex ml-2"
+                className="hidden rounded-full border border-border/60 px-5 py-1.5 text-[13px] tracking-wide transition-[background-color,border-color] hover:border-foreground/40 hover:bg-accent md:inline-flex ml-2"
               >
                 Book
               </Link>
@@ -122,9 +122,9 @@ export function Navbar() {
                 onClick={() => setMobileOpen((p) => !p)}
                 className="flex h-9 w-9 flex-col items-center justify-center gap-[5px] md:hidden"
               >
-                <span className={`block h-px w-5 bg-foreground transition-all duration-300 ${mobileOpen ? "translate-y-[7px] rotate-45" : ""}`} />
-                <span className={`block h-px w-5 bg-foreground transition-all duration-300 ${mobileOpen ? "opacity-0" : ""}`} />
-                <span className={`block h-px w-5 bg-foreground transition-all duration-300 ${mobileOpen ? "-translate-y-[7px] -rotate-45" : ""}`} />
+                <span className={`block h-px w-5 bg-foreground transition-[translate,rotate,opacity] duration-300 ${mobileOpen ? "translate-y-[7px] rotate-45" : ""}`} />
+                <span className={`block h-px w-5 bg-foreground transition-[translate,rotate,opacity] duration-300 ${mobileOpen ? "opacity-0" : ""}`} />
+                <span className={`block h-px w-5 bg-foreground transition-[translate,rotate,opacity] duration-300 ${mobileOpen ? "-translate-y-[7px] -rotate-45" : ""}`} />
               </button>
             </div>
 

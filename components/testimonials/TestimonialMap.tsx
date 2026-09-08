@@ -20,7 +20,7 @@ export function TestimonialMap({ activePoint }: { activePoint: GeoPoint | null }
   if (!activePoint) {
     return (
       <section className="overflow-hidden rounded-2xl border border-border/60 bg-muted/20 p-2 shadow-sm">
-        <div className="flex h-[250px] items-center justify-center rounded-2xl border border-border/70 bg-background px-6 text-center text-sm text-muted-foreground sm:h-[290px]">
+        <div className="flex h-[250px] items-center justify-center rounded-2xl bg-background px-6 text-center text-sm text-muted-foreground sm:h-[290px]">
           No location
         </div>
       </section>
@@ -31,7 +31,7 @@ export function TestimonialMap({ activePoint }: { activePoint: GeoPoint | null }
 
   return (
     <section className="overflow-hidden rounded-2xl border border-border/60 bg-muted/20 p-2 shadow-sm">
-      <div className="relative overflow-hidden rounded-2xl border border-border/70 bg-background">
+      <div className="relative overflow-hidden rounded-2xl bg-background">
         <iframe
           key={activePoint.key}
           title={`Map centered on ${activePoint.label}`}
@@ -51,7 +51,7 @@ export function TestimonialMap({ activePoint }: { activePoint: GeoPoint | null }
           {activePoint.label}
         </div>
 
-        <div className="pointer-events-none absolute bottom-2 right-3 rounded-full bg-background/90 px-2.5 py-1 text-[10px] text-muted-foreground shadow-sm ring-1 ring-border/60 backdrop-blur">
+        <div className="pointer-events-none absolute bottom-2 right-3 rounded-full bg-background/90 px-2.5 py-1 text-[11px] text-muted-foreground shadow-sm ring-1 ring-border/60 backdrop-blur">
           © OpenStreetMap
         </div>
       </div>

@@ -3,6 +3,26 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Every `hover:` utility applies only on hover-capable pointers. Without this a
+   tap on a touch device latches the hover state until the next tap elsewhere —
+   on an image-heavy portfolio that means card zooms and inverted buttons that
+   stick. Redefining the variant covers all of them at once. */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
+@custom-variant group-hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:is(:where(.group):hover *) {
+      @slot;
+    }
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -313,15 +333,21 @@
     outline-offset: 2px;
   }
 
-  /* Custom cursor */
+  /* Custom cursor. The blend MUST sit on the positioned wrapper, not on the
+     coloured element: the wrapper carries will-change:transform, which makes it
+     a stacking context, and a mix-blend-mode inside that group blends against
+     the group instead of the page — so the white dot stayed white and vanished
+     on the light theme. */
+  .cursor-layer {
+    mix-blend-mode: difference;
+  }
+
   .cursor-dot {
     background: #fff;
-    mix-blend-mode: difference;
   }
 
   .cursor-ring-inner {
     border: 1px solid rgba(255, 255, 255, 0.75);
-    mix-blend-mode: difference;
   }
 
   /* Preloader */

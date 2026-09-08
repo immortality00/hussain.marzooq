@@ -1,5 +1,7 @@
 "use client";
 
+import { Button } from "@/components/shared/Button";
+
 export default function ContactActions({
   loading,
   onSubmit,
@@ -11,23 +13,13 @@ export default function ContactActions({
 }) {
   return (
     <div className="mt-5 flex items-center gap-3">
-      <button
-        type="button"
-        onClick={onSubmit}
-        disabled={loading}
-        className="rounded-xl bg-foreground px-4 py-2 text-sm text-background hover:opacity-90 disabled:opacity-60"
-      >
+      <Button variant="solid" onClick={onSubmit} disabled={loading}>
         {loading ? "Sending…" : "Send"}
-      </button>
+      </Button>
 
-      <button
-        type="button"
-        onClick={onReset}
-        disabled={loading}
-        className="rounded-xl border px-4 py-2 text-sm hover:bg-accent disabled:opacity-60"
-      >
+      <Button onClick={onReset} disabled={loading}>
         Reset
-      </button>
+      </Button>
     </div>
   );
 }

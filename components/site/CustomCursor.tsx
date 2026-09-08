@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { prefersReducedMotion } from "@/lib/reduced-motion";
 
 const COLLAPSE = "button, .hm-btn, .hm-chip, [role='button'], input, textarea, select, label";
 const EXPAND = "img, [data-cursor-expand], figure";
@@ -38,7 +39,7 @@ export function CustomCursor() {
   const ghost2Ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (prefersReducedMotion()) return;
     if (!window.matchMedia("(pointer: fine)").matches) return;
 
     const dot = dotRef.current;
@@ -153,7 +154,7 @@ export function CustomCursor() {
       <div
         ref={dotRef}
         aria-hidden
-        className="fixed top-0 left-0 z-[9999] opacity-0 pointer-events-none will-change-transform"
+        className="cursor-layer fixed top-0 left-0 z-[9999] opacity-0 pointer-events-none will-change-transform"
       >
         <div className="cursor-dot h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full" />
       </div>
@@ -161,7 +162,7 @@ export function CustomCursor() {
       <div
         ref={ghost2Ref}
         aria-hidden
-        className="fixed top-0 left-0 z-[9996] opacity-0 pointer-events-none will-change-transform"
+        className="cursor-layer fixed top-0 left-0 z-[9996] opacity-0 pointer-events-none will-change-transform"
       >
         <div className="cursor-ring-inner h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full" />
       </div>
@@ -169,7 +170,7 @@ export function CustomCursor() {
       <div
         ref={ghost1Ref}
         aria-hidden
-        className="fixed top-0 left-0 z-[9997] opacity-0 pointer-events-none will-change-transform"
+        className="cursor-layer fixed top-0 left-0 z-[9997] opacity-0 pointer-events-none will-change-transform"
       >
         <div className="cursor-ring-inner h-10 w-10 -translate-x-1/2 -translate-y-1/2 rounded-full" />
       </div>
@@ -177,7 +178,7 @@ export function CustomCursor() {
       <div
         ref={ringRef}
         aria-hidden
-        className="fixed top-0 left-0 z-[9998] opacity-0 pointer-events-none will-change-transform"
+        className="cursor-layer fixed top-0 left-0 z-[9998] opacity-0 pointer-events-none will-change-transform"
       >
         <div className="cursor-ring-inner h-10 w-10 rounded-full" />
       </div>

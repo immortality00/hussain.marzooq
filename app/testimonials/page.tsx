@@ -70,29 +70,29 @@ export default async function TestimonialsPage() {
               </div>
             </div>
 
-            <aside className="bg-background/70 p-5 sm:p-6 lg:p-7">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
-                  <div className="text-3xl font-semibold tracking-[-0.07em]">
+            <aside className="bg-background/70 p-6 sm:p-8 lg:p-10">
+              <div className="grid grid-cols-2 gap-6">
+                <div>
+                  <div className="font-mono text-3xl font-semibold tabular-nums tracking-tight">
                     {data.averageRating.toFixed(1)}
                   </div>
-                  <div className="mt-1.5 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                  <div className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
                     Average
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-border/60 bg-muted/20 p-4">
-                  <div className="text-3xl font-semibold tracking-[-0.07em]">
+                <div>
+                  <div className="font-mono text-3xl font-semibold tabular-nums tracking-tight">
                     {data.totalReviews}
                   </div>
-                  <div className="mt-1.5 text-xs uppercase tracking-[0.16em] text-muted-foreground">
+                  <div className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
                     Reviews
                   </div>
                 </div>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-border/60 bg-muted/20 p-4">
-                <div className="text-lg tracking-[0.08em] text-amber-500">
+              <div className="mt-6 border-t border-border pt-6">
+                <div className="text-lg tracking-[0.08em] text-amber-600 dark:text-amber-400">
                   {renderStars(data.averageRating)}
                 </div>
 
