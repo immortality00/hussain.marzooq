@@ -50,7 +50,7 @@ export function AppShell({
   }
 
   return (
-    <div className="page-shell min-h-screen">
+    <div className="page-shell min-h-dvh">
       <a
         href="#main-content"
         data-no-transition

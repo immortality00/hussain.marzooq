@@ -75,7 +75,7 @@ export async function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-3 border-t pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col gap-3 border-t pb-20 pt-6 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
           <div>HM Visuals — Dubai based, available worldwide.</div>
           <div className="flex items-center gap-4">
             <Link href="/privacy" className="hover:text-foreground">

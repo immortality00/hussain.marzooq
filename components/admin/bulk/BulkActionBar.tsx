@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { AdminStickyPortal } from "@/components/admin/AdminStickyStack";
 
 export type BulkAction = {
   label: string;
@@ -23,33 +24,33 @@ export function BulkActionBar({
   if (count === 0) return null;
 
   return (
-    <div className="sticky bottom-4 z-30 mt-4 flex flex-wrap items-center gap-3 rounded-2xl border bg-card/95 px-4 py-3 shadow-lg backdrop-blur">
-      <button
-        type="button"
-        onClick={onClear}
-        aria-label="Clear selection"
-        className={adminButtonClasses("default", "xs", "size-7")}
-      >
-        <X className="size-4" />
-      </button>
+    <AdminStickyPortal>
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border bg-card/95 px-4 py-3 shadow-lg backdrop-blur">
+        <button
+          type="button"
+          onClick={onClear}
+          aria-label="Clear selection"
+          className={adminButtonClasses("default", "xs", "size-7")}
+        >
+          <X className="size-4" />
+        </button>
 
-      <span className="font-mono text-sm tabular-nums">
-        {count} selected
-      </span>
+        <span className="font-mono text-sm tabular-nums">{count} selected</span>
 
-      <div className="ml-auto flex flex-wrap items-center gap-2">
-        {actions.map((action) => (
-          <button
-            key={action.label}
-            type="button"
-            disabled={busy}
-            onClick={() => void action.onRun()}
-            className={adminButtonClasses(action.tone === "danger" ? "danger" : "default", "sm")}
-          >
-            {action.label}
-          </button>
-        ))}
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          {actions.map((action) => (
+            <button
+              key={action.label}
+              type="button"
+              disabled={busy}
+              onClick={() => void action.onRun()}
+              className={adminButtonClasses(action.tone === "danger" ? "danger" : "default", "sm")}
+            >
+              {action.label}
+            </button>
+          ))}
+        </div>
       </div>
-    </div>
+    </AdminStickyPortal>
   );
 }

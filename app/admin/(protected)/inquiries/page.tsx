@@ -237,7 +237,7 @@ export default function AdminInquiriesPage() {
         onRefresh={load}
       />
 
-      <AdminActionFeedback feedback={msg} className="mt-4" />
+      <AdminActionFeedback feedback={msg} />
 
       <InquirySection
         title="Active"

@@ -1,6 +1,7 @@
 "use client";
 
 import MediaCardGrid from "./MediaCardGrid";
+import { Button } from "@/components/shared/Button";
 import type { MediaItem } from "./types";
 
 export default function MediaGridResults({
@@ -38,14 +39,13 @@ export default function MediaGridResults({
 
       {showLoadMore ? (
         <div className="flex justify-center">
-          <button
-            type="button"
+          <Button
             onClick={onLoadMore}
             disabled={isLoadingMore}
-            className="rounded-full border px-5 py-2 text-sm transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-60"
+            className="disabled:pointer-events-none disabled:opacity-60"
           >
             {isLoadingMore ? "Loading…" : "Load more"}
-          </button>
+          </Button>
         </div>
       ) : null}
     </div>

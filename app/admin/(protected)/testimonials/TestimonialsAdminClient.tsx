@@ -182,7 +182,7 @@ export default function TestimonialsAdminClient() {
         </div>
       </div>
 
-      <AdminActionFeedback feedback={banner} className="mt-5" />
+      <AdminActionFeedback feedback={banner} />
 
       <section className="mt-6 rounded-[2rem] border border-border/50 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">

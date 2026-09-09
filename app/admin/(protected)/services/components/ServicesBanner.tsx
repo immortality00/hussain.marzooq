@@ -16,7 +16,7 @@ export default function ServicesBanner({
   return (
     <div ref={containerRef} className="sticky top-3 z-40">
       <div className="relative">
-        <AdminActionFeedback feedback={banner} className="mt-0 shadow-sm backdrop-blur" />
+        <AdminActionFeedback feedback={banner} />
         {banner ? (
           <button
             type="button"

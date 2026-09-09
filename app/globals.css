@@ -181,7 +181,7 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    min-height: 100vh;
+    min-height: 100dvh;
   }
 
   ::selection {
@@ -535,6 +535,10 @@
   .hm-cell-in,
   .hm-cell-out {
     animation-duration: 1ms;
+  }
+
+  .hm-globe-ping {
+    animation: none;
   }
 }
 

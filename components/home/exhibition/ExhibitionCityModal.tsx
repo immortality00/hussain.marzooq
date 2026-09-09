@@ -2,6 +2,7 @@
 
 import MediaCardGrid from "@/components/media/MediaCardGrid";
 import { ModalPortal } from "@/components/shared/ModalPortal";
+import { Button } from "@/components/shared/Button";
 import type { MediaItem } from "@/components/media/types";
 import type { ExhibitionCity } from "@/lib/server/public-media";
 
@@ -33,9 +34,7 @@ export function ExhibitionCityModal({
               {city.works.length} exhibited {city.works.length === 1 ? "work" : "works"}
             </div>
           </div>
-          <button className="rounded-xl border px-3 py-2 text-sm hover:bg-accent" onClick={onClose}>
-            Close
-          </button>
+          <Button onClick={onClose}>Close</Button>
         </div>
 
         <div className="min-h-0 overflow-y-auto p-5" data-lenis-prevent>

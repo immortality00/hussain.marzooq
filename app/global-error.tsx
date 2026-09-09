@@ -6,7 +6,7 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
   return (
     <html lang="en" className="dark">
       <body className="bg-background text-foreground">
-        <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center px-4">
+        <main className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center px-4">
           <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
             Something went wrong
           </h1>

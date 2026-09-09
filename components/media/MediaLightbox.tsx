@@ -2,6 +2,7 @@
 
 import SmartImage from "@/components/shared/SmartImage";
 import { ModalPortal } from "@/components/shared/ModalPortal";
+import { Button } from "@/components/shared/Button";
 import MediaDetailsSections from "./MediaDetailsSections";
 import type { MediaItem, TagLink } from "./types";
 import { toEmbedUrl } from "./utils";
@@ -88,9 +89,7 @@ export default function MediaLightbox({
                 .join(" • ")}
             </div>
           </div>
-          <button className="rounded-xl border px-3 py-2 text-sm hover:bg-accent" onClick={onClose}>
-            Close
-          </button>
+          <Button onClick={onClose}>Close</Button>
         </div>
 
         <div className="grid h-[82vh] min-h-0 grid-rows-[45vh_minmax(0,1fr)] lg:grid-rows-none lg:grid-cols-[1.25fr_0.75fr]">
