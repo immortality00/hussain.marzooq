@@ -25,7 +25,7 @@ export default async function AdminProtectedLayout({
       <div className="mx-auto max-w-6xl px-2 pt-4 pb-24 md:px-4 md:py-8">
         <div className="mb-6 flex items-center justify-between gap-4 md:mb-8">
           <div>
-            <div className="text-xl font-semibold tracking-tight">HM Visuals</div>
+            <span role="img" aria-label="HM Visuals" className="hm-wordmark h-9" />
             <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground">
               Admin
             </div>

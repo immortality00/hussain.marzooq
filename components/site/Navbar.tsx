@@ -64,16 +64,15 @@ export function Navbar() {
         ].join(" ")}
       >
         <div className="section-shell">
-          <div className="flex h-14 items-center justify-between gap-4">
+          <div className="flex h-20 items-center justify-between gap-4">
 
             {/* Logo */}
-            <Link href="/" className="group flex shrink-0 items-center gap-2.5">
-              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border/60 text-[11px] tracking-[0.15em] text-muted-foreground transition-colors group-hover:border-foreground/40 group-hover:text-foreground">
-                HM
-              </span>
-              <span className="hidden text-[13px] font-semibold tracking-[0.12em] text-foreground/80 transition-colors group-hover:text-foreground sm:inline">
-                HM VISUALS
-              </span>
+            <Link
+              href="/"
+              aria-label="HM Visuals — home"
+              className="flex shrink-0 items-center rounded-2xl text-foreground/80 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-foreground"
+            >
+              <span className="hm-wordmark h-9 sm:h-12" />
             </Link>
 
             {/* Right side — nav + cta */}
@@ -149,8 +148,8 @@ export function Navbar() {
         ].join(" ")}
         aria-label="Mobile navigation"
       >
-        <div className="flex h-14 items-center justify-between border-b border-border/50 px-5">
-          <span className="text-[12px] font-semibold tracking-[0.12em] text-foreground/70">HM VISUALS</span>
+        <div className="flex h-20 items-center justify-between border-b border-border/50 px-5">
+          <span role="img" aria-label="HM Visuals" className="hm-wordmark h-8 text-foreground/70" />
           <button
             type="button"
             aria-label="Close menu"

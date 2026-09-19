@@ -96,9 +96,7 @@ export default async function AdminLoginPage({
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
       <div className="rounded-[2rem] border bg-background/80 p-7 shadow-sm backdrop-blur">
-        <div className="inline-flex h-11 w-11 items-center justify-center rounded-full border text-xs tracking-[0.18em] text-muted-foreground">
-          HM
-        </div>
+        <span role="img" aria-label="HM Visuals" className="hm-wordmark h-12" />
 
         <h1 className="mt-6 text-2xl font-semibold tracking-tight">Admin</h1>
 

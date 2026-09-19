@@ -315,6 +315,21 @@
     outline-offset: 3px;
   }
 
+  .hm-wordmark {
+    @apply inline-block;
+    -webkit-mask-image: url("/brand/signature-mask.webp");
+    mask-image: url("/brand/signature-mask.webp");
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    background-color: currentColor;
+    aspect-ratio: 540 / 265;
+    transition: background-color 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
   .hm-chip {
     @apply inline-flex items-center rounded-full border px-3.5 py-1.5 text-xs;
     transition:
