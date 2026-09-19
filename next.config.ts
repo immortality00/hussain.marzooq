@@ -97,6 +97,11 @@ const nextConfig: NextConfig = {
         source: "/g/:path*",
         headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
+      {
+        // Brand assets are unversioned, so replacing one means renaming the file.
+        source: "/brand/:path*",
+        headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }],
+      },
     ];
   },
 };
