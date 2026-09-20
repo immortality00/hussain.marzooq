@@ -43,7 +43,7 @@ export function HomeServicesPreview({
       <div className="mt-8 grid gap-6">
         {filteredServices.length
           ? filteredServices.map((service) => (
-              <ServiceCard key={service.id} service={service} activeSet={activeSet} preview />
+              <ServiceCard key={service.id} service={service} preview />
             ))
           : filteredDirections.map((item) => (
               <Link

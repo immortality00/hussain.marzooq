@@ -1,11 +1,17 @@
 import { getDb } from "@/lib/server/db";
 import { EMPTY_SECTION_IMAGE } from "@/lib/page-sections-shared";
-import type { FeaturedCard, TextCard, CtaCopy, SectionImage } from "@/lib/page-sections-shared";
+import type {
+  FeaturedCard,
+  DisciplineCard,
+  CtaCopy,
+  SectionImage,
+} from "@/lib/page-sections-shared";
 
 export type {
   FeaturedCard,
   FeaturedCardSlug,
   TextCard,
+  DisciplineCard,
   CtaCopy,
   SectionImage,
 } from "@/lib/page-sections-shared";
@@ -26,7 +32,7 @@ export type HomeSections = {
 };
 
 export type AboutSections = {
-  disciplines: TextCard[];
+  disciplines: DisciplineCard[];
   stickyCta: CtaCopy;
 };
 
@@ -114,21 +120,25 @@ const DEFAULTS: PageSectionsMap = {
   about: {
     disciplines: [
       {
+        slug: "photography",
         title: "Photography",
         text: "Portraits, fashion, weddings, and events, shot with a cinematic eye for light, mood, and presence — internationally exhibited, always chasing the frame that holds you.",
         image: EMPTY_SECTION_IMAGE,
       },
       {
+        slug: "videography",
         title: "Videography",
         text: "Film built on motion and rhythm — dance, fashion films, weddings, and events shaped into stories that move.",
         image: EMPTY_SECTION_IMAGE,
       },
       {
+        slug: "nft",
         title: "NFT",
         text: "Digital work released as collectible editions — photography and art carried onto the chain and presented for collectors.",
         image: EMPTY_SECTION_IMAGE,
       },
       {
+        slug: "dancing",
         title: "Dancing",
         text: "Movement is where much of this starts. Dance trains how I read posture, timing, and energy — on stage and behind the camera.",
         image: EMPTY_SECTION_IMAGE,

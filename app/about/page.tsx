@@ -5,8 +5,10 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { getPageSections } from "@/lib/server/page-sections";
+import { getAllPageSettings } from "@/lib/server/page-settings";
+import { DISCIPLINE_HREF, type DisciplineSlug } from "@/lib/disciplines";
 
-const DISCIPLINE_HREFS = ["/photography", "/videography", "/nft", "/dancing"];
+const LEGACY_SLUGS: DisciplineSlug[] = ["photography", "videography", "nft", "dancing"];
 
 export const revalidate = 300;
 
@@ -21,10 +23,17 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function AboutPage() {
-  const [seo, sections] = await Promise.all([
+  const [seo, sections, pageSettings] = await Promise.all([
     getPageSeo("about"),
     getPageSections("about"),
+    getAllPageSettings(),
   ]);
+
+  const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
+
+  const cards = sections.disciplines
+    .map((card, i) => ({ card, slug: card.slug ?? LEGACY_SLUGS[i] }))
+    .filter(({ slug }) => !slug || activeSet.has(slug));
 
   return (
     <>
@@ -37,14 +46,14 @@ export default async function AboutPage() {
           />
         </section>
 
-        {sections.disciplines.length > 0 && (
+        {cards.length > 0 && (
           <section className="section-shell border-t border-border pb-28 pt-12 sm:pb-32 sm:pt-16">
             <div className="grid gap-5 lg:grid-cols-2">
-              {sections.disciplines.map((card, i) => (
+              {cards.map(({ card, slug }, i) => (
                 <AboutDisciplineCard
                   key={i}
                   card={card}
-                  href={DISCIPLINE_HREFS[i]}
+                  href={slug ? DISCIPLINE_HREF[slug] : undefined}
                   priority={i === 0}
                   className={i === 0 ? "lg:col-span-2" : undefined}
                 />

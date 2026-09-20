@@ -1,6 +1,6 @@
 import SmartImage from "@/components/shared/SmartImage";
 import Link from "next/link";
-import { workLinkForCategory, type PublicServiceItem } from "@/lib/server/public-services";
+import type { PublicServiceItem } from "@/lib/server/public-services";
 import { Button } from "@/components/shared/Button";
 
 // Shared service card used on both the Services page and the homepage Services
@@ -8,19 +8,16 @@ import { Button } from "@/components/shared/Button";
 // action-button row for the compact homepage version.
 export function ServiceCard({
   service,
-  activeSet,
   priority = false,
   preview = false,
 }: {
   service: PublicServiceItem;
-  activeSet: Set<string>;
   priority?: boolean;
   preview?: boolean;
 }) {
   const img = service.imageUrl.trim();
   const hasPrice =
     typeof service.startingPrice === "number" && Number.isFinite(service.startingPrice);
-  const workLink = workLinkForCategory(service.category);
 
   return (
     <article className="group overflow-hidden rounded-[2rem] border bg-background transition-transform duration-300 hover:-translate-y-[2px]">
@@ -66,19 +63,21 @@ export function ServiceCard({
         </p>
 
         {!preview && (
-          <div className="mt-6 flex flex-wrap gap-2">
-            <Button href={`/services/${encodeURIComponent(service.slug)}`}>View details</Button>
+          <div className="mt-6 grid grid-cols-2 gap-2">
+            <Button
+              href={`/services/${encodeURIComponent(service.slug)}`}
+              className="w-full justify-center"
+            >
+              View details
+            </Button>
 
             <Button
               variant="solid"
               href={`/contact?service=${encodeURIComponent(service.slug)}&category=${encodeURIComponent(service.category)}`}
+              className="w-full justify-center"
             >
               Book
             </Button>
-
-            {activeSet.has(workLink.href.replace("/", "")) && (
-              <Button href={workLink.href}>{workLink.label}</Button>
-            )}
           </div>
         )}
       </div>

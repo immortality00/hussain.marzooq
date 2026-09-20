@@ -1,3 +1,5 @@
+import type { DisciplineSlug } from "@/lib/disciplines";
+
 // Client-safe types and constants for page_sections content. Kept separate
 // from lib/server/page-sections.ts so client components can import values
 // (not just types) without pulling the MongoDB driver into the browser bundle.
@@ -55,6 +57,11 @@ export function resolveOptionalCardImage(
 }
 
 export type TextCard = { title: string; text: string; image: SectionImage };
+
+// A TextCard that also names the discipline page it links to. `slug` is optional
+// because cards saved before the picker existed carry no slug; the About page
+// falls back to the old positional mapping for those until they are re-saved.
+export type DisciplineCard = TextCard & { slug?: DisciplineSlug };
 export type CtaCopy = { title: string; description: string; buttonLabel: string };
 
 export const FEATURED_CARD_SLUGS = [

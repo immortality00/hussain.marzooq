@@ -1,6 +1,6 @@
 "use client";
 
-import type { CtaCopy, TextCard } from "@/lib/server/page-sections";
+import type { CtaCopy, DisciplineCard } from "@/lib/server/page-sections";
 import { RepeatingCardListEditor } from "@/components/admin/page-sections/RepeatingListEditor";
 import { CtaFields } from "./CtaFields";
 
@@ -15,9 +15,9 @@ export function CardsCtaForm({
   onCtaChange,
 }: {
   cardsTitle: string;
-  cards: TextCard[];
+  cards: DisciplineCard[];
   cta: CtaCopy;
-  onCardsChange: (cards: TextCard[]) => void;
+  onCardsChange: (cards: DisciplineCard[]) => void;
   onCtaChange: (cta: CtaCopy) => void;
 }) {
   return (

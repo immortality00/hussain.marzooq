@@ -111,7 +111,7 @@ export default async function ServicesPage({
       ) : (
         <section className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {services.map((s, index) => (
-            <ServiceCard key={s.id} service={s} activeSet={activeSet} priority={index === 0} />
+            <ServiceCard key={s.id} service={s} priority={index === 0} />
           ))}
         </section>
       )}

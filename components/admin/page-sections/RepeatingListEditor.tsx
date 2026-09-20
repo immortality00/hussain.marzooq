@@ -3,7 +3,8 @@
 import type { ReactNode } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
 import { SortableList, useSortableRow } from "@/components/admin/sortable/SortableList";
-import { EMPTY_SECTION_IMAGE, type TextCard } from "@/lib/page-sections-shared";
+import { EMPTY_SECTION_IMAGE, type DisciplineCard } from "@/lib/page-sections-shared";
+import { DISCIPLINES, type DisciplineSlug } from "@/lib/disciplines";
 import { ImageField } from "@/components/admin/media-picker/ImageField";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 
@@ -87,16 +88,38 @@ export function RepeatingCardListEditor({
   items,
   onChange,
 }: {
-  items: TextCard[];
-  onChange: (items: TextCard[]) => void;
+  items: DisciplineCard[];
+  onChange: (items: DisciplineCard[]) => void;
 }) {
   return (
     <RepeatingListEditor
       items={items}
       onChange={onChange}
-      makeNew={() => ({ title: "", text: "", image: EMPTY_SECTION_IMAGE })}
+      makeNew={() => ({
+        slug: DISCIPLINES[0].slug,
+        title: "",
+        text: "",
+        image: EMPTY_SECTION_IMAGE,
+      })}
       renderFields={(card, onItemChange) => (
         <>
+          <select
+            value={card.slug ?? ""}
+            onChange={(e) =>
+              onItemChange({
+                ...card,
+                slug: e.target.value ? (e.target.value as DisciplineSlug) : undefined,
+              })
+            }
+            className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            <option value="">No link</option>
+            {DISCIPLINES.map((d) => (
+              <option key={d.slug} value={d.slug}>
+                {d.label}
+              </option>
+            ))}
+          </select>
           <input
             type="text"
             value={card.title}
