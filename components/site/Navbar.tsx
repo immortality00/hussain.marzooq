@@ -69,7 +69,7 @@ export function Navbar() {
             {/* Logo */}
             <Link
               href="/"
-              aria-label="HM Visuals — home"
+              aria-label="Hussain.Art — home"
               className="flex shrink-0 items-center rounded-2xl text-foreground/80 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-foreground"
             >
               <span className="hm-wordmark h-9 sm:h-12" />
@@ -149,7 +149,7 @@ export function Navbar() {
         aria-label="Mobile navigation"
       >
         <div className="flex h-20 items-center justify-between border-b border-border/50 px-5">
-          <span role="img" aria-label="HM Visuals" className="hm-wordmark h-8 text-foreground/70" />
+          <span role="img" aria-label="Hussain.Art" className="hm-wordmark h-8 text-foreground/70" />
           <button
             type="button"
             aria-label="Close menu"

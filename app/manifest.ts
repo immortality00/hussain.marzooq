@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "HM Visuals",
-    short_name: "HM Visuals",
+    name: "Hussain.Art",
+    short_name: "Hussain.Art",
     description:
       "Cinematic photography, film, NFTs, dance, and creative development by Hussain Marzooq.",
     start_url: "/",

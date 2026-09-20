@@ -5,7 +5,7 @@ import { getBaseUrl } from "@/lib/server/get-base-url";
 const resend = new Resend(process.env.RESEND_API_KEY);
 const TO = process.env.NOTIFICATION_EMAIL ?? "";
 
-const RESEND_TEST_FROM = "HM Visuals <onboarding@resend.dev>";
+const RESEND_TEST_FROM = "Hussain.Art <onboarding@resend.dev>";
 
 let warnedAboutFrom = false;
 
@@ -39,7 +39,7 @@ export async function sendInquiryNotification(data: {
     to: TO,
     subject: `New inquiry from ${data.name}`,
     html: `
-      <h2>New Inquiry — HM Visuals</h2>
+      <h2>New Inquiry — Hussain.Art</h2>
       <p><strong>Name:</strong> ${name}</p>
       <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
       ${data.serviceName ? `<p><strong>Service:</strong> ${escapeHtml(data.serviceName)}</p>` : ""}
@@ -68,7 +68,7 @@ export async function sendTestimonialNotification(data: {
     to: TO,
     subject: `New testimonial from ${data.name} — pending approval`,
     html: `
-      <h2>New Testimonial — HM Visuals</h2>
+      <h2>New Testimonial — Hussain.Art</h2>
       <p><strong>Name:</strong> ${name}</p>
       <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
       ${data.about ? `<p><strong>About:</strong> ${escapeHtml(data.about)}</p>` : ""}

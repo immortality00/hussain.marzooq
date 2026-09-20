@@ -17,7 +17,7 @@ type SeoDefaults = Pick<
 
 const DEFAULTS: Record<string, SeoDefaults> = {
   home: {
-    title: "HM Visuals",
+    title: "Hussain.Art",
     description:
       "Cinematic photography, film, NFTs, dance, and creative development by Hussain Marzooq.",
     headerTitle:
@@ -26,7 +26,7 @@ const DEFAULTS: Record<string, SeoDefaults> = {
       "Photography, film, dance, NFT work, and creative web systems shaped with atmosphere, precision, and a high-end visual language.",
   },
   about: {
-    title: "About — HM Visuals",
+    title: "About — Hussain.Art",
     description:
       "Hussain Marzooq — internationally exhibited photographer, videographer, NFT artist, and dancer based in Dubai, working with clients and galleries worldwide.",
     headerTitle:
@@ -35,7 +35,7 @@ const DEFAULTS: Record<string, SeoDefaults> = {
       "I'm a photographer and filmmaker based in Dubai, working with clients and galleries around the world. My work moves between stills, film, digital art, and dance — the same eye for light, atmosphere, and timing runs through all of it. A portrait, a wedding, a fashion film, a minted edition, a moment on stage: every time, I'm after the same thing — an image with presence.",
   },
   photography: {
-    title: "Photography — HM Visuals",
+    title: "Photography — Hussain.Art",
     description:
       "Cinematic portraits, fashion, weddings, events, and emotional visual stories by Hussain Marzooq.",
     headerTitle: "Photography",
@@ -43,7 +43,7 @@ const DEFAULTS: Record<string, SeoDefaults> = {
       "Cinematic portraits, fashion, weddings, events, and emotional visual stories.",
   },
   videography: {
-    title: "Videography — HM Visuals",
+    title: "Videography — Hussain.Art",
     description:
       "Film work across weddings, events, brand campaigns, and performance by Hussain Marzooq.",
     headerTitle: "Videography",
@@ -51,15 +51,15 @@ const DEFAULTS: Record<string, SeoDefaults> = {
       "Cinematic films, dance, events, fashion, weddings, and movement-led visual stories.",
   },
   nft: {
-    title: "NFT Collection — HM Visuals",
+    title: "NFT Collection — Hussain.Art",
     description:
-      "Collectible NFT works, edition structures, availability, and marketplace access by HM Visuals.",
+      "Collectible NFT works, edition structures, availability, and marketplace access by Hussain.Art.",
     headerTitle: "NFT",
     headerDescription:
       "Published collectible works, edition structure, and marketplace access — all presented inside one unified collection page.",
   },
   dancing: {
-    title: "Dancing — HM Visuals",
+    title: "Dancing — Hussain.Art",
     description:
       "Movement, performance, and dance teaching by Hussain Marzooq. Based in Dubai, available worldwide.",
     headerTitle: "Dancing",
@@ -67,7 +67,7 @@ const DEFAULTS: Record<string, SeoDefaults> = {
       "Performance, teaching, and visual work shaped around rhythm, motion, presence, and the way bodies transform space on camera.",
   },
   "web-development": {
-    title: "Web Development — HM Visuals",
+    title: "Web Development — Hussain.Art",
     description:
       "Portfolios, creative platforms, and Web3-ready digital experiences built by Hussain Marzooq.",
     headerTitle: "Web Development",
@@ -75,7 +75,7 @@ const DEFAULTS: Record<string, SeoDefaults> = {
       "Design-led front-end work, custom portfolio systems, admin flows, and digital presentation tools connected to the same creative direction as the visual work.",
   },
   contact: {
-    title: "Book a Session — HM Visuals",
+    title: "Book a Session — Hussain.Art",
     description:
       "Start a photography, film, NFT, or web project with Hussain Marzooq. Inquire for pricing and availability.",
     headerTitle: "Contact / Booking",
@@ -83,9 +83,9 @@ const DEFAULTS: Record<string, SeoDefaults> = {
       "Tell me what you want to create and I'll reply with the best direction for the project.",
   },
   services: {
-    title: "Creative Services — HM Visuals",
+    title: "Creative Services — Hussain.Art",
     description:
-      "Premium photography, filmmaking, creative direction, dancing, web development, and NFT services by HM Visuals.",
+      "Premium photography, filmmaking, creative direction, dancing, web development, and NFT services by Hussain.Art.",
     headerTitle: "Services",
     headerDescription:
       "Photography, film, dance, creative direction, web systems, and digital work shaped around the tone of the project.",
@@ -94,22 +94,22 @@ const DEFAULTS: Record<string, SeoDefaults> = {
   // service name at render time. The on-page header is the service's own name
   // (edited in the Services admin), so only the search & social fields apply.
   "services-detail": {
-    title: "{name} — HM Visuals",
+    title: "{name} — Hussain.Art",
     description:
       "{name} by Hussain Marzooq — scope, starting price, and booking for this service.",
     headerTitle: "{name}",
     headerDescription: "",
   },
   privacy: {
-    title: "Privacy — HM Visuals",
+    title: "Privacy — Hussain.Art",
     description:
-      "How HM Visuals handles the information you send through this site, and the services that process it.",
+      "How Hussain.Art handles the information you send through this site, and the services that process it.",
     headerTitle: "Privacy",
     headerDescription:
       "What this site collects, why, and which services process it.",
   },
   people: {
-    title: "People — HM Visuals",
+    title: "People — Hussain.Art",
     description:
       "Clients and subjects photographed and filmed by Hussain Marzooq.",
     headerTitle: "People",
@@ -121,7 +121,7 @@ const DEFAULTS: Record<string, SeoDefaults> = {
   // name/bio (edited per person in the People admin), so only the search &
   // social fields are exposed for this slug.
   "people-detail": {
-    title: "{name} — HM Visuals",
+    title: "{name} — Hussain.Art",
     description:
       "Portraits, film, and visual work with {name} by Hussain Marzooq — photography, creative direction, and movement-led stories.",
     headerTitle: "{name}",
@@ -131,7 +131,7 @@ const DEFAULTS: Record<string, SeoDefaults> = {
   // is replaced with the tag's label at render time. The on-page heading is the
   // tag label; only the search & social fields are exposed for these slugs.
   "photography-tag": {
-    title: "{tag} Photography — HM Visuals",
+    title: "{tag} Photography — Hussain.Art",
     description:
       "Cinematic {tag} photography by Hussain Marzooq — portraits, fashion, weddings, and emotional visual stories.",
     headerTitle: "{tag}",
@@ -139,7 +139,7 @@ const DEFAULTS: Record<string, SeoDefaults> = {
       "{tag} photography by Hussain Marzooq — cinematic images from this part of the work.",
   },
   "videography-tag": {
-    title: "{tag} Videography — HM Visuals",
+    title: "{tag} Videography — Hussain.Art",
     description:
       "{tag} film and moving-image work by Hussain Marzooq — motion, rhythm, and cinematic visual stories.",
     headerTitle: "{tag}",
@@ -147,7 +147,7 @@ const DEFAULTS: Record<string, SeoDefaults> = {
       "{tag} film and motion work by Hussain Marzooq — moving-image stories from this part of the work.",
   },
   blog: {
-    title: "Blog — HM Visuals",
+    title: "Blog — Hussain.Art",
     description:
       "Behind the work, creative process, and visual essays by Hussain Marzooq.",
     headerTitle: "Blog",
@@ -158,16 +158,16 @@ const DEFAULTS: Record<string, SeoDefaults> = {
   // own title at render time. Each post also carries its own title/excerpt, so
   // these are the search & social fallbacks; there is no on-page Header group.
   "blog-detail": {
-    title: "{title} — HM Visuals",
+    title: "{title} — Hussain.Art",
     description:
       "{title} — a visual essay by Hussain Marzooq on photography, film, movement, and image-making.",
     headerTitle: "{title}",
     headerDescription: "",
   },
   testimonials: {
-    title: "Testimonials — HM Visuals",
+    title: "Testimonials — Hussain.Art",
     description:
-      "What clients say about working with HM Visuals — photography, film, and creative direction.",
+      "What clients say about working with Hussain.Art — photography, film, and creative direction.",
     headerTitle: "What people say about me",
     headerDescription:
       "Real feedback from shoots, films, events, classes, and creative collaborations.",
@@ -178,9 +178,9 @@ export const ALL_SEO_SLUGS = Object.keys(DEFAULTS);
 
 export async function getPageSeo(slug: string): Promise<PageSeo> {
   const defaults = DEFAULTS[slug] ?? {
-    title: "HM Visuals",
+    title: "Hussain.Art",
     description: "",
-    headerTitle: "HM Visuals",
+    headerTitle: "Hussain.Art",
     headerDescription: "",
   };
   try {

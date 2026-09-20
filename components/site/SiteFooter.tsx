@@ -79,10 +79,10 @@ export async function SiteFooter() {
           <div className="flex flex-col gap-4">
             <span
               role="img"
-              aria-label="HM Visuals"
+              aria-label="Hussain.Art"
               className="hm-wordmark w-[180px] text-foreground/70"
             />
-            <span>HM Visuals — Dubai based, available worldwide.</span>
+            <span>Hussain.Art — Dubai based, available worldwide.</span>
           </div>
           <div className="flex items-center gap-4">
             <Link href="/privacy" className="hover:text-foreground">

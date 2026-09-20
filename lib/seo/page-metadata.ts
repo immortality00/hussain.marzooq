@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 
-const SITE_NAME = "HM Visuals";
+const SITE_NAME = "Hussain.Art";
 
 const FALLBACK_IMAGE = {
   url: "/opengraph-image",
   width: 1200,
   height: 630,
-  alt: "HM Visuals — Hussain Marzooq",
+  alt: "Hussain.Art — Hussain Marzooq",
 };
 
 type OgType = "website" | "article" | "profile";

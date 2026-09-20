@@ -1,4 +1,4 @@
-# HM Visuals
+# Hussain.Art
 
 Portfolio and booking site for **Hussain Marzooq** — internationally exhibited
 photographer and videographer, NFT artist, dance teacher, and web developer, based in

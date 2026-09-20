@@ -29,7 +29,7 @@ export function HomeHero({
       {heroImageUrl ? (
         <SmartImage
           src={heroImageUrl}
-          alt="HM Visuals"
+          alt="Hussain.Art"
           fill
           priority
           sizes="100vw"

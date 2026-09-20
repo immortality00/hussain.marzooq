@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-export const alt = "HM Visuals — Hussain Marzooq";
+export const alt = "Hussain.Art — Hussain Marzooq";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -42,7 +42,7 @@ export default async function OpengraphImage() {
           Hussain Marzooq
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 36 }}>
-          <img src={signature} alt="HM Visuals" width={620} height={304} />
+          <img src={signature} alt="Hussain.Art" width={620} height={304} />
           <div style={{ fontSize: 34, color: "#a1a1aa", maxWidth: 820, lineHeight: 1.25 }}>
             Cinematic photography, film, and creative direction — Dubai, worldwide.
           </div>

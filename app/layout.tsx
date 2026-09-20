@@ -10,19 +10,19 @@ import { SITE_URL } from "@/lib/seo/site-url";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "HM Visuals",
+  title: "Hussain.Art",
   description:
     "Cinematic photography, film, NFTs, dance, and creative development by Hussain Marzooq.",
   openGraph: {
     type: "website",
-    siteName: "HM Visuals",
-    title: "HM Visuals",
+    siteName: "Hussain.Art",
+    title: "Hussain.Art",
     description:
       "Cinematic photography, film, NFTs, dance, and creative development by Hussain Marzooq.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "HM Visuals",
+    title: "Hussain.Art",
     description:
       "Cinematic photography, film, NFTs, dance, and creative development by Hussain Marzooq.",
   },

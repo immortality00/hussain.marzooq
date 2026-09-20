@@ -100,7 +100,7 @@ export function SeoPageForm({
             />
             <p className="mt-1 text-xs text-muted-foreground">
               Shown when this page&apos;s link is shared on social or messaging. Leave empty to
-              use the HM Visuals card.
+              use the Hussain.Art card.
             </p>
           </div>
         )}
