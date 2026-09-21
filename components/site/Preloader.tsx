@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useMotionPreference } from "@/hooks/useMotionPreference";
 
@@ -44,10 +44,27 @@ export function Preloader() {
     return () => window.clearTimeout(id);
   }, []);
 
+  const attachVideo = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (!node) return;
+
+    node.defaultMuted = true;
+    node.muted = true;
+  }, []);
+
   useEffect(() => {
     if (motion !== "allow") return;
 
-    videoRef.current?.play().catch(() => setPhase("done"));
+    const video = videoRef.current;
+    if (!video) return;
+
+    video.defaultMuted = true;
+    video.muted = true;
+
+    video.play().catch(() => {
+      video.muted = true;
+      video.play().catch(() => setPhase("done"));
+    });
   }, [motion, portrait]);
 
   if (phase === "done" || motion === "reduce") return null;
@@ -62,7 +79,7 @@ export function Preloader() {
       {motion === "allow" && (
         <video
           key={portrait ? "portrait" : "landscape"}
-          ref={videoRef}
+          ref={attachVideo}
           className={`preloader-video${portrait ? " preloader-video-portrait" : ""}`}
           poster={cut.poster}
           autoPlay
