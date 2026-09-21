@@ -78,7 +78,7 @@ export function Preloader() {
           onEnded={() => setPhase("leaving")}
           onError={() => setPhase("done")}
         >
-          <source src={cut.webm} type="video/webm" />
+          <source src={cut.webm} type='video/webm; codecs="vp9"' />
           <source src={cut.mp4} type="video/mp4" />
         </video>
       )}
