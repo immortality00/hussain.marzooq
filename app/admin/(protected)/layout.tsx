@@ -36,9 +36,11 @@ export default async function AdminProtectedLayout({
             <AdminButton href="/" variant="ghost" size="sm">
               View site
             </AdminButton>
-            <AdminButton href="/admin/logout" variant="ghost" size="sm">
-              Logout
-            </AdminButton>
+            <form action="/admin/logout" method="post">
+              <AdminButton type="submit" variant="ghost" size="sm">
+                Logout
+              </AdminButton>
+            </form>
           </div>
         </div>
 

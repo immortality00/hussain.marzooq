@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { COOKIE_NAME, SIG_NAME } from "@/lib/auth/session-token";
 
-export async function GET(req: Request) {
-  const res = NextResponse.redirect(new URL("/admin?loggedout=1", req.url));
+export async function POST(req: Request) {
+  const res = NextResponse.redirect(new URL("/admin?loggedout=1", req.url), 303);
   res.headers.set("Cache-Control", "no-store");
 
   const options = {
