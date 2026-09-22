@@ -18,13 +18,13 @@ const CUTS = {
     webm: "/brand/preloader.webm",
     mp4: "/brand/preloader.mp4",
     poster: "/brand/preloader-poster.webp",
-    animated: "/brand/preloader.webp",
+    animated: "/brand/preloader-anim.webp",
   },
   portrait: {
     webm: "/brand/preloader-mobile.webm",
     mp4: "/brand/preloader-mobile.mp4",
     poster: "/brand/preloader-mobile-poster.webp",
-    animated: "/brand/preloader-mobile.webp",
+    animated: "/brand/preloader-mobile-anim.webp",
   },
 };
 
@@ -36,14 +36,15 @@ export function Preloader() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [phase, setPhase] = useState<Phase>("loading");
   const [blocked, setBlocked] = useState(false);
+  const [fallbackReady, setFallbackReady] = useState(false);
 
   useEffect(() => {
-    if (!blocked || phase === "leaving" || phase === "done") return;
+    if (!blocked || !fallbackReady || phase === "leaving" || phase === "done") return;
 
     const id = window.setTimeout(() => setPhase("leaving"), ANIMATION_MS);
 
     return () => window.clearTimeout(id);
-  }, [blocked, phase]);
+  }, [blocked, fallbackReady, phase]);
 
   useEffect(() => {
     if (phase === "leaving") {
@@ -60,7 +61,8 @@ export function Preloader() {
     const id = window.setInterval(() => {
       const video = videoRef.current;
       if (!video) {
-        setPhase("done");
+        idle += STALL_TICK_MS;
+        if (idle >= STALL_LIMIT_MS) setPhase("done");
         return;
       }
 
@@ -126,6 +128,9 @@ export function Preloader() {
           src={cut.animated}
           alt=""
           className={`preloader-video${portrait ? " preloader-video-portrait" : ""}`}
+          style={{ visibility: fallbackReady ? "visible" : "hidden" }}
+          onLoad={() => setFallbackReady(true)}
+          onError={() => setPhase("done")}
         />
       )}
 
@@ -153,7 +158,7 @@ export function Preloader() {
         </video>
       )}
 
-      {phase === "loading" && !blocked && <div className="preloader-spinner" />}
+      {phase === "loading" && (!blocked || !fallbackReady) && <div className="preloader-spinner" />}
     </div>
   );
 }
