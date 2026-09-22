@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { CloudinaryUploaded } from "@/components/admin/CloudinaryUploadButton";
-import { uploadResultError } from "@/lib/cloudinary-upload-result";
+import { uploadFileToCloudinary } from "@/lib/client/cloudinary-direct-upload";
 
 export type CloudinaryUploadedFile = CloudinaryUploaded & {
   originalFilename: string;
@@ -30,40 +30,13 @@ export function CloudinaryMultiUploadButton({
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
   async function uploadOne(file: File): Promise<CloudinaryUploadedFile> {
-    const timestamp = Math.round(Date.now() / 1000);
-
-    const signRes = await fetch("/api/sign-cloudinary-params", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ paramsToSign: { folder, timestamp } }),
-    });
-    if (!signRes.ok) throw new Error("Could not authorize the upload.");
-    const { signature, cloudName, apiKey } = await signRes.json();
-
-    const form = new FormData();
-    form.append("file", file);
-    form.append("api_key", apiKey);
-    form.append("timestamp", String(timestamp));
-    form.append("folder", folder);
-    form.append("signature", signature);
-
-    const upRes = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`, {
-      method: "POST",
-      body: form,
-    });
-    if (!upRes.ok) throw new Error(`Upload failed for ${file.name}.`);
-    const data = await upRes.json();
-
-    const rejection = uploadResultError(data);
-    if (rejection) throw new Error(`${file.name}: ${rejection}`);
-
-
-    return {
-      secureUrl: data.secure_url,
-      publicId: data.public_id,
-      resourceType: data.resource_type,
-      originalFilename: file.name,
-    };
+    try {
+      const uploaded = await uploadFileToCloudinary(file, folder);
+      return { ...uploaded, originalFilename: file.name };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Upload failed.";
+      throw new Error(`${file.name}: ${message}`);
+    }
   }
 
   async function handleFiles(fileList: FileList) {
