@@ -21,35 +21,6 @@ async function getRequestGuardsCollection() {
   return db.collection<GuardDoc>("request_guards");
 }
 
-export async function getFixedWindowRateLimitStatus(params: {
-  bucket: string;
-  key: string;
-  limit: number;
-}) {
-  const { bucket, key, limit } = params;
-  const collection = await getRequestGuardsCollection();
-  const id = buildRateLimitId(bucket, key);
-  const now = Date.now();
-
-  const doc = await collection.findOne({ _id: id });
-
-  if (!doc || !(doc.resetAt instanceof Date) || doc.resetAt.getTime() <= now) {
-    return {
-      limited: false,
-      count: 0,
-      resetAt: null as string | null,
-    };
-  }
-
-  const count = typeof doc.count === "number" ? doc.count : 0;
-
-  return {
-    limited: count > limit,
-    count,
-    resetAt: doc.resetAt.toISOString(),
-  };
-}
-
 export async function consumeFixedWindowRateLimit(params: {
   bucket: string;
   key: string;

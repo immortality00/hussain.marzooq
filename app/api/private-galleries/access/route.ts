@@ -12,7 +12,6 @@ import { getClientAddress } from "@/app/api/_lib/public-form-security";
 import {
   clearFixedWindowRateLimit,
   consumeFixedWindowRateLimit,
-  getFixedWindowRateLimitStatus,
 } from "@/lib/server/request-guards";
 
 export const dynamic = "force-dynamic";
@@ -41,13 +40,14 @@ export async function POST(req: Request) {
   }
 
   const rateLimitKey = buildAccessRateLimitKey(req, slug);
-  const currentLimit = await getFixedWindowRateLimitStatus({
+  const rateLimit = await consumeFixedWindowRateLimit({
     bucket: "private-gallery-access",
     key: rateLimitKey,
     limit: ACCESS_ATTEMPT_LIMIT,
+    windowMs: ACCESS_ATTEMPT_WINDOW_MS,
   });
 
-  if (currentLimit.limited) {
+  if (rateLimit.limited) {
     return noStoreJson(
       { ok: false, error: "Too many wrong attempts. Try again later." },
       { status: 429 }
@@ -70,13 +70,6 @@ export async function POST(req: Request) {
   const ok = await verifyGalleryPassword(password, passwordHash);
 
   if (!ok) {
-    await consumeFixedWindowRateLimit({
-      bucket: "private-gallery-access",
-      key: rateLimitKey,
-      limit: ACCESS_ATTEMPT_LIMIT,
-      windowMs: ACCESS_ATTEMPT_WINDOW_MS,
-    });
-
     return noStoreJson({ ok: false, error: "Wrong password." }, { status: 403 });
   }
 

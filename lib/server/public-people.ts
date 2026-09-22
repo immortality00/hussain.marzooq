@@ -1,4 +1,5 @@
 import { cookies } from "next/headers";
+import { ObjectId, type Db } from "mongodb";
 import { sanitizeAppearances } from "@/app/api/_lib/media";
 import type { MediaItem as PublicMediaItem } from "@/components/media/types";
 import { getDb } from "@/lib/server/db";
@@ -75,9 +76,53 @@ function buildPersonMediaQuery(personId: string, personName: string, includeHidd
   const clauses: Record<string, unknown>[] = [{ $or: personMatch }];
   if (!includeHidden) {
     clauses.push({ $or: [{ isPublic: true }, { isPublic: { $exists: false } }] });
+  } else {
+    // Private-gallery media must never surface through a person's password
+    // gate, no matter why the rest of the gate is unlocked.
+    clauses.push({ deliveryType: { $ne: "authenticated" } });
   }
 
   return { $and: clauses };
+}
+
+// A person's own gate unlocking their hidden media must not also reveal
+// media that is hidden because a DIFFERENT, still-gated person appears in
+// it — that person's privacy isn't this person's to unlock.
+async function filterOutBlockedByOtherGatedPeople(
+  db: Db,
+  mediaDocs: Record<string, unknown>[],
+  ownerPersonId: string
+) {
+  const hiddenDocs = mediaDocs.filter((doc) => doc.isPublic === false);
+  if (hiddenDocs.length === 0) return mediaDocs;
+
+  const otherIds = new Set<string>();
+  for (const doc of hiddenDocs) {
+    for (const pid of normalizeStringArray(doc.peopleIds)) {
+      if (pid !== ownerPersonId) otherIds.add(pid);
+    }
+  }
+  if (otherIds.size === 0) return mediaDocs;
+
+  const objectIds = Array.from(otherIds)
+    .filter((pid) => ObjectId.isValid(pid))
+    .map((pid) => new ObjectId(pid));
+  if (objectIds.length === 0) return mediaDocs;
+
+  const gatedOthers = await db
+    .collection("people_profiles")
+    .find({ _id: { $in: objectIds }, $or: [{ isPublic: false }, { isPrivate: true }] })
+    .project({ _id: 1 })
+    .toArray();
+
+  const gatedIds = new Set(gatedOthers.map((p) => String(p._id)));
+  if (gatedIds.size === 0) return mediaDocs;
+
+  return mediaDocs.filter((doc) => {
+    if (doc.isPublic !== false) return true;
+    const linkedIds = normalizeStringArray(doc.peopleIds);
+    return !linkedIds.some((pid) => pid !== ownerPersonId && gatedIds.has(pid));
+  });
 }
 
 async function buildPersonDetail(
@@ -88,12 +133,16 @@ async function buildPersonDetail(
   const personId = String(doc._id);
   const name = typeof doc.name === "string" ? doc.name : "";
 
-  const mediaDocs = await db
+  let mediaDocs: Record<string, unknown>[] = await db
     .collection("media")
     .find(buildPersonMediaQuery(personId, name, includeHidden))
     .sort({ createdAt: -1 })
     .limit(200)
     .toArray();
+
+  if (includeHidden) {
+    mediaDocs = await filterOutBlockedByOtherGatedPeople(db, mediaDocs, personId);
+  }
 
   const deduped = new Map<string, Record<string, unknown>>();
   for (const mediaDoc of mediaDocs) {

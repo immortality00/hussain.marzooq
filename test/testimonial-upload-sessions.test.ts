@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, test } from "vitest";
 import type { Db } from "mongodb";
 import {
   buildUploadCookieValue,
+  claimUploadSlot,
   commitUploadSession,
   createUploadSession,
   deleteUploadSession,
@@ -138,6 +139,55 @@ describe("isUrlInSession", () => {
   test("refuses a non-Cloudinary or malformed URL", () => {
     expect(isUrlInSession("https://evil.example.com/whatever.jpg", SESSION_A)).toBe(false);
     expect(isUrlInSession("not a url", SESSION_A)).toBe(false);
+  });
+});
+
+describe("claimUploadSlot", () => {
+  function makeSlotDb(doc: Record<string, unknown> | null) {
+    return {
+      collection: () => ({
+        findOneAndUpdate: async (
+          filter: Record<string, unknown>,
+          update: { $inc: { uploadCount: number } }
+        ) => {
+          if (!doc || filter._id !== doc._id) return null;
+          if (typeof filter.status === "string" && doc.status !== filter.status) return null;
+
+          const or = filter.$or as Array<Record<string, unknown>>;
+          const cap = (or[0].uploadCount as { $lt: number }).$lt;
+          const current = typeof doc.uploadCount === "number" ? doc.uploadCount : 0;
+          if (doc.uploadCount !== undefined && current >= cap) return null;
+
+          doc.uploadCount = current + update.$inc.uploadCount;
+          return doc;
+        },
+      }),
+    } as unknown as Db;
+  }
+
+  test("grants a slot under the cap and increments the count each time", async () => {
+    const doc: { _id: string; status: "pending"; uploadCount?: number } = {
+      _id: SESSION_A,
+      status: "pending",
+    };
+    const db = makeSlotDb(doc);
+
+    expect(await claimUploadSlot(db, SESSION_A, 2)).toBe(true);
+    expect(doc.uploadCount).toBe(1);
+    expect(await claimUploadSlot(db, SESSION_A, 2)).toBe(true);
+    expect(doc.uploadCount).toBe(2);
+  });
+
+  test("refuses once the session is at its cap, regardless of what the client claims", async () => {
+    const doc = { _id: SESSION_A, status: "pending" as const, uploadCount: 2 };
+    const db = makeSlotDb(doc);
+
+    expect(await claimUploadSlot(db, SESSION_A, 2)).toBe(false);
+    expect(doc.uploadCount).toBe(2);
+  });
+
+  test("refuses for a session that no longer exists", async () => {
+    expect(await claimUploadSlot(makeSlotDb(null), SESSION_A)).toBe(false);
   });
 });
 

@@ -10,11 +10,7 @@ vi.mock("@/lib/server/db", () => ({
   })),
 }));
 
-import {
-  claimDuplicateWindow,
-  consumeFixedWindowRateLimit,
-  getFixedWindowRateLimitStatus,
-} from "@/lib/server/request-guards";
+import { claimDuplicateWindow, consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 
 beforeEach(() => {
   findOne.mockReset();
@@ -24,34 +20,6 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.clearAllMocks();
-});
-
-describe("getFixedWindowRateLimitStatus", () => {
-  const future = () => new Date(Date.now() + 60_000);
-
-  test("not limited at exactly the limit, limited only above it", async () => {
-    findOne.mockResolvedValueOnce({ count: 5, resetAt: future() });
-    expect((await getFixedWindowRateLimitStatus({ bucket: "b", key: "k", limit: 5 })).limited).toBe(
-      false
-    );
-
-    findOne.mockResolvedValueOnce({ count: 6, resetAt: future() });
-    expect((await getFixedWindowRateLimitStatus({ bucket: "b", key: "k", limit: 5 })).limited).toBe(
-      true
-    );
-  });
-
-  test("absent or expired window is never limited", async () => {
-    findOne.mockResolvedValueOnce(null);
-    expect((await getFixedWindowRateLimitStatus({ bucket: "b", key: "k", limit: 5 })).limited).toBe(
-      false
-    );
-
-    findOne.mockResolvedValueOnce({ count: 99, resetAt: new Date(Date.now() - 1000) });
-    const expired = await getFixedWindowRateLimitStatus({ bucket: "b", key: "k", limit: 5 });
-    expect(expired.limited).toBe(false);
-    expect(expired.count).toBe(0);
-  });
 });
 
 describe("consumeFixedWindowRateLimit", () => {

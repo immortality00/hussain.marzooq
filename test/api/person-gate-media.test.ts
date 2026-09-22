@@ -15,6 +15,7 @@ type Write = { filter: Record<string, unknown>; update: Record<string, unknown> 
 
 let mediaWrites: Write[] = [];
 let person: Record<string, unknown>;
+let linkedHiddenMedia: Record<string, unknown>[] = [];
 
 function collection(name: string) {
   if (name === "media") {
@@ -27,7 +28,7 @@ function collection(name: string) {
         mediaWrites.push({ filter, update });
         return { modifiedCount: 1 };
       },
-      find: () => ({ project: () => ({ toArray: async () => [] }) }),
+      find: () => ({ project: () => ({ toArray: async () => linkedHiddenMedia }) }),
     };
   }
   return {
@@ -54,8 +55,12 @@ async function patch(body: Record<string, unknown>) {
 const hides = () =>
   mediaWrites.filter((w) => (w.update.$set as { isPublic?: boolean })?.isPublic === false);
 
+const republishes = () =>
+  mediaWrites.filter((w) => (w.update.$set as { isPublic?: boolean })?.isPublic === true);
+
 beforeEach(() => {
   mediaWrites = [];
+  linkedHiddenMedia = [];
   person = {
     _id: new ObjectId(PERSON_ID),
     name: "Subject",
@@ -106,5 +111,29 @@ describe("a gated person's media cannot stay public", () => {
 
     expect(res.status).toBe(200);
     expect(hides()).toHaveLength(0);
+  });
+});
+
+describe("republishing a person never un-hides Private Gallery media", () => {
+  test("media still delivered as authenticated (gallery-private) is never republished", async () => {
+    person.isPublic = false;
+    linkedHiddenMedia = [
+      { _id: new ObjectId(), peopleIds: [PERSON_ID], deliveryType: "authenticated" },
+    ];
+
+    const res = await patch({ isPublic: true, isPrivate: false });
+
+    expect(res.status).toBe(200);
+    expect(republishes()).toHaveLength(0);
+  });
+
+  test("ordinary hidden media (not gallery-private) is still republished", async () => {
+    person.isPublic = false;
+    linkedHiddenMedia = [{ _id: new ObjectId(), peopleIds: [PERSON_ID] }];
+
+    const res = await patch({ isPublic: true, isPrivate: false });
+
+    expect(res.status).toBe(200);
+    expect(republishes()).toHaveLength(1);
   });
 });

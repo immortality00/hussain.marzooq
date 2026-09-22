@@ -8,7 +8,6 @@ import {
 import {
   clearFixedWindowRateLimit,
   consumeFixedWindowRateLimit,
-  getFixedWindowRateLimitStatus,
 } from "@/lib/server/request-guards";
 import { getClientAddress } from "@/app/api/_lib/public-form-security";
 import { AdminLoginForm } from "./AdminLoginForm";
@@ -45,28 +44,18 @@ async function login(formData: FormData) {
   const headerList = await headers();
   const clientKey = getClientAddress(headerList);
 
-  const currentLimit = await getFixedWindowRateLimitStatus({
+  const rateLimit = await consumeFixedWindowRateLimit({
     bucket: "admin-login",
     key: clientKey,
     limit: MAX_LOGIN_ATTEMPTS,
+    windowMs: LOGIN_WINDOW_MS,
   });
 
-  if (currentLimit.limited) {
+  if (rateLimit.limited) {
     redirect("/admin?error=locked");
   }
 
   if (!verifyAdminPassword(password)) {
-    const updatedLimit = await consumeFixedWindowRateLimit({
-      bucket: "admin-login",
-      key: clientKey,
-      limit: MAX_LOGIN_ATTEMPTS,
-      windowMs: LOGIN_WINDOW_MS,
-    });
-
-    if (updatedLimit.limited) {
-      redirect("/admin?error=locked");
-    }
-
     redirect("/admin?error=wrong");
   }
 

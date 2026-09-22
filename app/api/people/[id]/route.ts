@@ -185,10 +185,15 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     const media = db.collection("media");
     const linked = await media
       .find({ $or: [{ peopleIds: id }, { people: name }], isPublic: false })
-      .project({ _id: 1, peopleIds: 1 })
+      .project({ _id: 1, peopleIds: 1, deliveryType: 1 })
       .toArray();
 
     for (const doc of linked) {
+      // Private Gallery membership is a separate privacy system — never
+      // republish media that's still gallery-private, no matter what this
+      // person's own gate is doing.
+      if (doc.deliveryType === "authenticated") continue;
+
       const otherIds = (Array.isArray(doc.peopleIds) ? doc.peopleIds : []).filter(
         (pid): pid is string => typeof pid === "string" && pid !== id
       );

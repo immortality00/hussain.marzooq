@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
@@ -132,14 +133,13 @@ export async function POST(req: Request) {
     );
   }
 
-  const duplicateKey = [
-    email,
-    serviceId ?? requestedServiceName ?? "",
-    requestedCategory,
-    message,
-  ]
-    .join("|")
-    .toLowerCase();
+  const duplicateKey = createHash("sha256")
+    .update(
+      [email, serviceId ?? requestedServiceName ?? "", requestedCategory, message]
+        .join("|")
+        .toLowerCase()
+    )
+    .digest("hex");
 
   const dedupe = await claimDuplicateWindow({
     bucket: "public-inquiries-dedupe",

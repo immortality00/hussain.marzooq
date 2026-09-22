@@ -11,12 +11,18 @@ const SESSION_TTL_MS = 2 * 60 * 60 * 1000;
 const SESSION_ID_PATTERN = /^[A-Za-z0-9-]{16,64}$/;
 const TOKEN_PATTERN = /^[a-f0-9]{64}$/;
 
+// 1 profile photo + 12 review photos — matches the widgets' own limits
+// (ProfilePhotoField, ReviewPhotosField), enforced server-side so a signed
+// session can't be used to request unlimited uploads by bypassing the widget.
+export const MAX_UPLOADS_PER_SESSION = 13;
+
 type UploadSessionStatus = "pending" | "committed";
 
 type UploadSessionDoc = {
   _id: string;
   tokenHash: string;
   status: UploadSessionStatus;
+  uploadCount?: number;
   createdAt: Date;
   updatedAt?: Date;
   expiresAt: Date;
@@ -139,6 +145,24 @@ export async function verifyUploadSession(
   if (options.requirePending && doc.status !== "pending") return null;
 
   return { sessionId, status: doc.status };
+}
+
+export async function claimUploadSlot(
+  db: Db,
+  sessionId: string,
+  maxUploads: number = MAX_UPLOADS_PER_SESSION
+) {
+  const result = await db.collection<UploadSessionDoc>(COLLECTION).findOneAndUpdate(
+    {
+      _id: sessionId,
+      status: "pending",
+      $or: [{ uploadCount: { $lt: maxUploads } }, { uploadCount: { $exists: false } }],
+    },
+    { $inc: { uploadCount: 1 }, $set: { updatedAt: new Date() } },
+    { returnDocument: "after" }
+  );
+
+  return result !== null;
 }
 
 export async function commitUploadSession(db: Db, sessionId: string) {

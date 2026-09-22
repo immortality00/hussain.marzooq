@@ -4,6 +4,7 @@ import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { signCloudinaryParams } from "@/lib/server/cloudinary";
 import { getDb } from "@/lib/server/db";
 import {
+  claimUploadSlot,
   readUploadCookie,
   sessionPhotosFolder,
   sessionProfileFolder,
@@ -79,6 +80,11 @@ export async function POST(request: Request) {
 
   if (!session) {
     return noStoreJson({ error: "Upload session is missing or invalid." }, { status: 403 });
+  }
+
+  const gotSlot = await claimUploadSlot(db, session.sessionId);
+  if (!gotSlot) {
+    return noStoreJson({ error: "Upload limit reached for this session." }, { status: 403 });
   }
 
   const bodyUnknown = (await request.json().catch(() => null)) as unknown;

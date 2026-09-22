@@ -2,10 +2,7 @@ import { revalidatePath } from "next/cache";
 import { getDb } from "@/lib/server/db";
 import { asNullableString, isRecord, noStoreJson } from "@/app/api/_lib/common";
 import { getClientAddress, isValidEmail } from "@/app/api/_lib/public-form-security";
-import {
-  consumeFixedWindowRateLimit,
-  getFixedWindowRateLimitStatus,
-} from "@/lib/server/request-guards";
+import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 
 export const dynamic = "force-dynamic";
 
@@ -35,25 +32,19 @@ export async function POST(req: Request) {
   }
 
   const key = getClientAddress(req);
-  const currentLimit = await getFixedWindowRateLimitStatus({
-    bucket: "person-removal-request",
-    key,
-    limit: REQUEST_LIMIT,
-  });
-
-  if (currentLimit.limited) {
-    return noStoreJson(
-      { ok: false, error: "Too many requests. Try again later." },
-      { status: 429 }
-    );
-  }
-
-  await consumeFixedWindowRateLimit({
+  const rateLimit = await consumeFixedWindowRateLimit({
     bucket: "person-removal-request",
     key,
     limit: REQUEST_LIMIT,
     windowMs: REQUEST_WINDOW_MS,
   });
+
+  if (rateLimit.limited) {
+    return noStoreJson(
+      { ok: false, error: "Too many requests. Try again later." },
+      { status: 429 }
+    );
+  }
 
   const db = await getDb();
   const now = new Date();
