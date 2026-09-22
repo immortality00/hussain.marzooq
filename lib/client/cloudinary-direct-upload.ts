@@ -1,4 +1,5 @@
 import { uploadResultError } from "@/lib/cloudinary-upload-result";
+import { compressImageForUpload } from "@/lib/client/compress-image-for-upload";
 
 export type CloudinaryUploaded = {
   secureUrl: string;
@@ -37,9 +38,27 @@ function buildForm(file: File | Blob, { apiKey, timestamp, folder, signature }: 
   return form;
 }
 
+// Cloudinary's error responses are `{ error: { message } }` — surface that message instead
+// of a generic "failed" so a plan-tier size cap or any other rejection is actually legible.
+export function cloudinaryUploadErrorMessage(status: number, body: unknown): string {
+  if (body && typeof body === "object") {
+    const error = (body as { error?: unknown }).error;
+    if (error && typeof error === "object") {
+      const message = (error as { message?: unknown }).message;
+      if (typeof message === "string" && message.trim()) return message;
+    }
+  }
+  return `Upload failed (${status}). Please try again.`;
+}
+
+async function throwForFailedUpload(res: Response): Promise<never> {
+  const body = await res.json().catch(() => null);
+  throw new Error(cloudinaryUploadErrorMessage(res.status, body));
+}
+
 async function uploadWhole(file: File | Blob, endpoint: string, params: SignedParams) {
   const res = await fetch(endpoint, { method: "POST", body: buildForm(file, params) });
-  if (!res.ok) throw new Error("Upload failed. Please try again.");
+  if (!res.ok) return throwForFailedUpload(res);
   return res.json();
 }
 
@@ -56,7 +75,7 @@ async function uploadInChunks(file: File | Blob, endpoint: string, params: Signe
       },
       body: buildForm(file.slice(start, end), params),
     });
-    if (!res.ok) throw new Error("Upload failed. Please try again.");
+    if (!res.ok) return throwForFailedUpload(res);
     data = await res.json();
   }
 
@@ -67,6 +86,7 @@ export async function uploadFileToCloudinary(
   file: File | Blob,
   folder: string,
 ): Promise<CloudinaryUploaded> {
+  const uploadFile = await compressImageForUpload(file);
   const timestamp = Math.round(Date.now() / 1000);
 
   const signRes = await fetch("/api/sign-cloudinary-params", {
@@ -80,9 +100,9 @@ export async function uploadFileToCloudinary(
   const endpoint = `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
   const params: SignedParams = { apiKey, timestamp, folder, signature };
   const data =
-    file.size > CHUNK_UPLOAD_THRESHOLD
-      ? await uploadInChunks(file, endpoint, params)
-      : await uploadWhole(file, endpoint, params);
+    uploadFile.size > CHUNK_UPLOAD_THRESHOLD
+      ? await uploadInChunks(uploadFile, endpoint, params)
+      : await uploadWhole(uploadFile, endpoint, params);
 
   const rejection = uploadResultError(data);
   if (rejection) throw new Error(rejection);

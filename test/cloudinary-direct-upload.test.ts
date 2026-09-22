@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeChunkRanges } from "@/lib/client/cloudinary-direct-upload";
+import { computeChunkRanges, cloudinaryUploadErrorMessage } from "@/lib/client/cloudinary-direct-upload";
 
 describe("computeChunkRanges", () => {
   it("returns one range covering the whole file when it fits in a chunk", () => {
@@ -32,5 +32,28 @@ describe("computeChunkRanges", () => {
 
   it("returns no ranges for an empty file", () => {
     expect(computeChunkRanges(0, 20)).toEqual([]);
+  });
+});
+
+describe("cloudinaryUploadErrorMessage", () => {
+  it("surfaces Cloudinary's own error message", () => {
+    const body = { error: { message: "File size too large. Got 14682765. Maximum is 10485760." } };
+    expect(cloudinaryUploadErrorMessage(400, body)).toBe(
+      "File size too large. Got 14682765. Maximum is 10485760.",
+    );
+  });
+
+  it("falls back to a generic message when the body has no error.message", () => {
+    expect(cloudinaryUploadErrorMessage(500, {})).toBe("Upload failed (500). Please try again.");
+    expect(cloudinaryUploadErrorMessage(400, { error: { message: "" } })).toBe(
+      "Upload failed (400). Please try again.",
+    );
+  });
+
+  it("falls back to a generic message when the response body isn't JSON", () => {
+    expect(cloudinaryUploadErrorMessage(413, null)).toBe("Upload failed (413). Please try again.");
+    expect(cloudinaryUploadErrorMessage(413, "not json")).toBe(
+      "Upload failed (413). Please try again.",
+    );
   });
 });
