@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useMotionPreference } from "@/hooks/useMotionPreference";
 
-const FAILSAFE_MS = 3000;
+const STALL_TICK_MS = 1000;
+const STALL_LIMIT_MS = 4000;
 const LIFETIME_MS = 13000;
 const FADE_MS = 400;
 const END_MARGIN_SECONDS = 0.02;
@@ -28,24 +29,40 @@ export function Preloader() {
   const [phase, setPhase] = useState<Phase>("loading");
 
   useEffect(() => {
-    if (phase !== "loading" && phase !== "leaving") return;
+    if (phase === "leaving") {
+      const id = window.setTimeout(() => setPhase("done"), FADE_MS);
 
-    const id = window.setTimeout(() => {
-      if (phase === "loading") {
-        const video = videoRef.current;
-        const loading =
-          video &&
-          (video.networkState === video.NETWORK_LOADING ||
-            video.readyState > 0 ||
-            video.buffered.length > 0);
+      return () => window.clearTimeout(id);
+    }
 
-        if (loading) return;
+    if (phase !== "loading") return;
+
+    let seen = -1;
+    let idle = 0;
+
+    const id = window.setInterval(() => {
+      const video = videoRef.current;
+      if (!video) {
+        setPhase("done");
+        return;
       }
 
-      setPhase("done");
-    }, phase === "loading" ? FAILSAFE_MS : FADE_MS);
+      const buffered = video.buffered.length
+        ? video.buffered.end(video.buffered.length - 1)
+        : 0;
+      const progress = Math.max(video.currentTime, buffered, video.readyState);
 
-    return () => window.clearTimeout(id);
+      if (progress > seen) {
+        seen = progress;
+        idle = 0;
+        return;
+      }
+
+      idle += STALL_TICK_MS;
+      if (idle >= STALL_LIMIT_MS) setPhase("done");
+    }, STALL_TICK_MS);
+
+    return () => window.clearInterval(id);
   }, [phase]);
 
   useEffect(() => {
