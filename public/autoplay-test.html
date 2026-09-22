@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autoplay test</title>
+<style>
+  body { font: 15px -apple-system, sans-serif; background:#111; color:#eee; padding:20px; max-width:640px; }
+  .row { margin-bottom:22px; padding:14px; border:1px solid #333; border-radius:10px; }
+  video { width:220px; background:#000; display:block; margin:10px 0; }
+  .r { font-weight:700; font-size:17px; margin-top:6px; }
+  .ok { color:#5f5; } .bad { color:#f66; }
+  code { color:#9cf; }
+</style>
+</head>
+<body>
+
+<h2>Autoplay test — hussain-marzooq.com</h2>
+<p>Load this page and do not click anything. Read the three results.</p>
+
+<div class="row">
+  <div><b>A</b> — video written in the HTML with the <code>autoplay</code> attribute.<br>This is what other sites with preloaders do.</div>
+  <video id="a" muted autoplay playsinline preload="auto">
+    <source src="/brand/preloader.mp4" type="video/mp4">
+  </video>
+  <div class="r" id="ra">waiting…</div>
+</div>
+
+<div class="row">
+  <div><b>B</b> — video in the HTML, but started with <code>play()</code> from JS.</div>
+  <video id="b" muted playsinline preload="auto">
+    <source src="/brand/preloader.mp4" type="video/mp4">
+  </video>
+  <div class="r" id="rb">waiting…</div>
+</div>
+
+<div class="row">
+  <div><b>C</b> — video created by JS after load, then <code>play()</code>.<br>This is exactly what the preloader does today.</div>
+  <div id="cmount"></div>
+  <div class="r" id="rc">waiting…</div>
+</div>
+
+<script>
+function show(id, ok, msg) {
+  var el = document.getElementById(id);
+  el.textContent = (ok ? "PLAYS" : "BLOCKED") + " — " + msg;
+  el.className = "r " + (ok ? "ok" : "bad");
+}
+
+var a = document.getElementById("a");
+setTimeout(function () {
+  var ok = !a.paused && a.currentTime > 0;
+  show("ra", ok, "paused=" + a.paused + " t=" + a.currentTime.toFixed(2) +
+    " readyState=" + a.readyState + (a.error ? " errorCode=" + a.error.code : ""));
+}, 3000);
+
+var b = document.getElementById("b");
+b.muted = true;
+b.play().then(function () { show("rb", true, "play() resolved"); })
+        .catch(function (e) { show("rb", false, e.name + ": " + e.message); });
+
+var c = document.createElement("video");
+c.muted = true; c.defaultMuted = true; c.playsInline = true;
+c.autoplay = true; c.preload = "auto";
+var s = document.createElement("source");
+s.src = "/brand/preloader.mp4"; s.type = "video/mp4";
+c.appendChild(s);
+document.getElementById("cmount").appendChild(c);
+c.play().then(function () { show("rc", true, "play() resolved"); })
+        .catch(function (e) { show("rc", false, e.name + ": " + e.message); });
+</script>
+
+</body>
+</html>
