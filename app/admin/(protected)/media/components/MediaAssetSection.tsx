@@ -7,6 +7,7 @@ import Image from "next/image";
 import type { Uploaded } from "../lib/types";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { CloudinaryUploadButton } from "@/components/admin/CloudinaryUploadButton";
+import { useUploadReplaceCleanup } from "@/hooks/useUploadReplaceCleanup";
 
 export default function MediaAssetSection({
   mode,
@@ -30,6 +31,19 @@ export default function MediaAssetSection({
   canUpload?: boolean;
 }) {
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const { track, releaseIfTracked } = useUploadReplaceCleanup();
+
+  function handleUploaded(u: Uploaded) {
+    setUploadError(null);
+    releaseIfTracked(uploaded?.publicId);
+    track(u.publicId, { publicId: u.publicId, resourceType: u.resourceType });
+    setUploaded(u);
+  }
+
+  function handleClear() {
+    releaseIfTracked(uploaded?.publicId);
+    setUploaded(null);
+  }
 
   return (
     <section className="rounded-3xl border p-5">
@@ -59,16 +73,13 @@ export default function MediaAssetSection({
             <CloudinaryUploadButton
               folder={uploadFolder}
               disabled={!canUpload}
-              onUploaded={(u) => {
-                setUploadError(null);
-                setUploaded(u);
-              }}
+              onUploaded={handleUploaded}
               onError={setUploadError}
             />
 
             <button
               type="button"
-              onClick={() => setUploaded(null)}
+              onClick={handleClear}
               className={adminButtonClasses("default", "md")}
             >
               Clear

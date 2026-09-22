@@ -10,6 +10,7 @@ import { WizardTabs } from "@/components/admin/wizard/WizardTabs";
 import { LocationSearch } from "@/components/testimonials/review-form/LocationSearch";
 import { useAdminAction } from "@/hooks/useAdminAction";
 import { getCloudinaryMediaFolderForCategory } from "@/lib/cloudinary-folders";
+import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 import MediaAppearancesSection from "../components/MediaAppearancesSection";
 import MediaPeoplePicker from "../components/MediaPeoplePicker";
 import MediaPlacementSection from "../components/MediaPlacementSection";
@@ -63,6 +64,14 @@ export default function BatchMediaClient() {
       publicId: file.publicId,
       resourceType: file.resourceType,
     };
+  }
+
+  // Every file here was just uploaded to Cloudinary and has no doc yet — unlike
+  // the post-save removal below (which the file has already been persisted under),
+  // removing one here from the pending list is a genuine discard, so clean it up.
+  function removeFileAndCleanup(file: BatchFile) {
+    cleanupUploadedAsset({ publicId: file.publicId, resourceType: file.resourceType });
+    s.removeFile(file.id);
   }
 
   async function createOne(file: BatchFile): Promise<{ id: string; error?: undefined } | { id?: undefined; error: string }> {
@@ -186,7 +195,7 @@ export default function BatchMediaClient() {
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {s.files.map((f) => (
-                  <FileThumb key={f.id} file={f} onRemove={() => s.removeFile(f.id)} />
+                  <FileThumb key={f.id} file={f} onRemove={() => removeFileAndCleanup(f)} />
                 ))}
               </div>
             )}
@@ -289,7 +298,7 @@ export default function BatchMediaClient() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => s.removeFile(f.id)}
+                      onClick={() => removeFileAndCleanup(f)}
                       className={adminButtonClasses("danger", "sm")}
                     >
                       Remove

@@ -316,6 +316,12 @@ const routes: Route[] = [
     load: () => import("@/app/api/sign-cloudinary-params/route"),
   },
   {
+    name: "POST /api/admin/uploads/cleanup",
+    method: "POST",
+    path: "/api/admin/uploads/cleanup",
+    load: () => import("@/app/api/admin/uploads/cleanup/route"),
+  },
+  {
     name: "GET /api/testimonials",
     method: "GET",
     path: "/api/testimonials",
