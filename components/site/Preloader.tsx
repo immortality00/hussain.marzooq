@@ -11,12 +11,20 @@ const FADE_MS = 400;
 const END_MARGIN_SECONDS = 0.02;
 const PORTRAIT_QUERY = "(max-aspect-ratio: 1/1)";
 
+const ANIMATION_MS = 5000;
+
 const CUTS = {
-  landscape: { webm: "/brand/preloader.webm", mp4: "/brand/preloader.mp4", poster: "/brand/preloader-poster.webp" },
+  landscape: {
+    webm: "/brand/preloader.webm",
+    mp4: "/brand/preloader.mp4",
+    poster: "/brand/preloader-poster.webp",
+    animated: "/brand/preloader.webp",
+  },
   portrait: {
     webm: "/brand/preloader-mobile.webm",
     mp4: "/brand/preloader-mobile.mp4",
     poster: "/brand/preloader-mobile-poster.webp",
+    animated: "/brand/preloader-mobile.webp",
   },
 };
 
@@ -27,6 +35,15 @@ export function Preloader() {
   const portrait = useMediaQuery(PORTRAIT_QUERY);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [phase, setPhase] = useState<Phase>("loading");
+  const [blocked, setBlocked] = useState(false);
+
+  useEffect(() => {
+    if (!blocked || phase === "leaving" || phase === "done") return;
+
+    const id = window.setTimeout(() => setPhase("leaving"), ANIMATION_MS);
+
+    return () => window.clearTimeout(id);
+  }, [blocked, phase]);
 
   useEffect(() => {
     if (phase === "leaving") {
@@ -35,7 +52,7 @@ export function Preloader() {
       return () => window.clearTimeout(id);
     }
 
-    if (phase !== "loading") return;
+    if (phase !== "loading" || blocked) return;
 
     let seen = -1;
     let idle = 0;
@@ -63,7 +80,7 @@ export function Preloader() {
     }, STALL_TICK_MS);
 
     return () => window.clearInterval(id);
-  }, [phase]);
+  }, [phase, blocked]);
 
   useEffect(() => {
     const id = window.setTimeout(() => setPhase("done"), LIFETIME_MS);
@@ -90,7 +107,7 @@ export function Preloader() {
 
     video.play().catch(() => {
       video.muted = true;
-      video.play().catch(() => setPhase("done"));
+      video.play().catch(() => setBlocked(true));
     });
   }, [motion, portrait]);
 
@@ -103,7 +120,16 @@ export function Preloader() {
       className={`preloader-root${phase === "leaving" ? " is-leaving" : ""}`}
       aria-hidden="true"
     >
-      {motion === "allow" && (
+      {motion === "allow" && blocked && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={cut.animated}
+          alt=""
+          className={`preloader-video${portrait ? " preloader-video-portrait" : ""}`}
+        />
+      )}
+
+      {motion === "allow" && !blocked && (
         <video
           key={portrait ? "portrait" : "landscape"}
           ref={attachVideo}
@@ -120,14 +146,14 @@ export function Preloader() {
             if (end && video.currentTime >= end - END_MARGIN_SECONDS) setPhase("leaving");
           }}
           onEnded={() => setPhase("leaving")}
-          onError={() => setPhase("done")}
+          onError={() => setBlocked(true)}
         >
           <source src={cut.mp4} type="video/mp4" />
           <source src={cut.webm} type='video/webm; codecs="vp9"' />
         </video>
       )}
 
-      {phase === "loading" && <div className="preloader-spinner" />}
+      {phase === "loading" && !blocked && <div className="preloader-spinner" />}
     </div>
   );
 }
