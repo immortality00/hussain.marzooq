@@ -9,7 +9,6 @@ import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { usePeopleAdmin } from "@/hooks/usePeopleAdmin";
-import { useUploadReplaceCleanup } from "@/hooks/useUploadReplaceCleanup";
 import { AvatarUploadField } from "@/components/admin/avatar/AvatarUploadField";
 
 function statusLabel(item: { isPublic: boolean; isPrivate: boolean }) {
@@ -73,6 +72,8 @@ export default function PeopleAdminClient() {
     setSlug,
     setBio,
     setAvatarUrl,
+    uploadAvatar,
+    clearAvatar,
     setVisibility,
     setPassword,
     openCreate,
@@ -85,18 +86,6 @@ export default function PeopleAdminClient() {
   } = usePeopleAdmin();
 
   const selection = useBulkSelection(items.map((p) => p.id));
-  const avatarCleanup = useUploadReplaceCleanup();
-
-  function handleAvatarUploaded(u: { secureUrl: string }) {
-    avatarCleanup.releaseIfTracked(avatarUrl);
-    avatarCleanup.track(u.secureUrl, { url: u.secureUrl });
-    setAvatarUrl(u.secureUrl);
-  }
-
-  function handleAvatarClear() {
-    avatarCleanup.releaseIfTracked(avatarUrl);
-    setAvatarUrl("");
-  }
 
   return (
     <main className="mx-auto max-w-6xl px-0 py-3 md:px-6 md:py-10">
@@ -263,13 +252,13 @@ export default function PeopleAdminClient() {
                   folder={CLOUDINARY_PEOPLE_FOLDER}
                   label="Upload avatar"
                   disabled={actionBusy}
-                  onUploaded={handleAvatarUploaded}
+                  onUploaded={uploadAvatar}
                 />
 
                 <button
                   type="button"
                   disabled={actionBusy}
-                  onClick={handleAvatarClear}
+                  onClick={clearAvatar}
                   className={adminButtonClasses("default", "md")}
                 >
                   Clear

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { useAdminAction } from "./useAdminAction";
+import { useUploadReplaceCleanup } from "./useUploadReplaceCleanup";
 
 export type PersonVisibility = "public" | "private" | "hidden";
 
@@ -49,6 +50,7 @@ export function usePeopleAdmin() {
   const [password, setPassword] = useState("");
   const [editingHasPassword, setEditingHasPassword] = useState(false);
   const [editingRemovalApprovedAt, setEditingRemovalApprovedAt] = useState<string | null>(null);
+  const avatarCleanup = useUploadReplaceCleanup();
 
   const actionBusy = saving || Boolean(deletingId);
 
@@ -91,7 +93,11 @@ export function usePeopleAdmin() {
     );
   }, [items, query]);
 
+  // A no-op unless the current avatar was itself an upload made this session and
+  // never saved — a doc's original avatar, or one already forgotten after a
+  // successful save, is untouched.
   function resetForm() {
+    avatarCleanup.releaseIfTracked(avatarUrl);
     setEditingId("");
     setName(createPrefill);
     setSlug("");
@@ -109,8 +115,22 @@ export function usePeopleAdmin() {
     setMode("form");
   }
 
+  function uploadAvatar(u: { secureUrl: string }) {
+    avatarCleanup.releaseIfTracked(avatarUrl);
+    avatarCleanup.track(u.secureUrl, { url: u.secureUrl });
+    setAvatarUrl(u.secureUrl);
+  }
+
+  function clearAvatar() {
+    avatarCleanup.releaseIfTracked(avatarUrl);
+    setAvatarUrl("");
+  }
+
   function openEdit(item: PersonItem) {
     if (actionBusy) return;
+    // Switching to a different person without resetForm() running first —
+    // clean up any unsaved upload for whoever was open before.
+    avatarCleanup.releaseIfTracked(avatarUrl);
     setEditingId(item.id);
     setName(item.name);
     setSlug(item.slug);
@@ -163,25 +183,30 @@ export function usePeopleAdmin() {
     };
 
     try {
-      const res = await fetch(
-        editingId ? `/api/people/${encodeURIComponent(editingId)}` : "/api/people",
-        {
-          method: editingId ? "PATCH" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
+      await avatarCleanup.suspendDuringSave(async () => {
+        const res = await fetch(
+          editingId ? `/api/people/${encodeURIComponent(editingId)}` : "/api/people",
+          {
+            method: editingId ? "PATCH" : "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          }
+        );
+
+        const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
+        if (!res.ok || !data?.ok) {
+          setBanner({ type: "err", text: data?.error ?? "Save failed." });
+          return;
         }
-      );
 
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
-      if (!res.ok || !data?.ok) {
-        setBanner({ type: "err", text: data?.error ?? "Save failed." });
-        return;
-      }
-
-      setBanner({ type: "ok", text: editingId ? "✅ Person updated." : "✅ Person created." });
-      await load();
-      resetForm();
-      setMode("list");
+        // The profile now legitimately owns this avatar — stop treating it as
+        // an orphan-in-waiting before resetForm() below releases it.
+        avatarCleanup.forget(avatarUrl);
+        setBanner({ type: "ok", text: editingId ? "✅ Person updated." : "✅ Person created." });
+        await load();
+        resetForm();
+        setMode("list");
+      });
     } catch {
       setBanner({ type: "err", text: "Save failed." });
     } finally {
@@ -260,6 +285,8 @@ export function usePeopleAdmin() {
     setSlug,
     setBio,
     setAvatarUrl,
+    uploadAvatar,
+    clearAvatar,
     setVisibility,
     setPassword,
     openCreate,

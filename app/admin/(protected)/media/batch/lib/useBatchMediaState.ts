@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import type { LocationOption } from "@/components/testimonials/review-form/types";
 import type { CloudinaryUploadedFile } from "@/components/admin/CloudinaryMultiUploadButton";
+import { useUploadReplaceCleanup } from "@/hooks/useUploadReplaceCleanup";
 import { useMediaAppearancesState } from "../../lib/useMediaAppearancesState";
 import type { MediaCategory } from "../../lib/types";
 
@@ -39,6 +40,7 @@ export function useBatchMediaState() {
 
   const appearanceState = useMediaAppearancesState();
   const [files, setFiles] = useState<BatchFile[]>([]);
+  const uploadCleanup = useUploadReplaceCleanup();
 
   const primaryCategory = categories[0] ?? null;
   const tags = useMemo(() => selectedTagSlugs.slice(0, 60), [selectedTagSlugs]);
@@ -104,6 +106,10 @@ export function useBatchMediaState() {
       const next = [...prev];
       for (const u of uploaded) {
         if (next.some((f) => f.publicId === u.publicId)) continue;
+        // Every batch file is a fresh upload with no doc yet — track it so an
+        // abandoned batch (closed tab, navigated away) gets swept instead of
+        // leaving it in Cloudinary forever.
+        uploadCleanup.track(u.publicId, { publicId: u.publicId, resourceType: u.resourceType });
         next.push({
           id: u.publicId,
           secureUrl: u.secureUrl,
@@ -122,8 +128,23 @@ export function useBatchMediaState() {
     setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
   }
 
+  // A genuine discard — the file was never saved, so clean up its Cloudinary asset.
   function removeFile(id: string) {
-    setFiles((prev) => prev.filter((f) => f.id !== id));
+    setFiles((prev) => {
+      const file = prev.find((f) => f.id === id);
+      if (file) uploadCleanup.releaseIfTracked(file.publicId);
+      return prev.filter((f) => f.id !== id);
+    });
+  }
+
+  // The file was just saved into a real doc — it now owns the asset, so stop
+  // tracking it (without deleting) and drop it from the pending list.
+  function removeSavedFile(id: string) {
+    setFiles((prev) => {
+      const file = prev.find((f) => f.id === id);
+      if (file) uploadCleanup.forget(file.publicId);
+      return prev.filter((f) => f.id !== id);
+    });
   }
 
   function resetAll() {
@@ -178,6 +199,8 @@ export function useBatchMediaState() {
     addFiles,
     updateFile,
     removeFile,
+    removeSavedFile,
+    suspendDuringSave: uploadCleanup.suspendDuringSave,
 
     resetAll,
   };

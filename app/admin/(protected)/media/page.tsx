@@ -8,8 +8,17 @@ import MediaWizard from "./components/MediaWizard";
 import { useMediaEditorController } from "./lib/useMediaEditorController";
 
 export default function AdminMediaPage() {
-  const { editor, busy, busyAction, banner, save, remove, startNewUpload } =
-    useMediaEditorController();
+  const {
+    editor,
+    busy,
+    busyAction,
+    banner,
+    save,
+    remove,
+    startNewUpload,
+    trackUpload,
+    releaseTrackedUpload,
+  } = useMediaEditorController();
 
   return (
     <main className="mx-auto max-w-5xl px-0 py-3 md:px-6 md:py-10">
@@ -43,6 +52,8 @@ export default function AdminMediaPage() {
         busyAction={busyAction}
         save={save}
         remove={remove}
+        trackUpload={trackUpload}
+        releaseTrackedUpload={releaseTrackedUpload}
       />
     </main>
   );

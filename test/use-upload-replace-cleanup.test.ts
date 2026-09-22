@@ -79,4 +79,67 @@ describe("useUploadReplaceCleanup", () => {
 
     expect(fetchMock).not.toHaveBeenCalled();
   });
+
+  test("forget() removes a tracked upload without deleting it — a save succeeded", () => {
+    const { result } = renderHook(() => useUploadReplaceCleanup());
+
+    result.current.track("v1", { publicId: "v1" });
+    result.current.forget("v1");
+    result.current.releaseIfTracked("v1");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("releaseAll() cleans up every still-tracked upload and only those", () => {
+    const { result } = renderHook(() => useUploadReplaceCleanup());
+
+    result.current.track("v1", { publicId: "v1" });
+    result.current.track("v2", { publicId: "v2" });
+    result.current.forget("v2");
+    result.current.track("v3", { publicId: "v3" });
+
+    result.current.releaseAll();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const cleaned = fetchMock.mock.calls.map(([, init]) => JSON.parse(init.body).publicId).sort();
+    expect(cleaned).toEqual(["v1", "v3"]);
+  });
+
+  test("unmounting the owning component sweeps whatever is still tracked (an abandoned form)", () => {
+    const { result, unmount } = renderHook(() => useUploadReplaceCleanup());
+
+    result.current.track("abandoned", { publicId: "abandoned" });
+    unmount();
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ publicId: "abandoned" });
+  });
+
+  test("unmounting after a successful save cleans up nothing — the asset was forgotten", () => {
+    const { result, unmount } = renderHook(() => useUploadReplaceCleanup());
+
+    result.current.track("v1", { publicId: "v1" });
+    result.current.forget("v1");
+    unmount();
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("suspendDuringSave() prevents the unmount sweep from racing an in-flight save", async () => {
+    const { result, unmount } = renderHook(() => useUploadReplaceCleanup());
+
+    result.current.track("v1", { publicId: "v1" });
+
+    let resolveSave!: () => void;
+    const savePromise = result.current.suspendDuringSave(
+      () => new Promise<void>((resolve) => { resolveSave = resolve; })
+    );
+
+    // navigating away while the save is still in flight must not delete v1
+    unmount();
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    resolveSave();
+    await savePromise;
+  });
 });
