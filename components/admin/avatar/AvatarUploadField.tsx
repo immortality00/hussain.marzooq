@@ -3,37 +3,40 @@
 import { useRef, useState } from "react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { uploadFileToCloudinary, type CloudinaryUploaded } from "@/lib/client/cloudinary-direct-upload";
+import { AvatarCropModal } from "./AvatarCropModal";
 
-export type { CloudinaryUploaded };
-
-export function CloudinaryUploadButton({
+export function AvatarUploadField({
   folder,
-  accept = "image/*,video/*",
-  label = "Choose file",
+  label = "Upload avatar",
   disabled = false,
   onUploaded,
   onError,
 }: {
   folder: string;
-  accept?: string;
   label?: string;
   disabled?: boolean;
   onUploaded: (uploaded: CloudinaryUploaded) => void;
   onError?: (message: string) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [pendingImageUrl, setPendingImageUrl] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function handleFile(file: File) {
+  function closeCrop() {
+    if (pendingImageUrl) URL.revokeObjectURL(pendingImageUrl);
+    setPendingImageUrl(null);
+  }
+
+  async function handleCropped(blob: Blob) {
+    closeCrop();
     setBusy(true);
     try {
-      const uploaded = await uploadFileToCloudinary(file, folder);
+      const uploaded = await uploadFileToCloudinary(blob, folder);
       onUploaded(uploaded);
     } catch (error) {
       onError?.(error instanceof Error ? error.message : "Upload failed.");
     } finally {
       setBusy(false);
-      if (inputRef.current) inputRef.current.value = "";
     }
   }
 
@@ -42,11 +45,12 @@ export function CloudinaryUploadButton({
       <input
         ref={inputRef}
         type="file"
-        accept={accept}
+        accept="image/*"
         className="hidden"
         onChange={(event) => {
           const file = event.target.files?.[0];
-          if (file) void handleFile(file);
+          if (file) setPendingImageUrl(URL.createObjectURL(file));
+          event.target.value = "";
         }}
       />
       <button
@@ -57,6 +61,10 @@ export function CloudinaryUploadButton({
       >
         {busy ? "Uploading…" : label}
       </button>
+
+      {pendingImageUrl ? (
+        <AvatarCropModal imageUrl={pendingImageUrl} onCancel={closeCrop} onConfirm={handleCropped} />
+      ) : null}
     </>
   );
 }

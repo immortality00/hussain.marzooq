@@ -9,7 +9,7 @@ import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { usePeopleAdmin } from "@/hooks/usePeopleAdmin";
-import { CloudinaryUploadButton } from "@/components/admin/CloudinaryUploadButton";
+import { AvatarUploadField } from "@/components/admin/avatar/AvatarUploadField";
 
 function statusLabel(item: { isPublic: boolean; isPrivate: boolean }) {
   if (item.isPublic === false) return "Hidden";
@@ -246,9 +246,8 @@ export default function PeopleAdminClient() {
               <label className="text-sm font-medium">Avatar</label>
 
               <div className="flex flex-wrap gap-2">
-                <CloudinaryUploadButton
+                <AvatarUploadField
                   folder={CLOUDINARY_PEOPLE_FOLDER}
-                  accept="image/*"
                   label="Upload avatar"
                   disabled={actionBusy}
                   onUploaded={(u) => setAvatarUrl(u.secureUrl)}
