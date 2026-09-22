@@ -5,7 +5,7 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useMotionPreference } from "@/hooks/useMotionPreference";
 
 const FAILSAFE_MS = 3000;
-const LIFETIME_MS = 9000;
+const LIFETIME_MS = 13000;
 const FADE_MS = 400;
 const END_MARGIN_SECONDS = 0.02;
 const PORTRAIT_QUERY = "(max-aspect-ratio: 1/1)";
@@ -30,10 +30,20 @@ export function Preloader() {
   useEffect(() => {
     if (phase !== "loading" && phase !== "leaving") return;
 
-    const id = window.setTimeout(
-      () => setPhase("done"),
-      phase === "loading" ? FAILSAFE_MS : FADE_MS
-    );
+    const id = window.setTimeout(() => {
+      if (phase === "loading") {
+        const video = videoRef.current;
+        const loading =
+          video &&
+          (video.networkState === video.NETWORK_LOADING ||
+            video.readyState > 0 ||
+            video.buffered.length > 0);
+
+        if (loading) return;
+      }
+
+      setPhase("done");
+    }, phase === "loading" ? FAILSAFE_MS : FADE_MS);
 
     return () => window.clearTimeout(id);
   }, [phase]);
