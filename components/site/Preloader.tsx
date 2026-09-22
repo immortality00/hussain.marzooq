@@ -39,6 +39,20 @@ export function Preloader() {
   const [fallbackReady, setFallbackReady] = useState(false);
 
   useEffect(() => {
+    if (!blocked) return;
+
+    const warm = new Image();
+    warm.onload = () => setFallbackReady(true);
+    warm.onerror = () => setPhase("done");
+    warm.src = portrait ? CUTS.portrait.animated : CUTS.landscape.animated;
+
+    return () => {
+      warm.onload = null;
+      warm.onerror = null;
+    };
+  }, [blocked, portrait]);
+
+  useEffect(() => {
     if (!blocked || !fallbackReady || phase === "leaving" || phase === "done") return;
 
     const id = window.setTimeout(() => setPhase("leaving"), ANIMATION_MS);
@@ -122,15 +136,12 @@ export function Preloader() {
       className={`preloader-root${phase === "leaving" ? " is-leaving" : ""}`}
       aria-hidden="true"
     >
-      {motion === "allow" && blocked && (
+      {motion === "allow" && blocked && fallbackReady && (
         // eslint-disable-next-line @next/next/no-img-element
         <img
           src={cut.animated}
           alt=""
           className={`preloader-video${portrait ? " preloader-video-portrait" : ""}`}
-          style={{ visibility: fallbackReady ? "visible" : "hidden" }}
-          onLoad={() => setFallbackReady(true)}
-          onError={() => setPhase("done")}
         />
       )}
 
