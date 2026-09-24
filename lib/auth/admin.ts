@@ -3,10 +3,12 @@ import { cookies } from "next/headers";
 import {
   COOKIE_NAME,
   SIG_NAME,
-  SESSION_TTL_SECONDS,
   createSessionValue,
   isSessionValueFresh,
+  parseSession,
   safeEqual,
+  sessionCookieMaxAge,
+  shouldRenewSession,
 } from "./session-token";
 
 const SCRYPT_KEYLEN = 64;
@@ -52,15 +54,19 @@ export function isAdminPasswordConfigured() {
 }
 
 /** Builds the cookie pair for a newly authenticated admin session. */
-export function createAdminSessionCookies(secret: string) {
-  const value = createSessionValue();
+export function createAdminSessionCookies(
+  secret: string,
+  remember: boolean = false,
+  startedAt?: number
+) {
+  const value = createSessionValue(remember, Date.now(), startedAt);
 
   const options = {
     httpOnly: true as const,
     sameSite: "lax" as const,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: SESSION_TTL_SECONDS,
+    maxAge: sessionCookieMaxAge(remember),
   };
 
   return [
@@ -82,10 +88,28 @@ export async function isAdminAuthedServer(): Promise<boolean> {
   return verifyPair(jar.get(COOKIE_NAME)?.value ?? "", jar.get(SIG_NAME)?.value ?? "");
 }
 
+async function renewAdminSessionIfStale() {
+  const secret = (process.env.ADMIN_COOKIE_SECRET ?? "").trim();
+  const jar = await cookies();
+  const value = jar.get(COOKIE_NAME)?.value ?? "";
+  const session = parseSession(value);
+  if (!secret || !session || !shouldRenewSession(value)) return;
+
+  try {
+    for (const cookie of createAdminSessionCookies(secret, session.remember, session.startedAt)) {
+      jar.set(cookie.name, cookie.value, cookie.options);
+    }
+  } catch {
+    // Not in a context that can set cookies (a Server Component render) — the
+    // proxy renews on page requests, so skipping here is harmless.
+  }
+}
+
 export async function requireAdminOr401() {
   const ok = await isAdminAuthedServer();
   if (!ok) {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
+  await renewAdminSessionIfStale();
   return null;
 }

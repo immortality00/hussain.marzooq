@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { CLOUDINARY_SERVICES_FOLDER } from "@/lib/cloudinary-folders";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { CloudinaryUploadButton } from "@/components/admin/CloudinaryUploadButton";
+import { useLatest } from "@/hooks/useLatest";
+import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 import type { Service, ServiceCategory } from "../lib/types";
 
 export default function ServiceEditorModal({
@@ -29,6 +31,11 @@ export default function ServiceEditorModal({
   const [imageUrl, setImageUrl] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [busy, setBusy] = useState(false);
+  const latestImageUrl = useLatest(imageUrl);
+
+  function discardCurrentImage() {
+    if (latestImageUrl.current) cleanupUploadedAsset({ url: latestImageUrl.current });
+  }
 
   const categoriesClean = useMemo(() => {
     const filtered = categories.filter((c) => c.slug !== "general");
@@ -140,12 +147,18 @@ export default function ServiceEditorModal({
                   folder={CLOUDINARY_SERVICES_FOLDER}
                   accept="image/*"
                   label="Upload Image"
-                  onUploaded={(u) => setImageUrl(u.secureUrl)}
+                  onUploaded={(u) => {
+                    discardCurrentImage();
+                    setImageUrl(u.secureUrl);
+                  }}
                 />
 
                 <button
                   type="button"
-                  onClick={() => setImageUrl("")}
+                  onClick={() => {
+                    discardCurrentImage();
+                    setImageUrl("");
+                  }}
                   className={adminButtonClasses("default", "md")}
                 >
                   Clear

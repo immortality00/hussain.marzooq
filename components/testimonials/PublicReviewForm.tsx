@@ -9,6 +9,7 @@ import { ProfilePhotoField } from "./review-form/ProfilePhotoField";
 import { ReviewPhotosField } from "./review-form/ReviewPhotosField";
 import { StarPicker } from "./review-form/StarPicker";
 import type { BannerState, LocationOption } from "./review-form/types";
+import { discardUpload } from "./review-form/discardUpload";
 import { isValidEmail } from "./review-form/utils";
 import { useModalVisibilityEvents } from "./review-form/useModalVisibilityEvents";
 
@@ -143,6 +144,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
   }
 
   function handleProfilePhotoUploaded(url: string) {
+    if (profilePhotoUrl && profilePhotoUrl !== url) discardUpload(profilePhotoUrl);
     setProfilePhotoUrl(url);
     setHasPendingUploads(true);
   }
@@ -156,6 +158,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
   }
 
   function removePhoto(url: string) {
+    discardUpload(url);
     setPhotoUrls((prev) => prev.filter((item) => item !== url));
   }
 
@@ -381,7 +384,10 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                     folder={photosFolder}
                     photoUrls={photoUrls}
                     onUploaded={addPhoto}
-                    onClear={() => setPhotoUrls([])}
+                    onClear={() => {
+                      photoUrls.forEach(discardUpload);
+                      setPhotoUrls([]);
+                    }}
                     onRemove={removePhoto}
                   />
 

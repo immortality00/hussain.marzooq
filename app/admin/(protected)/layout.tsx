@@ -6,6 +6,7 @@ import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
 import { AdminStickyRegion } from "@/components/admin/AdminStickyStack";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { getAdminNotificationCount } from "@/lib/server/admin-dashboard";
+import { scheduleUploadSweep } from "@/lib/server/upload-ledger";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -16,9 +17,10 @@ export default async function AdminProtectedLayout({
   children: React.ReactNode;
 }) {
   const ok = await isAdminAuthedServer();
-  if (!ok) redirect("/admin");
+  if (!ok) redirect("/admin?signedout=signature");
 
   const notificationCount = await getAdminNotificationCount();
+  scheduleUploadSweep();
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-background">

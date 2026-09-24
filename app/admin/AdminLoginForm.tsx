@@ -30,6 +30,11 @@ export function AdminLoginForm({
 
       <input type="hidden" name="next" value={nextPath} />
 
+      <label className="flex items-center gap-2 text-sm text-muted-foreground">
+        <input type="checkbox" name="remember" className="h-4 w-4 rounded border" />
+        Remember this device
+      </label>
+
       <AdminButton type="submit" variant="solid" className="w-full">
         Login
       </AdminButton>

@@ -23,16 +23,12 @@ export default function MediaWizard({
   busyAction,
   save,
   remove,
-  trackUpload,
-  releaseTrackedUpload,
 }: {
   editor: Editor;
   busy: boolean;
   busyAction: BusyAction;
   save: () => void | Promise<void>;
   remove: () => void | Promise<void>;
-  trackUpload: (key: string, asset: { publicId: string; resourceType: string }) => void;
-  releaseTrackedUpload: (key: string | null | undefined) => void;
 }) {
   const [step, setStep] = useState(0);
 
@@ -91,8 +87,6 @@ export default function MediaWizard({
               allowEmbed={allowEmbed}
               uploadFolder={uploadFolder}
               canUpload={Boolean(editor.primaryCategory)}
-              trackUpload={trackUpload}
-              releaseTrackedUpload={releaseTrackedUpload}
             />
 
             {editor.isNft ? (

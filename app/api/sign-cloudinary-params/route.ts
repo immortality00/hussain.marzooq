@@ -6,6 +6,12 @@ import {
   sanitizeAdminParamsToSign,
   signCloudinaryParams,
 } from "@/lib/server/cloudinary";
+import { getDb } from "@/lib/server/db";
+import {
+  newUploadPublicId,
+  registerAssetUpload,
+  scheduleUploadSweep,
+} from "@/lib/server/upload-ledger";
 
 export const dynamic = "force-dynamic";
 
@@ -23,17 +29,20 @@ export async function POST(request: Request) {
       ? (bodyUnknown as Record<string, unknown>)
       : {};
 
-  const paramsToSign = sanitizeAdminParamsToSign(body.paramsToSign);
-  if (!paramsToSign) {
+  const requested = sanitizeAdminParamsToSign(body.paramsToSign);
+  if (!requested) {
     return noStoreJson({ error: "Invalid or missing paramsToSign." }, { status: 400 });
   }
 
-  const signature = signCloudinaryParams(paramsToSign);
+  const publicId = newUploadPublicId(String(requested.folder));
+  const timestamp = Math.round(Date.now() / 1000);
+
+  await registerAssetUpload(await getDb(), publicId);
+
+  const signature = signCloudinaryParams({ public_id: publicId, timestamp });
   const { cloudName, apiKey } = getCloudinaryPublicConfig();
 
-  return noStoreJson({
-    signature,
-    cloudName,
-    apiKey,
-  });
+  scheduleUploadSweep();
+
+  return noStoreJson({ signature, cloudName, apiKey, publicId, timestamp });
 }

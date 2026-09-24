@@ -5,6 +5,8 @@ import Image from "next/image";
 import type { Uploaded } from "../lib/types";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { CloudinaryUploadButton } from "@/components/admin/CloudinaryUploadButton";
+import { useLatest } from "@/hooks/useLatest";
+import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 
 export default function MediaAssetSection({
   mode,
@@ -16,8 +18,6 @@ export default function MediaAssetSection({
   allowEmbed = true,
   uploadFolder,
   canUpload = true,
-  trackUpload,
-  releaseTrackedUpload,
 }: {
   mode: "upload" | "embed";
   setMode: (value: "upload" | "embed") => void;
@@ -28,24 +28,23 @@ export default function MediaAssetSection({
   allowEmbed?: boolean;
   uploadFolder: string;
   canUpload?: boolean;
-  // Owned by the wizard's controller, not this component — MediaAssetSection is
-  // conditionally rendered per wizard step (unmounts when you move off "Media"),
-  // so a locally-owned tracker would forget an earlier upload the moment you
-  // stepped away and back.
-  trackUpload: (key: string, asset: { publicId: string; resourceType: string }) => void;
-  releaseTrackedUpload: (key: string | null | undefined) => void;
 }) {
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const latestUploaded = useLatest(uploaded);
+
+  function discardCurrent() {
+    const current = latestUploaded.current;
+    if (current) cleanupUploadedAsset({ publicId: current.publicId });
+  }
 
   function handleUploaded(u: Uploaded) {
     setUploadError(null);
-    releaseTrackedUpload(uploaded?.publicId);
-    trackUpload(u.publicId, { publicId: u.publicId, resourceType: u.resourceType });
+    discardCurrent();
     setUploaded(u);
   }
 
   function handleClear() {
-    releaseTrackedUpload(uploaded?.publicId);
+    discardCurrent();
     setUploaded(null);
   }
 

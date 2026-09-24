@@ -155,6 +155,8 @@ async function ensureIndexes() {
 
   await createIndex(db, "testimonial_upload_sessions", { expiresAt: 1 }, { expireAfterSeconds: 0 });
 
+  await createIndex(db, "upload_ledger", { expiresAt: 1 });
+
   await createIndex(db, "inquiries", { status: 1, isArchived: 1, createdAt: -1 });
   await createIndex(db, "inquiries", { serviceId: 1, isArchived: 1, createdAt: -1 });
   await createIndex(db, "inquiries", { category: 1, createdAt: -1 });

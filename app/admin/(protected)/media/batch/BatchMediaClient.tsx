@@ -104,26 +104,23 @@ export default function BatchMediaClient() {
 
     const filesToSave = s.files;
     const failed: string[] = [];
+    const results = await Promise.allSettled(filesToSave.map((f) => createOne(f)));
 
-    await s.suspendDuringSave(async () => {
-      const results = await Promise.allSettled(filesToSave.map((f) => createOne(f)));
-
-      for (let i = 0; i < results.length; i += 1) {
-        const file = filesToSave[i];
-        const r = results[i];
-        if (r.status === "fulfilled" && r.value.id !== undefined) {
-          s.removeSavedFile(file.id);
-        } else {
-          const reason =
-            r.status === "rejected"
-              ? r.reason instanceof Error
-                ? r.reason.message
-                : "Network error"
-              : r.value.error;
-          failed.push(`${file.title.trim() || file.originalFilename}: ${reason}`);
-        }
+    for (let i = 0; i < results.length; i += 1) {
+      const file = filesToSave[i];
+      const r = results[i];
+      if (r.status === "fulfilled" && r.value.id !== undefined) {
+        s.dropFile(file.id);
+      } else {
+        const reason =
+          r.status === "rejected"
+            ? r.reason instanceof Error
+              ? r.reason.message
+              : "Network error"
+            : r.value.error;
+        failed.push(`${file.title.trim() || file.originalFilename}: ${reason}`);
       }
-    });
+    }
 
     setSaving(false);
 

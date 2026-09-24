@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { AdminActionFeedbackState } from "@/components/admin/action-feedback/AdminActionFeedback";
-import { useUploadReplaceCleanup } from "@/hooks/useUploadReplaceCleanup";
+import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 import {
   deleteMediaItem,
   fetchMediaItem,
@@ -34,7 +34,6 @@ export function useMediaEditorController() {
   const editor = useMediaEditorState();
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [banner, setBanner] = useState<AdminActionFeedbackState>(null);
-  const uploadCleanup = useUploadReplaceCleanup();
 
   const busy = busyAction !== null;
   const setPrimaryCategoryRef = useRef(editor.setPrimaryCategory);
@@ -123,7 +122,7 @@ export function useMediaEditorController() {
     });
 
     try {
-      await uploadCleanup.suspendDuringSave(doSave);
+      await doSave();
     } finally {
       setBusyAction(null);
     }
@@ -166,9 +165,9 @@ export function useMediaEditorController() {
         payloadWithAsset,
       });
 
-      // The doc now legitimately owns this asset — stop treating it as an
-      // orphan-in-waiting before resetFields()/loadIntoState() below touch it.
-      uploadCleanup.forget(editor.uploaded?.publicId);
+      if (editor.mode === "embed" && editor.uploaded) {
+        cleanupUploadedAsset({ publicId: editor.uploaded.publicId });
+      }
 
       if (result.mode === "created") {
         setBanner({ type: "ok", text: "✅ Media created successfully." });
@@ -198,9 +197,6 @@ export function useMediaEditorController() {
 
     try {
       await deleteMediaItem(editor.editingId);
-      // The doc (and its own asset) is gone — a not-yet-saved replacement upload
-      // still sitting in the wizard was never attached to it, so sweep it too.
-      uploadCleanup.releaseAll();
       setBanner({ type: "ok", text: "✅ Media deleted." });
       editor.resetFields(true, () => setBanner(null));
       router.push("/admin/media/list");
@@ -216,9 +212,6 @@ export function useMediaEditorController() {
 
   function startNewUpload() {
     if (busy) return;
-    // Abandoning whatever was being edited — anything uploaded but never saved
-    // in this session is now an orphan.
-    uploadCleanup.releaseAll();
     editor.resetFields(false, () => setBanner(null));
     router.push("/admin/media");
   }
@@ -228,8 +221,6 @@ export function useMediaEditorController() {
     prefillCategory,
     editor,
     busy,
-    trackUpload: uploadCleanup.track,
-    releaseTrackedUpload: uploadCleanup.releaseIfTracked,
     busyAction,
     banner,
     setBanner,

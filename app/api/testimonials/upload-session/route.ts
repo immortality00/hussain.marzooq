@@ -2,7 +2,12 @@ import { noStoreJson } from "@/app/api/_lib/common";
 import { getClientAddress } from "@/app/api/_lib/public-form-security";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { getDb } from "@/lib/server/db";
-import { UPLOAD_SESSION_COOKIE, createUploadSession } from "@/lib/server/testimonial-upload-sessions";
+import {
+  UPLOAD_SESSION_COOKIE,
+  createUploadSession,
+  sessionFolder,
+} from "@/lib/server/testimonial-upload-sessions";
+import { registerSessionFolder, scheduleUploadSweep } from "@/lib/server/upload-ledger";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +33,8 @@ export async function POST(request: Request) {
 
   const db = await getDb();
   const session = await createUploadSession(db);
+  await registerSessionFolder(db, sessionFolder(session.sessionId));
+  scheduleUploadSweep();
 
   const response = noStoreJson({ ok: true, sessionId: session.sessionId });
 

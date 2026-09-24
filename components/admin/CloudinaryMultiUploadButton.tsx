@@ -44,14 +44,13 @@ export function CloudinaryMultiUploadButton({
     if (files.length === 0) return;
 
     setProgress({ done: 0, total: files.length });
-    const uploaded: CloudinaryUploadedFile[] = [];
-    let failures = 0;
+    let uploadedCount = 0;
 
     for (const file of files) {
       try {
-        uploaded.push(await uploadOne(file));
+        onUploaded([await uploadOne(file)]);
+        uploadedCount += 1;
       } catch (error) {
-        failures += 1;
         onError?.(error instanceof Error ? error.message : "Upload failed.");
       } finally {
         setProgress((prev) => (prev ? { ...prev, done: prev.done + 1 } : prev));
@@ -61,10 +60,7 @@ export function CloudinaryMultiUploadButton({
     setProgress(null);
     if (inputRef.current) inputRef.current.value = "";
 
-    if (uploaded.length > 0) onUploaded(uploaded);
-    if (failures > 0 && uploaded.length === 0) {
-      onError?.("None of the files uploaded.");
-    }
+    if (uploadedCount === 0) onError?.("None of the files uploaded.");
   }
 
   const busy = progress !== null;

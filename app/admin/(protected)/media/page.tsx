@@ -16,8 +16,6 @@ export default function AdminMediaPage() {
     save,
     remove,
     startNewUpload,
-    trackUpload,
-    releaseTrackedUpload,
   } = useMediaEditorController();
 
   return (
@@ -52,8 +50,6 @@ export default function AdminMediaPage() {
         busyAction={busyAction}
         save={save}
         remove={remove}
-        trackUpload={trackUpload}
-        releaseTrackedUpload={releaseTrackedUpload}
       />
     </main>
   );

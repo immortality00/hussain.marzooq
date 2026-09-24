@@ -8,6 +8,8 @@ import type { SectionImage } from "@/lib/page-sections-shared";
 import { MediaPickerModal } from "./MediaPickerModal";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { CloudinaryUploadButton } from "@/components/admin/CloudinaryUploadButton";
+import { useLatest } from "@/hooks/useLatest";
+import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 
 // Reusable admin image control: pick an existing library image OR upload a new
 // one to Cloudinary, plus remove. Uploaded images carry a publicId (cleaned up
@@ -26,6 +28,14 @@ export function ImageField({
   const [pickerOpen, setPickerOpen] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const image = value ?? EMPTY_SECTION_IMAGE;
+
+  const latestImage = useLatest(image);
+
+  function change(next: SectionImage) {
+    const previous = latestImage.current;
+    if (previous.publicId) cleanupUploadedAsset({ publicId: previous.publicId });
+    onChange(next);
+  }
 
   return (
     <div className="space-y-2">
@@ -57,7 +67,7 @@ export function ImageField({
             label="Upload"
             onUploaded={(u) => {
               setUploadError(null);
-              onChange({ url: u.secureUrl, publicId: u.publicId });
+              change({ url: u.secureUrl, publicId: u.publicId });
             }}
             onError={setUploadError}
           />
@@ -65,7 +75,7 @@ export function ImageField({
           {image.url ? (
             <button
               type="button"
-              onClick={() => onChange(EMPTY_SECTION_IMAGE)}
+              onClick={() => change(EMPTY_SECTION_IMAGE)}
               className={adminButtonClasses("danger", "md")}
             >
               Remove
@@ -81,7 +91,7 @@ export function ImageField({
       ) : null}
 
       {pickerOpen ? (
-        <MediaPickerModal onPick={onChange} onClose={() => setPickerOpen(false)} />
+        <MediaPickerModal onPick={change} onClose={() => setPickerOpen(false)} />
       ) : null}
     </div>
   );
