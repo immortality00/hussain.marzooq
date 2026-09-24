@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import type { Uploaded } from "../lib/types";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-import { CloudinaryUploadButton } from "@/components/admin/CloudinaryUploadButton";
+import { CloudinaryUploadButton } from "@/components/shared/upload/CloudinaryUploadButton";
 import { useLatest } from "@/hooks/useLatest";
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 

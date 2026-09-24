@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import type { LocationOption } from "@/components/testimonials/review-form/types";
-import type { CloudinaryUploadedFile } from "@/components/admin/CloudinaryMultiUploadButton";
+import type { CloudinaryUploadedFile } from "@/components/shared/upload/CloudinaryMultiUploadButton";
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 import { useMediaAppearancesState } from "../../lib/useMediaAppearancesState";
 import type { MediaCategory } from "../../lib/types";

@@ -10,7 +10,7 @@ import { ReviewPhotosField } from "./review-form/ReviewPhotosField";
 import { StarPicker } from "./review-form/StarPicker";
 import type { BannerState, LocationOption } from "./review-form/types";
 import { discardUpload } from "./review-form/discardUpload";
-import { isValidEmail } from "./review-form/utils";
+import { MAX_REVIEW_PHOTOS, isValidEmail } from "./review-form/utils";
 import { useModalVisibilityEvents } from "./review-form/useModalVisibilityEvents";
 
 export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?: boolean }) {
@@ -152,9 +152,13 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
   function addPhoto(url: string) {
     setPhotoUrls((prev) => {
       if (prev.includes(url)) return prev;
-      return [...prev, url].slice(0, 12);
+      return [...prev, url].slice(0, MAX_REVIEW_PHOTOS);
     });
     setHasPendingUploads(true);
+  }
+
+  function showUploadError(text: string) {
+    setBanner({ type: "err", text });
   }
 
   function removePhoto(url: string) {
@@ -303,6 +307,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                         folder={profilePhotoFolder}
                         profilePhotoUrl={profilePhotoUrl}
                         onUploaded={handleProfilePhotoUploaded}
+                        onError={showUploadError}
                       />
 
                       <div className="min-w-0 flex-1 space-y-4">
@@ -389,6 +394,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                       setPhotoUrls([]);
                     }}
                     onRemove={removePhoto}
+                    onError={showUploadError}
                   />
 
                   {banner ? (

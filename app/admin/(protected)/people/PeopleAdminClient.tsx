@@ -9,7 +9,7 @@ import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { usePeopleAdmin } from "@/hooks/usePeopleAdmin";
-import { AvatarUploadField } from "@/components/admin/avatar/AvatarUploadField";
+import { AvatarUploadField } from "@/components/shared/upload/AvatarUploadField";
 
 function statusLabel(item: { isPublic: boolean; isPrivate: boolean }) {
   if (item.isPublic === false) return "Hidden";

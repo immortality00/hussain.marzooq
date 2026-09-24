@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-import { CloudinaryMultiUploadButton } from "@/components/admin/CloudinaryMultiUploadButton";
+import { CloudinaryMultiUploadButton } from "@/components/shared/upload/CloudinaryMultiUploadButton";
 import { WizardTabs } from "@/components/admin/wizard/WizardTabs";
 import { LocationSearch } from "@/components/testimonials/review-form/LocationSearch";
 import { useAdminAction } from "@/hooks/useAdminAction";

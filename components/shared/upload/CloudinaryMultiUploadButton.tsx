@@ -2,8 +2,8 @@
 
 import { useRef, useState } from "react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-import type { CloudinaryUploaded } from "@/components/admin/CloudinaryUploadButton";
-import { uploadFileToCloudinary } from "@/lib/client/cloudinary-direct-upload";
+import type { CloudinaryUploaded } from "@/components/shared/upload/CloudinaryUploadButton";
+import { uploadFileToCloudinary, type UploadTarget } from "@/lib/client/cloudinary-direct-upload";
 
 export type CloudinaryUploadedFile = CloudinaryUploaded & {
   originalFilename: string;
@@ -15,6 +15,8 @@ export function CloudinaryMultiUploadButton({
   label = "Choose files",
   disabled = false,
   maxFiles = 50,
+  target,
+  className = adminButtonClasses("default", "md"),
   onUploaded,
   onError,
 }: {
@@ -23,6 +25,8 @@ export function CloudinaryMultiUploadButton({
   label?: string;
   disabled?: boolean;
   maxFiles?: number;
+  target?: UploadTarget;
+  className?: string;
   onUploaded: (files: CloudinaryUploadedFile[]) => void;
   onError?: (message: string) => void;
 }) {
@@ -31,7 +35,7 @@ export function CloudinaryMultiUploadButton({
 
   async function uploadOne(file: File): Promise<CloudinaryUploadedFile> {
     try {
-      const uploaded = await uploadFileToCloudinary(file, folder);
+      const uploaded = await uploadFileToCloudinary(file, folder, target);
       return { ...uploaded, originalFilename: file.name };
     } catch (error) {
       const message = error instanceof Error ? error.message : "Upload failed.";
@@ -82,7 +86,7 @@ export function CloudinaryMultiUploadButton({
         type="button"
         disabled={disabled || busy}
         onClick={() => inputRef.current?.click()}
-        className={adminButtonClasses("default", "md")}
+        className={className}
       >
         {busy ? `Uploading ${progress?.done}/${progress?.total}…` : label}
       </button>

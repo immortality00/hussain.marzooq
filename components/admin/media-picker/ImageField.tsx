@@ -7,7 +7,7 @@ import { EMPTY_SECTION_IMAGE } from "@/lib/page-sections-shared";
 import type { SectionImage } from "@/lib/page-sections-shared";
 import { MediaPickerModal } from "./MediaPickerModal";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-import { CloudinaryUploadButton } from "@/components/admin/CloudinaryUploadButton";
+import { CloudinaryUploadButton } from "@/components/shared/upload/CloudinaryUploadButton";
 import { useLatest } from "@/hooks/useLatest";
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 

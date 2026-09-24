@@ -2,19 +2,27 @@
 
 import { useRef, useState } from "react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-import { uploadFileToCloudinary, type CloudinaryUploaded } from "@/lib/client/cloudinary-direct-upload";
+import {
+  uploadFileToCloudinary,
+  type CloudinaryUploaded,
+  type UploadTarget,
+} from "@/lib/client/cloudinary-direct-upload";
 import { AvatarCropModal } from "./AvatarCropModal";
 
 export function AvatarUploadField({
   folder,
   label = "Upload avatar",
   disabled = false,
+  target,
+  className = adminButtonClasses("default", "md"),
   onUploaded,
   onError,
 }: {
   folder: string;
   label?: string;
   disabled?: boolean;
+  target?: UploadTarget;
+  className?: string;
   onUploaded: (uploaded: CloudinaryUploaded) => void;
   onError?: (message: string) => void;
 }) {
@@ -31,7 +39,7 @@ export function AvatarUploadField({
     closeCrop();
     setBusy(true);
     try {
-      const uploaded = await uploadFileToCloudinary(blob, folder);
+      const uploaded = await uploadFileToCloudinary(blob, folder, target);
       onUploaded(uploaded);
     } catch (error) {
       onError?.(error instanceof Error ? error.message : "Upload failed.");
@@ -57,7 +65,7 @@ export function AvatarUploadField({
         type="button"
         disabled={disabled || busy}
         onClick={() => inputRef.current?.click()}
-        className={adminButtonClasses("default", "md")}
+        className={className}
       >
         {busy ? "Uploading…" : label}
       </button>

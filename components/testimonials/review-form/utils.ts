@@ -1,11 +1,18 @@
+import type { UploadTarget } from "@/lib/client/cloudinary-direct-upload";
 import type { LocationOption } from "./types";
+
+export const MAX_REVIEW_PHOTOS = 12;
+
+export const REVIEW_UPLOAD_TARGET: UploadTarget = {
+  signEndpoint: "/api/testimonials/upload-signature",
+  resourceType: "image",
+};
+
+export const UPLOAD_BUTTON_CLASS =
+  "rounded-full border border-border/70 bg-background px-4 py-2 text-sm transition-colors hover:bg-muted disabled:opacity-60";
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
-}
-
-export function getString(value: unknown) {
-  return typeof value === "string" ? value : "";
 }
 
 export function isValidEmail(value: string) {

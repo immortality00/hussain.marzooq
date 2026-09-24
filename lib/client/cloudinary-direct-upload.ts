@@ -82,21 +82,33 @@ async function uploadInChunks(file: File | Blob, endpoint: string, params: Signe
   return data;
 }
 
+export type UploadTarget = {
+  signEndpoint?: string;
+  resourceType?: "auto" | "image";
+};
+
+async function throwForFailedSign(res: Response): Promise<never> {
+  const body = (await res.json().catch(() => null)) as { error?: unknown } | null;
+  const message = typeof body?.error === "string" && body.error.trim() ? body.error : "";
+  throw new Error(message || "Could not authorize the upload.");
+}
+
 export async function uploadFileToCloudinary(
   file: File | Blob,
   folder: string,
+  { signEndpoint = "/api/sign-cloudinary-params", resourceType = "auto" }: UploadTarget = {},
 ): Promise<CloudinaryUploaded> {
   const uploadFile = await compressImageForUpload(file);
 
-  const signRes = await fetch("/api/sign-cloudinary-params", {
+  const signRes = await fetch(signEndpoint, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ paramsToSign: { folder } }),
   });
-  if (!signRes.ok) throw new Error("Could not authorize the upload.");
+  if (!signRes.ok) return throwForFailedSign(signRes);
   const { signature, cloudName, apiKey, publicId, timestamp } = await signRes.json();
 
-  const endpoint = `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
+  const endpoint = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
   const params: SignedParams = { apiKey, timestamp, publicId, signature };
   const data =
     uploadFile.size > CHUNK_UPLOAD_THRESHOLD

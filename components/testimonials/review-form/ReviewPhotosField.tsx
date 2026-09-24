@@ -1,9 +1,8 @@
 "use client";
 
-import { CldUploadWidget } from "next-cloudinary";
+import { CloudinaryMultiUploadButton } from "@/components/shared/upload/CloudinaryMultiUploadButton";
 import { PreviewImage } from "./PreviewImage";
-import type { WidgetResult } from "./types";
-import { getString, isRecord } from "./utils";
+import { MAX_REVIEW_PHOTOS, REVIEW_UPLOAD_TARGET, UPLOAD_BUTTON_CLASS } from "./utils";
 
 export function ReviewPhotosField({
   folder,
@@ -11,12 +10,14 @@ export function ReviewPhotosField({
   onUploaded,
   onClear,
   onRemove,
+  onError,
 }: {
   folder: string;
   photoUrls: string[];
   onUploaded: (url: string) => void;
   onClear: () => void;
   onRemove: (url: string) => void;
+  onError: (message: string) => void;
 }) {
   return (
     <div className="rounded-[2rem] border border-border/60 bg-muted/20 p-4">
@@ -24,50 +25,23 @@ export function ReviewPhotosField({
         <div className="text-sm font-medium">Photos</div>
 
         <div className="flex flex-wrap gap-2">
-          {folder ? (
-            <CldUploadWidget
-              signatureEndpoint="/api/testimonials/upload-signature"
-              options={{
-                folder,
-                multiple: true,
-                maxFiles: 12,
-                resourceType: "image",
-                clientAllowedFormats: ["png", "jpg", "jpeg", "webp", "gif", "heic", "heif"],
-                maxFileSize: 10_485_760,
-              }}
-              onSuccess={(result: unknown) => {
-                const info = (result as WidgetResult)?.info;
-                if (!isRecord(info)) return;
-
-                const secureUrl = getString(info.secure_url);
-                if (secureUrl) onUploaded(secureUrl);
-              }}
-            >
-              {({ open }) => (
-                <button
-                  type="button"
-                  onClick={() => open()}
-                  className="rounded-full border border-border/70 bg-background px-4 py-2 text-sm transition-colors hover:bg-muted"
-                >
-                  Upload photos
-                </button>
-              )}
-            </CldUploadWidget>
-          ) : (
-            <button
-              type="button"
-              disabled
-              className="rounded-full border border-border/70 bg-background px-4 py-2 text-sm opacity-60"
-            >
-              Upload photos
-            </button>
-          )}
+          <CloudinaryMultiUploadButton
+            folder={folder}
+            target={REVIEW_UPLOAD_TARGET}
+            accept="image/*"
+            label="Upload photos"
+            maxFiles={MAX_REVIEW_PHOTOS - photoUrls.length}
+            disabled={!folder || photoUrls.length >= MAX_REVIEW_PHOTOS}
+            className={UPLOAD_BUTTON_CLASS}
+            onUploaded={(files) => files.forEach((file) => onUploaded(file.secureUrl))}
+            onError={onError}
+          />
 
           {photoUrls.length > 0 ? (
             <button
               type="button"
               onClick={onClear}
-              className="rounded-full border border-border/70 bg-background px-4 py-2 text-sm transition-colors hover:bg-muted"
+              className={UPLOAD_BUTTON_CLASS}
             >
               Clear
             </button>

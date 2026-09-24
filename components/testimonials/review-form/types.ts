@@ -1,5 +1,3 @@
-export type WidgetResult = { info?: unknown };
-
 export type LocationOption = {
   id: string;
   label: string;

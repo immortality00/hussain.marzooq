@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { CLOUDINARY_SERVICES_FOLDER } from "@/lib/cloudinary-folders";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-import { CloudinaryUploadButton } from "@/components/admin/CloudinaryUploadButton";
+import { CloudinaryUploadButton } from "@/components/shared/upload/CloudinaryUploadButton";
 import { useLatest } from "@/hooks/useLatest";
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 import type { Service, ServiceCategory } from "../lib/types";
