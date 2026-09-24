@@ -539,6 +539,7 @@
 .hm-nft-face {
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  transform: rotateY(0deg);
 }
 
 .hm-nft-face--back {
