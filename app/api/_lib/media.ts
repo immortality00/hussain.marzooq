@@ -1,4 +1,5 @@
 import { ObjectId, type Db } from "mongodb";
+import { embedUrlPattern, type VideoRef } from "@/lib/video-embed";
 import {
   asFiniteLatitude,
   asFiniteLongitude,
@@ -125,6 +126,20 @@ export function getMediaLists(v: Record<string, unknown>) {
     categories: asStringArray(v.categories),
     peopleIds: asStringArray(v.peopleIds),
   };
+}
+
+export async function findMediaWithVideo(db: Db, video: VideoRef, excludeId?: ObjectId) {
+  return db.collection("media").findOne(
+    { embedUrl: embedUrlPattern(video), ...(excludeId ? { _id: { $ne: excludeId } } : {}) },
+    { projection: { title: 1 } }
+  );
+}
+
+export function duplicateVideoMessage(doc: Record<string, unknown>) {
+  const title = typeof doc.title === "string" ? doc.title.trim() : "";
+  return title
+    ? `This video is already in the library as “${title}”.`
+    : "This video is already in the library.";
 }
 
 export async function resolvePeopleSelection(

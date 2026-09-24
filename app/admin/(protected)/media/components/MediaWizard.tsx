@@ -4,6 +4,7 @@ import { useState } from "react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { WizardTabs } from "@/components/admin/wizard/WizardTabs";
 import { getCloudinaryMediaFolderForCategory } from "@/lib/cloudinary-folders";
+import { toEmbedUrl } from "@/lib/video-embed";
 import type { useMediaEditorController } from "../lib/useMediaEditorController";
 import MediaAppearancesSection from "./MediaAppearancesSection";
 import MediaAssetSection from "./MediaAssetSection";
@@ -36,6 +37,10 @@ export default function MediaWizard({
     (editor.primaryCategory === "videography" || editor.primaryCategory === "showreel") &&
     !editor.isNft;
   const uploadFolder = getCloudinaryMediaFolderForCategory(editor.primaryCategory);
+  const posterUrl =
+    editor.savedPoster && toEmbedUrl(editor.embedUrl) === editor.savedPoster.embedUrl
+      ? editor.savedPoster.url
+      : null;
 
   const hasCategory = editor.categories.length > 0;
   const hasTitle = editor.title.trim().length > 0;
@@ -58,6 +63,7 @@ export default function MediaWizard({
             mode={editor.mode}
             uploaded={editor.uploaded}
             embedUrl={editor.embedUrl}
+            posterUrl={posterUrl}
           />
         </div>
       ) : null}

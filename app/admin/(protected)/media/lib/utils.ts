@@ -30,12 +30,3 @@ export function findFirstAppearanceError(
   }
   return null;
 }
-
-export function validateEmbed(url: string) {
-  const u = url.trim();
-  if (!u) return false;
-  return (
-    u.startsWith("https://") &&
-    (u.includes("youtube.com") || u.includes("youtu.be") || u.includes("vimeo.com"))
-  );
-}

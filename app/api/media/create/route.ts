@@ -9,19 +9,22 @@ import {
   noStoreJson,
 } from "@/app/api/_lib/common";
 import {
+  duplicateVideoMessage,
+  findMediaWithVideo,
   getMediaLists,
   parseMediaLocation,
   parseNftMeta,
   resolvePeopleSelection,
   sanitizeAppearances,
 } from "@/app/api/_lib/media";
-import { toEmbedUrl } from "@/components/media/utils";
 import { getPrivateGalleryTitlesForMedia } from "@/lib/server/private-gallery-admin";
 import {
   getPrimaryMediaFolder,
   normalizeUploadedMediaAsset,
   type NormalizedCloudinaryMediaAsset,
 } from "@/lib/server/media-asset-management";
+import { storeVideoPoster } from "@/lib/server/video-posters";
+import { parseVideoLink, videoEmbedSrc } from "@/lib/video-embed";
 
 export const dynamic = "force-dynamic";
 
@@ -84,11 +87,11 @@ export async function POST(req: Request) {
   }
 
   let normalizedAsset: NormalizedCloudinaryMediaAsset | null = null;
-  let normalizedEmbedUrl: string | null = null;
+  const video = type === "embed" ? parseVideoLink(embedUrl) : null;
+  const normalizedEmbedUrl = video ? videoEmbedSrc(video) : null;
 
   if (type === "embed") {
-    normalizedEmbedUrl = toEmbedUrl(embedUrl);
-    if (!normalizedEmbedUrl) {
+    if (!video) {
       return noStoreJson(
         { ok: false, error: "Use a valid YouTube or Vimeo video URL." },
         { status: 400 }
@@ -122,6 +125,14 @@ export async function POST(req: Request) {
   }
 
   const db = await getDb();
+
+  if (video) {
+    const duplicate = await findMediaWithVideo(db, video);
+    if (duplicate) {
+      return noStoreJson({ ok: false, error: duplicateVideoMessage(duplicate) }, { status: 409 });
+    }
+  }
+
   const resolvedPeople = await resolvePeopleSelection(db, { peopleIds });
 
   const existingByAsset = normalizedAsset
@@ -135,6 +146,7 @@ export async function POST(req: Request) {
 
   const isPublic =
     resolvedPeople.gatedPersonName || galleryTitles.length > 0 ? false : requestedPublic;
+  const poster = video ? await storeVideoPoster(db, video) : null;
   const now = new Date();
 
   const doc = {
@@ -158,7 +170,9 @@ export async function POST(req: Request) {
     secureUrl: normalizedAsset?.secureUrl ?? null,
     publicId: normalizedAsset?.publicId ?? null,
     resourceType: normalizedAsset?.resourceType ?? null,
-    embedUrl: type === "embed" ? normalizedEmbedUrl : null,
+    embedUrl: normalizedEmbedUrl,
+    posterUrl: poster?.url ?? null,
+    posterPublicId: poster?.publicId ?? null,
     order:
       typeof bodyUnknown.order === "number" && Number.isFinite(bodyUnknown.order)
         ? bodyUnknown.order
@@ -185,5 +199,5 @@ export async function POST(req: Request) {
 
   revalidateMediaSurfaces(tags);
 
-  return noStoreJson({ ok: true, id });
+  return noStoreJson({ ok: true, id, ...(video && !poster ? { posterMissing: true } : {}) });
 }

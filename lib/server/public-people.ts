@@ -49,6 +49,7 @@ function toMediaItem(doc: Record<string, unknown>): PublicMediaItem {
     appearances: sanitizeAppearances(doc.appearances),
     secureUrl: typeof doc.secureUrl === "string" ? doc.secureUrl : null,
     embedUrl: typeof doc.embedUrl === "string" ? doc.embedUrl : null,
+    posterUrl: typeof doc.posterUrl === "string" ? doc.posterUrl : null,
     createdAt:
       doc.createdAt instanceof Date
         ? doc.createdAt.toISOString()
@@ -59,7 +60,7 @@ function toMediaItem(doc: Record<string, unknown>): PublicMediaItem {
 }
 
 function isVideoType(value: unknown) {
-  return typeof value === "string" && value === "video";
+  return value === "video" || value === "embed";
 }
 
 function isPersonGated(doc: Record<string, unknown>) {
@@ -157,8 +158,8 @@ async function buildPersonDetail(
     slug: typeof doc.slug === "string" ? doc.slug : "",
     bio: typeof doc.bio === "string" ? doc.bio : null,
     avatarUrl: typeof doc.avatarUrl === "string" ? doc.avatarUrl : null,
-    photoCount: mediaItems.filter((item) => item.type !== "video").length,
-    videoCount: mediaItems.filter((item) => item.type === "video").length,
+    photoCount: mediaItems.filter((item) => !isVideoType(item.type)).length,
+    videoCount: mediaItems.filter((item) => isVideoType(item.type)).length,
     featuredImage:
       mediaItems.find((item) => typeof item.secureUrl === "string" && item.secureUrl)?.secureUrl ??
       null,

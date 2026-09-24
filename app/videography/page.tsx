@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { StickyCta } from "@/components/site/StickyCta";
-import { toEmbedUrl } from "@/components/media/utils";
+import { toEmbedUrl } from "@/lib/video-embed";
 import { getDisciplineTagNav } from "@/lib/server/tag-pages";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";

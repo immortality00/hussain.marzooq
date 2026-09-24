@@ -8,6 +8,7 @@ import { useMediaAppearancesState } from "../../lib/useMediaAppearancesState";
 import type { MediaCategory } from "../../lib/types";
 
 export type BatchFile = {
+  kind: "file";
   id: string;
   secureUrl: string;
   publicId: string;
@@ -16,6 +17,29 @@ export type BatchFile = {
   title: string;
   description: string;
 };
+
+export type BatchLink = {
+  kind: "link";
+  id: string;
+  embedUrl: string;
+  watchUrl: string;
+  preview: string | null;
+  title: string;
+  description: string;
+};
+
+export type BatchItem = BatchFile | BatchLink;
+
+export type ResolvedVideoLink = {
+  embedUrl: string;
+  watchUrl: string;
+  title: string | null;
+  preview: string | null;
+};
+
+export function batchItemLabel(item: BatchItem) {
+  return item.kind === "file" ? item.originalFilename : item.watchUrl;
+}
 
 function titleFromFilename(name: string): string {
   const withoutExt = name.replace(/\.[^./\\]+$/, "");
@@ -39,7 +63,7 @@ export function useBatchMediaState() {
   const [year, setYear] = useState("");
 
   const appearanceState = useMediaAppearancesState();
-  const [files, setFiles] = useState<BatchFile[]>([]);
+  const [items, setItems] = useState<BatchItem[]>([]);
 
   const primaryCategory = categories[0] ?? null;
   const tags = useMemo(() => selectedTagSlugs.slice(0, 60), [selectedTagSlugs]);
@@ -101,11 +125,12 @@ export function useBatchMediaState() {
   }
 
   function addFiles(uploaded: CloudinaryUploadedFile[]) {
-    setFiles((prev) => {
+    setItems((prev) => {
       const next = [...prev];
       for (const u of uploaded) {
-        if (next.some((f) => f.publicId === u.publicId)) continue;
+        if (next.some((item) => item.id === u.publicId)) continue;
         next.push({
+          kind: "file",
           id: u.publicId,
           secureUrl: u.secureUrl,
           publicId: u.publicId,
@@ -119,18 +144,37 @@ export function useBatchMediaState() {
     });
   }
 
-  function updateFile(id: string, patch: Partial<Pick<BatchFile, "title" | "description">>) {
-    setFiles((prev) => prev.map((f) => (f.id === id ? { ...f, ...patch } : f)));
+  function addLinks(links: ResolvedVideoLink[]) {
+    setItems((prev) => {
+      const next = [...prev];
+      for (const link of links) {
+        if (next.some((item) => item.id === link.embedUrl)) continue;
+        next.push({
+          kind: "link",
+          id: link.embedUrl,
+          embedUrl: link.embedUrl,
+          watchUrl: link.watchUrl,
+          preview: link.preview,
+          title: link.title ?? "",
+          description: "",
+        });
+      }
+      return next;
+    });
   }
 
-  function dropFile(id: string) {
-    setFiles((prev) => prev.filter((f) => f.id !== id));
+  function updateItem(id: string, patch: Partial<Pick<BatchItem, "title" | "description">>) {
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   }
 
-  function removeFile(id: string) {
-    const file = files.find((f) => f.id === id);
-    if (file) cleanupUploadedAsset({ publicId: file.publicId });
-    dropFile(id);
+  function dropItem(id: string) {
+    setItems((prev) => prev.filter((item) => item.id !== id));
+  }
+
+  function removeItem(id: string) {
+    const item = items.find((entry) => entry.id === id);
+    if (item?.kind === "file") cleanupUploadedAsset({ publicId: item.publicId });
+    dropItem(id);
   }
 
   function resetAll() {
@@ -143,7 +187,7 @@ export function useBatchMediaState() {
     setEvent("");
     setYear("");
     appearanceState.resetAppearances();
-    setFiles([]);
+    setItems([]);
   }
 
   return {
@@ -181,11 +225,12 @@ export function useBatchMediaState() {
 
     ...appearanceState,
 
-    files,
+    items,
     addFiles,
-    updateFile,
-    removeFile,
-    dropFile,
+    addLinks,
+    updateItem,
+    removeItem,
+    dropItem,
 
     resetAll,
   };

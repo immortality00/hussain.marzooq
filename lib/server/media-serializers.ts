@@ -17,6 +17,7 @@ export type PublicMediaItem = {
   secureUrl: string | null;
   publicId: string | null;
   embedUrl: string | null;
+  posterUrl: string | null;
   createdAt: string | null;
 };
 
@@ -27,6 +28,7 @@ export type AdminMediaListItem = {
   description: string | null;
   secureUrl: string | null;
   embedUrl: string | null;
+  posterUrl: string | null;
   categories: string[];
   tags: string[];
   location: string | null;
@@ -127,6 +129,7 @@ export function toPublicMediaItem(doc: Record<string, unknown>): PublicMediaItem
     secureUrl: secureUrl ?? null,
     publicId: publicId ?? null,
     embedUrl: embedUrl ?? null,
+    posterUrl: asNullableString(doc.posterUrl),
     createdAt: serializeDate(doc.createdAt),
   };
 }
@@ -148,6 +151,7 @@ export function toAdminMediaListItem(doc: Record<string, unknown>): AdminMediaLi
     description: asNullableString(doc.description),
     secureUrl: secureUrl ?? null,
     embedUrl: embedUrl ?? null,
+    posterUrl: asNullableString(doc.posterUrl),
     categories: asStringArray(doc.categories),
     tags: asStringArray(doc.tags),
     location: asNullableString(doc.location),

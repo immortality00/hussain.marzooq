@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { LocationOption } from "@/components/testimonials/review-form/types";
-import type { MediaCategory, MediaItem, Uploaded } from "./types";
+import { toVideoWatchUrl } from "@/lib/video-embed";
+import type { MediaCategory, MediaItem, SavedPoster, Uploaded } from "./types";
 
 export function useBaseMediaEditorState() {
   const [editingId, setEditingId] = useState<string>("");
@@ -8,6 +9,7 @@ export function useBaseMediaEditorState() {
   const [mode, setMode] = useState<"upload" | "embed">("upload");
   const [uploaded, setUploaded] = useState<Uploaded | null>(null);
   const [embedUrl, setEmbedUrl] = useState("");
+  const [savedPoster, setSavedPoster] = useState<SavedPoster | null>(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -92,6 +94,7 @@ export function useBaseMediaEditorState() {
     setMode("upload");
     setUploaded(null);
     setEmbedUrl("");
+    setSavedPoster(null);
     setTitle("");
     setDescription("");
     clearLocation();
@@ -108,9 +111,13 @@ export function useBaseMediaEditorState() {
   function loadBaseIntoState(m: MediaItem) {
     setEditingId(m.id);
 
+    setSavedPoster(
+      m.type === "embed" && m.embedUrl && m.posterUrl ? { url: m.posterUrl, embedUrl: m.embedUrl } : null
+    );
+
     if (m.type === "embed") {
       setMode("embed");
-      setEmbedUrl(m.embedUrl ?? "");
+      setEmbedUrl(toVideoWatchUrl(m.embedUrl ?? ""));
       setUploaded(null);
     } else {
       setMode("upload");
@@ -152,6 +159,7 @@ export function useBaseMediaEditorState() {
     setUploaded,
     embedUrl,
     setEmbedUrl,
+    savedPoster,
     title,
     setTitle,
     description,

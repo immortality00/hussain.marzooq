@@ -5,7 +5,7 @@ import { ModalPortal } from "@/components/shared/ModalPortal";
 import { Button } from "@/components/shared/Button";
 import MediaDetailsSections from "./MediaDetailsSections";
 import type { MediaItem, TagLink } from "./types";
-import { toEmbedUrl } from "./utils";
+import { toEmbedUrl } from "@/lib/video-embed";
 
 function MediaSurface({ active }: { active: MediaItem }) {
   if (active.type === "embed" && active.embedUrl) {

@@ -32,6 +32,20 @@ describe("isCloudinaryAssetReferenced", () => {
     expect(await isCloudinaryAssetReferenced(fakeDb({ media: [{ publicId: ID }] }), ID)).toBe(true);
   });
 
+  test("true when a media doc carries it as its video thumbnail", async () => {
+    const db = {
+      collection(name: string) {
+        return {
+          findOne: async (query: Record<string, unknown>) =>
+            name === "media" && JSON.stringify(query).includes(`"posterPublicId":"${ID}"`) ? { _id: 1 } : null,
+          find: () => ({ toArray: async () => [] }),
+        };
+      },
+    } as unknown as Db;
+
+    expect(await isCloudinaryAssetReferenced(db, ID)).toBe(true);
+  });
+
   test("true when a nested page_sections image carries it", async () => {
     const db = fakeDb({ page_sections: [{ slug: "home", hero: { image: { url: `https://x/${ID}.jpg`, publicId: ID } } }] });
     expect(await isCloudinaryAssetReferenced(db, ID)).toBe(true);

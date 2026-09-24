@@ -40,13 +40,13 @@ export default function MediaCardGrid({
               <SmartMediaPreview
                 mode={isImage ? "image" : isVideo ? "video" : isEmbed ? "embed" : "empty"}
                 src={m.secureUrl}
-                embedUrl={m.embedUrl}
+                posterSrc={m.posterUrl}
                 title={m.title}
                 fit={isVideo ? "contain" : "cover"}
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 imagePriority={imagePriority}
                 imageClassName="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                showPlayBadge={isVideo}
+                showPlayBadge={isVideo || isEmbed}
               />
 
               <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100">

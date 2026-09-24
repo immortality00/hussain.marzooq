@@ -8,6 +8,8 @@ export type Uploaded = {
   resourceType: string;
 };
 
+export type SavedPoster = { url: string; embedUrl: string };
+
 export type WidgetResult = { info?: unknown };
 
 export type MediaCategory = "photography" | "videography" | "showreel" | "nft" | "art";
@@ -53,6 +55,7 @@ export type MediaItem = {
   publicId: string | null;
   resourceType: string | null;
   embedUrl: string | null;
+  posterUrl: string | null;
 };
 
 export type PersonProfileOption = {

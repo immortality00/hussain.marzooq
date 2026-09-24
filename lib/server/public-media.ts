@@ -22,6 +22,7 @@ const PUBLIC_MEDIA_FIELDS = {
   secureUrl: 1,
   publicId: 1,
   embedUrl: 1,
+  posterUrl: 1,
   asset: 1,
   createdAt: 1,
 } as const;

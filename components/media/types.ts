@@ -18,5 +18,6 @@ export type MediaItem = {
   appearances: Appearance[];
   secureUrl: string | null;
   embedUrl: string | null;
+  posterUrl: string | null;
   createdAt: string | null;
 };

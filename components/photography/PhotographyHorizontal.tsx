@@ -166,12 +166,12 @@ export default function PhotographyHorizontal({
               <SmartMediaPreview
                 mode={isImage ? "image" : isVideo ? "video" : isEmbed ? "embed" : "empty"}
                 src={m.secureUrl}
-                embedUrl={m.embedUrl}
+                posterSrc={m.posterUrl}
                 title={m.title}
                 fit="cover"
                 sizes="50vh"
                 imageClassName="pointer-events-none object-cover transition-transform duration-700 group-hover:scale-[1.04]"
-                showPlayBadge={isVideo}
+                showPlayBadge={isVideo || isEmbed}
               />
 
               <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/70 via-black/20 to-transparent p-4 opacity-0 transition-opacity duration-500 group-hover:opacity-100">

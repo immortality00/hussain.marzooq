@@ -54,6 +54,7 @@ function toMediaItem(doc: Record<string, unknown>, gallerySlug: string): MediaIt
         ? mediaAssetPath(String(doc._id), gallerySlug)
         : null,
     embedUrl: typeof doc.embedUrl === "string" ? doc.embedUrl : null,
+    posterUrl: typeof doc.posterUrl === "string" ? doc.posterUrl : null,
     createdAt:
       doc.createdAt instanceof Date
         ? doc.createdAt.toISOString()

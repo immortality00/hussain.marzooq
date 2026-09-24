@@ -23,6 +23,7 @@ function item(index: number): MediaItem {
     secureUrl: `https://res.cloudinary.com/demo/image/upload/photo-${index + 1}.jpg`,
     publicId: `photo-${index + 1}`,
     embedUrl: null,
+    posterUrl: null,
     createdAt: new Date(BASE_TIME - index * 1000).toISOString(),
   } as MediaItem;
 }

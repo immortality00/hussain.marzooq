@@ -28,6 +28,7 @@ export type MediaItem = {
   isPublic: boolean;
   secureUrl: string | null;
   embedUrl: string | null;
+  posterUrl: string | null;
   createdAt: string | null;
 };
 
@@ -58,27 +59,26 @@ export function MediaListItem({
   onDelete: (id: string) => void;
 }) {
   const router = useRouter();
+  const stillSrc = item.type === "embed" ? item.posterUrl : item.secureUrl;
 
   return (
     <div className="rounded-2xl border p-5">
       <div className="grid gap-4 md:grid-cols-[240px_1fr]">
         <div className="overflow-hidden rounded-2xl border bg-muted">
-          {item.secureUrl ? (
-            item.type === "video" ? (
-              <video className="h-full w-full" controls preload="metadata" src={item.secureUrl} />
-            ) : (
-              <div className="relative aspect-4/3">
-                <Image
-                  src={item.secureUrl}
-                  alt={item.title}
-                  fill
-                  className="object-cover"
-                  sizes="240px"
-                  priority={index === 0}
-                  loading={index === 0 ? "eager" : "lazy"}
-                />
-              </div>
-            )
+          {item.type === "video" && item.secureUrl ? (
+            <video className="h-full w-full" controls preload="metadata" src={item.secureUrl} />
+          ) : stillSrc ? (
+            <div className="relative aspect-4/3">
+              <Image
+                src={stillSrc}
+                alt={item.title}
+                fill
+                className="object-cover"
+                sizes="240px"
+                priority={index === 0}
+                loading={index === 0 ? "eager" : "lazy"}
+              />
+            </div>
           ) : (
             <div className="flex h-45 items-center justify-center text-xs text-muted-foreground">
               No preview

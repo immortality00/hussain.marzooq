@@ -1,5 +1,5 @@
+import { parseVideoLink } from "@/lib/video-embed";
 import type { MediaItem } from "./types";
-import { validateEmbed } from "./utils";
 
 export async function fetchMediaItem(id: string): Promise<MediaItem> {
   const res = await fetch(`/api/media/${encodeURIComponent(id)}`, { cache: "no-store" });
@@ -102,8 +102,8 @@ export function buildMediaPayload(args: {
   let payloadWithAsset: Record<string, unknown> | null = null;
 
   if (args.mode === "embed") {
-    if (!validateEmbed(args.embedUrl)) {
-      throw new Error("Please paste a valid YouTube/Vimeo URL (https://...).");
+    if (!parseVideoLink(args.embedUrl)) {
+      throw new Error("Paste a YouTube or Vimeo video link.");
     }
 
     payloadWithAsset = { ...payloadBase, type: "embed", embedUrl: args.embedUrl.trim() };
@@ -140,13 +140,14 @@ export async function saveMediaItem(args: {
       ok?: boolean;
       id?: string;
       error?: string;
+      posterMissing?: boolean;
     };
 
     if (!res.ok || !data?.ok) {
       throw new Error(data?.error ?? "Save failed.");
     }
 
-    return { mode: "created" as const, id: data.id ?? null };
+    return { mode: "created" as const, id: data.id ?? null, posterMissing: data.posterMissing === true };
   }
 
   const updateBody = args.payloadWithAsset ?? args.payloadBase;
@@ -157,13 +158,17 @@ export async function saveMediaItem(args: {
     body: JSON.stringify(updateBody),
   });
 
-  const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
+  const data = (await res.json().catch(() => null)) as {
+    ok?: boolean;
+    error?: string;
+    posterMissing?: boolean;
+  };
 
   if (!res.ok || !data?.ok) {
     throw new Error(data?.error ?? "Update failed.");
   }
 
-  return { mode: "updated" as const, id: args.editingId };
+  return { mode: "updated" as const, id: args.editingId, posterMissing: data.posterMissing === true };
 }
 
 export async function deleteMediaItem(id: string) {

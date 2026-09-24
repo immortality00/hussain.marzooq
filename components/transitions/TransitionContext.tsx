@@ -15,7 +15,7 @@ import { prefersReducedMotion } from "@/lib/reduced-motion";
 const REDUCED_MS = 300;
 
 interface PageTransition {
-  navigate: (href: string, imageUrl?: string) => void;
+  navigate: (href: string) => void;
 }
 
 const TransitionCtx = createContext<PageTransition | null>(null);
@@ -23,20 +23,6 @@ const TransitionCtx = createContext<PageTransition | null>(null);
 function hrefToPath(href: string): string {
   const q = href.search(/[?#]/);
   return q === -1 ? href : href.slice(0, q);
-}
-
-// Gathers the photos currently on the page (Featured Work, hero, previews) so the
-// grid reads as a gallery of the real work rather than one repeated image.
-function collectImagePool(first: string): string[] {
-  const pool: string[] = [];
-  if (first) pool.push(first);
-  if (typeof document !== "undefined") {
-    for (const img of document.querySelectorAll<HTMLImageElement>("main img")) {
-      const src = img.currentSrc || img.src;
-      if (src && !src.startsWith("data:")) pool.push(src);
-    }
-  }
-  return Array.from(new Set(pool));
 }
 
 export function TransitionProvider({
@@ -81,15 +67,11 @@ export function TransitionProvider({
   }, [pathname, startOut]);
 
   const navigate = useCallback(
-    (href: string, imageUrl?: string) => {
+    (href: string) => {
       if (playing.current) return;
 
       const path = hrefToPath(href);
-      // One consistent gallery pool for every page so the transition reads the
-      // same everywhere; fall back to the current page's photos only if the
-      // server pool is empty. Skip when there's no material or we're already here.
-      const rawPool = images && images.length > 0 ? images : collectImagePool(imageUrl ?? "");
-      const pool = Array.from(new Set(rawPool.filter(Boolean)));
+      const pool = Array.from(new Set((images ?? []).filter(Boolean)));
       if (path === pathname || pool.length === 0) {
         router.push(href);
         return;

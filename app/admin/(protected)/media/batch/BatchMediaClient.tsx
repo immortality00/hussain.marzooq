@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
@@ -15,9 +14,13 @@ import MediaPeoplePicker from "../components/MediaPeoplePicker";
 import MediaPlacementSection from "../components/MediaPlacementSection";
 import TagMultiSelect from "../components/TagMultiSelect";
 import { findFirstAppearanceError, MEDIA_CATEGORIES } from "../lib/utils";
-import { type BatchFile, useBatchMediaState } from "./lib/useBatchMediaState";
+import { BatchItemThumb } from "./components/BatchItemThumb";
+import { BatchLinkInput } from "./components/BatchLinkInput";
+import { BatchReviewList } from "./components/BatchReviewList";
+import { buildBatchPayload, createBatchItem } from "./lib/batch-save";
+import { batchItemLabel, useBatchMediaState } from "./lib/useBatchMediaState";
 
-const STEPS = ["Category", "Files", "Details", "Appearances", "Review"] as const;
+const STEPS = ["Category", "Media", "Details", "Appearances", "Review"] as const;
 
 const BATCH_CATEGORY_OPTIONS = MEDIA_CATEGORIES.filter((c) => c.key !== "nft");
 
@@ -29,51 +32,38 @@ export default function BatchMediaClient() {
   const [saving, setSaving] = useState(false);
 
   const uploadFolder = getCloudinaryMediaFolderForCategory(s.primaryCategory);
+  const allowLinks =
+    (s.categories.includes("videography") || s.categories.includes("showreel")) &&
+    !s.categories.includes("photography");
 
   const blockedReason =
     step === 0 && !s.primaryCategory
       ? "Choose a category to continue."
-      : step === 1 && s.files.length === 0
-        ? "Add at least one file to continue."
+      : step === 1 && s.items.length === 0
+        ? allowLinks
+          ? "Add a file or a link to continue."
+          : "Add at least one file to continue."
         : null;
 
   const isLast = step === STEPS.length - 1;
 
-  function buildPayload(file: BatchFile) {
+  function sharedPayload() {
     const yearNum = s.year.trim() ? Number(s.year.trim()) : null;
-    const year = yearNum !== null && Number.isFinite(yearNum) ? yearNum : null;
 
     return {
-      type: file.resourceType === "video" ? "video" : "image",
-      title: file.title.trim(),
-      description: file.description.trim() || null,
       location: s.location.trim() || null,
       locationId: s.locationId,
       locationLat: s.locationLat,
       locationLon: s.locationLon,
       locationCountryCode: s.locationCountryCode,
       event: s.event.trim() || null,
-      year,
+      year: yearNum !== null && Number.isFinite(yearNum) ? yearNum : null,
       tags: s.tags,
       categories: s.categories,
       peopleIds: s.peopleIds,
       isPublic: s.isPublic,
       appearances: s.appearances,
-      secureUrl: file.secureUrl,
-      publicId: file.publicId,
-      resourceType: file.resourceType,
     };
-  }
-
-  async function createOne(file: BatchFile): Promise<{ id: string; error?: undefined } | { id?: undefined; error: string }> {
-    const res = await fetch("/api/media/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(buildPayload(file)),
-    });
-    const data = (await res.json().catch(() => null)) as { ok?: boolean; id?: string; error?: string };
-    if (!res.ok || !data?.ok) return { error: data?.error ?? "Save failed." };
-    return { id: data.id ?? "" };
   }
 
   async function save() {
@@ -83,13 +73,13 @@ export default function BatchMediaClient() {
       notify("err", "Choose a category first.");
       return;
     }
-    if (s.files.length === 0) {
-      notify("err", "Add at least one file.");
+    if (s.items.length === 0) {
+      notify("err", "Add at least one file or link.");
       return;
     }
-    const untitled = s.files.find((f) => !f.title.trim());
+    const untitled = s.items.find((item) => !item.title.trim());
     if (untitled) {
-      notify("err", `Every file needs a title (“${untitled.originalFilename}” is blank).`);
+      notify("err", `Every item needs a title (“${batchItemLabel(untitled)}” is blank).`);
       return;
     }
     const appearanceError = findFirstAppearanceError(s.appearances);
@@ -100,43 +90,52 @@ export default function BatchMediaClient() {
     }
 
     setSaving(true);
-    notify("info", `Creating ${s.files.length} media…`);
+    notify("info", `Creating ${s.items.length} media…`);
 
-    const filesToSave = s.files;
+    const itemsToSave = s.items;
+    const shared = sharedPayload();
     const failed: string[] = [];
-    const results = await Promise.allSettled(filesToSave.map((f) => createOne(f)));
+    let postersMissing = 0;
+    const results = await Promise.allSettled(
+      itemsToSave.map((item) => createBatchItem(buildBatchPayload(item, shared)))
+    );
 
     for (let i = 0; i < results.length; i += 1) {
-      const file = filesToSave[i];
+      const item = itemsToSave[i];
       const r = results[i];
-      if (r.status === "fulfilled" && r.value.id !== undefined) {
-        s.dropFile(file.id);
-      } else {
-        const reason =
-          r.status === "rejected"
-            ? r.reason instanceof Error
-              ? r.reason.message
-              : "Network error"
-            : r.value.error;
-        failed.push(`${file.title.trim() || file.originalFilename}: ${reason}`);
+      const label = item.title.trim() || batchItemLabel(item);
+
+      if (r.status === "rejected") {
+        failed.push(`${label}: ${r.reason instanceof Error ? r.reason.message : "Network error"}`);
+        continue;
       }
+      if (!r.value.ok) {
+        failed.push(`${label}: ${r.value.error}`);
+        continue;
+      }
+
+      s.dropItem(item.id);
+      if (r.value.posterMissing) postersMissing += 1;
     }
 
     setSaving(false);
 
-    const created = filesToSave.length - failed.length;
+    const created = itemsToSave.length - failed.length;
+    const posterNote = postersMissing
+      ? ` ${postersMissing} video thumbnail${postersMissing > 1 ? "s" : ""} couldn't be fetched.`
+      : "";
 
     if (failed.length === 0) {
-      notify("ok", `✅ Created ${created} media.`);
+      notify("ok", `✅ Created ${created} media.${posterNote}`);
       s.resetAll();
       setStep(0);
       router.refresh();
     } else {
       notify(
         "err",
-        `Created ${created} of ${filesToSave.length}. Failed: ${failed.slice(0, 5).join(" · ")}${
+        `Created ${created} of ${itemsToSave.length}. Failed: ${failed.slice(0, 5).join(" · ")}${
           failed.length > 5 ? ` · +${failed.length - 5} more` : ""
-        }`
+        }${posterNote}`
       );
     }
   }
@@ -172,21 +171,28 @@ export default function BatchMediaClient() {
                 }}
                 onError={(msg) => notify("err", msg)}
               />
-              {s.files.length ? (
+              {s.items.length ? (
                 <span className="text-xs text-muted-foreground">
-                  {s.files.length} file{s.files.length > 1 ? "s" : ""} ready
+                  {s.items.length} item{s.items.length > 1 ? "s" : ""} ready
                 </span>
               ) : null}
             </div>
 
-            {s.files.length === 0 ? (
+            {allowLinks ? (
+              <BatchLinkInput
+                knownEmbedUrls={s.items.flatMap((item) => (item.kind === "link" ? [item.embedUrl] : []))}
+                onAdd={s.addLinks}
+              />
+            ) : null}
+
+            {s.items.length === 0 ? (
               <div className="rounded-2xl border p-4 text-sm text-muted-foreground">
-                No files selected yet.
+                Nothing added yet.
               </div>
             ) : (
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {s.files.map((f) => (
-                  <FileThumb key={f.id} file={f} onRemove={() => s.removeFile(f.id)} />
+                {s.items.map((item) => (
+                  <BatchItemThumb key={item.id} item={item} onRemove={() => s.removeItem(item.id)} />
                 ))}
               </div>
             )}
@@ -196,7 +202,7 @@ export default function BatchMediaClient() {
         {step === 2 ? (
           <section className="space-y-4 rounded-3xl border p-5">
             <p className="text-xs text-muted-foreground">
-              These apply to every file in the batch. Titles are set per file on the Review step.
+              These apply to every item in the batch. Titles are set per item on the Review step.
             </p>
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
@@ -253,7 +259,7 @@ export default function BatchMediaClient() {
           <section className="space-y-4 rounded-3xl border p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="text-sm font-medium">
-                Review {s.files.length} file{s.files.length === 1 ? "" : "s"}
+                Review {s.items.length} item{s.items.length === 1 ? "" : "s"}
               </div>
               <div className="text-xs text-muted-foreground">
                 {s.primaryCategory ?? "—"} · {s.isPublic ? "Public" : "Hidden"} · {s.tags.length} tag
@@ -261,42 +267,12 @@ export default function BatchMediaClient() {
               </div>
             </div>
 
-            {s.files.length === 0 ? (
+            {s.items.length === 0 ? (
               <div className="rounded-2xl border p-4 text-sm text-muted-foreground">
-                No files to save — add some on the Files step.
+                Nothing to save — add files or links on the Media step.
               </div>
             ) : (
-              <div className="space-y-3">
-                {s.files.map((f) => (
-                  <div key={f.id} className="flex gap-3 rounded-2xl border p-3">
-                    <FileThumb file={f} compact />
-                    <div className="flex-1 space-y-2">
-                      <input
-                        value={f.title}
-                        onChange={(e) => s.updateFile(f.id, { title: e.target.value })}
-                        placeholder="Title"
-                        aria-invalid={!f.title.trim() ? true : undefined}
-                        className={`w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring ${
-                          !f.title.trim() ? "border-red-500/70 focus:ring-red-500" : ""
-                        }`}
-                      />
-                      <textarea
-                        value={f.description}
-                        onChange={(e) => s.updateFile(f.id, { description: e.target.value })}
-                        placeholder="Description (optional)"
-                        className="h-16 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
-                      />
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => s.removeFile(f.id)}
-                      className={adminButtonClasses("danger", "sm")}
-                    >
-                      Remove
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <BatchReviewList items={s.items} updateItem={s.updateItem} removeItem={s.removeItem} />
             )}
           </section>
         ) : null}
@@ -315,11 +291,11 @@ export default function BatchMediaClient() {
         {isLast ? (
           <button
             type="button"
-            disabled={saving || s.files.length === 0}
+            disabled={saving || s.items.length === 0}
             onClick={() => void save()}
             className={adminButtonClasses("solid", "md")}
           >
-            {saving ? "Creating…" : `Create ${s.files.length} media`}
+            {saving ? "Creating…" : `Create ${s.items.length} media`}
           </button>
         ) : (
           <button
@@ -336,60 +312,6 @@ export default function BatchMediaClient() {
           <span className="text-xs text-muted-foreground">{blockedReason}</span>
         ) : null}
       </div>
-    </div>
-  );
-}
-
-function FileThumb({
-  file,
-  onRemove,
-  compact = false,
-}: {
-  file: BatchFile;
-  onRemove?: () => void;
-  compact?: boolean;
-}) {
-  return (
-    <div
-      className={
-        compact
-          ? "relative h-20 w-28 shrink-0 overflow-hidden rounded-xl border bg-muted"
-          : "relative overflow-hidden rounded-2xl border bg-muted"
-      }
-    >
-      {file.resourceType === "video" ? (
-        <video
-          className={compact ? "h-full w-full object-cover" : "aspect-video w-full object-cover"}
-          preload="metadata"
-          src={file.secureUrl}
-        />
-      ) : (
-        <div className={compact ? "relative h-full w-full" : "relative aspect-video"}>
-          <Image
-            src={file.secureUrl}
-            alt={file.originalFilename}
-            fill
-            className="object-cover"
-            sizes={compact ? "112px" : "(max-width: 1024px) 100vw, 320px"}
-          />
-        </div>
-      )}
-
-      {onRemove ? (
-        <button
-          type="button"
-          onClick={onRemove}
-          className="absolute right-1.5 top-1.5 rounded-full bg-background/80 px-2 py-0.5 text-xs backdrop-blur hover:bg-background"
-        >
-          Remove
-        </button>
-      ) : null}
-
-      {!compact ? (
-        <div className="truncate px-2 py-1 text-[11px] text-muted-foreground">
-          {file.originalFilename}
-        </div>
-      ) : null}
     </div>
   );
 }

@@ -27,7 +27,10 @@ export async function isCloudinaryAssetReferenced(db: Db, publicId: string): Pro
   const urlPattern = new RegExp(escapeRegex(id));
 
   const [media, person, service, post, review] = await Promise.all([
-    db.collection("media").findOne({ publicId: id }, { projection: { _id: 1 } }),
+    db.collection("media").findOne(
+      { $or: [{ publicId: id }, { posterPublicId: id }] },
+      { projection: { _id: 1 } }
+    ),
     db.collection("people_profiles").findOne({ avatarUrl: urlPattern }, { projection: { _id: 1 } }),
     db.collection("services").findOne({ imageUrl: urlPattern }, { projection: { _id: 1 } }),
     db.collection("blog_posts").findOne(

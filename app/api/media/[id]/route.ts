@@ -10,13 +10,21 @@ import {
   noStoreJson,
 } from "@/app/api/_lib/common";
 import {
+  duplicateVideoMessage,
+  findMediaWithVideo,
   getMediaLists,
   parseMediaLocation,
   parseNftMeta,
   resolvePeopleSelection,
   sanitizeAppearances,
 } from "@/app/api/_lib/media";
-import { toEmbedUrl } from "@/components/media/utils";
+import {
+  deleteVideoPoster,
+  discardUnsavedPoster,
+  storeVideoPoster,
+  type VideoPoster,
+} from "@/lib/server/video-posters";
+import { parseVideoLink, videoEmbedSrc } from "@/lib/video-embed";
 import {
   assetIsInsideFolder,
   assetsPointToSameCloudinaryFile,
@@ -87,6 +95,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     publicId: typeof doc.publicId === "string" ? doc.publicId : null,
     resourceType: typeof doc.resourceType === "string" ? doc.resourceType : null,
     embedUrl: typeof doc.embedUrl === "string" ? doc.embedUrl : null,
+    posterUrl: typeof doc.posterUrl === "string" ? doc.posterUrl : null,
     createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : null,
     updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : null,
   };
@@ -152,6 +161,14 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     );
   }
 
+  const video = incomingType === "embed" ? parseVideoLink(incomingEmbedUrl ?? "") : null;
+  if (incomingType === "embed" && !video) {
+    return noStoreJson(
+      { ok: false, error: "Use a valid YouTube or Vimeo video URL." },
+      { status: 400 }
+    );
+  }
+
   const nftParsed = parseNftMeta(bodyUnknown, categories.includes("nft"));
   if (!nftParsed.ok) {
     return noStoreJson({ ok: false, error: nftParsed.error }, { status: 400 });
@@ -163,6 +180,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const existingMedia = existingFound.doc;
 
   const oldAsset = getStoredMediaAsset(existingMedia);
+  const oldPosterId = existingMedia.posterPublicId;
   const resolvedPeople = await resolvePeopleSelection(db, { peopleIds });
   const galleryTitles = await getPrivateGalleryTitlesForMedia(db, String(oid));
 
@@ -193,21 +211,33 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   let replacementAsset: StoredMediaAsset | null = null;
   let movedAssetOnCloudinary: StoredMediaAsset | null = null;
+  let newPoster: VideoPoster | null = null;
+  let posterMissing = false;
 
-  if (incomingType === "embed") {
-    const normalizedEmbedUrl = toEmbedUrl((incomingEmbedUrl ?? "").trim());
-    if (!normalizedEmbedUrl) {
-      return noStoreJson(
-        { ok: false, error: "Use a valid YouTube or Vimeo video URL." },
-        { status: 400 }
-      );
+  if (video) {
+    const duplicate = await findMediaWithVideo(db, video, oid);
+    if (duplicate) {
+      return noStoreJson({ ok: false, error: duplicateVideoMessage(duplicate) }, { status: 409 });
     }
 
+    const embedSrc = videoEmbedSrc(video);
     set.type = "embed";
-    set.embedUrl = normalizedEmbedUrl;
+    set.embedUrl = embedSrc;
     set.secureUrl = null;
     set.publicId = null;
     set.resourceType = null;
+
+    const keepsPoster =
+      existingMedia.embedUrl === embedSrc &&
+      typeof existingMedia.posterUrl === "string" &&
+      typeof existingMedia.posterPublicId === "string";
+
+    if (!keepsPoster) {
+      newPoster = await storeVideoPoster(db, video);
+      posterMissing = !newPoster;
+      set.posterUrl = newPoster?.url ?? null;
+      set.posterPublicId = newPoster?.publicId ?? null;
+    }
   }
 
   const hasIncomingAsset =
@@ -330,18 +360,29 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     movedAssetOnCloudinary = replacementAsset;
   }
 
+  if (set.embedUrl === null) {
+    set.posterUrl = null;
+    set.posterPublicId = null;
+  }
+
   let matchedCount = 0;
   try {
     const result = await db.collection("media").updateOne({ _id: oid }, { $set: set });
     matchedCount = result.matchedCount;
   } catch (error) {
     await restoreMovedAsset(movedAssetOnCloudinary, oldAsset);
+    await discardUnsavedPoster(db, newPoster?.publicId);
     throw error;
   }
 
   if (!matchedCount) {
     await restoreMovedAsset(movedAssetOnCloudinary, oldAsset);
+    await discardUnsavedPoster(db, newPoster?.publicId);
     return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
+  }
+
+  if ("posterPublicId" in set && set.posterPublicId !== oldPosterId) {
+    await deleteVideoPoster(oldPosterId);
   }
 
   if (oldAsset.publicId) {
@@ -356,7 +397,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   revalidateMediaSurfaces([...tags, ...asStringArray(existingMedia.tags)]);
 
-  return noStoreJson({ ok: true });
+  return noStoreJson({ ok: true, ...(posterMissing ? { posterMissing: true } : {}) });
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -388,6 +429,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   }
 
   await deleteStoredMediaAsset(mediaAsset);
+  await deleteVideoPoster(media.posterPublicId);
 
   revalidateMediaSurfaces(asStringArray(media.tags));
 

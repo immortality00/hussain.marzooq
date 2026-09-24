@@ -6,7 +6,7 @@ export type SmartMediaPreviewFit = "cover" | "contain";
 type SmartMediaPreviewProps = {
   mode: SmartMediaPreviewMode;
   src?: string | null;
-  embedUrl?: string | null;
+  posterSrc?: string | null;
   title: string;
   fit?: SmartMediaPreviewFit;
   imagePriority?: boolean;
@@ -43,6 +43,7 @@ function EmbedPlaceholder({ title }: { title: string }) {
 export default function SmartMediaPreview({
   mode,
   src,
+  posterSrc,
   title,
   fit = "cover",
   imagePriority = false,
@@ -53,23 +54,23 @@ export default function SmartMediaPreview({
   showPlayBadge = false,
   showEmbedPlaceholder = true,
 }: SmartMediaPreviewProps) {
-  if (mode === "image" && src) {
-    return (
-      <Image
-        src={src}
-        alt={title}
-        fill
-        className={
-          imageClassName ??
-          `${fit === "contain" ? "object-contain" : "object-cover"} transition-transform duration-700 hover:scale-[1.03]`
-        }
-        sizes={sizes}
-        priority={imagePriority}
-        loading={imagePriority ? "eager" : "lazy"}
-        fetchPriority={imagePriority ? "high" : undefined}
-      />
-    );
-  }
+  const still = (stillSrc: string) => (
+    <Image
+      src={stillSrc}
+      alt={title}
+      fill
+      className={
+        imageClassName ??
+        `${fit === "contain" ? "object-contain" : "object-cover"} transition-transform duration-700 hover:scale-[1.03]`
+      }
+      sizes={sizes}
+      priority={imagePriority}
+      loading={imagePriority ? "eager" : "lazy"}
+      fetchPriority={imagePriority ? "high" : undefined}
+    />
+  );
+
+  if (mode === "image" && src) return still(src);
 
   if (mode === "video" && src) {
     return (
@@ -83,6 +84,15 @@ export default function SmartMediaPreview({
         />
         {showPlayBadge ? <PlayBadge /> : null}
       </div>
+    );
+  }
+
+  if (mode === "embed" && posterSrc) {
+    return (
+      <>
+        {still(posterSrc)}
+        {showPlayBadge ? <PlayBadge /> : null}
+      </>
     );
   }
 

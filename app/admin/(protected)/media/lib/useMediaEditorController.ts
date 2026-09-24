@@ -169,11 +169,13 @@ export function useMediaEditorController() {
         cleanupUploadedAsset({ publicId: editor.uploaded.publicId });
       }
 
+      const posterNote = result.posterMissing ? " — the video thumbnail couldn't be fetched." : "";
+
       if (result.mode === "created") {
-        setBanner({ type: "ok", text: "✅ Media created successfully." });
+        setBanner({ type: "ok", text: posterNote ? `✅ Media created${posterNote}` : "✅ Media created successfully." });
         editor.resetFields(true, () => setBanner(null));
       } else {
-        setBanner({ type: "ok", text: "✅ Media updated successfully." });
+        setBanner({ type: "ok", text: posterNote ? `✅ Media updated${posterNote}` : "✅ Media updated successfully." });
         const reloaded = await fetchMediaItem(editor.editingId);
         editor.loadIntoState(reloaded);
         router.refresh();
