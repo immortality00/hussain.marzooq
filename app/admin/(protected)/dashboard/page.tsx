@@ -23,6 +23,8 @@ import { getAllPageSettings } from "@/lib/server/page-settings";
 import { getAllPageSections, type HomeSections } from "@/lib/server/page-sections";
 import { getAdminDashboardStats } from "@/lib/server/admin-dashboard";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { PushNotificationsCard } from "@/components/admin/push/PushNotificationsCard";
+import { getVapidPublicKey, listPushDevices } from "@/lib/server/push";
 import { PAGE_ROWS, pageNeedsImage } from "../pages/lib/rows";
 
 export const dynamic = "force-dynamic";
@@ -40,10 +42,11 @@ export default async function AdminDashboard() {
   const ok = await isAdminAuthedServer();
   if (!ok) redirect("/admin?next=/admin/dashboard");
 
-  const [stats, settings, sections] = await Promise.all([
+  const [stats, settings, sections, pushDevices] = await Promise.all([
     getAdminDashboardStats(),
     getAllPageSettings(),
     getAllPageSections(),
+    listPushDevices(),
   ]);
 
   const settingsMap = Object.fromEntries(settings.map((s) => [s.slug, s]));
@@ -154,6 +157,8 @@ export default async function AdminDashboard() {
           <LibraryTile icon={Inbox} label="Active inquiries" value={stats.inquiries.active} href="/admin/inquiries" />
         </div>
       </section>
+
+      <PushNotificationsCard publicKey={getVapidPublicKey()} devices={pushDevices} />
     </div>
   );
 }

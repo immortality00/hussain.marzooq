@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { cookies } from "next/headers";
 import {
   COOKIE_NAME,
+  HINT_NAME,
   SIG_NAME,
   createSessionValue,
   isSessionValueFresh,
@@ -72,6 +73,7 @@ export function createAdminSessionCookies(
   return [
     { name: COOKIE_NAME, value, options },
     { name: SIG_NAME, value: hmacHex(value, secret), options },
+    { name: HINT_NAME, value: "1", options: { ...options, httpOnly: false } },
   ];
 }
 

@@ -14,7 +14,7 @@ export type DisciplineTag = {
   count: number;
 };
 
-type MediaMode = "image" | "video";
+export type MediaMode = "image" | "video";
 
 function serialize(doc: Record<string, unknown>): PublicMediaTag {
   return {
@@ -24,7 +24,7 @@ function serialize(doc: Record<string, unknown>): PublicMediaTag {
   };
 }
 
-function disciplineMatch(category: string, mediaMode: MediaMode) {
+export function disciplineMatch(category: string, mediaMode: MediaMode) {
   return {
     $and: [
       buildPublicMediaQuery({ type: mediaMode === "image" ? "image" : "all", category }),

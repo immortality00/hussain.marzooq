@@ -16,9 +16,7 @@ export async function POST() {
     const servicesCol = db.collection("services");
     const inquiriesCol = db.collection("inquiries");
 
-    const now = new Date();
-
-    await servicesCol.updateMany({}, { $set: { inquiriesCount: 0, updatedAt: now } });
+    await servicesCol.updateMany({}, { $set: { inquiriesCount: 0 } });
 
     const rows = await inquiriesCol
       .aggregate([
@@ -51,7 +49,7 @@ export async function POST() {
       ops.push({
         updateOne: {
           filter: { _id: new ObjectId(serviceId) },
-          update: { $set: { inquiriesCount: count, updatedAt: now } },
+          update: { $set: { inquiriesCount: count } },
         },
       });
     }

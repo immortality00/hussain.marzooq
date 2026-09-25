@@ -20,7 +20,6 @@ async function incrementServiceInquiriesCount(db: Db, serviceId: string): Promis
     { _id: new ObjectId(serviceId) },
     {
       $inc: { inquiriesCount: 1 },
-      $set: { updatedAt: new Date() },
     }
   );
 }
@@ -34,7 +33,6 @@ async function decrementServiceInquiriesCount(db: Db, serviceId: string): Promis
           inquiriesCount: {
             $max: [0, { $add: [{ $ifNull: ["$inquiriesCount", 0] }, -1] }],
           },
-          updatedAt: new Date(),
         },
       },
     ]

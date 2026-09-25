@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import {
   COOKIE_NAME,
+  HINT_NAME,
   SIG_NAME,
   createSessionValue,
   parseSession,
@@ -42,7 +43,11 @@ async function signValue(value: string, secret: string): Promise<string> {
 }
 
 type AuthResult =
-  | { ok: true; renewWith: { value: string; signature: string; remember: boolean } | null }
+  | {
+      ok: true;
+      remember: boolean;
+      renewWith: { value: string; signature: string; remember: boolean } | null;
+    }
   | { ok: false; reason: "missing" | "malformed" | "expired" | "future" | "signature" | "config" };
 
 async function checkAdminAuth(req: NextRequest): Promise<AuthResult> {
@@ -60,10 +65,12 @@ async function checkAdminAuth(req: NextRequest): Promise<AuthResult> {
   if (!safeEqual(signature, expected)) return { ok: false, reason: "signature" };
 
   const session = parseSession(value);
+  const remember = session?.remember ?? false;
   if (session && shouldRenewSession(value)) {
     const fresh = createSessionValue(session.remember, Date.now(), session.startedAt);
     return {
       ok: true,
+      remember,
       renewWith: {
         value: fresh,
         signature: await signValue(fresh, secret),
@@ -72,7 +79,17 @@ async function checkAdminAuth(req: NextRequest): Promise<AuthResult> {
     };
   }
 
-  return { ok: true, renewWith: null };
+  return { ok: true, remember, renewWith: null };
+}
+
+function cookieOptions(remember: boolean, httpOnly: boolean) {
+  return {
+    httpOnly,
+    sameSite: "lax" as const,
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: sessionCookieMaxAge(remember),
+  };
 }
 
 export async function proxy(req: NextRequest) {
@@ -86,15 +103,12 @@ export async function proxy(req: NextRequest) {
   if (auth.ok) {
     const res = NextResponse.next();
     if (auth.renewWith) {
-      const options = {
-        httpOnly: true as const,
-        sameSite: "lax" as const,
-        secure: process.env.NODE_ENV === "production",
-        path: "/",
-        maxAge: sessionCookieMaxAge(auth.renewWith.remember),
-      };
+      const options = cookieOptions(auth.renewWith.remember, true);
       res.cookies.set(COOKIE_NAME, auth.renewWith.value, options);
       res.cookies.set(SIG_NAME, auth.renewWith.signature, options);
+    }
+    if (auth.renewWith || !req.cookies.has(HINT_NAME)) {
+      res.cookies.set(HINT_NAME, "1", cookieOptions(auth.remember, false));
     }
     return res;
   }
@@ -106,7 +120,9 @@ export async function proxy(req: NextRequest) {
   url.search = "";
   url.searchParams.set("next", pathname);
   if (auth.reason !== "missing") url.searchParams.set("signedout", auth.reason);
-  return NextResponse.redirect(url);
+  const res = NextResponse.redirect(url);
+  if (req.cookies.has(HINT_NAME)) res.cookies.delete(HINT_NAME);
+  return res;
 }
 
 export const config = {

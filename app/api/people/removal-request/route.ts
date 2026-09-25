@@ -3,6 +3,7 @@ import { getDb } from "@/lib/server/db";
 import { asNullableString, isRecord, noStoreJson } from "@/app/api/_lib/common";
 import { getClientAddress, isValidEmail } from "@/app/api/_lib/public-form-security";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
+import { queueAdminAlert } from "@/lib/server/admin-alerts";
 
 export const dynamic = "force-dynamic";
 
@@ -88,6 +89,8 @@ export async function POST(req: Request) {
   });
 
   revalidatePath("/admin/removal-requests");
+
+  queueAdminAlert({ kind: "removal-request", personName: name, slug, email, reason });
 
   return noStoreJson({ ok: true });
 }

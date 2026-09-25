@@ -1,12 +1,24 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
 import { WorkOverlay } from "@/components/site/WorkOverlay";
 import { useMagneticHover } from "@/hooks/useMagneticHover";
+import { HINT_NAME } from "@/lib/auth/session-token";
+
+const ADMIN_HREF = "/admin/dashboard";
+
+const NAV_PILL =
+  "rounded-full border border-border/60 px-5 py-1.5 text-[13px] tracking-wide transition-[background-color,border-color] hover:border-foreground/40 hover:bg-accent";
+
+const noopSubscribe = () => () => {};
+
+function readAdminHint() {
+  return document.cookie.split("; ").includes(`${HINT_NAME}=1`);
+}
 
 export function Navbar() {
   const [hiddenByModal, setHiddenByModal] = useState(false);
@@ -15,6 +27,7 @@ export function Navbar() {
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
   const bookRef = useMagneticHover<HTMLAnchorElement>();
+  const isAdmin = useSyncExternalStore(noopSubscribe, readAdminHint, () => false);
   const [mounted, setMounted] = useState(false);
   // next-themes hydration guard: the resolved theme is unknown during SSR, so we
   // render a stable placeholder until mounted. The one-shot setState on mount is the
@@ -91,6 +104,11 @@ export function Navbar() {
                 <NavLink href="/services">Services</NavLink>
                 <NavLink href="/people">People</NavLink>
                 <NavLink href="/testimonials">Testimonials</NavLink>
+                {isAdmin ? (
+                  <NavLink href={ADMIN_HREF} prefetch={false}>
+                    Admin
+                  </NavLink>
+                ) : null}
               </nav>
 
               {/* Theme toggle */}
@@ -108,10 +126,16 @@ export function Navbar() {
                 ref={bookRef}
                 href="/contact"
                 data-magnetic=""
-                className="hidden rounded-full border border-border/60 px-5 py-1.5 text-[13px] tracking-wide transition-[background-color,border-color] hover:border-foreground/40 hover:bg-accent md:inline-flex ml-2"
+                className={`${NAV_PILL} hidden md:inline-flex ml-2`}
               >
                 Book
               </Link>
+
+              {isAdmin ? (
+                <Link href={ADMIN_HREF} prefetch={false} className={`${NAV_PILL} mr-1 inline-flex md:hidden`}>
+                  Admin
+                </Link>
+              ) : null}
 
               {/* Hamburger — mobile only */}
               <button
@@ -214,12 +238,21 @@ export function Navbar() {
   );
 }
 
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
+function NavLink({
+  href,
+  prefetch,
+  children,
+}: {
+  href: string;
+  prefetch?: boolean;
+  children: React.ReactNode;
+}) {
   const pathname = usePathname();
   const isActive = pathname === href || pathname.startsWith(`${href}/`);
   return (
     <Link
       href={href}
+      prefetch={prefetch}
       className={[
         "group relative px-4 py-2 text-[13px] transition-colors",
         isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",

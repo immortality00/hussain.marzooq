@@ -3,7 +3,7 @@ import { ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { claimDuplicateWindow, consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
-import { sendInquiryNotification } from "@/lib/server/email";
+import { queueAdminAlert } from "@/lib/server/admin-alerts";
 import {
   asNullableString,
   isRecord,
@@ -209,14 +209,11 @@ export async function POST(req: Request) {
       { _id: new ObjectId(serviceId) },
       {
         $inc: { inquiriesCount: 1 },
-        $set: { updatedAt: now },
       }
     );
   }
 
-  sendInquiryNotification({ name, email, message, serviceName, category }).catch((error) => {
-    console.error("Inquiry notification email failed", error);
-  });
+  queueAdminAlert({ kind: "inquiry", name, email, message, serviceName, category });
 
   return noStoreJson({ ok: true, id: String(insertResult.insertedId) });
 }

@@ -1,6 +1,6 @@
 import { getDb } from "@/lib/server/db";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
-import { sendTestimonialNotification } from "@/lib/server/email";
+import { queueAdminAlert } from "@/lib/server/admin-alerts";
 import {
   resolveTestimonialLocationById,
   resolveTestimonialLocationByLabel,
@@ -276,11 +276,7 @@ export async function POST(req: Request) {
     await commitUploadSession(db, verifiedSessionId);
   }
 
-  sendTestimonialNotification({ name, email, review, rating, about: about || null }).catch(
-    (error) => {
-      console.error("Testimonial notification email failed", error);
-    }
-  );
+  queueAdminAlert({ kind: "testimonial", name, email, review, rating, about: about || null });
 
   return noStoreJson({ ok: true });
 }

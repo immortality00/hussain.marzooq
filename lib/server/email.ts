@@ -3,11 +3,12 @@ import { escapeHtml } from "@/lib/server/escape-html";
 import { getBaseUrl } from "@/lib/server/get-base-url";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
-const TO = process.env.NOTIFICATION_EMAIL ?? "";
+const TO = (process.env.NOTIFICATION_EMAIL ?? "").trim();
 
 const RESEND_TEST_FROM = "Hussain.Art <onboarding@resend.dev>";
 
 let warnedAboutFrom = false;
+let warnedAboutTo = false;
 
 function fromAddress() {
   const configured = process.env.RESEND_FROM?.trim();
@@ -23,6 +24,23 @@ function fromAddress() {
   return RESEND_TEST_FROM;
 }
 
+function hasRecipient() {
+  if (TO) return true;
+
+  if (!warnedAboutTo) {
+    warnedAboutTo = true;
+    console.warn("NOTIFICATION_EMAIL is not set — admin alert emails are skipped.");
+  }
+  return false;
+}
+
+async function sendAdminEmail(subject: string, html: string) {
+  const { error } = await resend.emails.send({ from: fromAddress(), to: TO, subject, html });
+  if (error) {
+    throw new Error(`Resend rejected "${subject}": ${error.name} — ${error.message}`);
+  }
+}
+
 export async function sendInquiryNotification(data: {
   name: string;
   email: string;
@@ -30,15 +48,13 @@ export async function sendInquiryNotification(data: {
   serviceName: string | null;
   category: string | null;
 }) {
-  if (!TO) return;
+  if (!hasRecipient()) return;
   const baseUrl = await getBaseUrl();
   const name = escapeHtml(data.name);
   const email = escapeHtml(data.email);
-  await resend.emails.send({
-    from: fromAddress(),
-    to: TO,
-    subject: `New inquiry from ${data.name}`,
-    html: `
+  await sendAdminEmail(
+    `New inquiry from ${data.name}`,
+    `
       <h2>New Inquiry — Hussain.Art</h2>
       <p><strong>Name:</strong> ${name}</p>
       <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
@@ -47,8 +63,8 @@ export async function sendInquiryNotification(data: {
       <p><strong>Message:</strong></p>
       <blockquote style="border-left:3px solid #ccc;padding-left:12px;color:#555">${escapeHtml(data.message).replace(/\n/g, "<br>")}</blockquote>
       <p style="margin-top:24px"><a href="${baseUrl}/admin/inquiries">View in admin →</a></p>
-    `,
-  });
+    `
+  );
 }
 
 export async function sendTestimonialNotification(data: {
@@ -58,16 +74,14 @@ export async function sendTestimonialNotification(data: {
   rating: number | null;
   about: string | null;
 }) {
-  if (!TO) return;
+  if (!hasRecipient()) return;
   const baseUrl = await getBaseUrl();
   const stars = data.rating ? "★".repeat(data.rating) + "☆".repeat(5 - data.rating) : "—";
   const name = escapeHtml(data.name);
   const email = escapeHtml(data.email);
-  await resend.emails.send({
-    from: fromAddress(),
-    to: TO,
-    subject: `New testimonial from ${data.name} — pending approval`,
-    html: `
+  await sendAdminEmail(
+    `New testimonial from ${data.name} — pending approval`,
+    `
       <h2>New Testimonial — Hussain.Art</h2>
       <p><strong>Name:</strong> ${name}</p>
       <p><strong>Email:</strong> <a href="mailto:${email}">${email}</a></p>
@@ -76,6 +90,29 @@ export async function sendTestimonialNotification(data: {
       <p><strong>Review:</strong></p>
       <blockquote style="border-left:3px solid #ccc;padding-left:12px;color:#555">${escapeHtml(data.review).replace(/\n/g, "<br>")}</blockquote>
       <p style="margin-top:24px"><a href="${baseUrl}/admin/testimonials">Review &amp; approve →</a></p>
-    `,
-  });
+    `
+  );
+}
+
+export async function sendRemovalRequestNotification(data: {
+  personName: string;
+  slug: string;
+  email: string;
+  reason: string;
+}) {
+  if (!hasRecipient()) return;
+  const baseUrl = await getBaseUrl();
+  const label = data.personName || data.slug;
+  const email = escapeHtml(data.email);
+  await sendAdminEmail(
+    `Removal request for ${label}`,
+    `
+      <h2>New Removal Request — Hussain.Art</h2>
+      <p><strong>Profile:</strong> <a href="${baseUrl}/people/${encodeURIComponent(data.slug)}">${escapeHtml(label)}</a></p>
+      <p><strong>Requested by:</strong> <a href="mailto:${email}">${email}</a></p>
+      <p><strong>Reason:</strong></p>
+      <blockquote style="border-left:3px solid #ccc;padding-left:12px;color:#555">${escapeHtml(data.reason).replace(/\n/g, "<br>")}</blockquote>
+      <p style="margin-top:24px"><a href="${baseUrl}/admin/removal-requests">Review request →</a></p>
+    `
+  );
 }

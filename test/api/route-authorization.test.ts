@@ -54,6 +54,24 @@ const routes: Route[] = [
     load: () => import("@/app/api/admin/page-settings/[slug]/route"),
   },
   {
+    name: "POST /api/admin/push",
+    method: "POST",
+    path: "/api/admin/push",
+    load: () => import("@/app/api/admin/push/route"),
+  },
+  {
+    name: "DELETE /api/admin/push",
+    method: "DELETE",
+    path: "/api/admin/push",
+    load: () => import("@/app/api/admin/push/route"),
+  },
+  {
+    name: "POST /api/admin/push/test",
+    method: "POST",
+    path: "/api/admin/push/test",
+    load: () => import("@/app/api/admin/push/test/route"),
+  },
+  {
     name: "GET /api/blog",
     method: "GET",
     path: "/api/blog",

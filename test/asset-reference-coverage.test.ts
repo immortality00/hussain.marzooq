@@ -14,6 +14,7 @@ const COLLECTIONS_WITHOUT_ASSETS = [
   "request_guards",
   "testimonial_upload_sessions",
   "upload_ledger",
+  "push_subscriptions",
 ];
 
 function sourceFiles(dir: string): string[] {

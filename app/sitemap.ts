@@ -5,6 +5,14 @@ import { getPublishedPosts } from "@/lib/server/public-blog";
 import { getPublicPeople } from "@/lib/server/public-people";
 import { getPublicServicesData } from "@/lib/server/public-services";
 import { getDisciplineTags } from "@/lib/server/public-media-tags";
+import { getSitemapSources } from "@/lib/server/sitemap-sources";
+import {
+  personPageModified,
+  postPageModified,
+  servicePageModified,
+  staticPageModified,
+  tagPageModified,
+} from "@/lib/sitemap-dates";
 
 export const revalidate = 300;
 
@@ -13,7 +21,7 @@ const ALWAYS_PUBLIC = ["/", "/about", "/services", "/people", "/testimonials", "
 function entry(path: string, priority: number, lastModified?: Date): MetadataRoute.Sitemap[number] {
   return {
     url: absoluteUrl(path),
-    lastModified: lastModified ?? new Date(),
+    ...(lastModified ? { lastModified } : {}),
     priority,
   };
 }
@@ -23,10 +31,11 @@ function withSlug<T extends { slug: string }>(items: T[]): T[] {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [pageSettings, people, { services }] = await Promise.all([
+  const [pageSettings, people, { services }, sources] = await Promise.all([
     getAllPageSettings(),
     getPublicPeople(),
     getPublicServicesData(),
+    getSitemapSources(),
   ]);
 
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
@@ -41,18 +50,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       : Promise.resolve([]),
   ]);
 
+  const page = (path: string, priority: number) =>
+    entry(path, priority, staticPageModified(sources, path));
+
   return [
-    ...ALWAYS_PUBLIC.map((path) => entry(path, path === "/" ? 1 : 0.7)),
+    ...ALWAYS_PUBLIC.map((path) => page(path, path === "/" ? 1 : 0.7)),
     ...["photography", "videography", "nft", "dancing", "web-development"]
       .filter((slug) => activeSet.has(slug))
-      .map((slug) => entry(`/${slug}`, 0.8)),
-    ...withSlug(photographyTags).map((tag) => entry(`/photography/${tag.slug}`, 0.6)),
-    ...withSlug(videographyTags).map((tag) => entry(`/videography/${tag.slug}`, 0.6)),
-    ...withSlug(services).map((service) => entry(`/services/${service.slug}`, 0.6)),
-    ...withSlug(people).map((person) => entry(`/people/${person.slug}`, 0.5)),
-    ...(activeSet.has("blog") ? [entry("/blog", 0.7)] : []),
+      .map((slug) => page(`/${slug}`, 0.8)),
+    ...withSlug(photographyTags).map((tag) =>
+      entry(`/photography/${tag.slug}`, 0.6, tagPageModified(sources, "photography", tag.slug))
+    ),
+    ...withSlug(videographyTags).map((tag) =>
+      entry(`/videography/${tag.slug}`, 0.6, tagPageModified(sources, "videography", tag.slug))
+    ),
+    ...withSlug(services).map((service) =>
+      entry(`/services/${service.slug}`, 0.6, servicePageModified(sources, service.slug))
+    ),
+    ...withSlug(people).map((person) =>
+      entry(`/people/${person.slug}`, 0.5, personPageModified(sources, person.slug))
+    ),
+    ...(activeSet.has("blog") ? [page("/blog", 0.7)] : []),
     ...withSlug(posts).map((post) =>
-      entry(`/blog/${post.slug}`, 0.6, post.publishedAt ? new Date(post.publishedAt) : undefined)
+      entry(`/blog/${post.slug}`, 0.6, postPageModified(sources, post.slug))
     ),
   ];
 }

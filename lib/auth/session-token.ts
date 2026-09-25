@@ -13,6 +13,7 @@
 
 export const COOKIE_NAME = "hm_admin";
 export const SIG_NAME = "hm_admin_sig";
+export const HINT_NAME = "hm_admin_ui";
 
 /** Not remembered: a browser-session cookie, 12 hours idle, 7 days absolute. */
 export const SESSION_IDLE_MS = 12 * 60 * 60 * 1000;
