@@ -47,6 +47,8 @@ if (!uri) {
 
 const client = new MongoClient(uri);
 
+const REBUILDABLE_CONFLICTS = new Set(["IndexOptionsConflict", "IndexKeySpecsConflict"]);
+
 async function createIndex(db, collectionName, keys, options = {}) {
   const collection = db.collection(collectionName);
 
@@ -55,7 +57,7 @@ async function createIndex(db, collectionName, keys, options = {}) {
     console.log(`✓ ${collectionName}: ${indexName}`);
     return;
   } catch (error) {
-    if (error?.codeName !== "IndexOptionsConflict" && error?.code !== 85) throw error;
+    if (!REBUILDABLE_CONFLICTS.has(error?.codeName)) throw error;
   }
 
   const existing = await collection.indexes();
