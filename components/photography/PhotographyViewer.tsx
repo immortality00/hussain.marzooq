@@ -15,9 +15,16 @@ import ModeSwitcher, {
   isViewerMode,
   type ViewerMode,
 } from "./ModeSwitcher";
+import { CYLINDER_HEIGHT, HORIZONTAL_HEIGHT } from "./viewer-heights";
 
-const PhotographyCylinder = dynamic(() => import("./PhotographyCylinder"), { ssr: false });
-const PhotographyHorizontal = dynamic(() => import("./PhotographyHorizontal"), { ssr: false });
+const PhotographyCylinder = dynamic(() => import("./PhotographyCylinder"), {
+  ssr: false,
+  loading: () => <div className={CYLINDER_HEIGHT} />,
+});
+const PhotographyHorizontal = dynamic(() => import("./PhotographyHorizontal"), {
+  ssr: false,
+  loading: () => <div className={HORIZONTAL_HEIGHT} />,
+});
 
 export default function PhotographyViewer({
   items,

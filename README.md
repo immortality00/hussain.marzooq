@@ -13,7 +13,7 @@ Primary domain: **hussain-marzooq.com** (target: hussain.art when ready).
 - **Next.js 16** (App Router) · **React 19** · **TypeScript** · **Tailwind CSS 4**
 - **MongoDB Atlas** (data) · **Cloudinary** (image/video delivery) · **Resend** (email)
 - **shadcn/ui** (new-york) · **Three.js** · **react-globe.gl** · **GSAP** + ScrollTrigger ·
-  **Framer Motion** · **Lenis**
+  **Lenis**
 - Deployed on **Netlify** — not Vercel.
 
 Images bypass Next's optimizer: a custom Cloudinary loader

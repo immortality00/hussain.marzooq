@@ -5,6 +5,7 @@ import { AmbientLight, DirectionalLight } from "three";
 import Globe, { type GlobeMethods } from "react-globe.gl";
 import type { ExhibitionCity } from "@/lib/server/public-media";
 import { prefersReducedMotion } from "@/lib/reduced-motion";
+import { useGlobeOffscreenPause } from "./useGlobeOffscreenPause";
 
 const RESUME_AFTER_RELEASE_MS = 2500;
 
@@ -83,6 +84,9 @@ export default function ExhibitionGlobe({
   const markers = useRef(new Map<string, HTMLDivElement>());
   const resumeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
+  const mounted = size.width > 0;
+
+  useGlobeOffscreenPause(globeRef, wrapRef, mounted);
 
   const arcs = useMemo(
     () => cities.filter((c) => !isDubai(c.lat, c.lon)),
@@ -112,7 +116,7 @@ export default function ExhibitionGlobe({
 
   useEffect(() => {
     const globe = globeRef.current;
-    if (!globe) return;
+    if (!mounted || !globe) return;
     const controls = globe.controls();
     const reduceMotion = prefersReducedMotion();
     controls.enableZoom = false;
@@ -137,7 +141,7 @@ export default function ExhibitionGlobe({
       controls.removeEventListener("end", resume);
       if (resumeTimer.current) clearTimeout(resumeTimer.current);
     };
-  }, [cities]);
+  }, [cities, mounted]);
 
   useEffect(() => {
     markers.current.forEach((el, id) => {
@@ -163,7 +167,7 @@ export default function ExhibitionGlobe({
 
   return (
     <div ref={wrapRef} className="w-full">
-      {size.width > 0 ? (
+      {mounted ? (
         <Globe
           ref={globeRef}
           onGlobeReady={handleReady}
@@ -171,7 +175,7 @@ export default function ExhibitionGlobe({
           height={size.height}
           backgroundColor="rgba(0,0,0,0)"
           globeImageUrl="/globe/earth-day.jpg"
-          bumpImageUrl="/globe/earth-topology.png"
+          bumpImageUrl="/globe/earth-topology.webp"
           showAtmosphere
           atmosphereColor="#cdd6e4"
           atmosphereAltitude={0.18}

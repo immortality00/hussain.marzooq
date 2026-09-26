@@ -5,6 +5,7 @@ import SmartMediaPreview from "@/components/media/SmartMediaPreview";
 import type { MediaItem } from "@/components/media/types";
 import { NoResults } from "@/components/shared/NoResults";
 import { prefersReducedMotion } from "@/lib/reduced-motion";
+import { HORIZONTAL_HEIGHT } from "./viewer-heights";
 
 // Editorial, non-uniform heights (vh). Cycled across the track.
 const HEIGHTS = [56, 46, 60, 50, 54];
@@ -141,7 +142,9 @@ export default function PhotographyHorizontal({
   }
 
   return (
-    <div className="relative ml-[calc(50%-50vw)] flex h-[calc(100dvh-20rem)] min-h-[360px] w-screen items-center justify-center overflow-hidden">
+    <div
+      className={`relative ml-[calc(50%-50vw)] flex ${HORIZONTAL_HEIGHT} w-screen items-center justify-center overflow-hidden`}
+    >
       <div
         ref={trackRef}
         className="flex h-full w-max cursor-grab touch-pan-y items-center gap-8 px-[6vw] select-none will-change-transform active:cursor-grabbing"
