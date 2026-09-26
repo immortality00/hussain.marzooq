@@ -27,6 +27,10 @@ export function useBulkSelection(allIds: string[]) {
 
   const clear = useCallback(() => setSelected(new Set()), []);
 
+  const deselect = useCallback((ids: string[]) => {
+    setSelected((prev) => new Set([...prev].filter((id) => !ids.includes(id))));
+  }, []);
+
   const count = selectedIds.length;
   const allSelected = allIds.length > 0 && count === allIds.length;
 
@@ -38,15 +42,26 @@ export function useBulkSelection(allIds: string[]) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idKey]);
 
-  return { selectedIds, count, isSelected, toggle, toggleAll, clear, allSelected };
+  return { selectedIds, count, isSelected, toggle, toggleAll, clear, deselect, allSelected };
 }
 
 export async function runBulkAction(
   ids: string[],
   perItem: (id: string) => Promise<void>,
-): Promise<{ ok: number; failed: number; okIds: string[]; failedIds: string[] }> {
+): Promise<{
+  ok: number;
+  failed: number;
+  okIds: string[];
+  failedIds: string[];
+  failures: { id: string; message: string }[];
+}> {
   const results = await Promise.allSettled(ids.map((id) => perItem(id)));
   const okIds = ids.filter((_, i) => results[i]!.status === "fulfilled");
-  const failedIds = ids.filter((_, i) => results[i]!.status === "rejected");
-  return { ok: okIds.length, failed: failedIds.length, okIds, failedIds };
+  const failures = ids.flatMap((id, i) => {
+    const result = results[i]!;
+    if (result.status === "fulfilled") return [];
+    return [{ id, message: result.reason instanceof Error ? result.reason.message : "" }];
+  });
+  const failedIds = failures.map((failure) => failure.id);
+  return { ok: okIds.length, failed: failedIds.length, okIds, failedIds, failures };
 }

@@ -1,4 +1,10 @@
 import type { Db } from "mongodb";
+import {
+  escapeRegex,
+  SECTION_IMAGE_SLUGS,
+  usagesInDocs,
+  type AssetUsage,
+} from "@/lib/asset-usage-locations";
 
 export const ASSET_HOLDING_COLLECTIONS = [
   "media",
@@ -10,10 +16,6 @@ export const ASSET_HOLDING_COLLECTIONS = [
   "page_settings",
   "page_seo",
 ] as const;
-
-function escapeRegex(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 
 async function anyDocMentions(db: Db, collection: string, publicId: string) {
   const docs = await db.collection(collection).find({}).toArray();
@@ -49,4 +51,38 @@ export async function isCloudinaryAssetReferenced(db: Db, publicId: string): Pro
   }
 
   return false;
+}
+
+export async function findAssetUsagesByPublicId(
+  db: Db,
+  publicIds: string[]
+): Promise<Map<string, AssetUsage[]>> {
+  const ids = Array.from(new Set(publicIds.map((id) => id.trim()).filter(Boolean)));
+  const found = new Map<string, AssetUsage[]>();
+  if (ids.length === 0) return found;
+
+  const pattern = new RegExp(ids.map(escapeRegex).join("|"));
+  const [sections, settings, seo, posts] = await Promise.all([
+    db.collection("page_sections").find({ slug: { $in: SECTION_IMAGE_SLUGS } }).toArray(),
+    db.collection("page_settings").find({ "cardImage.url": pattern }).toArray(),
+    db.collection("page_seo").find({ ogImageUrl: pattern }).toArray(),
+    db
+      .collection("blog_posts")
+      .find(
+        { $or: [{ coverImageUrl: pattern }, { content: pattern }] },
+        { projection: { title: 1, coverImageUrl: 1, content: 1 } }
+      )
+      .toArray(),
+  ]);
+
+  for (const id of ids) {
+    const usages = usagesInDocs({ sections, settings, seo, posts }, id);
+    if (usages.length) found.set(id, usages);
+  }
+  return found;
+}
+
+export async function findAssetUsages(db: Db, publicId: string): Promise<AssetUsage[]> {
+  const found = await findAssetUsagesByPublicId(db, [publicId]);
+  return found.get(publicId.trim()) ?? [];
 }

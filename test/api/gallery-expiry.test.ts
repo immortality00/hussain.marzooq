@@ -32,6 +32,9 @@ vi.mock("@/lib/server/private-gallery-admin", () => ({
     mediaIds: ids,
   }),
 }));
+vi.mock("@/app/api/private-galleries/_lib/gallery-page-usage", () => ({
+  resolveGalleryPageUsage: async () => null,
+}));
 vi.mock("@/lib/server/private-gallery-assets", () => ({
   makeMediaPrivateForGallery: async () => ({ failures: [] }),
   releaseMediaFromPrivateGalleries: async () => undefined,

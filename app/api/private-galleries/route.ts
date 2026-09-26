@@ -26,6 +26,7 @@ import {
   formatGalleryConversionError,
   makeMediaPrivateForGallery,
 } from "@/lib/server/private-gallery-assets";
+import { resolveGalleryPageUsage } from "@/app/api/private-galleries/_lib/gallery-page-usage";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +98,9 @@ export async function POST(req: Request) {
   if (!validatedMedia.ok) {
     return noStoreJson({ ok: false, error: validatedMedia.error }, { status: 400 });
   }
+
+  const pageUsage = await resolveGalleryPageUsage(db, validatedMedia.mediaIds, body.clearPageUsages === true);
+  if (pageUsage) return pageUsage;
 
   const madePrivate = await makeMediaPrivateForGallery(db, validatedMedia.mediaIds);
   if (madePrivate.failures.length > 0) {

@@ -19,3 +19,7 @@ export function revalidateMediaSurfaces(tagSlugs: Iterable<string> = []) {
     revalidatePath(`/videography/${slug}`);
   }
 }
+
+export function revalidateSitePages() {
+  revalidatePath("/", "layout");
+}

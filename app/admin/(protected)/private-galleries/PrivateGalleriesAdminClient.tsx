@@ -8,6 +8,7 @@ import { usePrivateGalleriesAdmin } from "@/components/admin/private-galleries/u
 import { useBulkSelection } from "@/components/admin/bulk/useBulkSelection";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
 
 export default function PrivateGalleriesAdminClient() {
   const admin = usePrivateGalleriesAdmin();
@@ -81,6 +82,8 @@ export default function PrivateGalleriesAdminClient() {
       ) : (
         <GalleryWizard admin={admin} />
       )}
+
+      <MediaUsageDialog dialog={admin.usageDialog} />
     </main>
   );
 }

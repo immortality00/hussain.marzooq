@@ -209,6 +209,12 @@ const routes: Route[] = [
     load: () => import("@/app/api/media/video-details/route"),
   },
   {
+    name: "POST /api/media/usages",
+    method: "POST",
+    path: "/api/media/usages",
+    load: () => import("@/app/api/media/usages/route"),
+  },
+  {
     name: "GET /api/people",
     method: "GET",
     path: "/api/people",

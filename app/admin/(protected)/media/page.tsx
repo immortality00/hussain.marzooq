@@ -4,6 +4,7 @@ import Link from "next/link";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
 import MediaWizard from "./components/MediaWizard";
 import { useMediaEditorController } from "./lib/useMediaEditorController";
 
@@ -13,6 +14,7 @@ export default function AdminMediaPage() {
     busy,
     busyAction,
     banner,
+    usageDialog,
     save,
     remove,
     startNewUpload,
@@ -51,6 +53,8 @@ export default function AdminMediaPage() {
         save={save}
         remove={remove}
       />
+
+      <MediaUsageDialog dialog={usageDialog} />
     </main>
   );
 }

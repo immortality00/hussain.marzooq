@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
+import { useMediaUsageDialog } from "@/components/admin/media-usage/useMediaUsageDialog";
+import { saveGalleryWithUsageCheck } from "./save-gallery";
 import type { BannerState, GalleryItem } from "./types";
 import { buildGalleryUrl, MIN_PRIVATE_GALLERY_PASSWORD_LENGTH } from "./helpers";
 
@@ -22,6 +24,7 @@ export function usePrivateGalleriesAdmin() {
   const [isActive, setIsActive] = useState(true);
   const [expiresAtLocal, setExpiresAtLocal] = useState("");
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
+  const usage = useMediaUsageDialog(() => setBanner(null));
 
   const actionBusy = saving || Boolean(deletingId);
 
@@ -150,29 +153,28 @@ export function usePrivateGalleriesAdmin() {
     });
 
     try {
-      const res = await fetch(
-        editingId
-          ? `/api/private-galleries/${encodeURIComponent(editingId)}`
-          : "/api/private-galleries",
+      const result = await saveGalleryWithUsageCheck(
+        editingId,
         {
-          method: editingId ? "PATCH" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title,
-            slug,
-            description,
-            password,
-            isActive,
-            expiresAtLocal,
-            timezoneOffsetMinutes: new Date().getTimezoneOffset(),
-            mediaIds: selectedMediaIds,
-          }),
-        }
+          title,
+          slug,
+          description,
+          password,
+          isActive,
+          expiresAtLocal,
+          timezoneOffsetMinutes: new Date().getTimezoneOffset(),
+          mediaIds: selectedMediaIds,
+        },
+        usage.ask
       );
 
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
-      if (!res.ok || !data?.ok) {
-        setBanner({ type: "err", text: data?.error ?? "Save failed." });
+      setSelectedMediaIds(result.mediaIds);
+      if (result.outcome === "cancelled") {
+        setBanner(null);
+        return;
+      }
+      if (result.outcome === "failed") {
+        setBanner({ type: "err", text: result.error });
         return;
       }
 
@@ -258,6 +260,7 @@ export function usePrivateGalleriesAdmin() {
 
   return {
     view,
+    usageDialog: usage.dialog,
     items: filteredItems,
     loading,
     banner,

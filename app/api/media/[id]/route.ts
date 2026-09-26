@@ -1,4 +1,5 @@
-import { revalidateMediaSurfaces } from "@/app/api/_lib/revalidate";
+import { revalidateMediaSurfaces, revalidateSitePages } from "@/app/api/_lib/revalidate";
+import { mediaInUseResponse, usageUpdateFailedResponse } from "@/app/api/_lib/media-usage";
 import { getDb } from "@/lib/server/db";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import {
@@ -43,6 +44,14 @@ import {
 } from "@/lib/server/private-gallery-admin";
 import { isMediaAssetPath, mediaAssetPath } from "@/lib/media-asset-path";
 import { normalizeDeliveryType } from "@/lib/server/cloudinary-private";
+import { findAssetUsages } from "@/lib/server/asset-references";
+import {
+  applyUsageEdit,
+  findMediaUsageConflicts,
+  removeMediaUsages,
+} from "@/lib/server/media-usage";
+import { parseMediaUsageChoice } from "@/lib/media-in-use";
+import type { UsageEdit } from "@/lib/asset-usage-edits";
 
 export const dynamic = "force-dynamic";
 
@@ -137,6 +146,16 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const incomingSecureUrl = asNullableString(bodyUnknown.secureUrl);
   const incomingPublicId = asNullableString(bodyUnknown.publicId);
   const incomingResourceType = asNullableString(bodyUnknown.resourceType);
+  const usageChoice = parseMediaUsageChoice(bodyUnknown.usages);
+
+  const hasIncomingAsset =
+    typeof incomingSecureUrl === "string" &&
+    incomingSecureUrl.length > 0 &&
+    !isMediaAssetPath(incomingSecureUrl) &&
+    typeof incomingPublicId === "string" &&
+    incomingPublicId.length > 0 &&
+    typeof incomingResourceType === "string" &&
+    incomingResourceType.length > 0;
 
   const isShowreel = categories.includes("showreel");
   const isVideoPlacement = categories.includes("videography") || isShowreel;
@@ -219,7 +238,26 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     if (duplicate) {
       return noStoreJson({ ok: false, error: duplicateVideoMessage(duplicate) }, { status: 409 });
     }
+  }
 
+  const replacesFile =
+    Boolean(oldAsset.publicId) &&
+    (video !== null ||
+      (hasIncomingAsset && incomingPublicId!.trim().replace(/^\/+/, "") !== oldAsset.publicId));
+  const mayMoveFile =
+    Boolean(oldAsset.publicId) && !assetIsInsideFolder(oldAsset.publicId, targetFolder);
+  const [oldFileInUse] =
+    replacesFile || mayMoveFile ? await findMediaUsageConflicts(db, [existingMedia]) : [];
+
+  if (replacesFile && oldFileInUse) {
+    const newFileIsImage = !video && incomingResourceType === "image";
+    if (!usageChoice) return mediaInUseResponse([oldFileInUse], { canReplace: newFileIsImage });
+    if (usageChoice === "replace" && !newFileIsImage) {
+      return noStoreJson({ ok: false, error: "Only a photo can take its place there." }, { status: 400 });
+    }
+  }
+
+  if (video) {
     const embedSrc = videoEmbedSrc(video);
     set.type = "embed";
     set.embedUrl = embedSrc;
@@ -239,15 +277,6 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       set.posterPublicId = newPoster?.publicId ?? null;
     }
   }
-
-  const hasIncomingAsset =
-    typeof incomingSecureUrl === "string" &&
-    incomingSecureUrl.length > 0 &&
-    !isMediaAssetPath(incomingSecureUrl) &&
-    typeof incomingPublicId === "string" &&
-    incomingPublicId.length > 0 &&
-    typeof incomingResourceType === "string" &&
-    incomingResourceType.length > 0;
 
   if (
     isShowreel &&
@@ -385,22 +414,46 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     await deleteVideoPoster(oldPosterId);
   }
 
+  const movedFile =
+    movedAssetOnCloudinary && movedAssetOnCloudinary.publicId !== oldAsset.publicId
+      ? movedAssetOnCloudinary
+      : null;
+  const pageEdit: UsageEdit | null = !oldFileInUse
+    ? null
+    : replacesFile
+      ? usageChoice === "replace"
+        ? { type: "replace", url: String(set.secureUrl) }
+        : { type: "remove" }
+      : movedFile?.secureUrl
+        ? { type: "replace", url: movedFile.secureUrl }
+        : null;
+  const pagesNotUpdated =
+    oldFileInUse && pageEdit
+      ? await applyUsageEdit(db, oldFileInUse.publicId, oldFileInUse.usages, pageEdit)
+      : [];
+
   if (oldAsset.publicId) {
     const switchedToEmbed = incomingType === "embed";
     const replacedWithDifferentAsset =
       replacementAsset !== null && !assetsPointToSameCloudinaryFile(oldAsset, replacementAsset);
+    const stillUsed = pageEdit ? await findAssetUsages(db, oldAsset.publicId) : [];
 
-    if (switchedToEmbed || replacedWithDifferentAsset) {
+    if ((switchedToEmbed || replacedWithDifferentAsset) && stillUsed.length === 0) {
       await deleteStoredMediaAsset(oldAsset);
     }
   }
 
   revalidateMediaSurfaces([...tags, ...asStringArray(existingMedia.tags)]);
+  if (pageEdit) revalidateSitePages();
 
-  return noStoreJson({ ok: true, ...(posterMissing ? { posterMissing: true } : {}) });
+  return noStoreJson({
+    ok: true,
+    ...(posterMissing ? { posterMissing: true } : {}),
+    ...(pagesNotUpdated.length ? { pagesNotUpdated } : {}),
+  });
 }
 
-export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const gate = await requireAdminObjectId(ctx);
   if (gate instanceof Response) return gate;
   const { oid } = gate;
@@ -421,6 +474,18 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
       },
       { status: 409 }
     );
+  }
+
+  const [inUse] = await findMediaUsageConflicts(db, [media]);
+  if (inUse) {
+    if (new URL(req.url).searchParams.get("detach") !== "1") return mediaInUseResponse([inUse]);
+
+    const failed = await removeMediaUsages(db, [inUse]);
+    revalidateSitePages();
+    if (failed.length) return usageUpdateFailedResponse(failed, "Nothing was deleted.");
+
+    const [stillInUse] = await findMediaUsageConflicts(db, [media]);
+    if (stillInUse) return mediaInUseResponse([stillInUse]);
   }
 
   const result = await db.collection("media").deleteOne({ _id: oid });

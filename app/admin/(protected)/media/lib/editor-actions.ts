@@ -1,4 +1,6 @@
 import { parseVideoLink } from "@/lib/video-embed";
+import { throwIfMediaInUse } from "@/lib/client/media-usage-api";
+import type { MediaUsageChoice } from "@/lib/media-in-use";
 import type { MediaItem } from "./types";
 
 export async function fetchMediaItem(id: string): Promise<MediaItem> {
@@ -128,6 +130,7 @@ export async function saveMediaItem(args: {
   editingId: string;
   payloadBase: Record<string, unknown>;
   payloadWithAsset: Record<string, unknown> | null;
+  usages?: MediaUsageChoice;
 }) {
   if (!args.editingId) {
     const res = await fetch("/api/media/create", {
@@ -150,7 +153,7 @@ export async function saveMediaItem(args: {
     return { mode: "created" as const, id: data.id ?? null, posterMissing: data.posterMissing === true };
   }
 
-  const updateBody = args.payloadWithAsset ?? args.payloadBase;
+  const updateBody = { ...(args.payloadWithAsset ?? args.payloadBase), usages: args.usages };
 
   const res = await fetch(`/api/media/${encodeURIComponent(args.editingId)}`, {
     method: "PATCH",
@@ -162,21 +165,30 @@ export async function saveMediaItem(args: {
     ok?: boolean;
     error?: string;
     posterMissing?: boolean;
+    pagesNotUpdated?: string[];
   };
 
   if (!res.ok || !data?.ok) {
+    throwIfMediaInUse(data);
     throw new Error(data?.error ?? "Update failed.");
   }
 
-  return { mode: "updated" as const, id: args.editingId, posterMissing: data.posterMissing === true };
+  return {
+    mode: "updated" as const,
+    id: args.editingId,
+    posterMissing: data.posterMissing === true,
+    pagesNotUpdated: Array.isArray(data.pagesNotUpdated) ? data.pagesNotUpdated : [],
+  };
 }
 
-export async function deleteMediaItem(id: string) {
-  const res = await fetch(`/api/media/${encodeURIComponent(id)}`, { method: "DELETE" });
+export async function deleteMediaItem(id: string, removeFromPages = false) {
+  const query = removeFromPages ? "?detach=1" : "";
+  const res = await fetch(`/api/media/${encodeURIComponent(id)}${query}`, { method: "DELETE" });
 
   const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
 
   if (!res.ok || !data?.ok) {
+    throwIfMediaInUse(data);
     throw new Error(data?.error ?? "Delete failed.");
   }
 }

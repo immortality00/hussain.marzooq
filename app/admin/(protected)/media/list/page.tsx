@@ -6,12 +6,14 @@ import { useSearchParams } from "next/navigation";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { useAdminAction } from "@/hooks/useAdminAction";
-import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
+import { useBulkSelection } from "@/components/admin/bulk/useBulkSelection";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
 import { MediaListFilterBar } from "./components/MediaListFilterBar";
 import { MediaListItem, type MediaItem } from "./components/MediaListItem";
+import { useMediaListDelete } from "./lib/useMediaListDelete";
 
 type AdminMediaListResponse = {
   ok?: boolean;
@@ -52,7 +54,6 @@ export default function AdminMediaListPage() {
   const [items, setItems] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const { feedback: banner, setFeedback: setBanner } = useAdminAction();
 
@@ -109,45 +110,12 @@ export default function AdminMediaListPage() {
   }, [load]);
 
   const selection = useBulkSelection(items.map((m) => m.id));
-  const [bulkBusy, setBulkBusy] = useState(false);
-
-  async function bulkDelete() {
-    if (bulkBusy || selection.count === 0) return;
-    if (!confirm(`Delete ${selection.count} media item(s) forever? This cannot be undone.`)) return;
-    const ids = selection.selectedIds;
-    setBulkBusy(true);
-    setBanner({ type: "info", text: "Deleting selected media…" });
-    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => {
-      const res = await fetch(`/api/media/${encodeURIComponent(id)}`, { method: "DELETE" });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean };
-      if (!res.ok || !data?.ok) throw new Error();
-    });
-    setItems((prev) => prev.filter((x) => !okIds.includes(x.id)));
-    setBanner({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} failed` : ""}.` });
-    selection.clear();
-    setBulkBusy(false);
-  }
-
-  async function del(id: string) {
-    if (deletingId) return;
-    if (!confirm("Delete this media forever? This cannot be undone.")) return;
-    setDeletingId(id);
-    setBanner({ type: "info", text: "Deleting media and cleaning Cloudinary asset…" });
-    try {
-      const res = await fetch(`/api/media/${encodeURIComponent(id)}`, { method: "DELETE" });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
-      if (!res.ok || !data?.ok) {
-        setBanner({ type: "err", text: data?.error ?? "Delete failed." });
-        return;
-      }
-      setItems((prev) => prev.filter((x) => x.id !== id));
-      setBanner({ type: "ok", text: "✅ Media deleted." });
-    } catch (e: unknown) {
-      setBanner({ type: "err", text: `Delete error: ${getErrorMessage(e)}` });
-    } finally {
-      setDeletingId(null);
-    }
-  }
+  const { del, bulkDelete, deletingId, bulkBusy, usageDialog } = useMediaListDelete({
+    items,
+    setItems,
+    selection,
+    setBanner,
+  });
 
   return (
     <main className="mx-auto max-w-6xl px-0 py-3 md:px-6 md:py-10">
@@ -252,6 +220,8 @@ export default function AdminMediaListPage() {
           </button>
         </div>
       ) : null}
+
+      <MediaUsageDialog dialog={usageDialog} />
     </main>
   );
 }

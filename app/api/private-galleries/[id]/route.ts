@@ -29,6 +29,7 @@ import {
   makeMediaPrivateForGallery,
   releaseMediaFromPrivateGalleries,
 } from "@/lib/server/private-gallery-assets";
+import { resolveGalleryPageUsage } from "@/app/api/private-galleries/_lib/gallery-page-usage";
 
 export const dynamic = "force-dynamic";
 
@@ -103,6 +104,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (!validatedMedia.ok) {
     return noStoreJson({ ok: false, error: validatedMedia.error }, { status: 400 });
   }
+
+  const pageUsage = await resolveGalleryPageUsage(db, validatedMedia.mediaIds, body.clearPageUsages === true);
+  if (pageUsage) return pageUsage;
 
   const previousMediaIds = asStringArray(existing.mediaIds, 300);
   const nextMediaIds = validatedMedia.mediaIds;

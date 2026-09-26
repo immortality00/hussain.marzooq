@@ -1,6 +1,10 @@
 import { describe, expect, test } from "vitest";
 import type { Db } from "mongodb";
-import { isCloudinaryAssetReferenced } from "@/lib/server/asset-references";
+import {
+  findAssetUsages,
+  findAssetUsagesByPublicId,
+  isCloudinaryAssetReferenced,
+} from "@/lib/server/asset-references";
 
 type Docs = Record<string, Record<string, unknown>[]>;
 
@@ -72,5 +76,28 @@ describe("isCloudinaryAssetReferenced", () => {
 
   test("an empty id is treated as referenced", async () => {
     expect(await isCloudinaryAssetReferenced(fakeDb({}), "  ")).toBe(true);
+  });
+});
+
+describe("findAssetUsages", () => {
+  const url = (id: string) => `https://res.cloudinary.com/demo/image/upload/v1/${id}.jpg`;
+  const pages = {
+    page_sections: [{ slug: "home", data: { hero: { image: { url: url(ID), publicId: "" } } } }],
+    page_seo: [{ slug: "about", ogImageUrl: url("hm_visuals/sections/other") }],
+  };
+
+  test("returns labelled places for one file", async () => {
+    const found = await findAssetUsages(fakeDb(pages), ID);
+    expect(found.map((usage) => usage.label)).toEqual(["Home — hero"]);
+  });
+
+  test("answers for many files from one set of reads", async () => {
+    const found = await findAssetUsagesByPublicId(fakeDb(pages), [ID, "hm_visuals/sections/other", "unused"]);
+    expect([...found.keys()]).toEqual([ID, "hm_visuals/sections/other"]);
+    expect(found.get("hm_visuals/sections/other")!.map((usage) => usage.label)).toEqual(["About — share image"]);
+  });
+
+  test("a database error is thrown, never read as 'unused' — that would let a used file be deleted", async () => {
+    await expect(findAssetUsages(fakeDb({}, { throws: true }), ID)).rejects.toThrow("db down");
   });
 });

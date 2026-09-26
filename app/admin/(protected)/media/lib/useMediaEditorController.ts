@@ -4,12 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { AdminActionFeedbackState } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
-import {
-  deleteMediaItem,
-  fetchMediaItem,
-  buildMediaPayload,
-  saveMediaItem,
-} from "./editor-actions";
+import { useMediaUsageDialog } from "@/components/admin/media-usage/useMediaUsageDialog";
+import { fetchMediaItem, buildMediaPayload } from "./editor-actions";
+import { deleteWithUsageCheck, saveWithUsageCheck } from "./media-usage-flows";
 import { useMediaEditorState } from "./editor-state";
 import type { MediaCategory, MediaItem } from "./types";
 import { findFirstAppearanceError } from "./utils";
@@ -34,6 +31,7 @@ export function useMediaEditorController() {
   const editor = useMediaEditorState();
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
   const [banner, setBanner] = useState<AdminActionFeedbackState>(null);
+  const usage = useMediaUsageDialog(() => setBanner(null));
 
   const busy = busyAction !== null;
   const setPrimaryCategoryRef = useRef(editor.setPrimaryCategory);
@@ -159,11 +157,14 @@ export function useMediaEditorController() {
         nftMarketplaceUrl: editor.nftMarketplaceUrl,
       });
 
-      const result = await saveMediaItem({
-        editingId: editor.editingId,
-        payloadBase,
-        payloadWithAsset,
-      });
+      const result = await saveWithUsageCheck(
+        { editingId: editor.editingId, payloadBase, payloadWithAsset },
+        usage.ask
+      );
+      if (!result) {
+        setBanner(null);
+        return;
+      }
 
       if (editor.mode === "embed" && editor.uploaded) {
         cleanupUploadedAsset({ publicId: editor.uploaded.publicId });
@@ -174,6 +175,13 @@ export function useMediaEditorController() {
       if (result.mode === "created") {
         setBanner({ type: "ok", text: posterNote ? `✅ Media created${posterNote}` : "✅ Media created successfully." });
         editor.resetFields(true, () => setBanner(null));
+      } else if (result.pagesNotUpdated.length) {
+        setBanner({
+          type: "err",
+          text: `Media updated, but these places could not be updated: ${result.pagesNotUpdated.join(", ")}.`,
+        });
+        editor.loadIntoState(await fetchMediaItem(editor.editingId));
+        router.refresh();
       } else {
         setBanner({ type: "ok", text: posterNote ? `✅ Media updated${posterNote}` : "✅ Media updated successfully." });
         const reloaded = await fetchMediaItem(editor.editingId);
@@ -198,7 +206,10 @@ export function useMediaEditorController() {
     setBanner({ type: "info", text: "Deleting media and cleaning Cloudinary asset…" });
 
     try {
-      await deleteMediaItem(editor.editingId);
+      if (!(await deleteWithUsageCheck(editor.editingId, usage.ask))) {
+        setBanner(null);
+        return;
+      }
       setBanner({ type: "ok", text: "✅ Media deleted." });
       editor.resetFields(true, () => setBanner(null));
       router.push("/admin/media/list");
@@ -226,6 +237,7 @@ export function useMediaEditorController() {
     busyAction,
     banner,
     setBanner,
+    usageDialog: usage.dialog,
     save,
     remove,
     startNewUpload,
