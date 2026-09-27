@@ -1,13 +1,21 @@
 "use client";
 
+export function inputClasses(invalid = false) {
+  return `w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
+    invalid ? "border-destructive focus:ring-destructive" : "focus:ring-ring"
+  }`;
+}
+
 export function TextField({
   label,
   value,
   onChange,
+  invalid = false,
 }: {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  invalid?: boolean;
 }) {
   return (
     <div>
@@ -15,8 +23,9 @@ export function TextField({
       <input
         type="text"
         value={value}
+        aria-invalid={invalid || undefined}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+        className={inputClasses(invalid)}
       />
     </div>
   );
@@ -40,7 +49,7 @@ export function TextAreaField({
         rows={rows}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+        className={inputClasses()}
       />
     </div>
   );

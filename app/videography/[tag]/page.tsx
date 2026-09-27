@@ -7,6 +7,8 @@ import { StickyCta } from "@/components/site/StickyCta";
 import { getPageSettings } from "@/lib/server/page-settings";
 import { getTagMeta, getTagPage } from "@/lib/server/tag-pages";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
+import { breadcrumbNode } from "@/lib/seo/structured-data";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const revalidate = 300;
 
@@ -40,6 +42,14 @@ export default async function VideographyTagPage({
 
   return (
     <>
+      <JsonLd
+        nodes={[
+          breadcrumbNode([
+            { name: "Videography", path: "/videography" },
+            { name: data.tag.label, path: `/videography/${data.tag.slug}` },
+          ]),
+        ]}
+      />
       <main className="section-shell py-16">
         <Link
           href="/videography"

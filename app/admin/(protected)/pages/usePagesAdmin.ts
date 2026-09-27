@@ -11,6 +11,13 @@ import { pageNeedsImage, type PageRow } from "./lib/rows";
 
 type SettingsDraft = { isActive: boolean; cardImage: SectionImage };
 
+async function ensureOk(res: Response) {
+  if (res.ok) return;
+  const body: unknown = await res.json().catch(() => null);
+  const error = body && typeof body === "object" ? (body as { error?: unknown }).error : null;
+  throw new Error(typeof error === "string" ? error : "");
+}
+
 function seoDraftOf(seo: PageSeo): SeoDraft {
   return {
     title: seo.title,
@@ -199,7 +206,7 @@ export function usePagesAdmin({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ isActive: draft.isActive, cardImage: draft.cardImage }),
           });
-          if (!res.ok) throw new Error();
+          await ensureOk(res);
           setSettings((prev) => ({
             ...prev,
             [slug]: { ...prev[slug]!, isActive: draft.isActive, cardImage: draft.cardImage },
@@ -220,7 +227,7 @@ export function usePagesAdmin({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(draft),
           });
-          if (!res.ok) throw new Error();
+          await ensureOk(res);
           setSeo((prev) => ({
             ...prev,
             [slug]: { ...prev[slug]!, ...draft, updatedAt: new Date() },
@@ -241,7 +248,7 @@ export function usePagesAdmin({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(draft),
           });
-          if (!res.ok) throw new Error();
+          await ensureOk(res);
           setSections((prev) => ({ ...prev, [slug]: draft }));
           clearSectionsDraft(slug);
         },
@@ -250,7 +257,12 @@ export function usePagesAdmin({
 
     const results = await Promise.allSettled(parts.map((p) => p.run()));
     const saved = parts.filter((_, i) => results[i]!.status === "fulfilled").map((p) => p.label);
-    const failed = parts.filter((_, i) => results[i]!.status === "rejected").map((p) => p.label);
+    const failed = parts.flatMap((p, i) => {
+      const result = results[i]!;
+      if (result.status === "fulfilled") return [];
+      const reason = result.reason instanceof Error ? result.reason.message : "";
+      return [reason ? `${p.label} (${reason})` : p.label];
+    });
 
     if (failed.length === 0) {
       setFeedback({

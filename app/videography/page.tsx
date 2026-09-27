@@ -24,6 +24,8 @@ import {
 } from "@/lib/server/public-media";
 import { getPageSettings } from "@/lib/server/page-settings";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { videoObjectNode } from "@/lib/seo/structured-data-content";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const revalidate = 300;
 
@@ -41,9 +43,21 @@ export default async function VideographyPage() {
     showreel?.type === "embed" && showreel.embedUrl
       ? (toEmbedUrl(showreel.embedUrl) ?? showreel.embedUrl)
       : null;
+  const showreelFile = showreel?.type === "video" ? showreel.secureUrl : null;
+  const showreelVideo = showreel
+    ? videoObjectNode({
+        name: showreel.title || "Showreel",
+        description: showreel.description,
+        posterUrl: showreel.posterUrl,
+        contentUrl: showreelFile,
+        embedUrl: showreelEmbed,
+        uploadDate: showreel.createdAt,
+      })
+    : null;
 
   return (
     <>
+      <JsonLd nodes={[showreelVideo]} />
       <main className="section-shell py-16">
         <PageHeader
           title={seo.headerTitle}

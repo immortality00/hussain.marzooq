@@ -5,6 +5,9 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { getPageSections } from "@/lib/server/page-sections";
+import { normalizeSearchProfile, publishedProfile } from "@/lib/seo/search-profile";
+import { personNode, profilePageNode } from "@/lib/seo/structured-data";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 import { DISCIPLINE_HREF, type DisciplineSlug } from "@/lib/disciplines";
 
@@ -35,8 +38,11 @@ export default async function AboutPage() {
     .map((card, i) => ({ card, slug: card.slug ?? LEGACY_SLUGS[i] }))
     .filter(({ slug }) => !slug || activeSet.has(slug));
 
+  const person = personNode(publishedProfile(normalizeSearchProfile(sections.profile)), seo.description);
+
   return (
     <>
+      <JsonLd nodes={[profilePageNode("/about", person)]} />
       <main>
         <section className="section-shell pt-12 sm:pt-16">
           <PageHeader

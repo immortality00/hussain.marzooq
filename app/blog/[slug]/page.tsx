@@ -11,6 +11,9 @@ import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { getPageSections } from "@/lib/server/page-sections";
 import { getBlogActive } from "@/lib/server/page-settings";
 import { getPostBySlug } from "@/lib/server/public-blog";
+import { breadcrumbNode } from "@/lib/seo/structured-data";
+import { blogPostingNode } from "@/lib/seo/structured-data-content";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const revalidate = 300;
 
@@ -53,6 +56,15 @@ export default async function BlogPostPage({
 
   return (
     <>
+      <JsonLd
+        nodes={[
+          blogPostingNode(post),
+          breadcrumbNode([
+            { name: "Blog", path: "/blog" },
+            { name: post.title, path: `/blog/${post.slug}` },
+          ]),
+        ]}
+      />
       <main className="section-shell py-12 sm:py-16">
         <article className="mx-auto max-w-3xl">
           <Link

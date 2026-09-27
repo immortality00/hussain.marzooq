@@ -7,6 +7,8 @@ import { StickyCta } from "@/components/site/StickyCta";
 import { getPageSettings } from "@/lib/server/page-settings";
 import { getTagMeta, getTagPage } from "@/lib/server/tag-pages";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
+import { breadcrumbNode } from "@/lib/seo/structured-data";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const revalidate = 300;
 
@@ -40,6 +42,14 @@ export default async function PhotographyTagPage({
 
   return (
     <>
+      <JsonLd
+        nodes={[
+          breadcrumbNode([
+            { name: "Photography", path: "/photography" },
+            { name: data.tag.label, path: `/photography/${data.tag.slug}` },
+          ]),
+        ]}
+      />
       <main className="section-shell pt-8 pb-32">
         <Link
           href="/photography"

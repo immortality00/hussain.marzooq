@@ -12,6 +12,8 @@ import { VisibilityGroup } from "./VisibilityGroup";
 import { CardImageGroup } from "./CardImageGroup";
 import { SeoPageForm, type SeoDraft } from "./SeoPageForm";
 import { SectionsGroup } from "./SectionsGroup";
+import { SearchProfileGroup } from "./SearchProfileGroup";
+import { normalizeSearchProfile } from "@/lib/seo/search-profile";
 
 type SectionsData = PageSectionsMap[PageSectionsSlug];
 
@@ -62,6 +64,15 @@ export function PageEditorBody({
             detailPage={row.seoDetailPage}
             detailToken={row.seoSlug?.endsWith("-tag") ? "tag" : "name"}
             shareImage={row.key !== "services-detail"}
+          />
+        )}
+
+        {row.sectionsSlug === "about" && sectionsData && (
+          <SearchProfileGroup
+            profile={normalizeSearchProfile((sectionsData as PageSectionsMap["about"]).profile)}
+            onChange={(profile) =>
+              onSectionsChange({ ...(sectionsData as PageSectionsMap["about"]), profile })
+            }
           />
         )}
 

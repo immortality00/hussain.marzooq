@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
-import { getPageSections } from "@/lib/server/page-sections";
+import { getPageSections, getSearchProfile } from "@/lib/server/page-sections";
+import { publishedProfile } from "@/lib/seo/search-profile";
+import { personNode, websiteNode } from "@/lib/seo/structured-data";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { HomeCreativeSystem } from "@/components/home/HomeCreativeSystem";
 import { HomeExhibitionGlobe } from "@/components/home/HomeExhibitionGlobe";
 import { HomeFeaturedWork } from "@/components/home/HomeFeaturedWork";
@@ -27,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [servicesData, testimonials, pageSettings, seo, sections, exhibitionCities] =
+  const [servicesData, testimonials, pageSettings, seo, sections, exhibitionCities, searchProfile] =
     await Promise.all([
       getPublicServicesData(),
       getPublicTestimonials(3),
@@ -35,12 +38,15 @@ export default async function HomePage() {
       getPageSeo("home"),
       getPageSections("home"),
       getExhibitionCities(),
+      getSearchProfile(),
     ]);
 
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
+  const profile = publishedProfile(searchProfile);
 
   return (
     <>
+      <JsonLd nodes={[websiteNode(profile), personNode(profile)]} />
       <main>
         <HomeHero
           activeSet={activeSet}

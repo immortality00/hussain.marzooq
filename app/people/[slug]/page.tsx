@@ -12,6 +12,8 @@ import { getAllPageSettings } from "@/lib/server/page-settings";
 import { getPageSections } from "@/lib/server/page-sections";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
+import { breadcrumbNode } from "@/lib/seo/structured-data";
+import { JsonLd } from "@/components/seo/JsonLd";
 
 export const revalidate = 300;
 
@@ -91,6 +93,14 @@ export default async function PersonDetailPage({
 
   return (
     <>
+      <JsonLd
+        nodes={[
+          breadcrumbNode([
+            { name: "People", path: "/people" },
+            { name: person.name, path: `/people/${person.slug}` },
+          ]),
+        ]}
+      />
       <main className="section-shell py-12 sm:py-16">
         <section className="mx-auto max-w-3xl text-center">
           <div className="flex justify-center">

@@ -6,6 +6,11 @@ import type {
   CtaCopy,
   SectionImage,
 } from "@/lib/page-sections-shared";
+import {
+  DEFAULT_SEARCH_PROFILE,
+  normalizeSearchProfile,
+  type SearchProfile,
+} from "@/lib/seo/search-profile";
 
 export type {
   FeaturedCard,
@@ -33,6 +38,7 @@ export type HomeSections = {
 
 export type AboutSections = {
   disciplines: DisciplineCard[];
+  profile: SearchProfile;
   stickyCta: CtaCopy;
 };
 
@@ -144,6 +150,7 @@ const DEFAULTS: PageSectionsMap = {
         image: EMPTY_SECTION_IMAGE,
       },
     ],
+    profile: DEFAULT_SEARCH_PROFILE,
     stickyCta: BOOKING_CTA,
   },
   photography: { stickyCta: BOOKING_CTA },
@@ -227,4 +234,8 @@ export async function getAllPageSections(): Promise<
   } catch {
     return ALL_PAGE_SECTIONS_SLUGS.map((slug) => ({ slug, data: DEFAULTS[slug] }));
   }
+}
+
+export async function getSearchProfile(): Promise<SearchProfile> {
+  return normalizeSearchProfile((await getPageSections("about")).profile);
 }

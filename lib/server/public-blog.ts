@@ -19,6 +19,7 @@ export type BlogPostCard = {
 export type BlogPostDetail = BlogPostCard & {
   content: string;
   ogImageUrl: string;
+  updatedAt: string | null;
 };
 
 export type PublicBlogCategory = {
@@ -110,6 +111,7 @@ export async function getPostBySlug(slug: string): Promise<BlogPostDetail | null
       ...card,
       content: asString(doc.content),
       ogImageUrl: asString(doc.coverImageUrl),
+      updatedAt: toIso(doc.updatedAt),
     };
   } catch {
     return null;

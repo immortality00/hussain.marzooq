@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-const SITE_NAME = "Hussain.Art";
+export const SITE_NAME = "Hussain.Art";
 
 const FALLBACK_IMAGE = {
   url: "/opengraph-image",

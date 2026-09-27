@@ -5,6 +5,7 @@ import { getDb } from "@/lib/server/db";
 import { ALL_PAGE_SECTIONS_SLUGS, type PageSectionsSlug } from "@/lib/server/page-sections";
 import { deleteReplacedSectionImages } from "@/lib/server/section-images";
 import { isRecord } from "@/app/api/_lib/common";
+import { normalizeSearchProfile, searchProfileError } from "@/lib/seo/search-profile";
 
 const SLUG_TO_PATH: Record<PageSectionsSlug, string> = {
   home: "/",
@@ -41,6 +42,13 @@ export async function PATCH(
     return NextResponse.json({ error: "data must be an object" }, { status: 400 });
   }
 
+  if (slug === "about" && "profile" in data) {
+    const profile = normalizeSearchProfile(data.profile);
+    const error = searchProfileError(profile);
+    if (error) return NextResponse.json({ error }, { status: 400 });
+    data.profile = profile;
+  }
+
   const db = await getDb();
 
   // Delete uploaded section images that were replaced or removed in this save.
@@ -57,6 +65,7 @@ export async function PATCH(
   } else if (path) {
     revalidatePath(path);
   }
+  if (slug === "about") revalidatePath("/");
 
   return NextResponse.json({ ok: true });
 }

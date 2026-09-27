@@ -1,5 +1,6 @@
 import { ObjectId, type Db } from "mongodb";
 import { embedUrlPattern, type VideoRef } from "@/lib/video-embed";
+import { isHttpUrl } from "@/lib/http-url";
 import {
   asFiniteLatitude,
   asFiniteLongitude,
@@ -47,14 +48,7 @@ export type ResolvedPeopleSelection = {
 
 export function asHttpUrl(v: unknown, max = 500): string {
   const raw = asString(v).trim().slice(0, max);
-  if (!raw) return "";
-
-  try {
-    const url = new URL(raw);
-    return url.protocol === "http:" || url.protocol === "https:" ? raw : "";
-  } catch {
-    return "";
-  }
+  return raw && isHttpUrl(raw) ? raw : "";
 }
 
 export function sanitizeAppearances(v: unknown): Appearance[] {

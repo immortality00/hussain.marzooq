@@ -23,6 +23,7 @@ const SECTION_IMAGES = [
   { slug: "home", field: "featuredCards", part: "featured card", list: true },
   { slug: "home", field: "creativeSystem", part: "creative system panel", list: false },
   { slug: "about", field: "disciplines", part: "discipline card", list: true },
+  { slug: "about", field: "profile", part: "search profile portrait", list: false },
 ] as const;
 
 export const SECTION_IMAGE_SLUGS = Array.from(new Set(SECTION_IMAGES.map((entry) => entry.slug)));

@@ -53,6 +53,19 @@ describe("usagesInDocs — labels and locations", () => {
     expect(usagesInDocs(docs({ sections: [about] }), ID).map((u) => u.label)).toEqual(["About — discipline card 1"]);
   });
 
+  test("the search profile portrait", () => {
+    const about = { slug: "about", data: { profile: { name: "Hussain Marzooq", image: image(URL) } } };
+    expect(usagesInDocs(docs({ sections: [about] }), ID)).toEqual([
+      {
+        label: "About — search profile portrait",
+        collection: "page_sections",
+        key: { slug: "about" },
+        path: "data.profile.image",
+        kind: "image",
+      },
+    ]);
+  });
+
   test("leftover keys from older page layouts never count — nothing renders them", () => {
     const home = { slug: "home", data: { trust: { image: image(URL) }, servicesPreview: { image: image(URL) } } };
     const about = { slug: "about", data: { approach: [{ image: image(URL) }] } };
