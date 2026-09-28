@@ -4,6 +4,7 @@ import { useSortableRow } from "@/components/admin/sortable/SortableList";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { Category, CategoryPatch } from "../lib/types";
+import { adminCheckboxClasses, adminInputClasses } from "@/components/admin/admin-input";
 
 export default function CategoryRow({
   category,
@@ -44,7 +45,7 @@ export default function CategoryRow({
         <input
           key={category.name}
           defaultValue={category.name}
-          className="w-full rounded-lg border bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-ring"
+          className={adminInputClasses("sm")}
           onBlur={async (e) => {
             const input = e.target;
             const v = input.value.trim();
@@ -61,7 +62,7 @@ export default function CategoryRow({
         <input
           key={category.slug}
           defaultValue={category.slug}
-          className="w-full rounded-lg border bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-ring"
+          className={adminInputClasses("sm")}
           onBlur={async (e) => {
             const input = e.target;
             const v = input.value.trim();
@@ -76,7 +77,7 @@ export default function CategoryRow({
 
       <div className="col-span-2">
         <label className="flex items-center gap-2">
-          <input type="checkbox" checked={category.isActive} onChange={(e) => onToggle(category.id, e.target.checked)} />
+          <input type="checkbox" className={adminCheckboxClasses()} checked={category.isActive} onChange={(e) => onToggle(category.id, e.target.checked)} />
           <span className="text-muted-foreground">{category.isActive ? "Yes" : "No"}</span>
         </label>
       </div>

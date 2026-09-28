@@ -1,10 +1,6 @@
 "use client";
 
-export function inputClasses(invalid = false) {
-  return `w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 ${
-    invalid ? "border-destructive focus:ring-destructive" : "focus:ring-ring"
-  }`;
-}
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 export function TextField({
   label,
@@ -25,7 +21,7 @@ export function TextField({
         value={value}
         aria-invalid={invalid || undefined}
         onChange={(e) => onChange(e.target.value)}
-        className={inputClasses(invalid)}
+        className={adminInputClasses()}
       />
     </div>
   );
@@ -49,7 +45,7 @@ export function TextAreaField({
         rows={rows}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={inputClasses()}
+        className={adminInputClasses()}
       />
     </div>
   );

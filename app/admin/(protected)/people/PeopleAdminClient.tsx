@@ -10,6 +10,7 @@ import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { usePeopleAdmin } from "@/hooks/usePeopleAdmin";
 import { AvatarUploadField } from "@/components/shared/upload/AvatarUploadField";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 function statusLabel(item: { isPublic: boolean; isPrivate: boolean }) {
   if (item.isPublic === false) return "Hidden";
@@ -125,7 +126,7 @@ export default function PeopleAdminClient() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search profiles..."
-              className="w-full max-w-xs rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className={adminInputClasses("md", "max-w-xs")}
             />
           </div>
 
@@ -228,7 +229,7 @@ export default function PeopleAdminClient() {
                 value={name}
                 disabled={actionBusy}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                className={adminInputClasses()}
                 placeholder="Person name"
               />
             </div>
@@ -239,7 +240,7 @@ export default function PeopleAdminClient() {
                 value={slug}
                 disabled={actionBusy}
                 onChange={(e) => setSlug(e.target.value)}
-                className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                className={adminInputClasses()}
                 placeholder="Optional"
               />
             </div>
@@ -269,7 +270,7 @@ export default function PeopleAdminClient() {
                 value={avatarUrl}
                 disabled={actionBusy}
                 onChange={(e) => setAvatarUrl(e.target.value)}
-                className="w-full rounded-xl border bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                className={adminInputClasses("md", "md:text-xs")}
                 placeholder="Avatar URL"
               />
 
@@ -286,7 +287,7 @@ export default function PeopleAdminClient() {
                 value={bio}
                 disabled={actionBusy}
                 onChange={(e) => setBio(e.target.value)}
-                className="h-32 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                className={adminInputClasses("md", "h-32")}
                 placeholder="Short public bio"
               />
             </div>
@@ -328,7 +329,7 @@ export default function PeopleAdminClient() {
                   disabled={actionBusy}
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="new-password"
-                  className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                  className={adminInputClasses()}
                   placeholder={editingHasPassword ? "Leave blank to keep current password" : "Set a password (min 8 characters)"}
                 />
                 <p className="text-xs text-muted-foreground">

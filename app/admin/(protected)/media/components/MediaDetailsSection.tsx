@@ -4,6 +4,7 @@ import { LocationSearch } from "@/components/testimonials/review-form/LocationSe
 import type { LocationOption } from "@/components/testimonials/review-form/types";
 import MediaPeoplePicker from "./MediaPeoplePicker";
 import TagMultiSelect from "./TagMultiSelect";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 export default function MediaDetailsSection({
   title,
@@ -50,7 +51,7 @@ export default function MediaDetailsSection({
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses()}
           />
         </div>
 
@@ -60,7 +61,7 @@ export default function MediaDetailsSection({
             value={year}
             onChange={(e) => setYear(e.target.value)}
             inputMode="numeric"
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses()}
             placeholder="2026"
           />
         </div>
@@ -70,7 +71,7 @@ export default function MediaDetailsSection({
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="h-24 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses("md", "h-24")}
           />
         </div>
 
@@ -87,7 +88,7 @@ export default function MediaDetailsSection({
           <input
             value={event}
             onChange={(e) => setEvent(e.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses()}
           />
         </div>
 

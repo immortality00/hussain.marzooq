@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import type { AdminActionFeedbackState } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { useAdminAction } from "@/hooks/useAdminAction";
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 import { useMediaUsageDialog } from "@/components/admin/media-usage/useMediaUsageDialog";
 import { fetchMediaItem, buildMediaPayload } from "./editor-actions";
@@ -30,7 +30,7 @@ export function useMediaEditorController() {
 
   const editor = useMediaEditorState();
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
-  const [banner, setBanner] = useState<AdminActionFeedbackState>(null);
+  const { feedback: banner, setFeedback: setBanner } = useAdminAction();
   const usage = useMediaUsageDialog(() => setBanner(null));
 
   const busy = busyAction !== null;
@@ -84,7 +84,7 @@ export function useMediaEditorController() {
     return () => {
       cancelled = true;
     };
-  }, [editId]);
+  }, [editId, setBanner]);
 
   async function save() {
     if (busyAction === "save") return;

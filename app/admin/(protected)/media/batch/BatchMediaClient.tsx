@@ -19,6 +19,7 @@ import { BatchLinkInput } from "./components/BatchLinkInput";
 import { BatchReviewList } from "./components/BatchReviewList";
 import { buildBatchPayload, createBatchItem } from "./lib/batch-save";
 import { batchItemLabel, useBatchMediaState } from "./lib/useBatchMediaState";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 const STEPS = ["Category", "Media", "Details", "Appearances", "Review"] as const;
 
@@ -217,7 +218,7 @@ export default function BatchMediaClient() {
                 <input
                   value={s.event}
                   onChange={(e) => s.setEvent(e.target.value)}
-                  className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  className={adminInputClasses()}
                 />
               </div>
               <div className="space-y-2">
@@ -227,7 +228,7 @@ export default function BatchMediaClient() {
                   onChange={(e) => s.setYear(e.target.value)}
                   inputMode="numeric"
                   placeholder="2026"
-                  className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                  className={adminInputClasses()}
                 />
               </div>
               <TagMultiSelect

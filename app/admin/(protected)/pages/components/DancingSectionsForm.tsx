@@ -4,6 +4,7 @@ import type { PageSectionsMap } from "@/lib/server/page-sections";
 import { TextField } from "@/components/admin/page-sections/fields";
 import { RepeatingListEditor } from "@/components/admin/page-sections/RepeatingListEditor";
 import { CtaFields } from "./CtaFields";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 export function DancingSectionsForm({
   data,
@@ -40,7 +41,7 @@ export function DancingSectionsForm({
                 value={url}
                 onChange={(e) => onItemChange(e.target.value)}
                 placeholder="https://www.instagram.com/p/…"
-                className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                className={adminInputClasses()}
               />
             )}
           />

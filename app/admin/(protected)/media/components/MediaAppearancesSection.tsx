@@ -5,6 +5,7 @@ import type { LocationOption } from "@/components/testimonials/review-form/types
 import type { Appearance } from "../lib/types";
 import { appearanceError } from "../lib/utils";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 function splitLocationLabel(label: string): { city: string; country: string } {
   const trimmed = label.trim();
@@ -101,9 +102,7 @@ export default function MediaAppearancesSection({
                       value={a.title}
                       onChange={(e) => updateAppearance(idx, { title: e.target.value })}
                       aria-invalid={titleError ? true : undefined}
-                      className={`w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring ${
-                        titleError ? "border-red-500/70 focus:ring-red-500" : ""
-                      }`}
+                      className={adminInputClasses()}
                       placeholder={a.kind === "exhibited" ? "e.g. Solo Exhibition" : "e.g. Featured in…"}
                     />
                     {titleError ? <span className="block text-xs text-red-500">{titleError}</span> : null}
@@ -113,7 +112,7 @@ export default function MediaAppearancesSection({
                     <input
                       value={a.venue}
                       onChange={(e) => updateAppearance(idx, { venue: e.target.value })}
-                      className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      className={adminInputClasses()}
                       placeholder="Gallery, museum, event…"
                     />
                   </label>
@@ -155,7 +154,7 @@ export default function MediaAppearancesSection({
                       type="month"
                       value={a.dateFrom}
                       onChange={(e) => updateAppearance(idx, { dateFrom: e.target.value })}
-                      className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      className={adminInputClasses()}
                     />
                   </label>
                   <label className="space-y-1.5">
@@ -164,19 +163,19 @@ export default function MediaAppearancesSection({
                       type="month"
                       value={a.dateTo}
                       onChange={(e) => updateAppearance(idx, { dateTo: e.target.value })}
-                      className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+                      className={adminInputClasses()}
                     />
                   </label>
                   <input
                     value={a.link}
                     onChange={(e) => updateAppearance(idx, { link: e.target.value })}
-                    className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring md:col-span-2"
+                    className={adminInputClasses("md", "md:col-span-2")}
                     placeholder="Link (optional)"
                   />
                   <textarea
                     value={a.notes}
                     onChange={(e) => updateAppearance(idx, { notes: e.target.value })}
-                    className="h-20 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring md:col-span-2"
+                    className={adminInputClasses("md", "h-20 md:col-span-2")}
                     placeholder="Notes"
                   />
                 </div>

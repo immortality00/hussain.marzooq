@@ -2,6 +2,7 @@
 
 import type { KeyboardEvent } from "react";
 import { AdminButton } from "@/components/admin/AdminButton";
+import { adminCheckboxClasses, adminInputClasses } from "@/components/admin/admin-input";
 
 export function AdminLoginForm({
   login,
@@ -22,7 +23,7 @@ export function AdminLoginForm({
         type="password"
         name="password"
         placeholder="Password"
-        className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+        className={adminInputClasses()}
         autoComplete="current-password"
         onKeyDown={submitOnEnter}
         required
@@ -31,7 +32,7 @@ export function AdminLoginForm({
       <input type="hidden" name="next" value={nextPath} />
 
       <label className="flex items-center gap-2 text-sm text-muted-foreground">
-        <input type="checkbox" name="remember" className="h-4 w-4 rounded border" />
+        <input type="checkbox" name="remember" className={adminCheckboxClasses()} />
         Remember this device
       </label>
 

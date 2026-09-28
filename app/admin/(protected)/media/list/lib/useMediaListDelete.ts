@@ -3,6 +3,8 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 import type { AdminActionFeedbackState } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
+import { bulkResultText } from "@/components/admin/bulk/bulk-result";
+import { errorMessage } from "@/hooks/useAdminAction";
 import {
   useMediaUsageDialog,
   type MediaUsageOption,
@@ -13,10 +15,6 @@ import { deleteWithUsageCheck, REMOVE_AND_DELETE } from "../../lib/media-usage-f
 import type { MediaItem } from "../components/MediaListItem";
 
 type Selection = { selectedIds: string[]; count: number; deselect: (ids: string[]) => void };
-
-function errorText(e: unknown, fallback: string) {
-  return e instanceof Error && e.message ? e.message : fallback;
-}
 
 export function useMediaListDelete({
   items,
@@ -46,7 +44,7 @@ export function useMediaListDelete({
       setItems((prev) => prev.filter((x) => x.id !== id));
       setBanner({ type: "ok", text: "✅ Media deleted." });
     } catch (e: unknown) {
-      setBanner({ type: "err", text: errorText(e, "Delete failed.") });
+      setBanner({ type: "err", text: errorMessage(e, "Delete failed.") });
     } finally {
       setDeletingId(null);
     }
@@ -83,18 +81,17 @@ export function useMediaListDelete({
         return;
       }
       setBanner({ type: "info", text: "Deleting selected media…" });
-      const { ok, okIds, failures } = await runBulkAction(plan.targets, (id) =>
+      const result = await runBulkAction(plan.targets, (id) =>
         deleteMediaItem(id, plan.removeFromPages.has(id))
       );
-      setItems((prev) => prev.filter((x) => !okIds.includes(x.id)));
+      setItems((prev) => prev.filter((x) => !result.okIds.includes(x.id)));
       const titleOf = (id: string) => items.find((item) => item.id === id)?.title || "Untitled";
-      const reasons = failures.map((f) => `“${titleOf(f.id)}”: ${f.message || "Delete failed."}`);
       setBanner({
-        type: failures.length ? "err" : "ok",
-        text: [`${ok} deleted${failures.length ? `, ${failures.length} failed` : ""}.`, ...reasons].join(" "),
+        type: result.failed ? "err" : "ok",
+        text: bulkResultText(result, "deleted", titleOf, "Delete failed."),
       });
     } catch (e: unknown) {
-      setBanner({ type: "err", text: errorText(e, "Delete failed.") });
+      setBanner({ type: "err", text: errorMessage(e, "Delete failed.") });
     } finally {
       setBulkBusy(false);
     }

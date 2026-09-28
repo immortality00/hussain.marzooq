@@ -6,10 +6,10 @@ import {
   type AdminActionFeedbackType,
 } from "@/components/admin/action-feedback/AdminActionFeedback";
 
-function getErrorMessage(e: unknown): string {
-  if (e instanceof Error) return e.message;
-  if (typeof e === "string") return e;
-  return "Action failed.";
+export function errorMessage(e: unknown, fallback = "Action failed."): string {
+  if (e instanceof Error && e.message) return e.message;
+  if (typeof e === "string" && e) return e;
+  return fallback;
 }
 
 export function useAdminAction(opts?: { autoDismiss?: boolean }) {
@@ -51,7 +51,7 @@ export function useAdminAction(opts?: { autoDismiss?: boolean }) {
       if (runOpts?.successText) notify("ok", runOpts.successText);
       return result;
     } catch (e) {
-      notify("err", getErrorMessage(e));
+      notify("err", errorMessage(e));
       return null;
     }
   }

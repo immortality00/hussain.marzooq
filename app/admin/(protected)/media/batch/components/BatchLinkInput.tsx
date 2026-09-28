@@ -4,6 +4,7 @@ import { useState } from "react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { parseVideoLink, videoEmbedSrc } from "@/lib/video-embed";
 import type { ResolvedVideoLink } from "../lib/useBatchMediaState";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 type Problem = { line: string; error: string };
 type Lookup = { ok: true; link: ResolvedVideoLink } | ({ ok: false } & Problem);
@@ -92,7 +93,7 @@ export function BatchLinkInput({
         onChange={(e) => setText(e.target.value)}
         rows={3}
         placeholder={"https://www.youtube.com/watch?v=…\nhttps://vimeo.com/…"}
-        className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+        className={adminInputClasses()}
       />
       <button
         type="button"

@@ -3,6 +3,7 @@
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { STATUSES } from "../lib/types";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 export default function InquiriesToolbar({
   statusFilter,
@@ -24,7 +25,7 @@ export default function InquiriesToolbar({
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-xl border bg-background px-3 py-2 text-sm"
+            className={adminInputClasses("md", "w-auto")}
           >
             <option value="">All active statuses</option>
             {STATUSES.map((s) => (

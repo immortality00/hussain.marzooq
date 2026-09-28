@@ -1,6 +1,7 @@
 "use client";
 
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 export default function CategoryFormCard({
   name,
@@ -27,13 +28,13 @@ export default function CategoryFormCard({
         <input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          className={adminInputClasses("md", "w-auto")}
           placeholder="Name"
         />
         <input
           value={slug}
           onChange={(e) => setSlug(e.target.value)}
-          className="rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          className={adminInputClasses("md", "w-auto")}
           placeholder="Slug"
         />
         <button

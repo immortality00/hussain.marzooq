@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { slugifyTag } from "@/lib/server/media-tags";
 import { createTagRequest } from "@/app/admin/(protected)/tags/lib/api";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 type TagOption = { slug: string; label: string };
 
@@ -111,7 +112,7 @@ export default function TagMultiSelect({
         <input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          className={adminInputClasses()}
           placeholder="Search or add a tag…"
         />
 

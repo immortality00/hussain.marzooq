@@ -2,6 +2,7 @@
 
 import { STATUSES, type Inquiry } from "../lib/types";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 export default function InquiryExpandedCard({
   inquiry,
@@ -74,7 +75,7 @@ export default function InquiryExpandedCard({
             onMouseDown={(e) => e.stopPropagation()}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={(e) => e.stopPropagation()}
-            className="mt-2 h-28 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses("md", "mt-2 h-28")}
           />
 
           <div className="mt-2 flex flex-wrap gap-2">

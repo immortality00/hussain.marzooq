@@ -9,6 +9,7 @@ import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import type { TestimonialItem } from "./components/TestimonialShared";
 import { ReviewRow } from "./components/TestimonialList";
 import { TestimonialInspectModal } from "./components/TestimonialForm";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 export default function TestimonialsAdminClient() {
   const [items, setItems] = useState<TestimonialItem[]>([]);
@@ -208,7 +209,7 @@ export default function TestimonialsAdminClient() {
             disabled={actionBusy}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name, email, review, location..."
-            className="w-full max-w-sm rounded-xl border border-border/60 bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+            className={adminInputClasses("md", "max-w-sm")}
           />
         </div>
 

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { BlogContent } from "@/components/blog/BlogContent";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 export function BlogMarkdownField({
   value,
@@ -48,7 +49,7 @@ export function BlogMarkdownField({
           onChange={(e) => onChange(e.target.value)}
           rows={20}
           placeholder="Write your post in Markdown…"
-          className="w-full rounded-xl border bg-background px-3 py-2 font-mono text-sm leading-6 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className={adminInputClasses("md", "font-mono leading-6")}
         />
       )}
     </div>

@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
+import { bulkResultText } from "@/components/admin/bulk/bulk-result";
+import { useAdminAction } from "@/hooks/useAdminAction";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import InquirySection from "./components/InquirySection";
@@ -15,12 +17,12 @@ import {
   patchInquiry,
   restoreInquiry,
 } from "./lib/api";
-import type { Banner, Inquiry } from "./lib/types";
+import type { Inquiry } from "./lib/types";
 
 export default function AdminInquiriesPage() {
   const [items, setItems] = useState<Inquiry[]>([]);
   const [expandedId, setExpandedId] = useState<string>("");
-  const [msg, setMsg] = useState<Banner>(null);
+  const { feedback: msg, setFeedback: setMsg, notify, run } = useAdminAction();
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [showArchivedSection, setShowArchivedSection] = useState(false);
   const [notesMap, setNotesMap] = useState<Record<string, string>>({});
@@ -29,7 +31,10 @@ export default function AdminInquiriesPage() {
   async function load() {
     setMsg(null);
 
-    const { raw } = await fetchInquiries(statusFilter);
+    const raw = await fetchInquiries(statusFilter).then(
+      (result) => result.raw,
+      (err: unknown) => ({ ok: false, error: err instanceof Error ? err.message : undefined }),
+    );
 
     if (!isApiResponse(raw) || raw.ok !== true || !Array.isArray(raw.items)) {
       const errText =
@@ -37,7 +42,7 @@ export default function AdminInquiriesPage() {
           ? raw.error
           : "Failed to load inquiries.";
 
-      setMsg({ type: "err", text: errText });
+      notify("err", errText);
       return;
     }
 
@@ -68,15 +73,19 @@ export default function AdminInquiriesPage() {
   const archivedSel = useBulkSelection(archived.map((x) => x.id));
   const [bulkBusy, setBulkBusy] = useState(false);
 
+  function nameOf(id: string) {
+    return items.find((it) => it.id === id)?.name || "Unnamed";
+  }
+
   async function bulkArchive() {
     if (bulkBusy || activeSel.count === 0) return;
     if (!confirm(`Archive ${activeSel.count} inquiry(ies)?`)) return;
     const ids = activeSel.selectedIds;
     setBulkBusy(true);
-    setMsg({ type: "info", text: "Archiving selected…" });
-    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => { await archiveInquiry(id); });
-    setItems((prev) => prev.map((p) => (okIds.includes(p.id) ? { ...p, isArchived: true } : p)));
-    setMsg({ type: failed ? "err" : "ok", text: `${ok} archived${failed ? `, ${failed} failed` : ""}.` });
+    notify("info", "Archiving selected…");
+    const result = await runBulkAction(ids, archiveInquiry);
+    setItems((prev) => prev.map((p) => (result.okIds.includes(p.id) ? { ...p, isArchived: true } : p)));
+    notify(result.failed ? "err" : "ok", bulkResultText(result, "archived", nameOf, "Archive failed."));
     activeSel.clear();
     setBulkBusy(false);
   }
@@ -85,10 +94,10 @@ export default function AdminInquiriesPage() {
     if (bulkBusy || archivedSel.count === 0) return;
     const ids = archivedSel.selectedIds;
     setBulkBusy(true);
-    setMsg({ type: "info", text: "Restoring selected…" });
-    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => { await restoreInquiry(id); });
-    setItems((prev) => prev.map((p) => (okIds.includes(p.id) ? { ...p, isArchived: false } : p)));
-    setMsg({ type: failed ? "err" : "ok", text: `${ok} restored${failed ? `, ${failed} failed` : ""}.` });
+    notify("info", "Restoring selected…");
+    const result = await runBulkAction(ids, restoreInquiry);
+    setItems((prev) => prev.map((p) => (result.okIds.includes(p.id) ? { ...p, isArchived: false } : p)));
+    notify(result.failed ? "err" : "ok", bulkResultText(result, "restored", nameOf, "Restore failed."));
     archivedSel.clear();
     setBulkBusy(false);
   }
@@ -99,10 +108,10 @@ export default function AdminInquiriesPage() {
     if (!confirm(`Delete ${sel.count} inquiry(ies) forever? This cannot be undone.`)) return;
     const ids = sel.selectedIds;
     setBulkBusy(true);
-    setMsg({ type: "info", text: "Deleting selected forever…" });
-    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => { await deleteInquiryForever(id); });
-    setItems((prev) => prev.filter((p) => !okIds.includes(p.id)));
-    setMsg({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} failed` : ""}.` });
+    notify("info", "Deleting selected forever…");
+    const result = await runBulkAction(ids, deleteInquiryForever);
+    setItems((prev) => prev.filter((p) => !result.okIds.includes(p.id)));
+    notify(result.failed ? "err" : "ok", bulkResultText(result, "deleted", nameOf, "Delete failed."));
     sel.clear();
     setBulkBusy(false);
   }
@@ -121,111 +130,77 @@ export default function AdminInquiriesPage() {
     setNotesMap((prev) => ({ ...prev, [id]: value }));
   }
 
-  async function handleArchive(id: string) {
-    if (actionBusy) return;
-
-    const ok = confirm("Archive this inquiry?");
-    if (!ok) return;
-
+  async function act(fn: () => Promise<void>, loadingText: string, successText: string) {
     setActionBusy(true);
-    setMsg({ type: "info", text: "Archiving inquiry…" });
+    await run(fn, { loadingText, successText });
+    setActionBusy(false);
+  }
 
-    try {
-      await archiveInquiry(id);
-      setItems((prev) => prev.map((p) => (p.id === id ? { ...p, isArchived: true } : p)));
+  function collapse(id: string) {
+    if (expandedId === id) setExpandedId("");
+  }
 
-      if (expandedId === id) {
-        setExpandedId("");
-      }
-
-      setMsg({ type: "ok", text: "✅ Archived." });
-    } catch (err: unknown) {
-      setMsg({ type: "err", text: err instanceof Error ? err.message : "Archive failed." });
-    } finally {
-      setActionBusy(false);
-    }
+  async function handleArchive(id: string) {
+    if (actionBusy || !confirm("Archive this inquiry?")) return;
+    await act(
+      async () => {
+        await archiveInquiry(id);
+        setItems((prev) => prev.map((p) => (p.id === id ? { ...p, isArchived: true } : p)));
+        collapse(id);
+      },
+      "Archiving inquiry…",
+      "✅ Archived.",
+    );
   }
 
   async function handleRestore(id: string) {
     if (actionBusy) return;
-
-    setActionBusy(true);
-    setMsg({ type: "info", text: "Restoring inquiry…" });
-
-    try {
-      await restoreInquiry(id);
-      setItems((prev) => prev.map((p) => (p.id === id ? { ...p, isArchived: false } : p)));
-      setMsg({ type: "ok", text: "✅ Restored." });
-    } catch (err: unknown) {
-      setMsg({ type: "err", text: err instanceof Error ? err.message : "Restore failed." });
-    } finally {
-      setActionBusy(false);
-    }
+    await act(
+      async () => {
+        await restoreInquiry(id);
+        setItems((prev) => prev.map((p) => (p.id === id ? { ...p, isArchived: false } : p)));
+      },
+      "Restoring inquiry…",
+      "✅ Restored.",
+    );
   }
 
   async function handleDeleteForever(id: string) {
-    if (actionBusy) return;
-
-    const ok = confirm("Delete forever? This cannot be undone.");
-    if (!ok) return;
-
-    setActionBusy(true);
-    setMsg({ type: "info", text: "Deleting inquiry forever…" });
-
-    try {
-      await deleteInquiryForever(id);
-      setItems((prev) => prev.filter((p) => p.id !== id));
-
-      if (expandedId === id) {
-        setExpandedId("");
-      }
-
-      setMsg({ type: "ok", text: "✅ Deleted forever." });
-    } catch (err: unknown) {
-      setMsg({ type: "err", text: err instanceof Error ? err.message : "Delete failed." });
-    } finally {
-      setActionBusy(false);
-    }
+    if (actionBusy || !confirm("Delete forever? This cannot be undone.")) return;
+    await act(
+      async () => {
+        await deleteInquiryForever(id);
+        setItems((prev) => prev.filter((p) => p.id !== id));
+        collapse(id);
+      },
+      "Deleting inquiry forever…",
+      "✅ Deleted forever.",
+    );
   }
 
   async function handleStatusChange(id: string, status: string) {
     if (actionBusy) return;
-
-    setActionBusy(true);
-    setMsg({ type: "info", text: "Updating inquiry status…" });
-
-    try {
-      await patchInquiry(id, { status });
-      setItems((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
-      setMsg({ type: "ok", text: "✅ Status updated." });
-    } catch (err: unknown) {
-      setMsg({
-        type: "err",
-        text: err instanceof Error ? err.message : "Status update failed.",
-      });
-    } finally {
-      setActionBusy(false);
-    }
+    await act(
+      async () => {
+        await patchInquiry(id, { status });
+        setItems((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
+      },
+      "Updating inquiry status…",
+      "✅ Status updated.",
+    );
   }
 
   async function handleSaveNotes(id: string) {
     if (actionBusy) return;
-
-    setActionBusy(true);
-    setMsg({ type: "info", text: "Saving inquiry notes…" });
-
-    try {
-      const value = notesMap[id] ?? "";
-
-      await patchInquiry(id, { adminNotes: value });
-
-      setItems((prev) => prev.map((p) => (p.id === id ? { ...p, adminNotes: value } : p)));
-      setMsg({ type: "ok", text: "✅ Notes saved." });
-    } catch (err: unknown) {
-      setMsg({ type: "err", text: err instanceof Error ? err.message : "Save notes failed." });
-    } finally {
-      setActionBusy(false);
-    }
+    const value = notesMap[id] ?? "";
+    await act(
+      async () => {
+        await patchInquiry(id, { adminNotes: value });
+        setItems((prev) => prev.map((p) => (p.id === id ? { ...p, adminNotes: value } : p)));
+      },
+      "Saving inquiry notes…",
+      "✅ Notes saved.",
+    );
   }
 
   return (

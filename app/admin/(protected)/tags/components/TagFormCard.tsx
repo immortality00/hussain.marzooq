@@ -2,6 +2,7 @@
 
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { NewTag } from "../lib/types";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 export default function TagFormCard({
   draft,
@@ -22,13 +23,13 @@ export default function TagFormCard({
         <input
           value={draft.label}
           onChange={(e) => setDraft({ ...draft, label: e.target.value })}
-          className="rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          className={adminInputClasses("md", "w-auto")}
           placeholder="Label (e.g. Fashion)"
         />
         <input
           value={draft.slug}
           onChange={(e) => setDraft({ ...draft, slug: e.target.value })}
-          className="rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          className={adminInputClasses("md", "w-auto")}
           placeholder="Slug (auto from label)"
         />
         <button
@@ -44,7 +45,7 @@ export default function TagFormCard({
       <textarea
         value={draft.description}
         onChange={(e) => setDraft({ ...draft, description: e.target.value })}
-        className="mt-3 h-16 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+        className={adminInputClasses("md", "mt-3 h-16")}
         placeholder="Description (optional — used on the subpage header)"
       />
     </div>

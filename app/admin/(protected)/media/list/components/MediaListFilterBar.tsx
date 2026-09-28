@@ -1,6 +1,7 @@
 import { SearchInput } from "@/components/search/SearchInput";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { MEDIA_CATEGORIES } from "../../lib/utils";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 type Props = {
   query: string;
@@ -40,14 +41,14 @@ export function MediaListFilterBar({
             onValueChange={onQueryChange}
             placeholder="Search title, tags, people..."
             wrapperClassName="md:col-span-2"
-            inputClassName="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            inputClassName={adminInputClasses()}
             clearButtonClassName={adminButtonClasses("default", "md", "mt-2")}
           />
 
           <select
             value={categoryFilter}
             onChange={(e) => onCategoryChange(e.target.value)}
-            className="rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses("md", "w-auto")}
           >
             <option value="">All categories</option>
             {MEDIA_CATEGORIES.map((c) => (
@@ -59,7 +60,7 @@ export function MediaListFilterBar({
             <select
               value={typeFilter}
               onChange={(e) => onTypeChange(e.target.value)}
-              className="rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className={adminInputClasses("md", "w-auto")}
             >
               <option value="">All types</option>
               <option value="image">Image</option>
@@ -70,7 +71,7 @@ export function MediaListFilterBar({
             <select
               value={visibilityFilter}
               onChange={(e) => onVisibilityChange(e.target.value)}
-              className="rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className={adminInputClasses("md", "w-auto")}
             >
               <option value="">All visibility</option>
               <option value="public">Public</option>

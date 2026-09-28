@@ -8,6 +8,7 @@ import { CloudinaryUploadButton } from "@/components/shared/upload/CloudinaryUpl
 import { useLatest } from "@/hooks/useLatest";
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 import type { Service, ServiceCategory } from "../lib/types";
+import { adminCheckboxClasses, adminInputClasses } from "@/components/admin/admin-input";
 
 export default function ServiceEditorModal({
   open,
@@ -92,7 +93,7 @@ export default function ServiceEditorModal({
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
+                className={adminInputClasses()}
               />
             </label>
 
@@ -101,7 +102,7 @@ export default function ServiceEditorModal({
               <input
                 value={slug}
                 onChange={(e) => setSlug(e.target.value)}
-                className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
+                className={adminInputClasses()}
               />
             </label>
 
@@ -110,7 +111,7 @@ export default function ServiceEditorModal({
               <select
                 value={categoryId}
                 onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
+                className={adminInputClasses()}
               >
                 {categoriesClean.map((c) => (
                   <option key={c.id} value={c.id} disabled={!c.isActive}>
@@ -125,7 +126,7 @@ export default function ServiceEditorModal({
               <input
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
+                className={adminInputClasses()}
               />
             </label>
 
@@ -135,7 +136,7 @@ export default function ServiceEditorModal({
                 value={startingPrice}
                 onChange={(e) => setStartingPrice(e.target.value.replace(/[^0-9.]/g, ""))}
                 inputMode="decimal"
-                className="w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
+                className={adminInputClasses()}
                 placeholder="Leave empty for null"
               />
             </label>
@@ -168,7 +169,7 @@ export default function ServiceEditorModal({
               <input
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
-                className="w-full rounded-xl border bg-background px-3 py-2 text-xs outline-none focus:ring-2 focus:ring-ring"
+                className={adminInputClasses("md", "md:text-xs")}
                 placeholder="or paste image URL"
               />
 
@@ -191,12 +192,12 @@ export default function ServiceEditorModal({
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="h-28 w-full rounded-xl border bg-background px-3 py-2 outline-none focus:ring-2 focus:ring-ring"
+                className={adminInputClasses("md", "h-28")}
               />
             </label>
 
             <label className="col-span-2 flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+              <input type="checkbox" className={adminCheckboxClasses()} checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
               Active
             </label>
           </div>

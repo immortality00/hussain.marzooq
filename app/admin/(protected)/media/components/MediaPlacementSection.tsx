@@ -2,6 +2,7 @@
 
 import type { MediaCategory } from "../lib/types";
 import { MEDIA_CATEGORIES } from "../lib/utils";
+import { adminCheckboxClasses } from "@/components/admin/admin-input";
 
 export default function MediaPlacementSection({
   primaryCategory,
@@ -77,6 +78,7 @@ export default function MediaPlacementSection({
       <label className="flex items-center gap-2 text-sm">
         <input
           type="checkbox"
+          className={adminCheckboxClasses()}
           checked={isPublic && !lockedByGallery}
           disabled={lockedByGallery}
           onChange={(e) => setIsPublic(e.target.checked)}

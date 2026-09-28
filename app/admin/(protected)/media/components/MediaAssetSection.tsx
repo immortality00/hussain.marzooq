@@ -7,6 +7,7 @@ import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { CloudinaryUploadButton } from "@/components/shared/upload/CloudinaryUploadButton";
 import { useLatest } from "@/hooks/useLatest";
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 export default function MediaAssetSection({
   mode,
@@ -129,7 +130,7 @@ export default function MediaAssetSection({
           <input
             value={embedUrl}
             onChange={(e) => setEmbedUrl(e.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses()}
             placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/..."
           />
         </div>

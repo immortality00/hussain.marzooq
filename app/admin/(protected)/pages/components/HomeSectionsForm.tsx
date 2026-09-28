@@ -2,19 +2,13 @@
 
 import type { HomeSections } from "@/lib/server/page-sections";
 import type { FeaturedCard, FeaturedCardSlug } from "@/lib/page-sections-shared";
-import { FEATURED_CARD_SLUGS, EMPTY_SECTION_IMAGE } from "@/lib/page-sections-shared";
+import { EMPTY_SECTION_IMAGE } from "@/lib/page-sections-shared";
+import { DISCIPLINES } from "@/lib/disciplines";
 import { TextField, TextAreaField } from "@/components/admin/page-sections/fields";
 import { RepeatingListEditor } from "@/components/admin/page-sections/RepeatingListEditor";
 import { ImageField } from "@/components/admin/media-picker/ImageField";
 import { CardImageWarning } from "./CardImageWarning";
-
-const SLUG_LABELS: Record<FeaturedCardSlug, string> = {
-  photography: "Photography",
-  videography: "Videography",
-  nft: "NFT",
-  dancing: "Dancing",
-  "web-development": "Web Development",
-};
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 function FeaturedCardFields({
   card,
@@ -28,11 +22,11 @@ function FeaturedCardFields({
       <select
         value={card.slug}
         onChange={(e) => onChange({ ...card, slug: e.target.value as FeaturedCardSlug })}
-        className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+        className={adminInputClasses()}
       >
-        {FEATURED_CARD_SLUGS.map((slug) => (
-          <option key={slug} value={slug}>
-            {SLUG_LABELS[slug]}
+        {DISCIPLINES.map((d) => (
+          <option key={d.slug} value={d.slug}>
+            {d.label}
           </option>
         ))}
       </select>
@@ -41,14 +35,14 @@ function FeaturedCardFields({
         value={card.title}
         onChange={(e) => onChange({ ...card, title: e.target.value })}
         placeholder="Title"
-        className="w-full rounded-xl border bg-background px-3 py-2 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-ring"
+        className={adminInputClasses("md", "font-medium")}
       />
       <textarea
         rows={2}
         value={card.description}
         onChange={(e) => onChange({ ...card, description: e.target.value })}
         placeholder="Description (optional)"
-        className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+        className={adminInputClasses()}
       />
       {!card.image.url && (
         <CardImageWarning message="No image — this card renders as a blank panel on the homepage." />

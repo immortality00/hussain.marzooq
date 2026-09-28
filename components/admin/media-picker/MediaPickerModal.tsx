@@ -5,6 +5,7 @@ import { PrivateGalleryMediaCard } from "@/components/admin/private-galleries/Pr
 import { usePrivateGalleryMediaPicker } from "@/components/admin/private-galleries/usePrivateGalleryMediaPicker";
 import type { SectionImage } from "@/lib/page-sections-shared";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 // Single-select image picker over the existing media library. Reuses the
 // private-galleries picker hook + card (both generic); picking an image stores
@@ -49,7 +50,7 @@ export function MediaPickerModal({
             onClear={picker.clearSearch}
             placeholder="Search title, tags, location, people, event..."
             wrapperClassName="flex w-full flex-wrap gap-2"
-            inputClassName="min-w-0 flex-1 rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            inputClassName={adminInputClasses("md", "w-auto min-w-0 flex-1")}
             clearButtonClassName={adminButtonClasses("default", "md")}
           />
         </div>

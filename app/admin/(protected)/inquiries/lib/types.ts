@@ -19,5 +19,3 @@ export type InquiryStatus = (typeof STATUSES)[number];
 export type ApiInquiriesResponse =
   | { ok: true; items: Inquiry[] }
   | { ok: false; error?: string };
-
-export type Banner = { type: "ok" | "err" | "info"; text: string } | null;

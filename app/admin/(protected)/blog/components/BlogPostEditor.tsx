@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { AdminToggle } from "@/components/admin/AdminToggle";
+import { adminInputClasses } from "@/components/admin/admin-input";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useAdminAction } from "@/hooks/useAdminAction";
 import { ImageField } from "@/components/admin/media-picker/ImageField";
@@ -14,8 +15,6 @@ import { TagsInput } from "./TagsInput";
 import { BlogMarkdownField } from "./BlogMarkdownField";
 import { createPost, updatePost, deletePost } from "../lib/api";
 import type { BlogCategoryOption, BlogPostFormValues } from "../lib/types";
-
-const INPUT = "w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 const EMPTY: BlogPostFormValues = {
   title: "",
@@ -127,7 +126,7 @@ export function BlogPostEditor({
         <div className="space-y-5">
           <label className="block space-y-1.5">
             <span className="text-xs text-muted-foreground">Title</span>
-            <input value={values.title} onChange={(e) => onTitleChange(e.target.value)} className={INPUT} />
+            <input value={values.title} onChange={(e) => onTitleChange(e.target.value)} className={adminInputClasses()} />
           </label>
 
           <label className="block space-y-1.5">
@@ -138,7 +137,7 @@ export function BlogPostEditor({
                 setSlugTouched(true);
                 set("slug", slugifyTag(e.target.value));
               }}
-              className={INPUT}
+              className={adminInputClasses()}
             />
           </label>
 
@@ -148,7 +147,7 @@ export function BlogPostEditor({
               value={values.excerpt}
               onChange={(e) => set("excerpt", e.target.value)}
               rows={2}
-              className={INPUT}
+              className={adminInputClasses()}
             />
           </label>
 
@@ -175,7 +174,7 @@ export function BlogPostEditor({
             <select
               value={values.categoryId}
               onChange={(e) => set("categoryId", e.target.value)}
-              className={INPUT}
+              className={adminInputClasses()}
             >
               <option value="">Uncategorized</option>
               {categories.map((c) => (

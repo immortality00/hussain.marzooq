@@ -64,15 +64,7 @@ export type TextCard = { title: string; text: string; image: SectionImage };
 export type DisciplineCard = TextCard & { slug?: DisciplineSlug };
 export type CtaCopy = { title: string; description: string; buttonLabel: string };
 
-export const FEATURED_CARD_SLUGS = [
-  "photography",
-  "videography",
-  "nft",
-  "dancing",
-  "web-development",
-] as const;
-
-export type FeaturedCardSlug = (typeof FEATURED_CARD_SLUGS)[number];
+export type FeaturedCardSlug = DisciplineSlug;
 export type FeaturedCard = {
   slug: FeaturedCardSlug;
   title: string;

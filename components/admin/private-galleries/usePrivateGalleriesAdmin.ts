@@ -1,17 +1,19 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
+import { bulkResultText } from "@/components/admin/bulk/bulk-result";
 import { useMediaUsageDialog } from "@/components/admin/media-usage/useMediaUsageDialog";
+import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
 import { saveGalleryWithUsageCheck } from "./save-gallery";
-import type { BannerState, GalleryItem } from "./types";
+import type { GalleryItem } from "./types";
 import { buildGalleryUrl, MIN_PRIVATE_GALLERY_PASSWORD_LENGTH } from "./helpers";
 
 export function usePrivateGalleriesAdmin() {
   const [view, setView] = useState<"list" | "form">("list");
   const [items, setItems] = useState<GalleryItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [banner, setBanner] = useState<BannerState | null>(null);
+  const { feedback: banner, setFeedback: setBanner, notify } = useAdminAction();
   const [editingId, setEditingId] = useState("");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -28,7 +30,7 @@ export function usePrivateGalleriesAdmin() {
 
   const actionBusy = saving || Boolean(deletingId);
 
-  async function loadGalleries() {
+  const loadGalleries = useCallback(async () => {
     setLoading(true);
     setBanner(null);
 
@@ -46,16 +48,16 @@ export function usePrivateGalleriesAdmin() {
       }
 
       setItems(data.items);
-    } catch {
-      setBanner({ type: "err", text: "Failed to load private galleries." });
+    } catch (e: unknown) {
+      notify("err", errorMessage(e, "Failed to load private galleries."));
     } finally {
       setLoading(false);
     }
-  }
+  }, [notify, setBanner]);
 
   useEffect(() => {
     void loadGalleries();
-  }, []);
+  }, [loadGalleries]);
 
   function resetForm() {
     setEditingId("");
@@ -103,8 +105,8 @@ export function usePrivateGalleriesAdmin() {
       setExpiresAtLocal(data.item.expiresAtLocal ?? "");
       setSelectedMediaIds(data.item.mediaIds ?? []);
       setView("form");
-    } catch {
-      setBanner({ type: "err", text: "Failed to load gallery." });
+    } catch (e: unknown) {
+      notify("err", errorMessage(e, "Failed to load gallery."));
     }
   }
 
@@ -181,8 +183,8 @@ export function usePrivateGalleriesAdmin() {
       setBanner({ type: "ok", text: editingId ? "✅ Gallery updated." : "✅ Gallery created." });
       await loadGalleries();
       backToList();
-    } catch {
-      setBanner({ type: "err", text: "Save failed." });
+    } catch (e: unknown) {
+      notify("err", errorMessage(e, "Save failed."));
     } finally {
       setSaving(false);
     }
@@ -212,8 +214,8 @@ export function usePrivateGalleriesAdmin() {
       setBanner({ type: "ok", text: "✅ Gallery deleted." });
 
       if (editingId === id) backToList();
-    } catch {
-      setBanner({ type: "err", text: "Delete failed." });
+    } catch (e: unknown) {
+      notify("err", errorMessage(e, "Delete failed."));
     } finally {
       setDeletingId(null);
     }
@@ -223,14 +225,15 @@ export function usePrivateGalleriesAdmin() {
     if (bulkBusy || ids.length === 0) return;
     if (!confirm(`Delete ${ids.length} private gallery(ies)?`)) return;
     setBulkBusy(true);
-    setBanner({ type: "info", text: "Deleting selected galleries…" });
-    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => {
+    notify("info", "Deleting selected galleries…");
+    const result = await runBulkAction(ids, async (id) => {
       const res = await fetch(`/api/private-galleries/${encodeURIComponent(id)}`, { method: "DELETE" });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean } | null;
-      if (!res.ok || !data?.ok) throw new Error();
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
+      if (!res.ok || !data?.ok) throw new Error(data?.error ?? "Delete failed.");
     });
-    setItems((prev) => prev.filter((item) => !okIds.includes(item.id)));
-    setBanner({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} failed` : ""}.` });
+    const titleOf = (id: string) => items.find((item) => item.id === id)?.title || "Untitled";
+    setItems((prev) => prev.filter((item) => !result.okIds.includes(item.id)));
+    notify(result.failed ? "err" : "ok", bulkResultText(result, "deleted", titleOf, "Delete failed."));
     setBulkBusy(false);
   }
 

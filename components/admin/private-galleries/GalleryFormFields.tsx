@@ -1,6 +1,7 @@
 "use client";
 
 import { isExpiredLocalDateTime } from "./helpers";
+import { adminCheckboxClasses, adminInputClasses } from "@/components/admin/admin-input";
 
 type GalleryFormFieldsProps = {
   editing: boolean;
@@ -43,7 +44,7 @@ export function GalleryFormFields({
           <input
             value={title}
             onChange={(event) => onTitleChange(event.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses()}
           />
         </div>
 
@@ -52,7 +53,7 @@ export function GalleryFormFields({
           <input
             value={slug}
             onChange={(event) => onSlugChange(event.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses()}
             placeholder="Optional"
           />
         </div>
@@ -62,7 +63,7 @@ export function GalleryFormFields({
           <textarea
             value={description}
             onChange={(event) => onDescriptionChange(event.target.value)}
-            className="min-h-28 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses("md", "min-h-28")}
           />
         </div>
 
@@ -74,7 +75,7 @@ export function GalleryFormFields({
             value={password}
             onChange={(event) => onPasswordChange(event.target.value)}
             type="password"
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses()}
           />
         </div>
 
@@ -91,13 +92,14 @@ export function GalleryFormFields({
             type="datetime-local"
             value={expiresAtLocal}
             onChange={(event) => onExpiresAtLocalChange(event.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses()}
           />
         </div>
 
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"
+            className={adminCheckboxClasses()}
             checked={isActive}
             onChange={(event) => onIsActiveChange(event.target.checked)}
           />

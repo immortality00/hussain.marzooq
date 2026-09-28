@@ -2,6 +2,7 @@
 
 import { useState, type KeyboardEvent } from "react";
 import { X } from "lucide-react";
+import { adminFieldShellClasses } from "@/components/admin/admin-input";
 
 export function TagsInput({
   value,
@@ -32,7 +33,7 @@ export function TagsInput({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl border bg-background px-3 py-2">
+    <div className={adminFieldShellClasses("flex flex-wrap items-center gap-2 px-3 py-2")}>
       {value.map((tag) => (
         <span
           key={tag}
@@ -55,7 +56,7 @@ export function TagsInput({
         onKeyDown={onKeyDown}
         onBlur={() => add(draft)}
         placeholder={value.length ? "" : "Add a tag and press Enter"}
-        className="min-w-32 flex-1 bg-transparent py-1 text-sm outline-none"
+        className="min-w-32 flex-1 bg-transparent py-1 outline-none"
       />
     </div>
   );

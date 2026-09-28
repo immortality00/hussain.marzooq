@@ -8,6 +8,7 @@ import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { useAdminAction } from "@/hooks/useAdminAction";
 import type { RemovalDecisionItem, RemovalRequestItem } from "@/lib/server/removal-requests";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 const MIN_PASSWORD_LENGTH = 8;
 
@@ -201,7 +202,7 @@ export default function RemovalRequestsClient({
                       if (e.key === "Enter") void confirmApprove(item.id);
                     }}
                     placeholder="New password"
-                    className="w-full max-w-sm rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                    className={adminInputClasses("md", "max-w-sm")}
                   />
                   <div className="flex gap-2 pt-1">
                     <button

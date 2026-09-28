@@ -7,6 +7,7 @@ import { EMPTY_SECTION_IMAGE, type DisciplineCard } from "@/lib/page-sections-sh
 import { DISCIPLINES, type DisciplineSlug } from "@/lib/disciplines";
 import { ImageField } from "@/components/admin/media-picker/ImageField";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 function SortableRow({
   id,
@@ -111,7 +112,7 @@ export function RepeatingCardListEditor({
                 slug: e.target.value ? (e.target.value as DisciplineSlug) : undefined,
               })
             }
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            className={adminInputClasses()}
           >
             <option value="">No link</option>
             {DISCIPLINES.map((d) => (
@@ -125,14 +126,14 @@ export function RepeatingCardListEditor({
             value={card.title}
             onChange={(e) => onItemChange({ ...card, title: e.target.value })}
             placeholder="Title"
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm font-medium focus:outline-none focus:ring-1 focus:ring-ring"
+            className={adminInputClasses("md", "font-medium")}
           />
           <textarea
             rows={2}
             value={card.text}
             onChange={(e) => onItemChange({ ...card, text: e.target.value })}
             placeholder="Text"
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            className={adminInputClasses()}
           />
           <ImageField
             label="Card image"

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { PersonProfileOption } from "../lib/types";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 type SelectedPerson = {
   id: string;
@@ -169,7 +170,7 @@ export default function MediaPeoplePicker({
         <input
           value={peopleQuery}
           onChange={(e) => setPeopleQuery(e.target.value)}
-          className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          className={adminInputClasses()}
           placeholder="Search existing people profiles..."
         />
 

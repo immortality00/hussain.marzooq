@@ -1,7 +1,8 @@
 "use client";
 
 import { UserRound } from "lucide-react";
-import { TextField, inputClasses } from "@/components/admin/page-sections/fields";
+import { TextField } from "@/components/admin/page-sections/fields";
+import { adminInputClasses } from "@/components/admin/admin-input";
 import { RepeatingListEditor } from "@/components/admin/page-sections/RepeatingListEditor";
 import { ImageField } from "@/components/admin/media-picker/ImageField";
 import {
@@ -52,7 +53,7 @@ export function SearchProfileGroup({
               aria-invalid={!linkIsValid(link) || undefined}
               onChange={(e) => onItemChange(e.target.value)}
               placeholder="https://www.instagram.com/…"
-              className={inputClasses(!linkIsValid(link))}
+              className={adminInputClasses()}
             />
           )}
         />

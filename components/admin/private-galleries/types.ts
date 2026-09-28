@@ -24,8 +24,3 @@ export type MediaItem = {
   event: string | null;
   createdAt?: string | null;
 };
-
-export type BannerState = {
-  type: "ok" | "err" | "info";
-  text: string;
-};

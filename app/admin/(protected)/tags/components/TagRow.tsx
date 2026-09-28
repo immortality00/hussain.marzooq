@@ -4,6 +4,7 @@ import { useSortableRow } from "@/components/admin/sortable/SortableList";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { Tag, TagPatch } from "../lib/types";
+import { adminCheckboxClasses, adminInputClasses } from "@/components/admin/admin-input";
 
 export default function TagRow({
   tag,
@@ -44,7 +45,7 @@ export default function TagRow({
           <div className="grid gap-2 sm:grid-cols-2">
             <input
               defaultValue={tag.label}
-              className="w-full rounded-lg border bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className={adminInputClasses("sm")}
               onBlur={(e) => {
                 const v = e.target.value.trim();
                 if (v && v !== tag.label) onEdit(tag.id, { label: v });
@@ -53,7 +54,7 @@ export default function TagRow({
             />
             <input
               defaultValue={tag.slug}
-              className="w-full rounded-lg border bg-background px-2 py-1 font-mono text-sm outline-none focus:ring-2 focus:ring-ring"
+              className={adminInputClasses("sm", "font-mono")}
               onBlur={(e) => {
                 const v = e.target.value.trim();
                 if (v && v !== tag.slug) onEdit(tag.id, { slug: v });
@@ -64,7 +65,7 @@ export default function TagRow({
 
           <input
             defaultValue={tag.description}
-            className="w-full rounded-lg border bg-background px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses("sm")}
             onBlur={(e) => {
               const v = e.target.value.trim();
               if (v !== tag.description) onEdit(tag.id, { description: v });
@@ -75,7 +76,7 @@ export default function TagRow({
 
         <div className="flex shrink-0 flex-col items-end gap-2">
           <label className="flex items-center gap-2 text-xs">
-            <input type="checkbox" checked={tag.isActive} onChange={(e) => onToggle(tag.id, e.target.checked)} />
+            <input type="checkbox" className={adminCheckboxClasses()} checked={tag.isActive} onChange={(e) => onToggle(tag.id, e.target.checked)} />
             <span className="text-muted-foreground">{tag.isActive ? "Active" : "Hidden"}</span>
           </label>
 

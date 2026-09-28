@@ -6,6 +6,7 @@ import { GripVertical } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { AdminToggle } from "@/components/admin/AdminToggle";
+import { adminInputClasses } from "@/components/admin/admin-input";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useAdminAction } from "@/hooks/useAdminAction";
 import { SortableList, useSortableRow } from "@/components/admin/sortable/SortableList";
@@ -19,8 +20,6 @@ type Category = {
   order: number;
   postsCount: number;
 };
-
-const INPUT = "rounded-xl border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 async function readError(res: Response): Promise<string> {
   const data = (await res.json().catch(() => null)) as { error?: string; postsCount?: number } | null;
@@ -161,7 +160,7 @@ export default function BlogCategoriesAdminClient({ initial }: { initial: Catego
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && create()}
             placeholder="Category name"
-            className={INPUT}
+            className={adminInputClasses("md", "w-auto")}
           />
         </label>
         <AdminButton variant="solid" onClick={create} disabled={busy}>
@@ -215,8 +214,8 @@ function CategoryRow({
         <GripVertical className="size-4" />
       </button>
 
-      <input value={name} onChange={(e) => setName(e.target.value)} className={INPUT + " min-w-40 flex-1"} />
-      <input value={slug} onChange={(e) => setSlug(e.target.value)} className={INPUT + " min-w-40 flex-1 font-mono text-xs"} />
+      <input value={name} onChange={(e) => setName(e.target.value)} className={adminInputClasses("md", "w-auto min-w-40 flex-1")} />
+      <input value={slug} onChange={(e) => setSlug(e.target.value)} className={adminInputClasses("md", "w-auto min-w-40 flex-1 font-mono md:text-xs")} />
 
       <span className="font-mono text-[11px] tabular-nums text-muted-foreground">{cat.postsCount}</span>
 

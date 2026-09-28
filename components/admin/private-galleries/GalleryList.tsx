@@ -3,6 +3,7 @@
 import { SearchInput } from "@/components/search/SearchInput";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { adminInputClasses } from "@/components/admin/admin-input";
 import type { GalleryItem } from "./types";
 import { getGalleryStatus } from "./helpers";
 
@@ -46,7 +47,7 @@ export function GalleryList({
           onClear={onSearchClear}
           placeholder="Search galleries..."
           wrapperClassName="flex w-full flex-wrap gap-2 md:w-auto"
-          inputClassName="w-full max-w-xs rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+          inputClassName={adminInputClasses("md", "max-w-xs")}
           clearButtonClassName={adminButtonClasses("default", "md")}
         />
       </div>

@@ -3,6 +3,7 @@
 import { Type, Search } from "lucide-react";
 import { GroupCard } from "./GroupCard";
 import { ImageField } from "@/components/admin/media-picker/ImageField";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 export type SeoDraft = {
   title: string;
@@ -39,7 +40,7 @@ export function SeoPageForm({
               type="text"
               value={draft.headerTitle}
               onChange={(e) => onChange("headerTitle", e.target.value)}
-              className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              className={adminInputClasses()}
             />
           </div>
           <div>
@@ -50,7 +51,7 @@ export function SeoPageForm({
               rows={3}
               value={draft.headerDescription}
               onChange={(e) => onChange("headerDescription", e.target.value)}
-              className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+              className={adminInputClasses()}
             />
           </div>
         </GroupCard>
@@ -72,7 +73,7 @@ export function SeoPageForm({
             type="text"
             value={draft.title}
             onChange={(e) => onChange("title", e.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            className={adminInputClasses()}
           />
         </div>
         <div>
@@ -83,7 +84,7 @@ export function SeoPageForm({
             rows={3}
             value={draft.description}
             onChange={(e) => onChange("description", e.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            className={adminInputClasses()}
           />
           <p className="mt-1 text-xs text-muted-foreground">
             {draft.description.length} chars — recommended 120–160

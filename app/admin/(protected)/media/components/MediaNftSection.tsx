@@ -1,6 +1,7 @@
 "use client";
 
 import type { CryptoCurrency, NftEditionType, NftStatus } from "../lib/types";
+import { adminFieldShellClasses, adminInputClasses } from "@/components/admin/admin-input";
 
 const currencies: Array<{ value: CryptoCurrency; label: string; symbol: string }> = [
   { value: "ETH", label: "ETH", symbol: "Ξ" },
@@ -60,12 +61,12 @@ export default function MediaNftSection({
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         <label className="space-y-2">
           <span className="text-sm font-medium">Price</span>
-          <div className="flex overflow-hidden rounded-xl border bg-background">
+          <div className={adminFieldShellClasses("flex overflow-hidden")}>
             <input
               value={nftPrice}
               onChange={(e) => setNftPrice(e.target.value)}
               inputMode="decimal"
-              className="w-full bg-transparent px-3 py-2 text-sm outline-none"
+              className="w-full bg-transparent px-3 py-2 outline-none"
               placeholder="0.35"
             />
             <div className="flex items-center border-l px-3 text-sm text-muted-foreground">
@@ -79,7 +80,7 @@ export default function MediaNftSection({
           <select
             value={nftCurrency}
             onChange={(e) => setNftCurrency((e.target.value as CryptoCurrency) || "ETH")}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses()}
           >
             {currencies.map((item) => (
               <option key={item.value} value={item.value}>
@@ -94,7 +95,7 @@ export default function MediaNftSection({
           <select
             value={nftEditionType}
             onChange={(e) => setNftEditionType((e.target.value as NftEditionType) || "1/1")}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses()}
           >
             <option value="1/1">Unique edition</option>
             <option value="limited">Limited edition</option>
@@ -107,7 +108,7 @@ export default function MediaNftSection({
           <select
             value={nftStatus}
             onChange={(e) => setNftStatus((e.target.value as NftStatus) || "available")}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses()}
           >
             <option value="available">Available</option>
             <option value="sold">Sold</option>
@@ -124,7 +125,7 @@ export default function MediaNftSection({
                 onChange={(e) => setNftEditionsTotal(e.target.value)}
                 inputMode="numeric"
                 disabled={isUnique}
-                className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                className={adminInputClasses()}
                 placeholder="1"
               />
             </label>
@@ -136,7 +137,7 @@ export default function MediaNftSection({
                 onChange={(e) => setNftEditionsRemaining(e.target.value)}
                 inputMode="numeric"
                 disabled={isSold || isUnique}
-                className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                className={adminInputClasses()}
                 placeholder="1"
               />
             </label>
@@ -148,7 +149,7 @@ export default function MediaNftSection({
               type="datetime-local"
               value={nftOpenUntil}
               onChange={(e) => setNftOpenUntil(e.target.value)}
-              className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className={adminInputClasses()}
             />
           </label>
         )}
@@ -158,7 +159,7 @@ export default function MediaNftSection({
           <input
             value={nftMarketplaceUrl}
             onChange={(e) => setNftMarketplaceUrl(e.target.value)}
-            className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+            className={adminInputClasses()}
             placeholder="https://exchange.art/... or other marketplace URL"
           />
         </label>

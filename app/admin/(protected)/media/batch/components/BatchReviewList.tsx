@@ -3,6 +3,7 @@
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { BatchItem } from "../lib/useBatchMediaState";
 import { BatchItemThumb } from "./BatchItemThumb";
+import { adminInputClasses } from "@/components/admin/admin-input";
 
 export function BatchReviewList({
   items,
@@ -24,15 +25,13 @@ export function BatchReviewList({
               onChange={(e) => updateItem(item.id, { title: e.target.value })}
               placeholder="Title"
               aria-invalid={!item.title.trim() ? true : undefined}
-              className={`w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring ${
-                !item.title.trim() ? "border-red-500/70 focus:ring-red-500" : ""
-              }`}
+              className={adminInputClasses()}
             />
             <textarea
               value={item.description}
               onChange={(e) => updateItem(item.id, { description: e.target.value })}
               placeholder="Description (optional)"
-              className="h-16 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
+              className={adminInputClasses("md", "h-16")}
             />
           </div>
           <button
