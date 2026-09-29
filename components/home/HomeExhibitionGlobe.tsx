@@ -3,14 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import MediaLightbox from "@/components/media/MediaLightbox";
+import { LoadingScreen } from "@/components/shared/LoadingScreen";
 import type { MediaItem } from "@/components/media/types";
 import { useModalNavbarLock } from "@/components/media/useModalNavbarLock";
 import type { ExhibitionCity } from "@/lib/server/public-media";
 import { ExhibitionCityIndex } from "./exhibition/ExhibitionCityIndex";
 import { ExhibitionCityModal } from "./exhibition/ExhibitionCityModal";
 
+const GLOBE_HEIGHT = "min-h-[380px] sm:min-h-[560px]";
+
 const ExhibitionGlobe = dynamic(() => import("./exhibition/ExhibitionGlobe"), {
   ssr: false,
+  loading: () => <LoadingScreen className={GLOBE_HEIGHT} />,
 });
 
 export function HomeExhibitionGlobe({ cities }: { cities: ExhibitionCity[] }) {
@@ -54,7 +58,7 @@ export function HomeExhibitionGlobe({ cities }: { cities: ExhibitionCity[] }) {
           />
         </div>
 
-        <div className="order-1 min-h-[380px] sm:min-h-[560px] lg:order-2">
+        <div className={`order-1 lg:order-2 ${GLOBE_HEIGHT}`}>
           {inView ? (
             <ExhibitionGlobe
               cities={cities}
@@ -62,7 +66,9 @@ export function HomeExhibitionGlobe({ cities }: { cities: ExhibitionCity[] }) {
               onHover={setHoveredId}
               onSelect={setOpenCity}
             />
-          ) : null}
+          ) : (
+            <LoadingScreen className={GLOBE_HEIGHT} />
+          )}
         </div>
       </div>
 

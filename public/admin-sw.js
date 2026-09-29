@@ -1,4 +1,58 @@
 const FALLBACK_URL = "/admin/dashboard";
+const LAUNCH_CACHE = "hm-admin-launch-v1";
+const LAUNCH_PATH = "/launch-screen";
+const MASK_PATH = "/brand/signature-mask.webp";
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(LAUNCH_CACHE)
+      .then((cache) => cache.addAll([LAUNCH_PATH, MASK_PATH]))
+      .catch(() => {})
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    (async () => {
+      const names = await caches.keys();
+      await Promise.all(
+        names
+          .filter((name) => name.startsWith("hm-admin-") && name !== LAUNCH_CACHE)
+          .map((name) => caches.delete(name))
+      );
+      await self.clients.claim();
+    })()
+  );
+});
+
+async function launchScreenOrNetwork(event) {
+  const windows = await self.clients.matchAll({ type: "window" });
+  if (windows.length === 0) {
+    const cache = await caches.open(LAUNCH_CACHE);
+    const screen = await cache.match(LAUNCH_PATH);
+    if (screen) {
+      event.waitUntil(cache.add(LAUNCH_PATH).catch(() => {}));
+      return screen;
+    }
+  }
+  return fetch(event.request);
+}
+
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) return;
+
+  if (request.mode === "navigate" && !request.referrer) {
+    event.respondWith(launchScreenOrNetwork(event));
+  } else if (url.pathname === MASK_PATH) {
+    event.respondWith(caches.match(MASK_PATH).then((hit) => hit || fetch(request)));
+  }
+});
 
 self.addEventListener("push", (event) => {
   let data = {};

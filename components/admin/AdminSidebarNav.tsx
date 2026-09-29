@@ -3,9 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { AdminNavBadge } from "./AdminNavBadge";
 import { NAV_GROUPS } from "./nav-groups";
 
-export function AdminSidebarNav({ notificationCount = 0 }: { notificationCount?: number }) {
+export function AdminSidebarNav({ notificationCount }: { notificationCount: Promise<number> }) {
   const pathname = usePathname();
 
   return (
@@ -18,7 +19,6 @@ export function AdminSidebarNav({ notificationCount = 0 }: { notificationCount?:
           {group.items.map((item) => {
             const active =
               pathname === item.href || pathname.startsWith(`${item.href}/`);
-            const badge = item.href === "/admin/dashboard" ? notificationCount : 0;
             return (
               <Link
                 key={item.href}
@@ -32,13 +32,8 @@ export function AdminSidebarNav({ notificationCount = 0 }: { notificationCount?:
                 )}
               >
                 <span>{item.label}</span>
-                {badge > 0 ? (
-                  <span
-                    aria-label={`${badge} pending`}
-                    className="inline-flex min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 font-mono text-[11px] font-semibold leading-none tabular-nums text-white"
-                  >
-                    {badge > 99 ? "99+" : badge}
-                  </span>
+                {item.href === "/admin/dashboard" ? (
+                  <AdminNavBadge count={notificationCount} />
                 ) : null}
               </Link>
             );

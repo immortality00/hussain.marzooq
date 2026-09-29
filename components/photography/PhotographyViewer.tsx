@@ -4,6 +4,7 @@ import { useState } from "react";
 import dynamic from "next/dynamic";
 import { usePersistedChoice } from "@/hooks/usePersistedChoice";
 import { SearchInput } from "@/components/search/SearchInput";
+import { LoadingScreen } from "@/components/shared/LoadingScreen";
 import { TagChipRow, type TagChip } from "@/components/media/TagChipRow";
 import MediaGridResults from "@/components/media/MediaGridResults";
 import MediaLightbox from "@/components/media/MediaLightbox";
@@ -19,11 +20,11 @@ import { CYLINDER_HEIGHT, HORIZONTAL_HEIGHT } from "./viewer-heights";
 
 const PhotographyCylinder = dynamic(() => import("./PhotographyCylinder"), {
   ssr: false,
-  loading: () => <div className={CYLINDER_HEIGHT} />,
+  loading: () => <LoadingScreen className={CYLINDER_HEIGHT} />,
 });
 const PhotographyHorizontal = dynamic(() => import("./PhotographyHorizontal"), {
   ssr: false,
-  loading: () => <div className={HORIZONTAL_HEIGHT} />,
+  loading: () => <LoadingScreen className={HORIZONTAL_HEIGHT} />,
 });
 
 export default function PhotographyViewer({

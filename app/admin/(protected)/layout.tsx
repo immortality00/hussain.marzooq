@@ -19,7 +19,7 @@ export default async function AdminProtectedLayout({
   const ok = await isAdminAuthedServer();
   if (!ok) redirect("/admin?signedout=signature");
 
-  const notificationCount = await getAdminNotificationCount();
+  const notificationCount = getAdminNotificationCount().catch(() => 0);
   scheduleUploadSweep();
 
   return (

@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import {
   createAdminSessionCookies,
+  isAdminAuthedServer,
   isAdminPasswordConfigured,
   verifyAdminPassword,
 } from "@/lib/auth/admin";
@@ -75,7 +76,7 @@ async function login(formData: FormData) {
 
   const cookieStore = await cookies();
 
-  for (const cookie of createAdminSessionCookies(adminCookieSecret, remember)) {
+  for (const cookie of await createAdminSessionCookies(adminCookieSecret, remember)) {
     cookieStore.set(cookie.name, cookie.value, cookie.options);
   }
 
@@ -90,7 +91,15 @@ export default async function AdminLoginPage({
   const params = await searchParams;
   const error = getSearchParamValue(params.error);
   const nextPath = getSearchParamValue(params.next);
-  const signedOut = SIGNED_OUT_REASONS[getSearchParamValue(params.signedout)];
+  const signedOutReason = getSearchParamValue(params.signedout);
+  const loggedOut = getSearchParamValue(params.loggedout) === "1";
+
+  if (!loggedOut && !signedOutReason && (await isAdminAuthedServer())) {
+    redirect(getSafeNextPath(nextPath));
+  }
+
+  const signedOut = SIGNED_OUT_REASONS[signedOutReason];
+  const notice = loggedOut ? "Logged out." : signedOut ? `Signed out: ${signedOut}.` : null;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
@@ -99,10 +108,8 @@ export default async function AdminLoginPage({
 
         <h1 className="mt-6 text-2xl font-semibold tracking-tight">Admin</h1>
 
-        {signedOut ? (
-          <div className="mt-6 rounded-2xl border p-4 text-sm text-muted-foreground">
-            Signed out: {signedOut}.
-          </div>
+        {notice ? (
+          <div className="mt-6 rounded-2xl border p-4 text-sm text-muted-foreground">{notice}</div>
         ) : null}
 
         {error === "wrong" ? (

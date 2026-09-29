@@ -3,20 +3,13 @@ import { cookies } from "next/headers";
 import {
   COOKIE_NAME,
   HINT_NAME,
-  SIG_NAME,
-  createSessionValue,
-  isSessionValueFresh,
-  parseSession,
-  safeEqual,
-  sessionCookieMaxAge,
-  shouldRenewSession,
+  issueSessionCookie,
+  readSessionCookie,
+  sessionCookieOptions,
+  type ParsedSession,
 } from "./session-token";
 
 const SCRYPT_KEYLEN = 64;
-
-function hmacHex(value: string, secret: string) {
-  return crypto.createHmac("sha256", secret).update(value).digest("hex");
-}
 
 function parseScryptHash(value: string) {
   const trimmed = value.trim();
@@ -54,51 +47,43 @@ export function isAdminPasswordConfigured() {
   return Boolean((process.env.ADMIN_PASSWORD_HASH ?? "").trim());
 }
 
-/** Builds the cookie pair for a newly authenticated admin session. */
-export function createAdminSessionCookies(
+/** Builds the cookies for a newly authenticated admin session. */
+export async function createAdminSessionCookies(
   secret: string,
   remember: boolean = false,
   startedAt?: number
 ) {
-  const value = createSessionValue(remember, Date.now(), startedAt);
-
-  const options = {
-    httpOnly: true as const,
-    sameSite: "lax" as const,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    maxAge: sessionCookieMaxAge(remember),
-  };
-
   return [
-    { name: COOKIE_NAME, value, options },
-    { name: SIG_NAME, value: hmacHex(value, secret), options },
-    { name: HINT_NAME, value: "1", options: { ...options, httpOnly: false } },
+    {
+      name: COOKIE_NAME,
+      value: await issueSessionCookie(secret, remember, startedAt),
+      options: sessionCookieOptions(remember),
+    },
+    { name: HINT_NAME, value: "1", options: sessionCookieOptions(remember, false) },
   ];
 }
 
-function verifyPair(value: string, signature: string): boolean {
+async function readAdminSession() {
   const secret = (process.env.ADMIN_COOKIE_SECRET ?? "").trim();
-  if (!secret || !value || !signature) return false;
-  if (!isSessionValueFresh(value)) return false;
+  if (!secret) return null;
 
-  return safeEqual(signature, hmacHex(value, secret));
+  const jar = await cookies();
+  const check = await readSessionCookie(jar.get(COOKIE_NAME)?.value ?? "", secret);
+  return check.ok ? { jar, secret, session: check.session, renew: check.renew } : null;
 }
 
 export async function isAdminAuthedServer(): Promise<boolean> {
-  const jar = await cookies();
-  return verifyPair(jar.get(COOKIE_NAME)?.value ?? "", jar.get(SIG_NAME)?.value ?? "");
+  return (await readAdminSession()) !== null;
 }
 
-async function renewAdminSessionIfStale() {
-  const secret = (process.env.ADMIN_COOKIE_SECRET ?? "").trim();
-  const jar = await cookies();
-  const value = jar.get(COOKIE_NAME)?.value ?? "";
-  const session = parseSession(value);
-  if (!secret || !session || !shouldRenewSession(value)) return;
-
+async function renewAdminSession(
+  jar: Awaited<ReturnType<typeof cookies>>,
+  secret: string,
+  session: ParsedSession
+) {
+  const fresh = await createAdminSessionCookies(secret, session.remember, session.startedAt);
   try {
-    for (const cookie of createAdminSessionCookies(secret, session.remember, session.startedAt)) {
+    for (const cookie of fresh) {
       jar.set(cookie.name, cookie.value, cookie.options);
     }
   } catch {
@@ -108,10 +93,10 @@ async function renewAdminSessionIfStale() {
 }
 
 export async function requireAdminOr401() {
-  const ok = await isAdminAuthedServer();
-  if (!ok) {
+  const auth = await readAdminSession();
+  if (!auth) {
     return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
-  await renewAdminSessionIfStale();
+  if (auth.renew) await renewAdminSession(auth.jar, auth.secret, auth.session);
   return null;
 }

@@ -405,6 +405,20 @@
     animation: preloader-spin 900ms linear infinite;
   }
 
+  .hm-spinner {
+    display: block;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in oklch, currentColor 20%, transparent);
+    border-top-color: color-mix(in oklch, currentColor 85%, transparent);
+    animation: preloader-spin 900ms linear infinite;
+  }
+
+  .hm-loading-line {
+    animation: hm-line-in 320ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+
   .grain-overlay {
     position: fixed;
     inset: 0;
@@ -420,6 +434,13 @@
 @keyframes preloader-spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+@keyframes hm-line-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
   }
 }
 
@@ -521,7 +542,9 @@
     animation: none;
   }
 
-  .preloader-spinner {
+  .preloader-spinner,
+  .hm-spinner,
+  .hm-loading-line {
     animation: none;
   }
 }

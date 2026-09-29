@@ -4,9 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { AdminNavBadge } from "./AdminNavBadge";
 import { NAV_GROUPS } from "./nav-groups";
 
-export function AdminMobileNav({ notificationCount = 0 }: { notificationCount?: number }) {
+export function AdminMobileNav({ notificationCount }: { notificationCount: Promise<number> }) {
   const pathname = usePathname();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
 
@@ -34,7 +35,6 @@ export function AdminMobileNav({ notificationCount = 0 }: { notificationCount?: 
             </div>
             <div className="grid gap-1">
               {openGroup.items.map((item) => {
-                const badge = item.href === "/admin/dashboard" ? notificationCount : 0;
                 return (
                   <Link
                     key={item.href}
@@ -49,13 +49,8 @@ export function AdminMobileNav({ notificationCount = 0 }: { notificationCount?: 
                     )}
                   >
                     <span>{item.label}</span>
-                    {badge > 0 ? (
-                      <span
-                        aria-label={`${badge} pending`}
-                        className="inline-flex min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 font-mono text-[11px] font-semibold leading-none tabular-nums text-white"
-                      >
-                        {badge > 99 ? "99+" : badge}
-                      </span>
+                    {item.href === "/admin/dashboard" ? (
+                      <AdminNavBadge count={notificationCount} />
                     ) : null}
                   </Link>
                 );
@@ -70,7 +65,6 @@ export function AdminMobileNav({ notificationCount = 0 }: { notificationCount?: 
           const Icon = group.icon;
           const isOpen = index === openIndex;
           const active = index === activeIndex;
-          const badge = group.label === "Overview" ? notificationCount : 0;
           return (
             <button
               key={group.label}
@@ -84,10 +78,8 @@ export function AdminMobileNav({ notificationCount = 0 }: { notificationCount?: 
             >
               <Icon className="h-5 w-5" />
               <span>{group.label}</span>
-              {badge > 0 ? (
-                <span className="absolute left-1/2 top-2 ml-2 inline-flex min-w-4 items-center justify-center rounded-full bg-destructive px-1 font-mono text-[10px] font-semibold leading-none text-white">
-                  {badge > 99 ? "99+" : badge}
-                </span>
+              {group.label === "Overview" ? (
+                <AdminNavBadge count={notificationCount} variant="tab" />
               ) : null}
             </button>
           );

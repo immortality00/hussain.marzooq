@@ -1,8 +1,11 @@
 "use client";
 
-import type { KeyboardEvent } from "react";
+import { useSyncExternalStore, type KeyboardEvent } from "react";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { adminCheckboxClasses, adminInputClasses } from "@/components/admin/admin-input";
+import { isStandalone } from "@/lib/client/push-support";
+
+const subscribeNever = () => () => {};
 
 export function AdminLoginForm({
   login,
@@ -11,6 +14,8 @@ export function AdminLoginForm({
   login: (formData: FormData) => void;
   nextPath: string;
 }) {
+  const installed = useSyncExternalStore(subscribeNever, isStandalone, () => false);
+
   function submitOnEnter(event: KeyboardEvent<HTMLInputElement>) {
     if (event.key !== "Enter") return;
     event.preventDefault();
@@ -32,7 +37,13 @@ export function AdminLoginForm({
       <input type="hidden" name="next" value={nextPath} />
 
       <label className="flex items-center gap-2 text-sm text-muted-foreground">
-        <input type="checkbox" name="remember" className={adminCheckboxClasses()} />
+        <input
+          key={installed ? "app" : "browser"}
+          type="checkbox"
+          name="remember"
+          defaultChecked={installed}
+          className={adminCheckboxClasses()}
+        />
         Remember this device
       </label>
 
