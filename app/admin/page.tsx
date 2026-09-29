@@ -1,5 +1,6 @@
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import {
   createAdminSessionCookies,
   isAdminAuthedServer,
@@ -69,10 +70,12 @@ async function login(formData: FormData) {
     redirect("/admin?error=wrong");
   }
 
-  await clearFixedWindowRateLimit({
-    bucket: "admin-login",
-    key: clientKey,
-  });
+  after(() =>
+    clearFixedWindowRateLimit({
+      bucket: "admin-login",
+      key: clientKey,
+    })
+  );
 
   const cookieStore = await cookies();
 

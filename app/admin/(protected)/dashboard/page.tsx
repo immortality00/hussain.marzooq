@@ -24,6 +24,7 @@ import { getAllPageSections, type HomeSections } from "@/lib/server/page-section
 import { getAdminDashboardStats } from "@/lib/server/admin-dashboard";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { PushNotificationsCard } from "@/components/admin/push/PushNotificationsCard";
+import { RefreshWhenStale } from "@/components/admin/RefreshWhenStale";
 import { getVapidPublicKey, listPushDevices } from "@/lib/server/push";
 import { PAGE_ROWS, pageNeedsImage } from "../pages/lib/rows";
 
@@ -77,6 +78,7 @@ export default async function AdminDashboard() {
 
   return (
     <div className="space-y-10">
+      <RefreshWhenStale renderedAt={stats.generatedAt} />
       <AdminPageHeader title="Dashboard" />
 
       <section className="overflow-hidden rounded-2xl border">

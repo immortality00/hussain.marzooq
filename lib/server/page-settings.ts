@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getDb } from "@/lib/server/db";
 import { EMPTY_SECTION_IMAGE, isSectionImage } from "@/lib/page-sections-shared";
 import type { SectionImage } from "@/lib/page-sections-shared";
@@ -47,7 +48,7 @@ export async function getBlogActive(): Promise<boolean> {
   }
 }
 
-export async function getAllPageSettings(): Promise<PageSettings[]> {
+export const getAllPageSettings = cache(async (): Promise<PageSettings[]> => {
   const SLUGS = ["photography", "videography", "nft", "dancing", "web-development", "blog"];
   try {
     const db = await getDb();
@@ -65,4 +66,4 @@ export async function getAllPageSettings(): Promise<PageSettings[]> {
   } catch {
     return SLUGS.map(defaultPageSettings);
   }
-}
+});

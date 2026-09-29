@@ -11,7 +11,7 @@ declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 
-const client = new MongoClient(uri);
+const client = new MongoClient(uri, { maxConnecting: 10 });
 const clientPromise =
   global._mongoClientPromise ?? (global._mongoClientPromise = client.connect());
 
