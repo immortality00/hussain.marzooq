@@ -11,6 +11,11 @@ import {
 
 // Edge runtime: Web Crypto only. Do not import node:crypto here.
 
+function isPageLoad(req: NextRequest) {
+  const mode = req.headers.get("sec-fetch-mode");
+  return !mode || mode === "navigate" || req.headers.get("sec-fetch-dest") === "document";
+}
+
 function isPublicAdminRoute(pathname: string) {
   return (
     pathname === "/admin" ||
@@ -55,7 +60,7 @@ export async function proxy(req: NextRequest) {
 
   console.warn(`[admin-auth] signed out on ${pathname}: ${auth.reason}`);
 
-  if ((req.headers.get("sec-fetch-mode") ?? "navigate") !== "navigate") {
+  if (!isPageLoad(req)) {
     return new NextResponse(null, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
 

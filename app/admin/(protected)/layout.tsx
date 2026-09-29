@@ -3,6 +3,7 @@ import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { AdminSidebarNav } from "@/components/admin/AdminSidebarNav";
 import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
+import { AdminServiceWorker } from "@/components/admin/AdminServiceWorker";
 import { AdminStickyRegion } from "@/components/admin/AdminStickyStack";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { getAdminNotificationCount } from "@/lib/server/admin-dashboard";
@@ -58,6 +59,7 @@ export default async function AdminProtectedLayout({
       </div>
 
       <AdminStickyRegion />
+      <AdminServiceWorker />
       <AdminMobileNav notificationCount={notificationCount} />
     </div>
   );

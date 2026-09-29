@@ -14,10 +14,14 @@ import {
 const SECRET = "proxy-test-secret";
 const DAY = 24 * 60 * 60 * 1000;
 
-function request(path: string, { cookie, fetchMode }: { cookie?: string; fetchMode?: string } = {}) {
+function request(
+  path: string,
+  { cookie, fetchMode, fetchDest }: { cookie?: string; fetchMode?: string; fetchDest?: string } = {}
+) {
   const headers = new Headers();
   if (cookie) headers.set("cookie", cookie);
   if (fetchMode) headers.set("sec-fetch-mode", fetchMode);
+  if (fetchDest) headers.set("sec-fetch-dest", fetchDest);
   return new NextRequest(`https://hussain-marzooq.com${path}`, { headers });
 }
 
@@ -51,6 +55,11 @@ describe("proxy", () => {
       request("/admin/inquiries", { fetchMode: "same-origin", cookie: `${COOKIE_NAME}=${forged}` })
     );
     expect(rejected.status).toBe(401);
+  });
+
+  it("treats a page the service worker fetches on the browser's behalf as a page load", async () => {
+    const res = await proxy(request("/admin/dashboard", { fetchMode: "same-origin", fetchDest: "document" }));
+    expect(res.status).toBe(307);
   });
 
   it("treats a request without fetch metadata as a page load", async () => {

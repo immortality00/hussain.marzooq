@@ -9,13 +9,14 @@ const STATIC_CACHE = "hm-admin-static-v1";
 const CURRENT_CACHES = [LAUNCH_CACHE, PAGE_CACHE, STATIC_CACHE];
 const STATIC_LIMIT = 300;
 
+let signedOutAt = 0;
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches
-      .open(LAUNCH_CACHE)
-      .then((cache) => cache.addAll([LAUNCH_PATH, MASK_PATH]))
-      .catch(() => {})
-      .then(() => self.skipWaiting())
+    Promise.allSettled([
+      caches.open(LAUNCH_CACHE).then((cache) => cache.addAll([LAUNCH_PATH, MASK_PATH])),
+      saveDashboard(false),
+    ]).then(() => self.skipWaiting())
   );
 });
 
@@ -33,11 +34,6 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-async function hasOpenWindow() {
-  const windows = await self.clients.matchAll({ type: "window" });
-  return windows.length > 0;
-}
-
 async function launchScreen(event) {
   const cache = await caches.open(LAUNCH_CACHE);
   const screen = await cache.match(LAUNCH_PATH);
@@ -53,11 +49,35 @@ function isPage(response) {
   );
 }
 
+async function keepCopy(response, requestedAt) {
+  if (requestedAt <= signedOutAt) return;
+  const cache = await caches.open(PAGE_CACHE);
+  await cache.put(DASHBOARD_PATH, response);
+}
+
+async function saveDashboard(onlyIfMissing) {
+  const requestedAt = Date.now();
+  const cache = await caches.open(PAGE_CACHE);
+  if (onlyIfMissing && (await cache.match(DASHBOARD_PATH))) return;
+  const response = await fetch(DASHBOARD_PATH);
+  if (isPage(response)) await keepCopy(response, requestedAt);
+}
+
+async function signOut(event) {
+  signedOutAt = Infinity;
+  try {
+    return await fetch(event.request);
+  } finally {
+    signedOutAt = Date.now();
+    await caches.delete(PAGE_CACHE);
+  }
+}
+
 function fetchDashboard(event) {
+  const requestedAt = Date.now();
   return fetch(event.request).then((response) => {
     if (isPage(response)) {
-      const copy = response.clone();
-      event.waitUntil(caches.open(PAGE_CACHE).then((cache) => cache.put(DASHBOARD_PATH, copy)));
+      event.waitUntil(keepCopy(response.clone(), requestedAt));
     } else if (response.type === "opaqueredirect") {
       event.waitUntil(caches.delete(PAGE_CACHE));
     }
@@ -66,7 +86,7 @@ function fetchDashboard(event) {
 }
 
 async function dashboard(event) {
-  if (!(await hasOpenWindow())) {
+  if (!event.request.referrer) {
     const cached = await (await caches.open(PAGE_CACHE)).match(DASHBOARD_PATH);
     if (cached) {
       event.waitUntil(fetchDashboard(event).catch(() => {}));
@@ -79,11 +99,7 @@ async function dashboard(event) {
 }
 
 async function launchScreenOrNetwork(event) {
-  if (!(await hasOpenWindow())) {
-    const screen = await launchScreen(event);
-    if (screen) return screen;
-  }
-  return fetch(event.request);
+  return (await launchScreen(event)) || fetch(event.request);
 }
 
 async function trimStatic(cache) {
@@ -105,6 +121,10 @@ async function staticAsset(event) {
   return response;
 }
 
+self.addEventListener("message", (event) => {
+  if (event.data === "save-dashboard") event.waitUntil(saveDashboard(true).catch(() => {}));
+});
+
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -112,7 +132,7 @@ self.addEventListener("fetch", (event) => {
 
   if (request.mode === "navigate") {
     if (request.method === "POST" && url.pathname === LOGOUT_PATH) {
-      event.waitUntil(caches.delete(PAGE_CACHE));
+      event.respondWith(signOut(event));
     } else if (request.method === "GET" && url.pathname === DASHBOARD_PATH) {
       event.respondWith(dashboard(event));
     } else if (request.method === "GET" && !request.referrer) {
