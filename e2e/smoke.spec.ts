@@ -131,6 +131,7 @@ test.describe("admin", () => {
 
     await password.fill("not-the-password");
     await login.click();
+    await expect(page.getByText("Wrong password.")).toBeVisible();
     await expect(page).not.toHaveURL(/\/admin\/dashboard/);
 
     await page.getByPlaceholder("Password").fill(E2E.adminPassword);

@@ -30,8 +30,12 @@ export function AdminLoginForm({
     event.currentTarget.form?.requestSubmit();
   }
 
+  function releaseFocus() {
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+  }
+
   return (
-    <form action={login} className="mt-8 space-y-4">
+    <form action={login} onSubmit={releaseFocus} className="mt-8 space-y-4">
       <input
         type="password"
         name="password"
