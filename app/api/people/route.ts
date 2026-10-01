@@ -1,5 +1,5 @@
 import { revalidatePath } from "next/cache";
-import { listAdminPeople } from "@/lib/server/admin-lists";
+import { listAdminPeople, toAdminPersonItem } from "@/lib/server/admin-lists";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
@@ -103,5 +103,10 @@ export async function POST(req: Request) {
 
   revalidatePath("/people", "layout");
 
-  return noStoreJson({ ok: true, id: String(result.insertedId), slug });
+  return noStoreJson({
+    ok: true,
+    id: String(result.insertedId),
+    slug,
+    item: toAdminPersonItem({ ...doc, _id: result.insertedId }),
+  });
 }

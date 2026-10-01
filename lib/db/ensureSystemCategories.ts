@@ -1,20 +1,22 @@
-import type { Db } from "mongodb";
+import type { Db, ObjectId } from "mongodb";
 
 /**
  * Ensures required system categories exist.
  * Currently: Others (slug: "others")
  * Also migrates legacy category "general" -> "others"
  */
-export async function ensureOthersCategory(db: Db) {
+export async function ensureOthersCategory(db: Db): Promise<{ _id: ObjectId; slug: string }> {
   const now = new Date();
 
   // 1) Ensure "others" exists
   const exists = await db.collection("service_categories").findOne(
     { slug: "others" },
-    { projection: { _id: 1 } }
+    { projection: { _id: 1, slug: 1 } }
   );
 
-  if (!exists) {
+  let others = exists ? { _id: exists._id, slug: typeof exists.slug === "string" ? exists.slug : "others" } : null;
+
+  if (!others) {
     // Put it first by default
     const min = await db
       .collection("service_categories")
@@ -28,7 +30,7 @@ export async function ensureOthersCategory(db: Db) {
         ? (min[0].order as number)
         : 0;
 
-    await db.collection("service_categories").insertOne({
+    const inserted = await db.collection("service_categories").insertOne({
       name: "Others",
       slug: "others",
       isActive: true,
@@ -37,6 +39,7 @@ export async function ensureOthersCategory(db: Db) {
       createdAt: now,
       updatedAt: now,
     });
+    others = { _id: inserted.insertedId, slug: "others" };
   }
 
   // 2) Migrate legacy "general" services to "others" — skip if none exist
@@ -50,4 +53,6 @@ export async function ensureOthersCategory(db: Db) {
       { $set: { category: "others", updatedAt: now } }
     );
   }
+
+  return others;
 }

@@ -17,7 +17,7 @@ export default function TagsTable({
   isSelected: (id: string) => boolean;
   onToggleSelect: (id: string) => void;
   onReorder: (activeId: string, overId: string) => void;
-  onEdit: (id: string, patch: TagPatch) => void;
+  onEdit: (id: string, patch: TagPatch) => Promise<boolean>;
   onToggle: (id: string, value: boolean) => void;
   onDelete: (tag: Tag) => void;
 }) {

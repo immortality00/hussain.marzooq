@@ -5,22 +5,14 @@ import {
   type AdminActionFeedbackState,
   type AdminActionFeedbackType,
 } from "@/components/admin/action-feedback/AdminActionFeedback";
-import { markAdminDataChanged } from "@/lib/client/admin-store";
 
-export function errorMessage(e: unknown, fallback = "Action failed."): string {
-  if (e instanceof Error && e.message) return e.message;
-  if (typeof e === "string" && e) return e;
-  return fallback;
-}
+import { errorMessage } from "@/lib/error-message";
+
+export { errorMessage };
 
 export function useAdminAction(opts?: { autoDismiss?: boolean; initial?: AdminActionFeedbackState }) {
-  const [feedback, setFeedbackState] = useState<AdminActionFeedbackState>(opts?.initial ?? null);
+  const [feedback, setFeedback] = useState<AdminActionFeedbackState>(opts?.initial ?? null);
   const timerRef = useRef<number | null>(null);
-
-  const setFeedback = useCallback((next: AdminActionFeedbackState) => {
-    if (next && next.type !== "info") markAdminDataChanged();
-    setFeedbackState(next);
-  }, []);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -54,7 +46,6 @@ export function useAdminAction(opts?: { autoDismiss?: boolean; initial?: AdminAc
     }
     try {
       const result = await fn();
-      markAdminDataChanged();
       if (runOpts?.successText) notify("ok", runOpts.successText);
       return result;
     } catch (e) {

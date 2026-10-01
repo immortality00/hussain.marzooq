@@ -2,6 +2,8 @@ import { revalidatePath, revalidateTag } from "next/cache";
 import { getDb } from "@/lib/server/db";
 import { TRANSITION_IMAGES_TAG } from "@/lib/server/public-media";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
+import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
+import { storedGallery } from "@/lib/server/admin-lists";
 import {
   asBooleanOrNull,
   asNullableString,
@@ -85,6 +87,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const found = await findByIdOr404(db, "private_galleries", oid);
   if (found instanceof Response) return found;
   const existing = found.doc;
+  if (changedSinceOpened(req, existing)) return recordChangedResponse(await storedGallery(db, oid));
 
   const expiryUnchanged = isSameExpiryInstant(
     expiresAtUtc,
@@ -159,7 +162,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   revalidatePath("/", "layout");
   revalidateTag(TRANSITION_IMAGES_TAG, "max");
 
-  return noStoreJson({ ok: true, slug });
+  return noStoreJson({ ok: true, slug, item: await storedGallery(db, oid) });
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {

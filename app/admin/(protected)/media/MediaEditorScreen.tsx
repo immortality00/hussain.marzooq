@@ -8,39 +8,36 @@ import { errorMessage } from "@/hooks/useAdminAction";
 import MediaEditorClient from "./MediaEditorClient";
 import { MediaOptionsProvider } from "./components/MediaOptionsContext";
 import { fetchMediaItem } from "./lib/editor-actions";
-import { foundMedia } from "./lib/found-media";
 import type { MediaItem } from "./lib/types";
 
-type Fetched = { id: string; item: MediaItem | null; error: string | null };
+type Opened = { item: MediaItem | null; error: string | null };
 
 export function MediaEditorScreen() {
   const editId = (useSearchParams().get("edit") ?? "").trim();
   const [media] = useAdminSlice("media");
-  const stored = editId ? ((media.full[editId] ?? foundMedia(editId)) as MediaItem | null) : null;
-  const [fetched, setFetched] = useState<Fetched | null>(null);
+  const [opened, setOpened] = useState<Opened | null>(() => {
+    if (!editId) return { item: null, error: null };
+    const stored = media.full[editId] as MediaItem | undefined;
+    return stored ? { item: stored, error: null } : null;
+  });
 
   useEffect(() => {
-    if (!editId || stored) return;
+    if (opened) return;
     let cancelled = false;
     fetchMediaItem(editId).then(
-      (item) => !cancelled && setFetched({ id: editId, item, error: null }),
-      (error: unknown) => !cancelled && setFetched({ id: editId, item: null, error: errorMessage(error, "Not found") })
+      (item) => !cancelled && setOpened({ item, error: null }),
+      (error: unknown) => !cancelled && setOpened({ item: null, error: errorMessage(error, "Not found") })
     );
     return () => {
       cancelled = true;
     };
-  }, [editId, stored]);
+  }, [editId, opened]);
 
-  const lookup = fetched?.id === editId ? fetched : null;
-  if (editId && !stored && !lookup) return <LoadingScreen className="min-h-[60dvh]" />;
+  if (!opened) return <LoadingScreen className="min-h-[60dvh]" />;
 
   return (
     <MediaOptionsProvider>
-      <MediaEditorClient
-        key={editId || "new"}
-        initialItem={stored ?? lookup?.item ?? null}
-        loadError={lookup?.error ?? null}
-      />
+      <MediaEditorClient initialItem={opened.item} loadError={opened.error} />
     </MediaOptionsProvider>
   );
 }

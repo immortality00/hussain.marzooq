@@ -1,4 +1,4 @@
-import clientPromise from "@/lib/mongodb";
+import { mongoClient } from "@/lib/mongodb";
 
 const DEFAULT_DB_NAME = "hm_visuals";
 
@@ -8,6 +8,6 @@ export function getDbName() {
 }
 
 export async function getDb() {
-  const client = await clientPromise;
+  const client = await mongoClient();
   return client.db(getDbName());
 }

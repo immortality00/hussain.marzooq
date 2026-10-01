@@ -1,19 +1,23 @@
 import { pushDeviceLabel } from "@/lib/client/push-support";
+import { adminWrite, type AdminSlice } from "@/lib/client/admin-store";
 
 const SW_URL = "/admin-sw.js";
 const SW_SCOPE = "/admin/";
 const PUSH_API = "/api/admin/push";
 const SAVED_KEY = "hm.admin.push.saved";
-export const RESAVE_AFTER_MS = 24 * 60 * 60 * 1000;
 
 type PushApiResponse = { error?: string; sent?: number; failed?: number } | null;
 
-async function pushRequest(method: "POST" | "DELETE", url: string, body?: unknown) {
-  const res = await fetch(url, {
-    method,
-    headers: body ? { "content-type": "application/json" } : undefined,
-    body: body ? JSON.stringify(body) : undefined,
-  });
+async function pushRequest(method: "POST" | "DELETE", url: string, touches: readonly AdminSlice[], body?: unknown) {
+  const res = await adminWrite(
+    url,
+    {
+      method,
+      headers: body ? { "content-type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    },
+    touches
+  );
   const json = (await res.json().catch(() => null)) as PushApiResponse;
   if (!res.ok) throw new Error(json?.error ?? `Request failed (${res.status}).`);
   return json;
@@ -23,17 +27,7 @@ export function registerAdminWorker() {
   return navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE });
 }
 
-export function pushDeviceNeedsSave(endpoint: string, saved: string | null, now = Date.now()) {
-  try {
-    const record = JSON.parse(saved ?? "null") as { endpoint?: unknown; at?: unknown } | null;
-    if (!record || record.endpoint !== endpoint || typeof record.at !== "number") return true;
-    return now - record.at >= RESAVE_AFTER_MS || now < record.at;
-  } catch {
-    return true;
-  }
-}
-
-function readSaved() {
+export function savedPushEndpoint() {
   try {
     return localStorage.getItem(SAVED_KEY);
   } catch {
@@ -49,16 +43,12 @@ function writeSaved(value: string | null) {
 }
 
 export async function savePushDevice(subscription: PushSubscription) {
-  const json = await pushRequest("POST", PUSH_API, {
+  const json = await pushRequest("POST", PUSH_API, ["push"], {
     subscription: subscription.toJSON(),
     label: pushDeviceLabel(),
   });
-  writeSaved(JSON.stringify({ endpoint: subscription.endpoint, at: Date.now() }));
+  writeSaved(subscription.endpoint);
   return json;
-}
-
-export async function resavePushDevice(subscription: PushSubscription) {
-  if (pushDeviceNeedsSave(subscription.endpoint, readSaved())) await savePushDevice(subscription);
 }
 
 export function forgetSavedPushDevice() {
@@ -66,9 +56,9 @@ export function forgetSavedPushDevice() {
 }
 
 export function deletePushDevice(target: { endpoint: string } | { id: string }) {
-  return pushRequest("DELETE", PUSH_API, target);
+  return pushRequest("DELETE", PUSH_API, ["push"], target);
 }
 
 export function sendTestPush() {
-  return pushRequest("POST", `${PUSH_API}/test`);
+  return pushRequest("POST", `${PUSH_API}/test`, []);
 }

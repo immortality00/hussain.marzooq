@@ -24,17 +24,11 @@ const INQUIRIES_RATE_LIMIT_MAX = 6;
 const INQUIRIES_DUPLICATE_WINDOW_MS = 2 * 60_000;
 const MINIMUM_FORM_TIME_MS = 2500;
 
-export async function GET(req: Request) {
+export async function GET() {
   const deny = await requireAdminOr401();
   if (deny) return deny;
 
-  const url = new URL(req.url);
-  const items = await listAdminInquiries({
-    status: (url.searchParams.get("status") ?? "").trim(),
-    all: url.searchParams.get("all") === "1",
-  });
-
-  return noStoreJson({ ok: true, items });
+  return noStoreJson({ ok: true, items: await listAdminInquiries() });
 }
 
 export async function POST(req: Request) {

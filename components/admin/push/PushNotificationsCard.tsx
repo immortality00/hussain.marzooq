@@ -59,7 +59,7 @@ export function PushNotificationsCard({
   publicKey: string | null;
   devices: PushDevice[];
 }) {
-  const push = useAdminPush(publicKey);
+  const push = useAdminPush(publicKey, devices);
 
   return (
     <section className="overflow-hidden rounded-2xl border">

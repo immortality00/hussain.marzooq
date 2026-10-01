@@ -4,6 +4,7 @@ import { SearchInput } from "@/components/search/SearchInput";
 import { PrivateGalleryMediaCard } from "@/components/admin/private-galleries/PrivateGalleryMediaCard";
 import { usePrivateGalleryMediaPicker } from "@/components/admin/private-galleries/usePrivateGalleryMediaPicker";
 import type { SectionImage } from "@/lib/page-sections-shared";
+import { isMediaAssetPath } from "@/lib/media-asset-path";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { adminInputClasses } from "@/components/admin/admin-input";
 
@@ -19,10 +20,12 @@ export function MediaPickerModal({
   onClose: () => void;
 }) {
   const picker = usePrivateGalleryMediaPicker([]);
-  const images = picker.items.filter((item) => item.type === "image" && item.secureUrl);
+  const images = picker.items.filter(
+    (item) => item.type === "image" && item.secureUrl && !isMediaAssetPath(item.secureUrl)
+  );
 
   function pickById(id: string) {
-    const item = picker.items.find((i) => i.id === id);
+    const item = images.find((i) => i.id === id);
     if (item?.secureUrl) {
       onPick({ url: item.secureUrl, publicId: "" });
       onClose();

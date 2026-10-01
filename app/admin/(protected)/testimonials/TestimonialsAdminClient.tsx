@@ -1,147 +1,34 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
-import { useAdminSlice } from "@/hooks/useAdminData";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
-import { useAdminAction } from "@/hooks/useAdminAction";
-import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
-import type { TestimonialItem } from "./components/TestimonialShared";
+import { useTestimonialActions } from "./lib/useTestimonialActions";
 import { ReviewRow } from "./components/TestimonialList";
 import { TestimonialInspectModal } from "./components/TestimonialForm";
 import { adminInputClasses } from "@/components/admin/admin-input";
 
 export default function TestimonialsAdminClient() {
-  const [items, setItems] = useAdminSlice("testimonials");
-  const { feedback: banner, setFeedback: setBanner } = useAdminAction();
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<"all" | "pending" | "approved">("all");
-  const [active, setActive] = useState<TestimonialItem | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
-
-  const actionBusy = Boolean(updatingId || deletingId);
-
-  const load = useCallback(async () => {
-    const res = await fetch("/api/testimonials", { cache: "no-store" }).catch(() => null);
-    const data = res?.ok ? ((await res.json().catch(() => null)) as { ok?: boolean; items?: TestimonialItem[] } | null) : null;
-    if (data?.ok && Array.isArray(data.items)) setItems(data.items);
-  }, [setItems]);
-
-  const stats = useMemo(() => {
-    const approved = items.filter((i) => i.isApproved).length;
-    const pending = items.length - approved;
-    const withPhotos = items.filter((i) => i.photoUrls.length > 0).length;
-    const locations = new Set(items.map((i) => i.location?.trim()).filter(Boolean)).size;
-    return { approved, pending, withPhotos, locations };
-  }, [items]);
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return items.filter((item) => {
-      if (status === "approved" && !item.isApproved) return false;
-      if (status === "pending" && item.isApproved) return false;
-      if (!q) return true;
-      return `${item.name} ${item.email ?? ""} ${item.about ?? ""} ${item.location ?? ""} ${item.review}`
-        .toLowerCase()
-        .includes(q);
-    });
-  }, [items, search, status]);
-
-  function updateItem(id: string, updates: Partial<TestimonialItem>) {
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...updates } : item)));
-    setActive((prev) => (prev?.id === id ? { ...prev, ...updates } : prev));
-  }
-
-  async function remove(id: string) {
-    if (actionBusy) return;
-    if (!confirm("Delete this submitted review permanently?")) return;
-    setBanner({ type: "info", text: "Deleting review and cleaning Cloudinary assets…" });
-    setDeletingId(id);
-    try {
-      const res = await fetch(`/api/testimonials/${encodeURIComponent(id)}`, { method: "DELETE" });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
-      if (!res.ok || !data?.ok) {
-        setBanner({ type: "err", text: data?.error ?? "Delete failed." });
-        return;
-      }
-      setItems((prev) => prev.filter((item) => item.id !== id));
-      setBanner({ type: "ok", text: "✅ Review deleted and Cloudinary cleanup finished." });
-      if (active?.id === id) setActive(null);
-    } catch {
-      setBanner({ type: "err", text: "Delete failed." });
-    } finally {
-      setDeletingId(null);
-    }
-  }
-
-  const selection = useBulkSelection(filtered.map((i) => i.id));
-  const [bulkBusy, setBulkBusy] = useState(false);
-
-  async function bulkSetApproval(value: boolean) {
-    if (bulkBusy || selection.count === 0) return;
-    const ids = selection.selectedIds;
-    setBulkBusy(true);
-    setBanner({ type: "info", text: value ? "Approving selected…" : "Unapproving selected…" });
-    const { ok, failed } = await runBulkAction(ids, async (id) => {
-      const res = await fetch(`/api/testimonials/${encodeURIComponent(id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isApproved: value }),
-      });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean };
-      if (!res.ok || !data?.ok) throw new Error();
-    });
-    selection.clear();
-    await load();
-    setBanner({
-      type: failed ? "err" : "ok",
-      text: `${ok} ${value ? "approved" : "moved to pending"}${failed ? `, ${failed} failed` : ""}.`,
-    });
-    setBulkBusy(false);
-  }
-
-  async function bulkDelete() {
-    if (bulkBusy || selection.count === 0) return;
-    if (!confirm(`Delete ${selection.count} review(s) permanently?`)) return;
-    const ids = selection.selectedIds;
-    setBulkBusy(true);
-    setBanner({ type: "info", text: "Deleting selected reviews…" });
-    const { ok, failed } = await runBulkAction(ids, async (id) => {
-      const res = await fetch(`/api/testimonials/${encodeURIComponent(id)}`, { method: "DELETE" });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean };
-      if (!res.ok || !data?.ok) throw new Error();
-    });
-    selection.clear();
-    await load();
-    setBanner({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} failed` : ""}.` });
-    setBulkBusy(false);
-  }
-
-  async function setApproval(id: string, value: boolean) {
-    if (actionBusy) return;
-    setUpdatingId(id);
-    setBanner({ type: "info", text: value ? "Approving review…" : "Moving review back to pending…" });
-    try {
-      const res = await fetch(`/api/testimonials/${encodeURIComponent(id)}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isApproved: value }),
-      });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
-      if (!res.ok || !data?.ok) {
-        setBanner({ type: "err", text: data?.error ?? "Update failed." });
-        return;
-      }
-      updateItem(id, { isApproved: value, updatedAt: new Date().toISOString() });
-      setBanner({ type: "ok", text: value ? "✅ Review approved." : "✅ Review moved back to pending." });
-    } catch {
-      setBanner({ type: "err", text: "Update failed." });
-    } finally {
-      setUpdatingId(null);
-    }
-  }
+  const {
+    filtered,
+    stats,
+    search,
+    setSearch,
+    status,
+    setStatus,
+    banner,
+    active,
+    setActive,
+    updatingId,
+    deletingId,
+    actionBusy,
+    selection,
+    bulkBusy,
+    setApproval,
+    remove,
+    bulkSetApproval,
+    bulkDelete,
+  } = useTestimonialActions();
 
   return (
     <main className="mx-auto max-w-7xl px-0 pb-10 pt-3 md:px-6 md:pt-4">

@@ -5,6 +5,7 @@ import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminAct
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
+import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 import MediaWizard from "./components/MediaWizard";
 import { useMediaEditorController } from "./lib/useMediaEditorController";
 import type { MediaItem } from "./lib/types";
@@ -22,6 +23,7 @@ export default function MediaEditorClient({
     busyAction,
     banner,
     usageDialog,
+    changedDialog,
     navigationCover,
     save,
     remove,
@@ -63,6 +65,7 @@ export default function MediaEditorClient({
       />
 
       <MediaUsageDialog dialog={usageDialog} />
+      <RecordChangedDialog dialog={changedDialog} />
       {navigationCover}
     </main>
   );

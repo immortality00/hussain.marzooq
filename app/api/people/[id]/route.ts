@@ -13,6 +13,8 @@ import {
   isAllowedCloudinaryUrl,
 } from "@/lib/server/cloudinary-assets";
 import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
+import { storedPerson } from "@/lib/server/admin-lists";
+import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 import {
   MIN_PERSON_PASSWORD_LENGTH,
   hashPassword,
@@ -119,10 +121,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       isPublic: 1,
       isPrivate: 1,
       removalApprovedAt: 1,
+      updatedAt: 1,
     },
   });
   if (found instanceof Response) return found;
   const existing = found.doc;
+  if (changedSinceOpened(req, existing)) return recordChangedResponse(await storedPerson(db, oid));
 
   const previousName = typeof existing.name === "string" ? existing.name : "";
   const previousSlug = typeof existing.slug === "string" ? existing.slug : null;
@@ -224,7 +228,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (previousSlug && previousSlug !== slug) revalidatePath(`/people/${previousSlug}`);
   revalidatePath(`/people/${slug}`);
 
-  return noStoreJson({ ok: true, slug });
+  return noStoreJson({ ok: true, slug, item: await storedPerson(db, oid) });
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {

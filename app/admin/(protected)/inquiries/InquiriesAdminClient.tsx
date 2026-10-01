@@ -163,6 +163,11 @@ export default function InquiriesAdminClient() {
       async () => {
         await patchInquiry(id, { adminNotes: value });
         setItems((prev) => prev.map((p) => (p.id === id ? { ...p, adminNotes: value } : p)));
+        setNotesMap((prev) => {
+          const drafts = { ...prev };
+          delete drafts[id];
+          return drafts;
+        });
       },
       "Saving inquiry notes…",
       "✅ Notes saved.",

@@ -4,6 +4,7 @@ import { getDb } from "@/lib/server/db";
 import { SITE_URL } from "@/lib/seo/site-url";
 import {
   cleanDeviceLabel,
+  endpointHash,
   type PushDevice,
   type PushPayload,
   type PushSubscriptionInput,
@@ -68,15 +69,18 @@ export async function removePushDevice(id: ObjectId) {
 export async function listPushDevices(): Promise<PushDevice[]> {
   const col = await subscriptions();
   const docs = await col
-    .find({}, { projection: { label: 1, createdAt: 1 } })
-    .sort({ createdAt: -1 })
+    .find({}, { projection: { label: 1, createdAt: 1, endpoint: 1 } })
+    .sort({ createdAt: -1, _id: -1 })
     .toArray();
 
-  return docs.map((doc) => ({
-    id: String(doc._id),
-    label: cleanDeviceLabel(doc.label),
-    createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : null,
-  }));
+  return Promise.all(
+    docs.map(async (doc) => ({
+      id: String(doc._id),
+      label: cleanDeviceLabel(doc.label),
+      createdAt: doc.createdAt instanceof Date ? doc.createdAt.toISOString() : null,
+      endpointHash: await endpointHash(typeof doc.endpoint === "string" ? doc.endpoint : ""),
+    }))
+  );
 }
 
 function isGone(error: unknown): boolean {

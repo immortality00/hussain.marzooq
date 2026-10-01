@@ -9,19 +9,10 @@ import { Navbar } from "@/components/site/Navbar";
 import { Preloader } from "@/components/site/Preloader";
 import { CustomCursor } from "@/components/site/CustomCursor";
 import { SiteAnalytics } from "@/components/site/Analytics";
-import { TransitionProvider } from "@/components/transitions/TransitionContext";
 
 gsap.registerPlugin(ScrollTrigger);
 
-export function AppShell({
-  children,
-  footer,
-  transitionImages,
-}: {
-  children: React.ReactNode;
-  footer?: React.ReactNode;
-  transitionImages?: string[];
-}) {
+export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdmin = pathname.startsWith("/admin");
 
@@ -63,12 +54,7 @@ export function AppShell({
       <CustomCursor />
       <SiteAnalytics />
       <Navbar />
-      <TransitionProvider images={transitionImages}>
-        <div id="main-content" tabIndex={-1} className="relative z-10">
-          {children}
-        </div>
-        {footer && <div className="relative z-10">{footer}</div>}
-      </TransitionProvider>
+      {children}
     </div>
   );
 }

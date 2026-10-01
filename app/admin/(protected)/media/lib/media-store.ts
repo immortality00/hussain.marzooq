@@ -18,5 +18,7 @@ export function withSavedMedia(media: MediaSlice, saved: SavedMedia, created: bo
 }
 
 export function withoutMedia(media: MediaSlice, ids: string[]): MediaSlice {
-  return { ...media, items: media.items.filter((entry) => !ids.includes(entry.id)) };
+  const full = { ...media.full };
+  for (const id of ids) delete full[id];
+  return { ...media, items: media.items.filter((entry) => !ids.includes(entry.id)), full };
 }

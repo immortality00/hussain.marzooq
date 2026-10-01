@@ -3,6 +3,8 @@ import { revalidatePath } from "next/cache";
 import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { ALL_SEO_SLUGS } from "@/lib/server/page-seo";
+import { storedPageSeo } from "@/lib/server/admin-pages";
+import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 
 const SLUG_TO_PATH: Record<string, string> = {
   home: "/",
@@ -44,6 +46,9 @@ export async function PATCH(
   if (typeof body.ogImageUrl === "string") update.ogImageUrl = body.ogImageUrl;
 
   const db = await getDb();
+  const existing = await db.collection("page_seo").findOne({ slug });
+  if (changedSinceOpened(req, existing)) return recordChangedResponse(await storedPageSeo(db, slug));
+
   await db
     .collection("page_seo")
     .updateOne({ slug }, { $set: update }, { upsert: true });
@@ -55,5 +60,5 @@ export async function PATCH(
     revalidatePath(path);
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, item: await storedPageSeo(db, slug) });
 }

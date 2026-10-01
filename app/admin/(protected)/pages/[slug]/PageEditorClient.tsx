@@ -6,6 +6,7 @@ import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { usePagesAdmin } from "../usePagesAdmin";
 import { PAGE_ROWS } from "../lib/rows";
 import { PageEditorBody } from "../components/PageEditorBody";
+import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 
 const EMPTY_SEO_DRAFT = {
   title: "",
@@ -48,6 +49,7 @@ export function PageEditorClient({ slug }: { slug: string }) {
         onSave={() => admin.save(row)}
         onDiscard={() => admin.discard(row)}
       />
+      <RecordChangedDialog dialog={admin.changedDialog} />
     </div>
   );
 }

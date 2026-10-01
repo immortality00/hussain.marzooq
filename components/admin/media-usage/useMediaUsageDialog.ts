@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback } from "react";
 import type { AdminButtonVariant } from "@/components/admin/AdminButton";
 import type { MediaInUse } from "@/lib/media-in-use";
+import { useChoice } from "@/components/admin/choice-dialog/useChoice";
 
 export type MediaUsageAnswer = "uncheck" | "replace" | "remove" | "cancel";
 
@@ -21,23 +22,8 @@ export type MediaUsageDialogState = {
 };
 
 export function useMediaUsageDialog(onAsk?: () => void) {
-  const [dialog, setDialog] = useState<MediaUsageDialogState | null>(null);
-
-  const ask = useCallback(
-    (items: MediaInUse[], options: MediaUsageOption[]) =>
-      new Promise<MediaUsageAnswer>((resolve) => {
-        onAsk?.();
-        setDialog({
-          items,
-          options,
-          answer: (answer) => {
-            setDialog(null);
-            resolve(answer);
-          },
-        });
-      }),
-    [onAsk]
-  );
-
+  const { pending, ask: askChoice } = useChoice<{ items: MediaInUse[]; options: MediaUsageOption[] }, MediaUsageAnswer>(onAsk);
+  const ask = useCallback<AskMediaUsage>((items, options) => askChoice({ items, options }), [askChoice]);
+  const dialog: MediaUsageDialogState | null = pending ? { ...pending.question, answer: pending.answer } : null;
   return { dialog, ask };
 }

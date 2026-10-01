@@ -10,7 +10,7 @@ export function DashboardCopy() {
   useEffect(() => {
     if (refreshedThisLaunch) return;
     refreshedThisLaunch = true;
-    void runAfterAdminData(() => keepDashboardCopy(true));
+    void runAfterAdminData(() => keepDashboardCopy());
   }, []);
 
   return null;

@@ -1,26 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { applyUpdate, useAdminSlice, type Update } from "@/hooks/useAdminData";
-import type { PageSettings } from "@/lib/server/page-settings";
-import type { PageSeo } from "@/lib/server/page-seo";
+import { useAdminSlice } from "@/hooks/useAdminData";
 import type { PageSectionsSlug, PageSectionsMap, HomeSections } from "@/lib/server/page-sections";
+import type { AdminPageSections, AdminPageSeo, AdminPageSettings } from "@/lib/server/admin-pages";
 import type { SectionImage } from "@/lib/page-sections-shared";
+import { adminWrite } from "@/lib/client/admin-store";
 import { useAdminAction } from "@/hooks/useAdminAction";
-import { markAdminDataChanged } from "@/lib/client/admin-store";
+import { useRecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 import type { SeoDraft } from "./components/SeoPageForm";
 import { pageNeedsImage, type PageRow } from "./lib/rows";
+import { savePageParts, saveSummary, type SavePart } from "./lib/page-save";
 
 type SettingsDraft = { isActive: boolean; cardImage: SectionImage };
 
-async function ensureOk(res: Response) {
-  if (res.ok) return;
-  const body: unknown = await res.json().catch(() => null);
-  const error = body && typeof body === "object" ? (body as { error?: unknown }).error : null;
-  throw new Error(typeof error === "string" ? error : "");
+function without<T>(record: Partial<Record<string, T>>, key: string) {
+  const next = { ...record };
+  delete next[key];
+  return next;
 }
 
-function seoDraftOf(seo: PageSeo): SeoDraft {
+function seoDraftOf(seo: AdminPageSeo): SeoDraft {
   return {
     title: seo.title,
     description: seo.description,
@@ -33,12 +33,16 @@ function seoDraftOf(seo: PageSeo): SeoDraft {
 export function usePagesAdmin() {
   const [pages, setPages] = useAdminSlice("pages");
   const { settings, seo, sections } = pages;
-  const setSettings = (update: Update<Record<string, PageSettings>>) =>
-    setPages((current) => ({ ...current, settings: applyUpdate(update, current.settings) }));
-  const setSeo = (update: Update<Record<string, PageSeo>>) =>
-    setPages((current) => ({ ...current, seo: applyUpdate(update, current.seo) }));
-  const setSections = (update: Update<Record<string, PageSectionsMap[PageSectionsSlug]>>) =>
-    setPages((current) => ({ ...current, sections: applyUpdate(update, current.sections) }));
+  const setSettings = (slug: string, item: AdminPageSettings) =>
+    setPages((current) => ({ ...current, settings: { ...current.settings, [slug]: item } }));
+  const setSeo = (slug: string, item: AdminPageSeo) =>
+    setPages((current) => ({ ...current, seo: { ...current.seo, [slug]: item } }));
+  const setSections = (slug: string, item: AdminPageSections) =>
+    setPages((current) => ({
+      ...current,
+      sections: { ...current.sections, [slug]: item.data },
+      sectionsUpdatedAt: { ...current.sectionsUpdatedAt, [slug]: item.updatedAt },
+    }));
 
   const [settingsDrafts, setSettingsDrafts] = useState<Partial<Record<string, SettingsDraft>>>({});
   const [seoDrafts, setSeoDrafts] = useState<Partial<Record<string, SeoDraft>>>({});
@@ -46,9 +50,11 @@ export function usePagesAdmin() {
     Partial<Record<string, PageSectionsMap[PageSectionsSlug]>>
   >({});
 
+  const [bases, setBases] = useState<Partial<Record<string, string | null>>>({});
   const [saving, setSaving] = useState<string | null>(null);
   const [togglingSlug, setTogglingSlug] = useState<string | null>(null);
   const { feedback, setFeedback } = useAdminAction();
+  const changed = useRecordChangedDialog(() => setFeedback(null));
 
   const hasUnsavedChanges =
     Object.keys(settingsDrafts).length > 0 ||
@@ -101,8 +107,13 @@ export function usePagesAdmin() {
     );
   }
 
+  function rememberBase(key: string, version: string | null) {
+    setBases((prev) => (key in prev ? prev : { ...prev, [key]: version }));
+  }
+
   function setVisibilityDraft(row: PageRow, next: boolean) {
     if (!row.settingsSlug) return;
+    rememberBase(`settings:${row.settingsSlug}`, settings[row.settingsSlug]!.updatedAt);
     setSettingsDrafts((prev) => ({
       ...prev,
       [row.settingsSlug!]: { ...settingsOf(row), isActive: next },
@@ -112,23 +123,26 @@ export function usePagesAdmin() {
   async function toggleVisibility(row: PageRow) {
     if (!row.settingsSlug || togglingSlug) return;
     const slug = row.settingsSlug;
-    const previous = settings[slug]!.isActive;
-    const next = !previous;
+    const previous = settings[slug]!;
 
     setTogglingSlug(slug);
-    setSettings((prev) => ({ ...prev, [slug]: { ...prev[slug]!, isActive: next } }));
+    setSettings(slug, { ...previous, isActive: !previous.isActive });
 
     try {
-      const res = await fetch(`/api/admin/page-settings/${slug}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ isActive: next }),
-      });
-      if (!res.ok) throw new Error();
-      setSettings((prev) => ({ ...prev, [slug]: { ...prev[slug]!, isActive: next } }));
-      markAdminDataChanged();
+      const res = await adminWrite(
+        `/api/admin/page-settings/${slug}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ isActive: !previous.isActive }),
+        },
+        ["pages"]
+      );
+      const data = (await res.json().catch(() => null)) as { item?: AdminPageSettings } | null;
+      if (!res.ok || !data?.item) throw new Error();
+      setSettings(slug, data.item);
     } catch {
-      setSettings((prev) => ({ ...prev, [slug]: { ...prev[slug]!, isActive: previous } }));
+      setSettings(slug, previous);
       setFeedback({ type: "err", text: `Could not update ${row.label}. Try again.` });
     } finally {
       setTogglingSlug(null);
@@ -137,6 +151,7 @@ export function usePagesAdmin() {
 
   function setCardImageDraft(row: PageRow, image: SectionImage) {
     if (!row.settingsSlug) return;
+    rememberBase(`settings:${row.settingsSlug}`, settings[row.settingsSlug]!.updatedAt);
     setSettingsDrafts((prev) => ({
       ...prev,
       [row.settingsSlug!]: { ...settingsOf(row), cardImage: image },
@@ -145,37 +160,29 @@ export function usePagesAdmin() {
 
   function setSeoField(row: PageRow, field: keyof SeoDraft, value: string) {
     if (!row.seoSlug) return;
+    rememberBase(`seo:${row.seoSlug}`, seo[row.seoSlug]!.updatedAt);
     setSeoDrafts((prev) => ({ ...prev, [row.seoSlug!]: { ...seoOf(row), [field]: value } }));
   }
 
   function setSectionsDraft(row: PageRow, data: PageSectionsMap[PageSectionsSlug]) {
     if (!row.sectionsSlug) return;
+    rememberBase(`sections:${row.sectionsSlug}`, pages.sectionsUpdatedAt[row.sectionsSlug] ?? null);
     setSectionsDrafts((prev) => ({ ...prev, [row.sectionsSlug!]: data }));
   }
 
-  function clearSettingsDraft(slug: string) {
-    setSettingsDrafts((prev) => {
-      const next = { ...prev };
-      delete next[slug];
-      return next;
-    });
-  }
-
-  function clearSeoDraft(slug: string) {
-    setSeoDrafts((prev) => {
-      const next = { ...prev };
-      delete next[slug];
-      return next;
-    });
-  }
-
-  function clearSectionsDraft(slug: string) {
-    setSectionsDrafts((prev) => {
-      const next = { ...prev };
-      delete next[slug];
-      return next;
-    });
-  }
+  const forgetBase = (key: string) => setBases((prev) => without(prev, key));
+  const clearSettingsDraft = (slug: string) => {
+    setSettingsDrafts((prev) => without(prev, slug));
+    forgetBase(`settings:${slug}`);
+  };
+  const clearSeoDraft = (slug: string) => {
+    setSeoDrafts((prev) => without(prev, slug));
+    forgetBase(`seo:${slug}`);
+  };
+  const clearSectionsDraft = (slug: string) => {
+    setSectionsDrafts((prev) => without(prev, slug));
+    forgetBase(`sections:${slug}`);
+  };
 
   function discard(row: PageRow) {
     if (row.settingsSlug) clearSettingsDraft(row.settingsSlug);
@@ -183,102 +190,58 @@ export function usePagesAdmin() {
     if (row.sectionsSlug) clearSectionsDraft(row.sectionsSlug);
   }
 
+  const baseOf = (key: string, current: string | null) => (key in bases ? (bases[key] ?? null) : current);
+
+  function partsOf(row: PageRow): SavePart<unknown>[] {
+    const parts: SavePart<never>[] = [];
+    const settingsSlug = row.settingsSlug;
+    if (settingsSlug && settingsDrafts[settingsSlug] !== undefined) {
+      const draft = settingsDrafts[settingsSlug]!;
+      parts.push({
+        label: "Visibility & image",
+        url: `/api/admin/page-settings/${settingsSlug}`,
+        body: { isActive: draft.isActive, cardImage: draft.cardImage },
+        version: baseOf(`settings:${settingsSlug}`, settings[settingsSlug]!.updatedAt),
+        apply: (item: AdminPageSettings) => {
+          setSettings(settingsSlug, item);
+          clearSettingsDraft(settingsSlug);
+        },
+      });
+    }
+    const seoSlug = row.seoSlug;
+    if (seoSlug && seoDrafts[seoSlug] !== undefined) {
+      parts.push({
+        label: "Search & social",
+        url: `/api/admin/page-seo/${seoSlug}`,
+        body: seoDrafts[seoSlug],
+        version: baseOf(`seo:${seoSlug}`, seo[seoSlug]!.updatedAt),
+        apply: (item: AdminPageSeo) => {
+          setSeo(seoSlug, item);
+          clearSeoDraft(seoSlug);
+        },
+      });
+    }
+    const sectionsSlug = row.sectionsSlug;
+    if (sectionsSlug && sectionsDrafts[sectionsSlug] !== undefined) {
+      parts.push({
+        label: "Sections",
+        url: `/api/admin/page-sections/${sectionsSlug}`,
+        body: sectionsDrafts[sectionsSlug],
+        version: baseOf(`sections:${sectionsSlug}`, pages.sectionsUpdatedAt[sectionsSlug] ?? null),
+        apply: (item: AdminPageSections) => {
+          setSections(sectionsSlug, item);
+          clearSectionsDraft(sectionsSlug);
+        },
+      });
+    }
+    return parts as SavePart<unknown>[];
+  }
+
   async function save(row: PageRow) {
     setSaving(row.key);
     setFeedback({ type: "info", text: `Saving ${row.label}…` });
-
-    type Part = { label: string; run: () => Promise<void> };
-    const parts: Part[] = [];
-
-    if (row.settingsSlug && settingsDrafts[row.settingsSlug] !== undefined) {
-      const slug = row.settingsSlug;
-      const draft = settingsDrafts[slug]!;
-      parts.push({
-        label: "Visibility & image",
-        run: async () => {
-          const res = await fetch(`/api/admin/page-settings/${slug}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ isActive: draft.isActive, cardImage: draft.cardImage }),
-          });
-          await ensureOk(res);
-          setSettings((prev) => ({
-            ...prev,
-            [slug]: { ...prev[slug]!, isActive: draft.isActive, cardImage: draft.cardImage },
-          }));
-          clearSettingsDraft(slug);
-        },
-      });
-    }
-
-    if (row.seoSlug && seoDrafts[row.seoSlug] !== undefined) {
-      const slug = row.seoSlug;
-      const draft = seoDrafts[slug]!;
-      parts.push({
-        label: "Search & social",
-        run: async () => {
-          const res = await fetch(`/api/admin/page-seo/${slug}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(draft),
-          });
-          await ensureOk(res);
-          setSeo((prev) => ({
-            ...prev,
-            [slug]: { ...prev[slug]!, ...draft, updatedAt: new Date() },
-          }));
-          clearSeoDraft(slug);
-        },
-      });
-    }
-
-    if (row.sectionsSlug && sectionsDrafts[row.sectionsSlug] !== undefined) {
-      const slug = row.sectionsSlug;
-      const draft = sectionsDrafts[slug]!;
-      parts.push({
-        label: "Sections",
-        run: async () => {
-          const res = await fetch(`/api/admin/page-sections/${slug}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(draft),
-          });
-          await ensureOk(res);
-          setSections((prev) => ({ ...prev, [slug]: draft }));
-          clearSectionsDraft(slug);
-        },
-      });
-    }
-
-    const results = await Promise.allSettled(parts.map((p) => p.run()));
-    const saved = parts.filter((_, i) => results[i]!.status === "fulfilled").map((p) => p.label);
-    const failed = parts.flatMap((p, i) => {
-      const result = results[i]!;
-      if (result.status === "fulfilled") return [];
-      const reason = result.reason instanceof Error ? result.reason.message : "";
-      return [reason ? `${p.label} (${reason})` : p.label];
-    });
-
-    if (failed.length === 0) {
-      setFeedback({
-        type: "ok",
-        text:
-          parts.length > 1
-            ? `${row.label} saved — ${saved.join(", ")}.`
-            : `${row.label} saved.`,
-      });
-    } else if (saved.length === 0) {
-      setFeedback({
-        type: "err",
-        text: `${row.label} not saved — ${failed.join(", ")} failed. Try again.`,
-      });
-    } else {
-      setFeedback({
-        type: "err",
-        text: `${row.label}: saved ${saved.join(", ")}; ${failed.join(", ")} failed. Try again.`,
-      });
-    }
-
+    const outcomes = await savePageParts(partsOf(row), changed.ask);
+    setFeedback(saveSummary(row.label, outcomes));
     setSaving(null);
   }
 
@@ -300,5 +263,6 @@ export function usePagesAdmin() {
     setSectionsDraft,
     discard,
     save,
+    changedDialog: changed.dialog,
   };
 }

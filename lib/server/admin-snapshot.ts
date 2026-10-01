@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
+import { ADMIN_BUILD, pendingCount } from "@/lib/admin-data";
 import { getDb } from "./db";
-import { getAdminDashboardStats, getAdminNotificationCount } from "./admin-dashboard";
+import { getAdminDashboardStats } from "./admin-dashboard";
 import { listAdminBlogCategories, listAdminMediaTags, listAdminServiceCatalog } from "./admin-catalog";
 import {
   listAdminInquiries,
@@ -9,30 +10,16 @@ import {
   listAdminTestimonials,
 } from "./admin-lists";
 import { listAdminMediaWithItems } from "./admin-media";
-import { getAllPageSettings } from "./page-settings";
-import { getAllPageSeo } from "./page-seo";
-import { getAllPageSections } from "./page-sections";
+import { loadAdminPages } from "./admin-pages";
 import { getVapidPublicKey, listPushDevices } from "./push";
 import { getRemovalRequestHistory, getRemovalRequestQueue } from "./removal-requests";
 import { pageFlags } from "@/app/admin/(protected)/pages/lib/rows";
-import { loadBlogList, loadCategoryOptions, loadPostForms } from "@/app/admin/(protected)/blog/lib/server";
+import { loadAdminBlog } from "@/app/admin/(protected)/blog/lib/server";
 
-export const MEDIA_PAGE_SIZE = 60;
-
-async function loadPages() {
-  const [settings, seo, sections] = await Promise.all([getAllPageSettings(), getAllPageSeo(), getAllPageSections()]);
-  return {
-    settings: Object.fromEntries(settings.map((s) => [s.slug, s])),
-    seo: Object.fromEntries(seo.map((s) => [s.slug, s])),
-    sections: Object.fromEntries(sections.map((s) => [s.slug, s.data])),
-  };
-}
-
-export async function buildAdminSnapshot() {
+export async function buildAdminSnapshot({ mediaCount }: { mediaCount: number }) {
   const db = await getDb();
   const [
     stats,
-    notificationCount,
     pages,
     pushDevices,
     inquiries,
@@ -41,27 +28,22 @@ export async function buildAdminSnapshot() {
     galleries,
     media,
     mediaTags,
-    blogPosts,
-    blogForms,
-    blogCategoryOptions,
+    blog,
     blogCategories,
     serviceCatalog,
     removalItems,
     removalHistory,
   ] = await Promise.all([
     getAdminDashboardStats(),
-    getAdminNotificationCount(),
-    loadPages(),
+    loadAdminPages(),
     listPushDevices(),
-    listAdminInquiries({ all: true }),
+    listAdminInquiries(),
     listAdminTestimonials(),
     listAdminPeople(),
     listAdminPrivateGalleries(),
-    listAdminMediaWithItems(new URLSearchParams({ limit: String(MEDIA_PAGE_SIZE) })),
+    listAdminMediaWithItems(new URLSearchParams({ limit: String(mediaCount) })),
     listAdminMediaTags(db),
-    loadBlogList(),
-    loadPostForms(),
-    loadCategoryOptions(),
+    loadAdminBlog(),
     listAdminBlogCategories(db),
     listAdminServiceCatalog(db),
     getRemovalRequestQueue(),
@@ -69,8 +51,9 @@ export async function buildAdminSnapshot() {
   ]);
 
   return {
+    build: ADMIN_BUILD,
     dashboard: { stats, ...pageFlags(pages) },
-    notificationCount,
+    notificationCount: pendingCount(stats),
     push: { publicKey: getVapidPublicKey(), devices: pushDevices },
     pages,
     inquiries,
@@ -79,7 +62,7 @@ export async function buildAdminSnapshot() {
     galleries,
     media,
     mediaTags,
-    blog: { posts: blogPosts, forms: blogForms, categoryOptions: blogCategoryOptions },
+    blog,
     blogCategories,
     services: serviceCatalog.services,
     serviceCategories: serviceCatalog.categories,

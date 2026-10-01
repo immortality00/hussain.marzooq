@@ -7,7 +7,7 @@ export type PageSeo = {
   headerTitle: string;
   headerDescription: string;
   ogImageUrl: string;
-  updatedAt: Date;
+  updatedAt: Date | null;
 };
 
 type SeoDefaults = Pick<
@@ -176,69 +176,43 @@ const DEFAULTS: Record<string, SeoDefaults> = {
 
 export const ALL_SEO_SLUGS = Object.keys(DEFAULTS);
 
-export async function getPageSeo(slug: string): Promise<PageSeo> {
-  const defaults = DEFAULTS[slug] ?? {
-    title: "Hussain.Art",
-    description: "",
-    headerTitle: "Hussain.Art",
-    headerDescription: "",
+const FALLBACK_SEO: SeoDefaults = {
+  title: "Hussain.Art",
+  description: "",
+  headerTitle: "Hussain.Art",
+  headerDescription: "",
+};
+
+export function pageSeoOf(slug: string, doc: Record<string, unknown> | null | undefined): PageSeo {
+  const defaults = DEFAULTS[slug] ?? FALLBACK_SEO;
+  return {
+    slug,
+    title: typeof doc?.title === "string" && doc.title ? doc.title : defaults.title,
+    description: typeof doc?.description === "string" ? doc.description : defaults.description,
+    headerTitle:
+      typeof doc?.headerTitle === "string" && doc.headerTitle ? doc.headerTitle : defaults.headerTitle,
+    headerDescription:
+      typeof doc?.headerDescription === "string" ? doc.headerDescription : defaults.headerDescription,
+    ogImageUrl: typeof doc?.ogImageUrl === "string" ? doc.ogImageUrl : "",
+    updatedAt: doc?.updatedAt instanceof Date ? doc.updatedAt : null,
   };
+}
+
+export async function getPageSeo(slug: string): Promise<PageSeo> {
   try {
     const db = await getDb();
-    const doc = await db.collection("page_seo").findOne({ slug });
-    return {
-      slug,
-      title: typeof doc?.title === "string" && doc.title ? doc.title : defaults.title,
-      description: typeof doc?.description === "string" ? doc.description : defaults.description,
-      headerTitle:
-        typeof doc?.headerTitle === "string" && doc.headerTitle
-          ? doc.headerTitle
-          : defaults.headerTitle,
-      headerDescription:
-        typeof doc?.headerDescription === "string"
-          ? doc.headerDescription
-          : defaults.headerDescription,
-      ogImageUrl: typeof doc?.ogImageUrl === "string" ? doc.ogImageUrl : "",
-      updatedAt: doc?.updatedAt instanceof Date ? doc.updatedAt : new Date(),
-    };
+    return pageSeoOf(slug, await db.collection("page_seo").findOne({ slug }));
   } catch {
-    return { slug, ...defaults, ogImageUrl: "", updatedAt: new Date() };
+    return pageSeoOf(slug, null);
   }
 }
 
-export async function getAllPageSeo(): Promise<PageSeo[]> {
-  try {
-    const db = await getDb();
-    const docs = await db
-      .collection("page_seo")
-      .find({ slug: { $in: ALL_SEO_SLUGS } })
-      .toArray();
-    const map = new Map(docs.map((d) => [d.slug as string, d]));
-    return ALL_SEO_SLUGS.map((slug) => {
-      const doc = map.get(slug);
-      const defaults = DEFAULTS[slug]!;
-      return {
-        slug,
-        title: typeof doc?.title === "string" && doc.title ? doc.title : defaults.title,
-        description: typeof doc?.description === "string" ? doc.description : defaults.description,
-        headerTitle:
-          typeof doc?.headerTitle === "string" && doc.headerTitle
-            ? doc.headerTitle
-            : defaults.headerTitle,
-        headerDescription:
-          typeof doc?.headerDescription === "string"
-            ? doc.headerDescription
-            : defaults.headerDescription,
-        ogImageUrl: typeof doc?.ogImageUrl === "string" ? doc.ogImageUrl : "",
-        updatedAt: doc?.updatedAt instanceof Date ? doc.updatedAt : new Date(),
-      };
-    });
-  } catch {
-    return ALL_SEO_SLUGS.map((slug) => ({
-      slug,
-      ...DEFAULTS[slug]!,
-      ogImageUrl: "",
-      updatedAt: new Date(),
-    }));
-  }
+export async function readAllPageSeo(): Promise<PageSeo[]> {
+  const db = await getDb();
+  const docs = await db
+    .collection("page_seo")
+    .find({ slug: { $in: ALL_SEO_SLUGS } })
+    .toArray();
+  const map = new Map(docs.map((d) => [d.slug as string, d]));
+  return ALL_SEO_SLUGS.map((slug) => pageSeoOf(slug, map.get(slug)));
 }

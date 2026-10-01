@@ -12,6 +12,8 @@ import { slugifyTag, isValidTagSlug } from "@/lib/server/media-tags";
 import { isAllowedCloudinaryUrl } from "@/lib/server/cloudinary-assets";
 import { CLOUDINARY_BLOG_FOLDER } from "@/lib/cloudinary-folders";
 
+import { loadAdminBlog, savedBlogPost } from "@/app/admin/(protected)/blog/lib/server";
+
 export const dynamic = "force-dynamic";
 
 const DEFAULT_AUTHOR = "Hussain Marzooq";
@@ -26,33 +28,7 @@ export async function GET() {
   const deny = await requireAdminOr401();
   if (deny) return deny;
 
-  const db = await getDb();
-  const [docs, cats] = await Promise.all([
-    db.collection("blog_posts").find({}).sort({ updatedAt: -1 }).toArray(),
-    db.collection("blog_categories").find({}, { projection: { slug: 1, name: 1 } }).toArray(),
-  ]);
-
-  const labels = new Map<string, string>();
-  for (const c of cats) {
-    const slug = typeof c.slug === "string" ? c.slug : "";
-    if (slug) labels.set(slug, typeof c.name === "string" ? c.name : slug);
-  }
-
-  const items = docs.map((d) => {
-    const category = typeof d.category === "string" ? d.category : "";
-    return {
-      id: String(d._id),
-      title: typeof d.title === "string" ? d.title : "",
-      slug: typeof d.slug === "string" ? d.slug : "",
-      category,
-      categoryLabel: category ? labels.get(category) ?? category : "",
-      isPublished: d.isPublished === true,
-      publishedAt: d.publishedAt instanceof Date ? d.publishedAt.toISOString() : null,
-      updatedAt: d.updatedAt instanceof Date ? d.updatedAt.toISOString() : null,
-    };
-  });
-
-  return noStoreJson({ ok: true, items });
+  return noStoreJson({ ok: true, items: (await loadAdminBlog()).posts });
 }
 
 export async function POST(req: Request) {
@@ -110,7 +86,7 @@ export async function POST(req: Request) {
   const now = new Date();
   const publishedAt = isPublished ? asDate(bodyUnknown.publishedAt) ?? now : null;
 
-  const r = await db.collection("blog_posts").insertOne({
+  const doc = {
     title,
     slug,
     excerpt,
@@ -125,10 +101,11 @@ export async function POST(req: Request) {
     publishedAt,
     createdAt: now,
     updatedAt: now,
-  });
+  };
+  const r = await db.collection("blog_posts").insertOne(doc);
 
   revalidatePath("/blog", "layout");
   revalidatePath(`/blog/${slug}`);
 
-  return noStoreJson({ ok: true, id: r.insertedId.toString() });
+  return noStoreJson({ ok: true, id: r.insertedId.toString(), ...(await savedBlogPost({ ...doc, _id: r.insertedId })) });
 }

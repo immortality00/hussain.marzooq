@@ -1,5 +1,5 @@
 import { revalidatePath } from "next/cache";
-import { listAdminMediaTags } from "@/lib/server/admin-catalog";
+import { adminMediaTagOf, listAdminMediaTags } from "@/lib/server/admin-catalog";
 import { listActiveMediaTags } from "@/lib/server/admin-lists";
 import { requireAdminOr401, isAdminAuthedServer } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
@@ -81,18 +81,14 @@ export async function POST(req: Request) {
       : 0;
 
   const now = new Date();
-  const r = await db.collection("media_tags").insertOne({
-    label,
-    slug,
-    description,
-    isActive: true,
-    order: nextOrder,
-    createdAt: now,
-    updatedAt: now,
-  });
+  const doc = { label, slug, description, isActive: true, order: nextOrder, createdAt: now, updatedAt: now };
+  const r = await db.collection("media_tags").insertOne(doc);
 
   revalidatePath("/photography", "layout");
   revalidatePath("/videography", "layout");
 
-  return noStoreJson({ ok: true, id: r.insertedId.toString(), slug, label }, { status: 201 });
+  return noStoreJson(
+    { ok: true, id: r.insertedId.toString(), slug, label, item: adminMediaTagOf({ ...doc, _id: r.insertedId }, 0) },
+    { status: 201 }
+  );
 }

@@ -3,138 +3,78 @@
 import { useState } from "react";
 import { useDraftOrder } from "@/hooks/useDraftOrder";
 import { useAdminSlice } from "@/hooks/useAdminData";
-import { GripVertical } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminButton } from "@/components/admin/AdminButton";
-import { AdminToggle } from "@/components/admin/AdminToggle";
 import { adminInputClasses } from "@/components/admin/admin-input";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
-import { useAdminAction } from "@/hooks/useAdminAction";
-import { SortableList, useSortableRow } from "@/components/admin/sortable/SortableList";
+import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
+import { SortableList } from "@/components/admin/sortable/SortableList";
 import { slugifyTag } from "@/lib/server/media-tags";
-
-type Category = {
-  id: string;
-  name: string;
-  slug: string;
-  isActive: boolean;
-  order: number;
-  postsCount: number;
-};
-
-async function readError(res: Response): Promise<string> {
-  const data = (await res.json().catch(() => null)) as { error?: string; postsCount?: number } | null;
-  if (data?.error === "CATEGORY_IN_USE") return `In use by ${data.postsCount ?? 0} post(s).`;
-  if (data?.error === "Slug already exists") return "That slug is already used.";
-  return data?.error ?? `Request failed (${res.status})`;
-}
+import { BlogCategoryRow } from "./components/BlogCategoryRow";
+import { createBlogCategory, deleteBlogCategory, patchBlogCategory, type BlogCategory } from "./lib/api";
 
 export default function BlogCategoriesAdminClient() {
   const [items, setItems] = useAdminSlice("blogCategories");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const { feedback, notify, setFeedback } = useAdminAction();
+  const { ordered, move, save } = useDraftOrder(items, setItems);
 
-  const { ordered, move, withSavedOrder, clearDraft } = useDraftOrder(items);
+  async function attempt(busyText: string, work: () => Promise<void>, okText: string) {
+    setFeedback({ type: "info", text: busyText });
+    try {
+      await work();
+      notify("ok", okText);
+    } catch (e) {
+      notify("err", errorMessage(e, "Request failed."));
+    }
+  }
 
   async function create() {
     const n = name.trim();
-    if (!n || busy) {
-      if (!n) notify("err", "Name is required.");
-      return;
-    }
+    if (!n) return notify("err", "Name is required.");
+    if (busy) return;
     setBusy(true);
-    setFeedback({ type: "info", text: "Creating…" });
-    try {
-      const res = await fetch("/api/blog-categories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: n, slug: slugifyTag(n) }),
-      });
-      if (!res.ok) throw new Error(await readError(res));
+    await attempt("Creating…", async () => {
+      const created = await createBlogCategory(n, slugifyTag(n));
+      setItems((prev) => [...prev.filter((c) => c.id !== created.id), created]);
       setName("");
-      notify("ok", "Category created.");
-      await refresh();
-    } catch (e) {
-      notify("err", e instanceof Error ? e.message : "Create failed.");
-    } finally {
-      setBusy(false);
-    }
+    }, "Category created.");
+    setBusy(false);
   }
 
-  async function refresh() {
-    const res = await fetch("/api/blog-categories", { cache: "no-store" });
-    if (res.ok) {
-      const data = (await res.json()) as { items: Category[] };
-      setItems(data.items);
-    }
-  }
+  const saveRow = (cat: BlogCategory, next: { name: string; slug: string }) =>
+    attempt("Saving…", async () => {
+      const slug = slugifyTag(next.slug);
+      await patchBlogCategory(cat.id, { name: next.name, slug });
+      setItems((prev) => prev.map((c) => (c.id === cat.id ? { ...c, name: next.name, slug } : c)));
+    }, "Category saved.");
 
-  async function patch(id: string, body: Partial<Category>) {
-    const res = await fetch(`/api/blog-categories/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    if (!res.ok) throw new Error(await readError(res));
-  }
-
-  async function saveRow(cat: Category, next: { name: string; slug: string }) {
-    setFeedback({ type: "info", text: "Saving…" });
+  async function toggle(cat: BlogCategory, value: boolean) {
     try {
-      await patch(cat.id, { name: next.name, slug: slugifyTag(next.slug) });
-      setItems((prev) => prev.map((c) => (c.id === cat.id ? { ...c, ...next, slug: slugifyTag(next.slug) } : c)));
-      notify("ok", "Category saved.");
-    } catch (e) {
-      notify("err", e instanceof Error ? e.message : "Save failed.");
-    }
-  }
-
-  async function toggle(cat: Category, value: boolean) {
-    try {
-      await patch(cat.id, { isActive: value });
+      await patchBlogCategory(cat.id, { isActive: value });
       setItems((prev) => prev.map((c) => (c.id === cat.id ? { ...c, isActive: value } : c)));
     } catch (e) {
-      notify("err", e instanceof Error ? e.message : "Update failed.");
+      notify("err", errorMessage(e, "Update failed."));
     }
   }
 
-  async function remove(cat: Category) {
+  function remove(cat: BlogCategory) {
     const detach = cat.postsCount > 0;
-    const msg = detach
+    const question = detach
       ? `Delete "${cat.name}"? Its ${cat.postsCount} post(s) become Uncategorized.`
       : `Delete "${cat.name}" forever?`;
-    if (!confirm(msg)) return;
-    setFeedback({ type: "info", text: "Deleting…" });
-    try {
-      const res = await fetch(`/api/blog-categories/${cat.id}${detach ? "?detach=1" : ""}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error(await readError(res));
+    if (!confirm(question)) return;
+    return attempt("Deleting…", async () => {
+      await deleteBlogCategory(cat.id, detach);
       setItems((prev) => prev.filter((c) => c.id !== cat.id));
-      notify("ok", "Category deleted.");
-    } catch (e) {
-      notify("err", e instanceof Error ? e.message : "Delete failed.");
-    }
-  }
-
-  function onReorder(activeId: string, overId: string) {
-    move(activeId, overId);
+    }, "Category deleted.");
   }
 
   async function saveOrder() {
     setBusy(true);
-    setFeedback({ type: "info", text: "Saving order…" });
-    try {
-      await Promise.all(ordered.map((c, idx) => patch(c.id, { order: idx })));
-      setItems((prev) => withSavedOrder(prev));
-      clearDraft();
-      notify("ok", "Order saved.");
-    } catch (e) {
-      notify("err", e instanceof Error ? e.message : "Failed to save order.");
-    } finally {
-      setBusy(false);
-    }
+    await attempt("Saving order…", () => save((id, order) => patchBlogCategory(id, { order })), "Order saved.");
+    setBusy(false);
   }
 
   return (
@@ -169,67 +109,20 @@ export default function BlogCategoriesAdminClient() {
       </div>
 
       {ordered.length > 0 ? (
-        <SortableList ids={ordered.map((c) => c.id)} onReorder={onReorder} className="space-y-2">
+        <SortableList ids={ordered.map((c) => c.id)} onReorder={move} className="space-y-2">
           {ordered.map((cat) => (
-            <CategoryRow
-              key={cat.id}
+            <BlogCategoryRow
+              key={`${cat.id}:${cat.name}:${cat.slug}`}
               cat={cat}
-              onSave={(next) => saveRow(cat, next)}
-              onToggle={(v) => toggle(cat, v)}
-              onDelete={() => remove(cat)}
+              onSave={(next) => void saveRow(cat, next)}
+              onToggle={(v) => void toggle(cat, v)}
+              onDelete={() => void remove(cat)}
             />
           ))}
         </SortableList>
       ) : (
         <div className="rounded-2xl border p-8 text-sm text-muted-foreground">No categories yet.</div>
       )}
-    </div>
-  );
-}
-
-function CategoryRow({
-  cat,
-  onSave,
-  onToggle,
-  onDelete,
-}: {
-  cat: Category;
-  onSave: (next: { name: string; slug: string }) => void;
-  onToggle: (value: boolean) => void;
-  onDelete: () => void;
-}) {
-  const { setNodeRef, style, handleProps } = useSortableRow(cat.id);
-  const [name, setName] = useState(cat.name);
-  const [slug, setSlug] = useState(cat.slug);
-  const dirty = name !== cat.name || slug !== cat.slug;
-
-  return (
-    <div ref={setNodeRef} style={style} className="flex flex-wrap items-center gap-3 rounded-2xl border p-3">
-      <button
-        type="button"
-        {...handleProps}
-        aria-label="Drag to reorder"
-        className="cursor-grab text-muted-foreground hover:text-foreground"
-      >
-        <GripVertical className="size-4" />
-      </button>
-
-      <input value={name} onChange={(e) => setName(e.target.value)} className={adminInputClasses("md", "w-auto min-w-40 flex-1")} />
-      <input value={slug} onChange={(e) => setSlug(e.target.value)} className={adminInputClasses("md", "w-auto min-w-40 flex-1 font-mono md:text-xs")} />
-
-      <span className="font-mono text-[11px] tabular-nums text-muted-foreground">{cat.postsCount}</span>
-
-      <AdminToggle checked={cat.isActive} onChange={onToggle} label={`Toggle ${cat.name}`} />
-
-      {dirty ? (
-        <AdminButton variant="solid" size="sm" onClick={() => onSave({ name, slug })}>
-          Save
-        </AdminButton>
-      ) : null}
-
-      <AdminButton variant="danger" size="sm" onClick={onDelete}>
-        Delete
-      </AdminButton>
     </div>
   );
 }

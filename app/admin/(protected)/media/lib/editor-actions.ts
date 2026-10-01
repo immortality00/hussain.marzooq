@@ -1,6 +1,8 @@
 import { parseVideoLink } from "@/lib/video-embed";
 import { throwIfMediaInUse } from "@/lib/client/media-usage-api";
 import type { MediaUsageChoice } from "@/lib/media-in-use";
+import { adminWrite } from "@/lib/client/admin-store";
+import { expectVersion, throwIfRecordChanged } from "@/lib/record-changed";
 import type { MediaItem } from "./types";
 import type { SavedMedia } from "./media-store";
 
@@ -131,18 +133,22 @@ export function buildMediaPayload(args: {
   return { payloadBase, payloadWithAsset };
 }
 
+const CREATE_TOUCHES = ["media", "dashboard", "mediaTags"] as const;
+const CHANGE_TOUCHES = ["media", "dashboard", "mediaTags", "pages", "blog"] as const;
+
 export async function saveMediaItem(args: {
   editingId: string;
   payloadBase: Record<string, unknown>;
   payloadWithAsset: Record<string, unknown> | null;
   usages?: MediaUsageChoice;
+  expected?: string | null;
 }) {
   if (!args.editingId) {
-    const res = await fetch("/api/media/create", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(args.payloadWithAsset),
-    });
+    const res = await adminWrite(
+      "/api/media/create",
+      { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(args.payloadWithAsset) },
+      CREATE_TOUCHES
+    );
 
     const data = (await res.json().catch(() => null)) as
       | (Partial<SavedMedia> & { ok?: boolean; id?: string; error?: string; posterMissing?: boolean })
@@ -162,11 +168,15 @@ export async function saveMediaItem(args: {
 
   const updateBody = { ...(args.payloadWithAsset ?? args.payloadBase), usages: args.usages };
 
-  const res = await fetch(`/api/media/${encodeURIComponent(args.editingId)}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(updateBody),
-  });
+  const res = await adminWrite(
+    `/api/media/${encodeURIComponent(args.editingId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...expectVersion(args.expected) },
+      body: JSON.stringify(updateBody),
+    },
+    CHANGE_TOUCHES
+  );
 
   const data = (await res.json().catch(() => null)) as
     | (Partial<SavedMedia> & { ok?: boolean; error?: string; posterMissing?: boolean; pagesNotUpdated?: string[] })
@@ -174,6 +184,7 @@ export async function saveMediaItem(args: {
 
   if (!res.ok || !data?.ok) {
     throwIfMediaInUse(data);
+    throwIfRecordChanged(data);
     throw new Error(data?.error ?? "Update failed.");
   }
 
@@ -188,7 +199,7 @@ export async function saveMediaItem(args: {
 
 export async function deleteMediaItem(id: string, removeFromPages = false) {
   const query = removeFromPages ? "?detach=1" : "";
-  const res = await fetch(`/api/media/${encodeURIComponent(id)}${query}`, { method: "DELETE" });
+  const res = await adminWrite(`/api/media/${encodeURIComponent(id)}${query}`, { method: "DELETE" }, CHANGE_TOUCHES);
 
   const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
 

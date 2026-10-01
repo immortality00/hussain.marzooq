@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
+import { ensureOthersCategory } from "@/lib/db/ensureSystemCategories";
 import { getDb } from "@/lib/server/db";
 import {
   findByIdOr404,
@@ -19,6 +20,8 @@ import {
   isAllowedCloudinaryUrl,
 } from "@/lib/server/cloudinary-assets";
 import { CLOUDINARY_SERVICES_FOLDER } from "@/lib/cloudinary-folders";
+import { savedAdminService } from "@/lib/server/admin-catalog";
+import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +38,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const found = await findByIdOr404(db, "services", oid);
   if (found instanceof Response) return found;
   const existing = found.doc;
+
+  if (changedSinceOpened(req, existing)) return recordChangedResponse(await savedAdminService(db, oid));
 
   const patch: Record<string, unknown> = { updatedAt: new Date() };
 
@@ -71,13 +76,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     const requestedCategoryId = asString(body.categoryId).trim();
 
     if (!requestedCategoryId) {
-      const others = await db.collection("service_categories").findOne(
-        { slug: "others" },
-        { projection: { _id: 1, slug: 1 } }
-      );
-
-      patch.category = typeof others?.slug === "string" ? normalizeSlug(others.slug) : "others";
-      patch.categoryId = others ? String(others._id) : null;
+      const others = await ensureOthersCategory(db);
+      patch.category = normalizeSlug(others.slug) || "others";
+      patch.categoryId = String(others._id);
     } else {
       if (!ObjectId.isValid(requestedCategoryId)) {
         return noStoreJson({ ok: false, error: "CATEGORY_NOT_FOUND" }, { status: 400 });
@@ -103,13 +104,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     const requestedCategory = normalizeSlug(body.category || "others") || "others";
 
     if (requestedCategory === "others") {
-      const others = await db.collection("service_categories").findOne(
-        { slug: "others" },
-        { projection: { _id: 1, slug: 1 } }
-      );
-
-      patch.category = typeof others?.slug === "string" ? normalizeSlug(others.slug) : "others";
-      patch.categoryId = others ? String(others._id) : null;
+      const others = await ensureOthersCategory(db);
+      patch.category = normalizeSlug(others.slug) || "others";
+      patch.categoryId = String(others._id);
     } else {
       const cat = await db.collection("service_categories").findOne(
         { slug: requestedCategory },
@@ -212,7 +209,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (oldSlug) revalidatePath(`/services/${oldSlug}`);
   if (newSlug && newSlug !== oldSlug) revalidatePath(`/services/${newSlug}`);
 
-  return noStoreJson({ ok: true });
+  return noStoreJson({ ok: true, item: await savedAdminService(db, oid) });
 }
 
 export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }> }) {

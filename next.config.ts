@@ -65,6 +65,9 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  env: {
+    NEXT_PUBLIC_ADMIN_BUILD: process.env.DEPLOY_ID ?? process.env.COMMIT_REF ?? "dev",
+  },
   images: {
     // Resizing happens at Cloudinary's CDN, not in Next's optimizer.
     // See lib/cloudinary-image-loader.ts for why.
@@ -76,6 +79,15 @@ const nextConfig: NextConfig = {
         hostname: "res.cloudinary.com",
       },
     ],
+  },
+  async redirects() {
+    return [
+      {
+        source: "/admin/blog/:id((?!new$|edit$)[0-9a-fA-F]{24})",
+        destination: "/admin/blog/edit?id=:id",
+        permanent: false,
+      },
+    ];
   },
   async headers() {
     return [

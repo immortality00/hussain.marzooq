@@ -8,6 +8,7 @@ import { usePrivateGalleriesAdmin } from "@/components/admin/private-galleries/u
 import { useBulkSelection } from "@/components/admin/bulk/useBulkSelection";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
 
 export default function PrivateGalleriesAdminClient() {
@@ -83,6 +84,7 @@ export default function PrivateGalleriesAdminClient() {
       )}
 
       <MediaUsageDialog dialog={admin.usageDialog} />
+      <RecordChangedDialog dialog={admin.changedDialog} />
     </main>
   );
 }

@@ -7,52 +7,68 @@ import {
   deletePushDevice,
   forgetSavedPushDevice,
   registerAdminWorker,
-  resavePushDevice,
+  savedPushEndpoint,
   savePushDevice,
   sendTestPush,
 } from "@/lib/client/admin-push-api";
 import { runAfterAdminData } from "@/lib/client/admin-store";
+import { endpointHash, pushDeviceState, type PushDevice } from "@/lib/push-subscription";
 
 const noopSubscribe = () => () => {};
 
-export function useAdminPush(publicKey: string | null) {
+type Local = { subscription: PushSubscription; hash: string } | null;
+
+async function localOf(subscription: PushSubscription | null): Promise<Local> {
+  if (!subscription || Notification.permission !== "granted") return null;
+  return { subscription, hash: await endpointHash(subscription.endpoint) };
+}
+
+export function useAdminPush(publicKey: string | null, devices: PushDevice[]) {
   const support = useSyncExternalStore(noopSubscribe, readPushSupport, () => "checking" as const);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
-  const [subscribed, setSubscribed] = useState(false);
+  const resavingRef = useRef(false);
+  const [local, setLocal] = useState<Local>(null);
   const [blocked, setBlocked] = useState(false);
   const [busy, setBusy] = useState(false);
   const { feedback, notify, run } = useAdminAction({ autoDismiss: true });
 
+  const state = pushDeviceState({
+    endpoint: local?.subscription.endpoint ?? null,
+    hash: local?.hash ?? null,
+    savedEndpoint: savedPushEndpoint(),
+    devices,
+  });
+
   useEffect(() => {
     if (!publicKey || support !== "supported") return;
     let cancelled = false;
-
     registerAdminWorker()
       .then(async (registration) => {
         registrationRef.current = registration;
-        const subscription = await registration.pushManager.getSubscription();
+        const next = await localOf(await registration.pushManager.getSubscription());
         if (cancelled) return;
-
-        const granted = Notification.permission === "granted";
         setBlocked(Notification.permission === "denied");
-        setSubscribed(Boolean(subscription) && granted);
-        if (!subscription || !granted) return;
-        void runAfterAdminData(() =>
-          resavePushDevice(subscription).catch((error: unknown) => {
-            if (!cancelled) notify("err", errorMessage(error, "Couldn't start notifications."));
-          })
-        );
+        setLocal(next);
       })
       .catch((error: unknown) => {
-        if (!cancelled) {
-          notify("err", error instanceof Error ? error.message : "Couldn't start notifications.");
-        }
+        if (!cancelled) notify("err", errorMessage(error, "Couldn't start notifications."));
       });
-
     return () => {
       cancelled = true;
     };
   }, [publicKey, support, notify]);
+
+  useEffect(() => {
+    if (state !== "resave" || !local || resavingRef.current) return;
+    resavingRef.current = true;
+    void runAfterAdminData(() =>
+      savePushDevice(local.subscription)
+        .catch((error: unknown) => notify("err", errorMessage(error, "Couldn't start notifications.")))
+        .finally(() => {
+          resavingRef.current = false;
+        })
+    );
+  }, [state, local, notify]);
 
   async function act(fn: () => Promise<void>, successText?: string) {
     setBusy(true);
@@ -72,6 +88,7 @@ export function useAdminPush(publicKey: string | null) {
         "The browser's push service didn't respond."
       );
       await savePushDevice(subscription);
+      setLocal(await localOf(subscription));
     } catch (error) {
       if (Notification.permission !== "denied") throw error;
       setBlocked(true);
@@ -83,7 +100,6 @@ export function useAdminPush(publicKey: string | null) {
     if (!publicKey) return;
     return act(async () => {
       await subscribe(publicKey);
-      setSubscribed(true);
       setBlocked(false);
     }, "Notifications are on for this device.");
   };
@@ -96,7 +112,7 @@ export function useAdminPush(publicKey: string | null) {
         await subscription.unsubscribe();
       }
       forgetSavedPushDevice();
-      setSubscribed(false);
+      setLocal(null);
     }, "Notifications are off for this device.");
 
   const sendTest = () =>
@@ -104,8 +120,8 @@ export function useAdminPush(publicKey: string | null) {
       const json = await sendTestPush();
       const sent = json?.sent ?? 0;
       const failed = json?.failed ?? 0;
-      const devices = `${sent} device${sent === 1 ? "" : "s"}`;
-      notify(failed ? "err" : "ok", `Sent to ${devices}${failed ? `, ${failed} failed` : ""}.`);
+      const count = `${sent} device${sent === 1 ? "" : "s"}`;
+      notify(failed ? "err" : "ok", `Sent to ${count}${failed ? `, ${failed} failed` : ""}.`);
     });
 
   const removeDevice = (id: string) =>
@@ -113,5 +129,5 @@ export function useAdminPush(publicKey: string | null) {
       await deletePushDevice({ id });
     }, "Device removed.");
 
-  return { support, subscribed, blocked, busy, feedback, enable, disable, sendTest, removeDevice };
+  return { support, subscribed: state !== "off", blocked, busy, feedback, enable, disable, sendTest, removeDevice };
 }

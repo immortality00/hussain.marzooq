@@ -13,7 +13,27 @@ export type PushDevice = {
   id: string;
   label: string;
   createdAt: string | null;
+  endpointHash: string;
 };
+
+export type PushDeviceState = "on" | "off" | "resave";
+
+export async function endpointHash(endpoint: string): Promise<string> {
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(endpoint)));
+  const base64 = btoa(String.fromCharCode(...digest));
+  return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "").slice(0, 22);
+}
+
+export function pushDeviceState(input: {
+  endpoint: string | null;
+  hash: string | null;
+  savedEndpoint: string | null;
+  devices: readonly Pick<PushDevice, "endpointHash">[];
+}): PushDeviceState {
+  if (!input.endpoint || !input.hash) return "off";
+  if (input.devices.some((device) => device.endpointHash === input.hash)) return "on";
+  return input.savedEndpoint === input.endpoint ? "off" : "resave";
+}
 
 const MAX_ENDPOINT_LENGTH = 2048;
 const MAX_LABEL_LENGTH = 80;

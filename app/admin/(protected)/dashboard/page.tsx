@@ -3,7 +3,10 @@ import { AdminScreen } from "@/components/admin/AdminScreen";
 
 export default function Page() {
   return (
-    <AdminScreen preview>
+    <AdminScreen
+      preview
+      reads={["dashboard", "inquiries", "testimonials", "removal", "people", "services", "galleries", "pages", "push"]}
+    >
       <DashboardClient />
     </AdminScreen>
   );

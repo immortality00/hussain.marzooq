@@ -1,5 +1,5 @@
 import type { AdminSnapshot } from "@/lib/server/admin-snapshot";
-import { ADMIN_INQUIRY_LIMIT } from "@/lib/admin-data";
+import { ADMIN_ACTIVE_INQUIRY_LIMIT, pendingCount } from "@/lib/admin-data";
 import { pageFlags } from "@/app/admin/(protected)/pages/lib/rows";
 
 export type AdminPreview = Pick<AdminSnapshot, "dashboard" | "notificationCount" | "push">;
@@ -12,12 +12,12 @@ export function overviewOf(data: AdminSnapshot): AdminPreview {
     total: data.testimonials.length,
     pending: data.testimonials.filter((item) => item.isApproved !== true).length,
   };
+  const open = data.inquiries.filter((item) => !item.isArchived);
   const inquiries =
-    data.inquiries.length < ADMIN_INQUIRY_LIMIT
+    open.length < ADMIN_ACTIVE_INQUIRY_LIMIT
       ? {
-          total: data.inquiries.length,
-          new: data.inquiries.filter((item) => item.status === "new").length,
-          active: data.inquiries.filter((item) => !CLOSED_INQUIRY.has(item.status)).length,
+          new: open.filter((item) => item.status === "new").length,
+          active: open.filter((item) => !CLOSED_INQUIRY.has(item.status)).length,
         }
       : stats.inquiries;
   const removalRequests = data.removal.items.length;
@@ -35,7 +35,7 @@ export function overviewOf(data: AdminSnapshot): AdminPreview {
       },
       ...pageFlags(data.pages),
     },
-    notificationCount: testimonials.pending + inquiries.new + removalRequests,
+    notificationCount: pendingCount({ testimonials, inquiries, removalRequests }),
     push: data.push,
   };
 }

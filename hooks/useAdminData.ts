@@ -1,22 +1,20 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
 import type { AdminSnapshot } from "@/lib/server/admin-snapshot";
 import {
   getAdminData,
   getAdminDataFailure,
+  getAdminDataGeneration,
   getAdminChanges,
   getAdminPreview,
   getAdminSignedOut,
   setAdminSlice,
   subscribeAdminData,
+  type AdminChanges,
+  type AdminSlice,
+  type SliceUpdate,
 } from "@/lib/client/admin-store";
-
-export type Update<T> = T | ((previous: T) => T);
-
-export function applyUpdate<T>(update: Update<T>, previous: T): T {
-  return typeof update === "function" ? (update as (value: T) => T)(previous) : update;
-}
 
 export function useAdminData() {
   return useSyncExternalStore(subscribeAdminData, getAdminData, () => null);
@@ -26,7 +24,7 @@ export function useAdminPreview() {
   return useSyncExternalStore(subscribeAdminData, getAdminPreview, () => null);
 }
 
-const SETTLED = { pending: false, applied: [] };
+const SETTLED: AdminChanges = { pending: [] };
 
 export function useAdminChanges() {
   return useSyncExternalStore(subscribeAdminData, getAdminChanges, () => SETTLED);
@@ -40,14 +38,28 @@ export function useAdminDataFailure() {
   return useSyncExternalStore(subscribeAdminData, getAdminDataFailure, () => null);
 }
 
-export function useAdminSlice<K extends keyof AdminSnapshot>(key: K) {
+export function useOnAdminDataChange(callback: () => void) {
+  const generation = useSyncExternalStore(subscribeAdminData, getAdminDataGeneration, () => 0);
+  const seen = useRef(generation);
+  const latest = useRef(callback);
+  useEffect(() => {
+    latest.current = callback;
+  });
+  useEffect(() => {
+    if (generation === seen.current) return;
+    seen.current = generation;
+    latest.current();
+  }, [generation]);
+}
+
+export function useAdminSlice<K extends AdminSlice>(key: K) {
   const value = useSyncExternalStore(
     subscribeAdminData,
     () => getAdminData()?.[key],
     () => undefined
   );
   const set = useCallback(
-    (next: AdminSnapshot[K] | ((previous: AdminSnapshot[K]) => AdminSnapshot[K])) => setAdminSlice(key, next),
+    (next: SliceUpdate<AdminSnapshot[K]>) => setAdminSlice(key, next),
     [key]
   );
   if (value === undefined) throw new Error(`Admin data "${String(key)}" was read before it loaded.`);

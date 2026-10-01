@@ -66,6 +66,10 @@ const E2E = {
   gallerySlug: "e2e-private-gallery",
   photographyCount: 65,
   videographyCount: 4,
+  personName: "Seed Person",
+  reviewerName: "Seed Reviewer",
+  inquiryName: "Seed Client",
+  blogPostTitle: "Seed Post",
 };
 
 const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "demo";
@@ -75,10 +79,11 @@ function assetUrl(publicId, resourceType = "image", ext = "jpg") {
 }
 
 const BASE_TIME = Date.parse("2026-09-01T12:00:00.000Z");
+const MEDIA_FOLDERS = { nft: "nfts" };
 
 function mediaDoc({ index, category, type, title, tags = [], isPublic = true }) {
   const resourceType = type === "video" ? "video" : "image";
-  const publicId = `hm_visuals/media/${category}/${category}-${index}`;
+  const publicId = `hm_visuals/media/${MEDIA_FOLDERS[category] ?? category}/${category}-${index}`;
 
   return {
     _id: new ObjectId(),
@@ -199,7 +204,7 @@ async function main() {
     isActive: true,
     expiresAtUtc: new Date(Date.now() + 30 * 86_400_000),
     expiresAt: new Date(Date.now() + 30 * 86_400_000),
-    expiresAtLocal: null,
+    expiresAtLocal: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 16),
     createdAt: new Date(),
     updatedAt: new Date(),
   });
@@ -241,6 +246,8 @@ async function main() {
     updatedAt: new Date(),
   });
 
+  await seedInbox(db);
+
   console.log(
     [
       `Seeded "${dbName}":`,
@@ -252,6 +259,84 @@ async function main() {
   );
 
   await client.close();
+}
+
+async function seedInbox(db) {
+  const now = new Date();
+  const personId = new ObjectId();
+  const blogCategoryId = new ObjectId();
+
+  await db.collection("testimonials").insertOne({
+    name: E2E.reviewerName,
+    email: "reviewer@example.test",
+    review: "Seeded review used by the end-to-end suite.",
+    rating: 5,
+    location: "Dubai, United Arab Emirates",
+    photoUrls: [],
+    isApproved: false,
+    sortOrder: 100,
+    createdAt: now,
+    updatedAt: now,
+  });
+  await db.collection("people_profiles").insertOne({
+    _id: personId,
+    name: E2E.personName,
+    slug: "seed-person",
+    bio: null,
+    avatarUrl: assetUrl("hm_visuals/people/seed-person", "image", "jpg"),
+    isPublic: true,
+    isPrivate: false,
+    removalRequestedAt: now,
+    createdAt: now,
+    updatedAt: now,
+  });
+  await db.collection("removal_requests").insertOne({
+    personId: String(personId),
+    personName: E2E.personName,
+    slug: "seed-person",
+    email: "person@example.test",
+    reason: "Seeded removal request used by the end-to-end suite.",
+    status: "pending",
+    createdAt: now,
+  });
+  await db.collection("inquiries").insertOne({
+    name: E2E.inquiryName,
+    email: "client@example.test",
+    message: "Seeded inquiry used by the end-to-end suite.",
+    category: null,
+    serviceId: null,
+    serviceName: null,
+    status: "new",
+    adminNotes: "",
+    isArchived: false,
+    createdAt: now,
+    updatedAt: now,
+  });
+  await db.collection("blog_categories").insertOne({
+    _id: blogCategoryId,
+    name: "Stories",
+    slug: "stories",
+    isActive: true,
+    order: 0,
+    createdAt: now,
+    updatedAt: now,
+  });
+  await db.collection("blog_posts").insertOne({
+    title: E2E.blogPostTitle,
+    slug: "seed-post",
+    excerpt: "",
+    content: "Seeded post used by the end-to-end suite.",
+    coverImageUrl: "",
+    coverImagePublicId: "",
+    categoryId: String(blogCategoryId),
+    category: "stories",
+    tags: [],
+    author: "Hussain Marzooq",
+    isPublished: false,
+    publishedAt: null,
+    createdAt: now,
+    updatedAt: now,
+  });
 }
 
 main().catch((error) => {

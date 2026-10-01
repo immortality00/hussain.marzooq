@@ -1,4 +1,5 @@
 import type { BlogCategoryOption, BlogListItem, BlogPostFormValues } from "./types";
+import type { SavedPost } from "./api";
 
 export type BlogSlice = {
   posts: BlogListItem[];
@@ -6,24 +7,12 @@ export type BlogSlice = {
   categoryOptions: BlogCategoryOption[];
 };
 
-export function withSavedPost(blog: BlogSlice, id: string, values: BlogPostFormValues): BlogSlice {
-  const now = new Date().toISOString();
-  const category = blog.categoryOptions.find((c) => c.id === values.categoryId);
-  const previous = blog.posts.find((p) => p.id === id);
-  const item: BlogListItem = {
-    id,
-    title: values.title,
-    slug: values.slug,
-    category: category?.slug ?? "",
-    categoryLabel: category?.name ?? "",
-    isPublished: values.isPublished,
-    publishedAt: values.isPublished ? (previous?.publishedAt ?? now) : null,
-    updatedAt: now,
-  };
+export function withSavedPost(blog: BlogSlice, saved: SavedPost): BlogSlice {
+  const { item, form } = saved;
   return {
     ...blog,
-    posts: [item, ...blog.posts.filter((p) => p.id !== id)],
-    forms: { ...blog.forms, [id]: values },
+    posts: [item, ...blog.posts.filter((p) => p.id !== item.id)],
+    forms: { ...blog.forms, [item.id]: form },
   };
 }
 

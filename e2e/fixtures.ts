@@ -14,4 +14,8 @@ export const E2E = {
   serviceName: "Seed Editorial Session",
   photographyCount: 65,
   videographyCount: 4,
+  personName: "Seed Person",
+  reviewerName: "Seed Reviewer",
+  inquiryName: "Seed Client",
+  blogPostTitle: "Seed Post",
 } as const;

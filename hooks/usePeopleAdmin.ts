@@ -1,10 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAdminSlice } from "@/hooks/useAdminData";
 import { useSearchParams } from "next/navigation";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
-import { useAdminAction } from "./useAdminAction";
+import { bulkResultText } from "@/components/admin/bulk/bulk-result";
+import { useRecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
+import { saveGuarded } from "@/lib/record-changed";
+import { deletePerson, savePerson } from "@/app/admin/(protected)/people/lib/api";
+import { errorMessage, useAdminAction } from "./useAdminAction";
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 import { useLatest } from "./useLatest";
 
@@ -21,6 +25,7 @@ export type PersonItem = {
   hasPassword: boolean;
   removalRequestedAt: string | null;
   removalApprovedAt: string | null;
+  updatedAt: string | null;
 };
 
 function toVisibility(item: Pick<PersonItem, "isPublic" | "isPrivate">): PersonVisibility {
@@ -51,16 +56,12 @@ export function usePeopleAdmin() {
   const [password, setPassword] = useState("");
   const [editingHasPassword, setEditingHasPassword] = useState(false);
   const [editingRemovalApprovedAt, setEditingRemovalApprovedAt] = useState<string | null>(null);
+  const [editingVersion, setEditingVersion] = useState<string | null>(null);
+  const changed = useRecordChangedDialog(() => setBanner(null));
 
   const latestAvatarUrl = useLatest(avatarUrl);
 
   const actionBusy = saving || Boolean(deletingId);
-
-  const load = useCallback(async () => {
-    const res = await fetch("/api/people", { cache: "no-store" }).catch(() => null);
-    const data = res?.ok ? ((await res.json().catch(() => null)) as { ok?: boolean; items?: PersonItem[] } | null) : null;
-    if (data?.ok && Array.isArray(data.items)) setItems(data.items);
-  }, [setItems]);
 
   useEffect(() => {
     if (!editingId && createPrefill) {
@@ -109,8 +110,7 @@ export function usePeopleAdmin() {
     setAvatarUrl("");
   }
 
-  function openEdit(item: PersonItem) {
-    if (actionBusy) return;
+  function fill(item: PersonItem) {
     setEditingId(item.id);
     setName(item.name);
     setSlug(item.slug);
@@ -120,7 +120,12 @@ export function usePeopleAdmin() {
     setPassword("");
     setEditingHasPassword(item.hasPassword);
     setEditingRemovalApprovedAt(item.removalApprovedAt);
+    setEditingVersion(item.updatedAt);
     setMode("form");
+  }
+
+  function openEdit(item: PersonItem) {
+    if (!actionBusy) fill(item);
   }
 
   function backToList() {
@@ -163,27 +168,26 @@ export function usePeopleAdmin() {
     };
 
     try {
-      const res = await fetch(
-        editingId ? `/api/people/${encodeURIComponent(editingId)}` : "/api/people",
-        {
-          method: editingId ? "PATCH" : "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        }
-      );
+      const item = editingId
+        ? await saveGuarded(
+            editingVersion,
+            (expected) => savePerson(editingId, payload, expected),
+            changed.ask,
+            (current: PersonItem) => current.updatedAt,
+            (current: PersonItem) => {
+              setItems((prev) => prev.map((x) => (x.id === current.id ? current : x)));
+              fill(current);
+            }
+          )
+        : await savePerson("", payload);
+      if (!item) return setBanner(null);
 
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
-      if (!res.ok || !data?.ok) {
-        setBanner({ type: "err", text: data?.error ?? "Save failed." });
-        return;
-      }
-
-      await load();
+      setItems((prev) => [item, ...prev.filter((x) => x.id !== item.id)]);
       setBanner({ type: "ok", text: editingId ? "✅ Person updated." : "✅ Person created." });
       resetForm();
       setMode("list");
-    } catch {
-      setBanner({ type: "err", text: "Save failed." });
+    } catch (e: unknown) {
+      setBanner({ type: "err", text: errorMessage(e, "Save failed.") });
     } finally {
       setSaving(false);
     }
@@ -199,13 +203,7 @@ export function usePeopleAdmin() {
     setBanner({ type: "info", text: "Deleting person profile…" });
 
     try {
-      const res = await fetch(`/api/people/${encodeURIComponent(id)}`, { method: "DELETE" });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
-      if (!res.ok || !data?.ok) {
-        setBanner({ type: "err", text: data?.error ?? "Delete failed." });
-        return;
-      }
-
+      await deletePerson(id);
       setItems((prev) => prev.filter((x) => x.id !== id));
       setBanner({ type: "ok", text: "✅ Person deleted." });
 
@@ -213,8 +211,8 @@ export function usePeopleAdmin() {
         resetForm();
         setMode("list");
       }
-    } catch {
-      setBanner({ type: "err", text: "Delete failed." });
+    } catch (e: unknown) {
+      setBanner({ type: "err", text: errorMessage(e, "Delete failed.") });
     } finally {
       setDeletingId("");
     }
@@ -225,13 +223,10 @@ export function usePeopleAdmin() {
     if (!confirm(`Delete ${ids.length} person profile(s)?`)) return;
     setBulkBusy(true);
     setBanner({ type: "info", text: "Deleting selected profiles…" });
-    const { ok, failed, okIds } = await runBulkAction(ids, async (id) => {
-      const res = await fetch(`/api/people/${encodeURIComponent(id)}`, { method: "DELETE" });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean };
-      if (!res.ok || !data?.ok) throw new Error();
-    });
-    setItems((prev) => prev.filter((x) => !okIds.includes(x.id)));
-    setBanner({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} failed` : ""}.` });
+    const result = await runBulkAction(ids, deletePerson);
+    setItems((prev) => prev.filter((x) => !result.okIds.includes(x.id)));
+    const labelOf = (id: string) => items.find((x) => x.id === id)?.name || "Person";
+    setBanner({ type: result.failed ? "err" : "ok", text: bulkResultText(result, "deleted", labelOf) });
     setBulkBusy(false);
   }
 
@@ -268,5 +263,6 @@ export function usePeopleAdmin() {
     backToList,
     save,
     remove,
+    changedDialog: changed.dialog,
   };
 }

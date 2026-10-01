@@ -1,23 +1,13 @@
-import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { readSource as read, relativePath as relative, sourceFiles as files } from "@/test/support/source-files";
 import {
   DASHBOARD_COPY_CACHE,
   DASHBOARD_PATH,
   DATA_CHANGED_MESSAGE,
+  NAVIGATE_MESSAGE,
   SAVE_COPY_HEADER,
 } from "@/lib/client/admin-dashboard-copy";
-
-function files(dir: string, pattern: RegExp): string[] {
-  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) return files(full, pattern);
-    return pattern.test(entry.name) ? [full] : [];
-  });
-}
-
-const read = (file: string) => fs.readFileSync(file, "utf8");
-const relative = (file: string) => path.relative(process.cwd(), file);
 
 describe("admin navigation", () => {
   it("builds every signed-in admin screen ahead of time and reads its data on the phone", () => {
@@ -27,6 +17,7 @@ describe("admin navigation", () => {
       const source = read(file);
       const found: string[] = [];
       if (!/<AdminScreen[\s>]/.test(source)) found.push("no AdminScreen");
+      if (!/<AdminScreen[^>]*\breads=\{/.test(source)) found.push("AdminScreen without reads");
       if (/force-dynamic|revalidate\s*=|getDb|cookies\(|headers\(/.test(source)) found.push("renders on the server");
       if (/^import (?!type)[^;]*from "@\/lib\/server\//m.test(source)) found.push("imports server code");
       return found.map((problem) => `${relative(file)}: ${problem}`);
@@ -53,6 +44,7 @@ describe("admin navigation", () => {
     expect(worker).toContain(`const PAGE_CACHE = "${DASHBOARD_COPY_CACHE}";`);
     expect(worker).toContain(`const SAVE_COPY_HEADER = "${SAVE_COPY_HEADER}";`);
     expect(worker).toContain(`const DATA_CHANGED_MESSAGE = "${DATA_CHANGED_MESSAGE}";`);
+    expect(worker).toContain(`const NAVIGATE_MESSAGE = "${NAVIGATE_MESSAGE}";`);
   });
 
   it("never fetches from the network while the worker hands out the saved dashboard", () => {

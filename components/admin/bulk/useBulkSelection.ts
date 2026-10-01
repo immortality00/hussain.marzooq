@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { ADMIN_REQUEST_LIMIT, settleLimited } from "@/lib/settle-limited";
 
 export function useBulkSelection(allIds: string[]) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -55,7 +56,7 @@ export async function runBulkAction(
   failedIds: string[];
   failures: { id: string; message: string }[];
 }> {
-  const results = await Promise.allSettled(ids.map((id) => perItem(id)));
+  const results = await settleLimited(ids, ADMIN_REQUEST_LIMIT, (id) => perItem(id));
   const okIds = ids.filter((_, i) => results[i]!.status === "fulfilled");
   const failures = ids.flatMap((id, i) => {
     const result = results[i]!;

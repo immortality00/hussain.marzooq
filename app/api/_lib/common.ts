@@ -13,6 +13,10 @@ export function asNullableString(v: unknown): string | null {
   return typeof v === "string" ? v : null;
 }
 
+export function asIsoDate(v: unknown): string | null {
+  return v instanceof Date ? v.toISOString() : null;
+}
+
 export function asNumberOrNull(v: unknown): number | null {
   if (v === null || v === undefined) return null;
   if (typeof v === "number" && Number.isFinite(v)) return v;

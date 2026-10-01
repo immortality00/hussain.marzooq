@@ -11,7 +11,7 @@ import { AdminSessionNotice } from "@/components/admin/AdminSessionNotice";
 
 export default function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen overflow-x-hidden bg-background">
+    <div className="min-h-dvh overflow-x-hidden bg-background">
       <div className="mx-auto max-w-6xl px-2 pt-4 pb-24 md:px-4 md:py-8">
         <div className="mb-6 flex items-center justify-between gap-4 md:mb-8">
           <div>

@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 import { E2E } from "./e2e/fixtures";
 
-const baseURL = `http://127.0.0.1:${E2E.port}`;
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${E2E.port}`;
 
 // The suite only ever talks to the seeded end-to-end database. MONGODB_URI is
 // inherited (a local cluster or the CI service container); the database name is

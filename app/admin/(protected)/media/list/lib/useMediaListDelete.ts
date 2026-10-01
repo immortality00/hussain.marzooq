@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type Dispatch, type SetStateAction } from "react";
+import { useState } from "react";
 import type { AdminActionFeedbackState } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { bulkResultText } from "@/components/admin/bulk/bulk-result";
@@ -12,19 +12,18 @@ import {
 import { fetchMediaUsages } from "@/lib/client/media-usage-api";
 import { deleteMediaItem } from "../../lib/editor-actions";
 import { deleteWithUsageCheck, REMOVE_AND_DELETE } from "../../lib/media-usage-flows";
-import { forgetFoundMedia } from "../../lib/found-media";
 import type { MediaItem } from "../components/MediaListItem";
 
 type Selection = { selectedIds: string[]; count: number; deselect: (ids: string[]) => void };
 
 export function useMediaListDelete({
   items,
-  setItems,
+  removeItems,
   selection,
   setBanner,
 }: {
   items: MediaItem[];
-  setItems: Dispatch<SetStateAction<MediaItem[]>>;
+  removeItems: (ids: string[]) => void;
   selection: Selection;
   setBanner: (feedback: AdminActionFeedbackState) => void;
 }) {
@@ -42,8 +41,7 @@ export function useMediaListDelete({
         setBanner(null);
         return;
       }
-      forgetFoundMedia([id]);
-      setItems((prev) => prev.filter((x) => x.id !== id));
+      removeItems([id]);
       setBanner({ type: "ok", text: "✅ Media deleted." });
     } catch (e: unknown) {
       setBanner({ type: "err", text: errorMessage(e, "Delete failed.") });
@@ -86,8 +84,7 @@ export function useMediaListDelete({
       const result = await runBulkAction(plan.targets, (id) =>
         deleteMediaItem(id, plan.removeFromPages.has(id))
       );
-      forgetFoundMedia(result.okIds);
-      setItems((prev) => prev.filter((x) => !result.okIds.includes(x.id)));
+      removeItems(result.okIds);
       const titleOf = (id: string) => items.find((item) => item.id === id)?.title || "Untitled";
       setBanner({
         type: result.failed ? "err" : "ok",

@@ -2,10 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { arrayMove } from "@dnd-kit/sortable";
+import { ADMIN_REQUEST_LIMIT, runAllLimited } from "@/lib/settle-limited";
 
 type Ordered = { id: string; order: number };
 
-export function useDraftOrder<T extends Ordered>(items: T[]) {
+export function useDraftOrder<T extends Ordered>(items: T[], setItems: (update: (previous: T[]) => T[]) => void) {
   const [draft, setDraft] = useState<string[] | null>(null);
 
   const ordered = useMemo(() => {
@@ -28,10 +29,16 @@ export function useDraftOrder<T extends Ordered>(items: T[]) {
     setDraft(arrayMove(ids, from, to));
   }
 
-  function withSavedOrder<U extends Ordered>(list: U[]): U[] {
+  async function save(patchOrder: (id: string, order: number) => Promise<unknown>) {
+    const saved = new Map(items.map((item) => [item.id, item.order]));
     const position = new Map(ordered.map((item, index) => [item.id, index]));
-    return list.map((item) => (position.has(item.id) ? { ...item, order: position.get(item.id)! } : item));
+    const changes = ordered.filter((item, index) => saved.get(item.id) !== index);
+    await runAllLimited(changes, ADMIN_REQUEST_LIMIT, (item) => patchOrder(item.id, position.get(item.id)!));
+    setItems((previous) =>
+      previous.map((item) => (position.has(item.id) ? { ...item, order: position.get(item.id)! } : item))
+    );
+    setDraft(null);
   }
 
-  return { ordered, move, withSavedOrder, clearDraft: () => setDraft(null) };
+  return { ordered, move, save };
 }

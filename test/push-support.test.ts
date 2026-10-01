@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { urlBase64ToUint8Array, withTimeout } from "@/lib/client/push-support";
-import { RESAVE_AFTER_MS, pushDeviceNeedsSave } from "@/lib/client/admin-push-api";
+import { createHash } from "node:crypto";
+import { endpointHash, pushDeviceState } from "@/lib/push-subscription";
 
 describe("urlBase64ToUint8Array", () => {
   test("decodes unpadded base64url, including - and _", () => {
@@ -35,23 +36,35 @@ describe("withTimeout", () => {
   });
 });
 
-describe("pushDeviceNeedsSave", () => {
+describe("push device state", () => {
   const endpoint = "https://web.push.apple.com/abc";
-  const now = 10 * RESAVE_AFTER_MS;
-  const saved = (at: number, savedEndpoint = endpoint) => JSON.stringify({ endpoint: savedEndpoint, at });
+  const device = async (url: string) => ({ endpointHash: await endpointHash(url) });
 
-  test("skips a device saved recently with the same subscription", () => {
-    expect(pushDeviceNeedsSave(endpoint, saved(now - 1_000), now)).toBe(false);
+  test("hashes an endpoint the same way on the server and the phone, without revealing it", async () => {
+    const expected = createHash("sha256").update(endpoint).digest("base64url").slice(0, 22);
+    expect(await endpointHash(endpoint)).toBe(expected);
+    expect(await endpointHash(endpoint)).not.toContain("push.apple.com");
   });
 
-  test("saves when nothing was recorded, the record is unreadable, or the subscription changed", () => {
-    expect(pushDeviceNeedsSave(endpoint, null, now)).toBe(true);
-    expect(pushDeviceNeedsSave(endpoint, "not json", now)).toBe(true);
-    expect(pushDeviceNeedsSave(endpoint, saved(now - 1_000, "https://web.push.apple.com/old"), now)).toBe(true);
+  test("is on only while the server's device list holds this device", async () => {
+    const hash = await endpointHash(endpoint);
+    const devices = [await device(endpoint)];
+    expect(pushDeviceState({ endpoint, hash, savedEndpoint: endpoint, devices })).toBe("on");
   });
 
-  test("saves again once a day, and when the recorded time is in the future", () => {
-    expect(pushDeviceNeedsSave(endpoint, saved(now - RESAVE_AFTER_MS), now)).toBe(true);
-    expect(pushDeviceNeedsSave(endpoint, saved(now + 60_000), now)).toBe(true);
+  test("shows off when this device was removed from the list, instead of claiming it is on", async () => {
+    const hash = await endpointHash(endpoint);
+    const devices = [await device("https://web.push.apple.com/other")];
+    expect(pushDeviceState({ endpoint, hash, savedEndpoint: endpoint, devices })).toBe("off");
+  });
+
+  test("saves again when the browser's subscription changed since this device last saved it", async () => {
+    const hash = await endpointHash(endpoint);
+    expect(pushDeviceState({ endpoint, hash, savedEndpoint: "https://web.push.apple.com/old", devices: [] })).toBe("resave");
+    expect(pushDeviceState({ endpoint, hash, savedEndpoint: null, devices: [] })).toBe("resave");
+  });
+
+  test("is off without a subscription", () => {
+    expect(pushDeviceState({ endpoint: null, hash: null, savedEndpoint: null, devices: [] })).toBe("off");
   });
 });

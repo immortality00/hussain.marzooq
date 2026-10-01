@@ -9,6 +9,7 @@ import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { usePeopleAdmin } from "@/hooks/usePeopleAdmin";
+import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 import { AvatarUploadField } from "@/components/shared/upload/AvatarUploadField";
 import { adminInputClasses } from "@/components/admin/admin-input";
 
@@ -83,6 +84,7 @@ export default function PeopleAdminClient() {
     remove,
     bulkBusy,
     bulkRemove,
+    changedDialog,
   } = usePeopleAdmin();
 
   const selection = useBulkSelection(items.map((p) => p.id));
@@ -359,6 +361,7 @@ export default function PeopleAdminClient() {
           </div>
         </section>
       )}
+      <RecordChangedDialog dialog={changedDialog} />
     </main>
   );
 }

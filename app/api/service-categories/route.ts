@@ -7,6 +7,7 @@ import {
   noStoreJson,
   normalizeSlug,
 } from "@/app/api/_lib/common";
+import { adminServiceCategoryOf, listAdminServiceCatalog } from "@/lib/server/admin-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -14,34 +15,8 @@ export async function GET() {
   const guard = await requireAdminOr401();
   if (guard) return guard;
 
-  const db = await getDb();
-
-  const [categories, services] = await Promise.all([
-    db.collection("service_categories").find({}).sort({ order: 1, createdAt: -1 }).toArray(),
-    db.collection("services").find({}).project({ categoryId: 1 }).toArray(),
-  ]);
-
-  const items = categories.map((cat) => {
-    const id = String(cat._id);
-    const slug = typeof cat.slug === "string" ? normalizeSlug(cat.slug) : "";
-
-    const servicesCount = services.filter((svc) => {
-      const svcCategoryId = typeof svc.categoryId === "string" ? svc.categoryId : "";
-      return svcCategoryId === id;
-    }).length;
-
-    return {
-      id,
-      name: typeof cat.name === "string" ? cat.name : "",
-      slug,
-      isActive: typeof cat.isActive === "boolean" ? cat.isActive : true,
-      order: typeof cat.order === "number" ? cat.order : 0,
-      servicesCount,
-      isSystem: typeof cat.isSystem === "boolean" ? cat.isSystem : slug === "others",
-    };
-  });
-
-  return noStoreJson({ ok: true, items });
+  const { categories } = await listAdminServiceCatalog(await getDb());
+  return noStoreJson({ ok: true, items: categories });
 }
 
 export async function POST(req: Request) {
@@ -83,17 +58,13 @@ export async function POST(req: Request) {
       : 0;
 
   const now = new Date();
-  const r = await db.collection("service_categories").insertOne({
-    name,
-    slug,
-    isActive: true,
-    order: nextOrder,
-    isSystem: false,
-    createdAt: now,
-    updatedAt: now,
-  });
+  const doc = { name, slug, isActive: true, order: nextOrder, isSystem: false, createdAt: now, updatedAt: now };
+  const r = await db.collection("service_categories").insertOne(doc);
 
   revalidatePath("/services", "layout");
 
-  return noStoreJson({ ok: true, id: r.insertedId.toString() }, { status: 201 });
+  return noStoreJson(
+    { ok: true, id: r.insertedId.toString(), item: adminServiceCategoryOf({ ...doc, _id: r.insertedId }, 0) },
+    { status: 201 }
+  );
 }

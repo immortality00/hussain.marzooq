@@ -13,5 +13,6 @@ export function BlogEditorScreen({ editing }: { editing: boolean }) {
 
   const form = blog.forms[id];
   if (!form) return <NoResults>Post not found.</NoResults>;
-  return <BlogPostEditor key={id} id={id} initial={form} categories={blog.categoryOptions} />;
+  const version = blog.posts.find((post) => post.id === id)?.updatedAt ?? null;
+  return <BlogPostEditor key={id} id={id} initial={form} version={version} categories={blog.categoryOptions} />;
 }

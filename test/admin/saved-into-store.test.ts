@@ -39,22 +39,27 @@ describe("media saved on this device", () => {
     expect(next.full.z.title).toBe("Z");
   });
 
-  test("a deleted item leaves the list at once", () => {
-    expect(withoutMedia(media, ["a"]).items.map((i) => i.id)).toEqual(["b"]);
+  test("a deleted item leaves the list and the editor data at once", () => {
+    const next = withoutMedia(media, ["a"]);
+    expect(next.items.map((i) => i.id)).toEqual(["b"]);
+    expect(next.full.a).toBeUndefined();
   });
 });
 
 describe("blog posts saved on this device", () => {
-  const blog: BlogSlice = {
-    posts: [
-      { id: "p1", title: "One", slug: "one", category: "", categoryLabel: "", isPublished: true, publishedAt: "2026-09-01T00:00:00.000Z", updatedAt: null },
-    ],
-    forms: {},
-    categoryOptions: [{ id: "c1", name: "Stories", slug: "stories" }],
-  };
-  const values = {
-    title: "Two",
-    slug: "two",
+  const item = (id: string, title: string, publishedAt: string | null) => ({
+    id,
+    title,
+    slug: title.toLowerCase(),
+    category: "stories",
+    categoryLabel: "Stories",
+    isPublished: publishedAt !== null,
+    publishedAt,
+    updatedAt: "2026-10-01T10:00:00.000Z",
+  });
+  const form = (title: string) => ({
+    title,
+    slug: title.toLowerCase(),
     excerpt: "",
     content: "",
     coverImageUrl: "",
@@ -63,23 +68,29 @@ describe("blog posts saved on this device", () => {
     tags: [],
     author: "Hussain Marzooq",
     isPublished: false,
+  });
+  const blog: BlogSlice = {
+    posts: [item("p1", "One", "2026-09-01T00:00:00.000Z")],
+    forms: { p1: form("One") },
+    categoryOptions: [{ id: "c1", name: "Stories", slug: "stories" }],
   };
 
-  test("a new post goes to the top with its category name", () => {
-    const next = withSavedPost(blog, "p2", values);
-    expect(next.posts[0]).toMatchObject({ id: "p2", title: "Two", category: "stories", categoryLabel: "Stories", isPublished: false });
-    expect(next.forms.p2).toEqual(values);
+  test("a saved post goes to the top exactly as the server returned it", () => {
+    const next = withSavedPost(blog, { item: item("p2", "Two", null), form: form("Two") });
+    expect(next.posts.map((p) => p.id)).toEqual(["p2", "p1"]);
+    expect(next.posts[0]).toMatchObject({ categoryLabel: "Stories", updatedAt: "2026-10-01T10:00:00.000Z" });
+    expect(next.forms.p2?.title).toBe("Two");
   });
 
-  test("publishing keeps the first publish date", () => {
-    const next = withSavedPost(blog, "p1", { ...values, title: "One", isPublished: true });
+  test("saving an existing post replaces it instead of adding a copy", () => {
+    const next = withSavedPost(blog, { item: item("p1", "One edited", "2026-09-01T00:00:00.000Z"), form: form("One edited") });
     expect(next.posts).toHaveLength(1);
-    expect(next.posts[0].publishedAt).toBe("2026-09-01T00:00:00.000Z");
+    expect(next.posts[0]?.title).toBe("One edited");
   });
 
   test("a deleted post leaves the list and the editor data", () => {
-    const next = withoutPost(withSavedPost(blog, "p2", values), "p2");
-    expect(next.posts.map((p) => p.id)).toEqual(["p1"]);
-    expect(next.forms.p2).toBeUndefined();
+    const next = withoutPost(blog, "p1");
+    expect(next.posts).toEqual([]);
+    expect(next.forms.p1).toBeUndefined();
   });
 });

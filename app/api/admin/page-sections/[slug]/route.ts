@@ -4,6 +4,8 @@ import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { ALL_PAGE_SECTIONS_SLUGS, type PageSectionsSlug } from "@/lib/server/page-sections";
 import { deleteReplacedSectionImages } from "@/lib/server/section-images";
+import { storedPageSections } from "@/lib/server/admin-pages";
+import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 import { isRecord } from "@/app/api/_lib/common";
 import { normalizeSearchProfile, searchProfileError } from "@/lib/seo/search-profile";
 
@@ -53,6 +55,9 @@ export async function PATCH(
 
   // Delete uploaded section images that were replaced or removed in this save.
   const existing = await db.collection("page_sections").findOne({ slug });
+  if (changedSinceOpened(req, existing)) {
+    return recordChangedResponse(await storedPageSections(db, slug as PageSectionsSlug));
+  }
   await deleteReplacedSectionImages(existing?.data, data);
 
   await db
@@ -67,5 +72,5 @@ export async function PATCH(
   }
   if (slug === "about") revalidatePath("/");
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true, item: await storedPageSections(db, slug as PageSectionsSlug) });
 }

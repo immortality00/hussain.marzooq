@@ -4,8 +4,6 @@ import { GeistMono } from "geist/font/mono";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 import { AppShell } from "@/components/site/AppShell";
-import { SiteFooter } from "@/components/site/SiteFooter";
-import { getTransitionImages } from "@/lib/server/public-media";
 import { SITE_URL } from "@/lib/seo/site-url";
 
 export const metadata: Metadata = {
@@ -28,13 +26,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const transitionImages = await getTransitionImages();
-
   return (
     <html
       lang="en"
@@ -44,9 +40,7 @@ export default async function RootLayout({
     >
       <body>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          <AppShell footer={<SiteFooter />} transitionImages={transitionImages}>
-            {children}
-          </AppShell>
+          <AppShell>{children}</AppShell>
         </ThemeProvider>
       </body>
     </html>

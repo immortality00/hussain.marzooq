@@ -59,8 +59,10 @@ PR — no build step. Then run `npm run dev` and check the affected page in the 
 
 ## Deployment
 
-Deployed on **Netlify**. Admin routes (`/admin/*`) ship `no-store` + `noindex` headers and
-a strict, dev/prod-aware Content-Security-Policy — both configured in `next.config.ts`. At
+Deployed on **Netlify**. Admin routes (`/admin/*`) ship a `noindex` header (the admin screens are
+pre-built shells served from Netlify's cache; their data comes from `/api/admin/snapshot`, which answers
+`no-store` and only with a valid session) and a strict, dev/prod-aware Content-Security-Policy — both
+configured in `next.config.ts`. At
 first deploy, rotate `ADMIN_COOKIE_SECRET` in the Netlify environment and re-verify the CSP
 against the live origin (see `SESSION-QUEUE.md` §L1).
 

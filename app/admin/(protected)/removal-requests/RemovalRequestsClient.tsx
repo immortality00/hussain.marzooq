@@ -1,46 +1,46 @@
 "use client";
 
 import { useState } from "react";
-import { applyUpdate, useAdminSlice, type Update } from "@/hooks/useAdminData";
+import { useAdminSlice } from "@/hooks/useAdminData";
 import Image from "next/image";
 import { AdminLink } from "@/components/admin/AdminLink";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-import { useAdminAction } from "@/hooks/useAdminAction";
-import type { RemovalDecisionItem, RemovalRequestItem } from "@/lib/server/removal-requests";
+import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
+import { adminWrite } from "@/lib/client/admin-store";
+import type { AdminSnapshot } from "@/lib/server/admin-snapshot";
 import { adminInputClasses } from "@/components/admin/admin-input";
 
 const MIN_PASSWORD_LENGTH = 8;
 
+type DecisionReply = {
+  ok?: boolean;
+  error?: string;
+  removal?: AdminSnapshot["removal"];
+  person?: AdminSnapshot["people"][number] | null;
+};
+
+async function decide(id: string, body: Record<string, string>): Promise<DecisionReply> {
+  const res = await adminWrite(
+    `/api/people/${encodeURIComponent(id)}/removal`,
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
+    ["removal", "people", "media", "dashboard"]
+  );
+  const data = (await res.json().catch(() => null)) as DecisionReply | null;
+  if (!res.ok || !data?.ok || !data.removal) throw new Error(data?.error ?? "Action failed.");
+  return data;
+}
+
 export default function RemovalRequestsClient() {
   const [removal, setRemoval] = useAdminSlice("removal");
+  const [, setPeople] = useAdminSlice("people");
   const rows = removal.items;
   const historyRows = removal.history;
-  const setRows = (update: Update<RemovalRequestItem[]>) =>
-    setRemoval((current) => ({ ...current, items: applyUpdate(update, current.items) }));
-  const setHistoryRows = (update: Update<RemovalDecisionItem[]>) =>
-    setRemoval((current) => ({ ...current, history: applyUpdate(update, current.history) }));
   const [busyId, setBusyId] = useState("");
   const [approvingId, setApprovingId] = useState("");
   const [approvePassword, setApprovePassword] = useState("");
   const { feedback, setFeedback } = useAdminAction();
-
-  function recordDecision(row: RemovalRequestItem, status: "approved" | "dismissed") {
-    setHistoryRows((prev) => [
-      {
-        id: `${row.id}-${Date.now()}`,
-        name: row.name,
-        slug: row.slug,
-        email: row.email,
-        reason: row.reason,
-        status,
-        requestedAt: row.requestedAt,
-        decidedAt: new Date().toISOString(),
-      },
-      ...prev,
-    ]);
-  }
 
   function startApprove(id: string) {
     if (busyId) return;
@@ -49,67 +49,41 @@ export default function RemovalRequestsClient() {
     setFeedback(null);
   }
 
-  async function confirmApprove(id: string) {
-    if (busyId) return;
-    if (approvePassword.trim().length < MIN_PASSWORD_LENGTH) {
-      setFeedback({ type: "err", text: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` });
-      return;
-    }
-
+  async function run(id: string, busyText: string, body: Record<string, string>, okText: string) {
     setBusyId(id);
-    setFeedback({ type: "info", text: "Approving…" });
-
+    setFeedback({ type: "info", text: busyText });
     try {
-      const res = await fetch(`/api/people/${encodeURIComponent(id)}/removal`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "approve", password: approvePassword.trim() }),
-      });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
-      if (!res.ok || !data?.ok) {
-        setFeedback({ type: "err", text: data?.error ?? "Action failed." });
-        return;
-      }
-      const row = rows.find((r) => r.id === id);
-      if (row) recordDecision(row, "approved");
-      setRows((prev) => prev.filter((r) => r.id !== id));
+      const reply = await decide(id, body);
+      setRemoval(reply.removal!);
+      const person = reply.person;
+      if (person) setPeople((prev) => prev.map((p) => (p.id === person.id ? person : p)));
       setApprovingId("");
       setApprovePassword("");
-      setFeedback({ type: "ok", text: "✅ Removal approved. Linked media hidden and the profile is password-only." });
-    } catch {
-      setFeedback({ type: "err", text: "Action failed." });
+      setFeedback({ type: "ok", text: okText });
+    } catch (e: unknown) {
+      setFeedback({ type: "err", text: errorMessage(e, "Action failed.") });
     } finally {
       setBusyId("");
     }
   }
 
-  async function dismiss(id: string) {
+  function confirmApprove(id: string) {
     if (busyId) return;
-    if (!confirm("Dismiss this request?")) return;
-
-    setBusyId(id);
-    setFeedback({ type: "info", text: "Dismissing…" });
-
-    try {
-      const res = await fetch(`/api/people/${encodeURIComponent(id)}/removal`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "dismiss" }),
-      });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
-      if (!res.ok || !data?.ok) {
-        setFeedback({ type: "err", text: data?.error ?? "Action failed." });
-        return;
-      }
-      const row = rows.find((r) => r.id === id);
-      if (row) recordDecision(row, "dismissed");
-      setRows((prev) => prev.filter((r) => r.id !== id));
-      setFeedback({ type: "ok", text: "✅ Request dismissed." });
-    } catch {
-      setFeedback({ type: "err", text: "Action failed." });
-    } finally {
-      setBusyId("");
+    if (approvePassword.trim().length < MIN_PASSWORD_LENGTH) {
+      setFeedback({ type: "err", text: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` });
+      return;
     }
+    return run(
+      id,
+      "Approving…",
+      { action: "approve", password: approvePassword.trim() },
+      "✅ Removal approved. Linked media hidden and the profile is password-only."
+    );
+  }
+
+  function dismiss(id: string) {
+    if (busyId || !confirm("Dismiss this request?")) return;
+    return run(id, "Dismissing…", { action: "dismiss" }, "✅ Request dismissed.");
   }
 
   return (

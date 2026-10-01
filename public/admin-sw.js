@@ -10,6 +10,8 @@ const CURRENT_CACHES = [LAUNCH_CACHE, PAGE_CACHE, STATIC_CACHE];
 const STATIC_LIMIT = 300;
 const SAVE_COPY_HEADER = "x-hm-save-copy";
 const DATA_CHANGED_MESSAGE = "hm-admin-data-changed";
+const NAVIGATE_MESSAGE = "hm-admin-navigate";
+const NAVIGATE_ANSWER_MS = 1000;
 
 let signedOutAt = 0;
 
@@ -176,6 +178,18 @@ self.addEventListener("push", (event) => {
   );
 });
 
+function askToNavigate(client, target) {
+  return new Promise((resolve) => {
+    const channel = new MessageChannel();
+    const timer = setTimeout(() => resolve(false), NAVIGATE_ANSWER_MS);
+    channel.port1.onmessage = () => {
+      clearTimeout(timer);
+      resolve(true);
+    };
+    client.postMessage({ type: NAVIGATE_MESSAGE, url: target }, [channel.port2]);
+  });
+}
+
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const path = event.notification.data && event.notification.data.url;
@@ -184,15 +198,16 @@ self.addEventListener("notificationclick", (event) => {
   event.waitUntil(
     (async () => {
       const windows = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
-      for (const client of windows) {
-        if (new URL(client.url).origin !== self.location.origin) continue;
-        await client.focus();
-        if ("navigate" in client) {
-          await client.navigate(target);
-        }
+      const sameOrigin = windows.filter((client) => new URL(client.url).origin === self.location.origin);
+      const admin = sameOrigin.find((client) => new URL(client.url).pathname.startsWith("/admin/"));
+      const client = admin || sameOrigin[0];
+      if (!client) {
+        await self.clients.openWindow(target);
         return;
       }
-      await self.clients.openWindow(target);
+      await client.focus();
+      const moved = admin ? await askToNavigate(admin, target) : false;
+      if (!moved && "navigate" in client) await client.navigate(target);
     })()
   );
 });

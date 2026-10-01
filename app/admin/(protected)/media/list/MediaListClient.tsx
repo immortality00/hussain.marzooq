@@ -25,7 +25,7 @@ export default function MediaListClient() {
   const [typeFilter, setTypeFilter] = useState("");
   const [visibilityFilter, setVisibilityFilter] = useState("");
 
-  const { items, nextCursor, loading, loadingMore, loadMore, refresh, setItems } = useMediaListView(
+  const { items, nextCursor, loading, loadingMore, loadMore, refresh, removeItems } = useMediaListView(
     { query, category: categoryFilter, type: typeFilter, visibility: visibilityFilter },
     setBanner,
   );
@@ -43,7 +43,7 @@ export default function MediaListClient() {
   const selection = useBulkSelection(items.map((m) => m.id));
   const { del, bulkDelete, deletingId, bulkBusy, usageDialog } = useMediaListDelete({
     items,
-    setItems,
+    removeItems,
     selection,
     setBanner,
   });

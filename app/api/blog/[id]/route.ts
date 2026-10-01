@@ -17,6 +17,8 @@ import {
   isAllowedCloudinaryUrl,
 } from "@/lib/server/cloudinary-assets";
 import { CLOUDINARY_BLOG_FOLDER } from "@/lib/cloudinary-folders";
+import { savedBlogPost } from "@/app/admin/(protected)/blog/lib/server";
+import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +40,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const found = await findByIdOr404(db, "blog_posts", oid);
   if (found instanceof Response) return found;
   const existing = found.doc;
+
+  if (changedSinceOpened(req, existing)) return recordChangedResponse(await savedBlogPost(existing));
 
   const patch: Record<string, unknown> = { updatedAt: new Date() };
 
@@ -124,7 +128,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (oldSlug) revalidatePath(`/blog/${oldSlug}`);
   if (newSlug && newSlug !== oldSlug) revalidatePath(`/blog/${newSlug}`);
 
-  return noStoreJson({ ok: true });
+  const saved = await db.collection("blog_posts").findOne({ _id: oid });
+  return noStoreJson({ ok: true, ...(saved ? await savedBlogPost(saved) : {}) });
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {

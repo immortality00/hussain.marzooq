@@ -56,6 +56,7 @@ export type MediaItem = {
   resourceType: string | null;
   embedUrl: string | null;
   posterUrl: string | null;
+  updatedAt?: string | null;
 };
 
 export type PersonProfileOption = {

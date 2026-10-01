@@ -9,7 +9,7 @@ export type PageSettings = {
   // The image shown on this discipline's card in the Work overlay ("work
   // layout"). Empty means no image — there is no auto-pick fallback.
   cardImage: SectionImage;
-  updatedAt: Date;
+  updatedAt: Date | null;
 };
 
 function readCardImage(value: unknown): SectionImage {
@@ -17,19 +17,22 @@ function readCardImage(value: unknown): SectionImage {
 }
 
 function defaultPageSettings(slug: string): PageSettings {
-  return { slug, isActive: true, cardImage: EMPTY_SECTION_IMAGE, updatedAt: new Date() };
+  return { slug, isActive: true, cardImage: EMPTY_SECTION_IMAGE, updatedAt: null };
+}
+
+export function pageSettingsOf(slug: string, doc: Record<string, unknown> | null | undefined): PageSettings {
+  return {
+    slug,
+    isActive: typeof doc?.isActive === "boolean" ? doc.isActive : true,
+    cardImage: readCardImage(doc?.cardImage),
+    updatedAt: doc?.updatedAt instanceof Date ? doc.updatedAt : null,
+  };
 }
 
 export async function getPageSettings(slug: string): Promise<PageSettings> {
   try {
     const db = await getDb();
-    const doc = await db.collection("page_settings").findOne({ slug });
-    return {
-      slug,
-      isActive: typeof doc?.isActive === "boolean" ? doc.isActive : true,
-      cardImage: readCardImage(doc?.cardImage),
-      updatedAt: doc?.updatedAt instanceof Date ? doc.updatedAt : new Date(),
-    };
+    return pageSettingsOf(slug, await db.collection("page_settings").findOne({ slug }));
   } catch {
     return defaultPageSettings(slug);
   }
@@ -48,22 +51,19 @@ export async function getBlogActive(): Promise<boolean> {
   }
 }
 
+const SETTINGS_SLUGS = ["photography", "videography", "nft", "dancing", "web-development", "blog"];
+
+export async function readAllPageSettings(): Promise<PageSettings[]> {
+  const db = await getDb();
+  const docs = await db.collection("page_settings").find({ slug: { $in: SETTINGS_SLUGS } }).toArray();
+  const map = new Map(docs.map((d) => [d.slug as string, d]));
+  return SETTINGS_SLUGS.map((slug) => pageSettingsOf(slug, map.get(slug)));
+}
+
 export const getAllPageSettings = cache(async (): Promise<PageSettings[]> => {
-  const SLUGS = ["photography", "videography", "nft", "dancing", "web-development", "blog"];
   try {
-    const db = await getDb();
-    const docs = await db.collection("page_settings").find({ slug: { $in: SLUGS } }).toArray();
-    const map = new Map(docs.map((d) => [d.slug as string, d]));
-    return SLUGS.map((slug) => {
-      const doc = map.get(slug);
-      return {
-        slug,
-        isActive: typeof doc?.isActive === "boolean" ? doc.isActive : true,
-        cardImage: readCardImage(doc?.cardImage),
-        updatedAt: doc?.updatedAt instanceof Date ? doc.updatedAt : new Date(),
-      };
-    });
+    return await readAllPageSettings();
   } catch {
-    return SLUGS.map(defaultPageSettings);
+    return SETTINGS_SLUGS.map(defaultPageSettings);
   }
 });

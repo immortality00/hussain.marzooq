@@ -10,7 +10,7 @@ const { updateOne, storedDoc, getDb } = vi.hoisted(() => {
     async () => ({ matchedCount: 1 })
   );
   const storedDoc: Record<string, unknown> = {};
-  const getDb = vi.fn(async () => ({ collection: () => ({ updateOne }) }));
+  const getDb = vi.fn(async () => ({ collection: () => ({ updateOne, findOne: async () => storedDoc }) }));
   return { updateOne, storedDoc, getDb };
 });
 

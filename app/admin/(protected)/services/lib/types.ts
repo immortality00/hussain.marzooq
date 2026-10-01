@@ -12,6 +12,7 @@ export type Service = {
   isArchived: boolean;
   order: number;
   inquiriesCount: number;
+  updatedAt: string | null;
 };
 
 export type ServiceCategory = {

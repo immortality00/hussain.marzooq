@@ -7,11 +7,12 @@ import { useAdminNavigate } from "@/hooks/useAdminNavigate";
 import { useAdminSlice } from "@/hooks/useAdminData";
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 import { useMediaUsageDialog } from "@/components/admin/media-usage/useMediaUsageDialog";
-import { fetchMediaItem, buildMediaPayload } from "./editor-actions";
+import { useRecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
+import { saveGuarded } from "@/lib/record-changed";
+import { buildMediaPayload } from "./editor-actions";
 import { deleteWithUsageCheck, saveWithUsageCheck } from "./media-usage-flows";
 import { useMediaEditorState } from "./editor-state";
-import { withSavedMedia, withoutMedia } from "./media-store";
-import { forgetFoundMedia, keepFoundMedia } from "./found-media";
+import { withSavedMedia, withoutMedia, type SavedMedia } from "./media-store";
 import type { MediaCategory, MediaItem } from "./types";
 import { findFirstAppearanceError } from "./utils";
 
@@ -45,6 +46,8 @@ export function useMediaEditorController({
     initial: loadError ? { type: "err", text: loadError } : null,
   });
   const usage = useMediaUsageDialog(() => setBanner(null));
+  const changed = useRecordChangedDialog(() => setBanner(null));
+  const [version, setVersion] = useState<string | null>(initialItem?.updatedAt ?? null);
 
   const busy = busyAction !== null;
   const setPrimaryCategoryRef = useRef(editor.setPrimaryCategory);
@@ -135,9 +138,16 @@ export function useMediaEditorController({
         nftMarketplaceUrl: editor.nftMarketplaceUrl,
       });
 
-      const result = await saveWithUsageCheck(
-        { editingId: editor.editingId, payloadBase, payloadWithAsset },
-        usage.ask
+      const result = await saveGuarded(
+        editor.editingId ? version : undefined,
+        (expected) => saveWithUsageCheck({ editingId: editor.editingId, payloadBase, payloadWithAsset, expected }, usage.ask),
+        changed.ask,
+        (current: SavedMedia) => current.item.updatedAt,
+        (current: SavedMedia) => {
+          setMedia((media) => withSavedMedia(media, current, false));
+          editor.loadIntoState(current.item as MediaItem);
+          setVersion(current.item.updatedAt);
+        }
       );
       if (!result) {
         setBanner(null);
@@ -149,11 +159,9 @@ export function useMediaEditorController({
       }
 
       const { saved } = result;
-      if (saved) {
-        keepFoundMedia({ [saved.listItem.id]: saved.item });
-        setMedia((media) => withSavedMedia(media, saved, result.mode === "created"));
-      }
-      const reloaded = async () => (saved ? (saved.item as MediaItem) : await fetchMediaItem(editor.editingId));
+      if (!saved) throw new Error("The server did not return the saved media.");
+      setMedia((media) => withSavedMedia(media, saved, result.mode === "created"));
+      setVersion(saved.item.updatedAt);
 
       const posterNote = result.posterMissing ? " — the video thumbnail couldn't be fetched." : "";
 
@@ -165,10 +173,10 @@ export function useMediaEditorController({
           type: "err",
           text: `Media updated, but these places could not be updated: ${result.pagesNotUpdated.join(", ")}.`,
         });
-        editor.loadIntoState(await reloaded());
+        editor.loadIntoState(saved.item as MediaItem);
       } else {
         setBanner({ type: "ok", text: posterNote ? `✅ Media updated${posterNote}` : "✅ Media updated successfully." });
-        editor.loadIntoState(await reloaded());
+        editor.loadIntoState(saved.item as MediaItem);
       }
     } catch (e: unknown) {
       setBanner({
@@ -193,7 +201,6 @@ export function useMediaEditorController({
         return;
       }
       const deletedId = editor.editingId;
-      forgetFoundMedia([deletedId]);
       setMedia((media) => withoutMedia(media, [deletedId]));
       setBanner({ type: "ok", text: "✅ Media deleted." });
       editor.resetFields(true, () => setBanner(null));
@@ -223,6 +230,7 @@ export function useMediaEditorController({
     banner,
     setBanner,
     usageDialog: usage.dialog,
+    changedDialog: changed.dialog,
     navigationCover,
     save,
     remove,

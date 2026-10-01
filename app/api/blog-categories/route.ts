@@ -3,6 +3,7 @@ import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { asString, isRecord, noStoreJson } from "@/app/api/_lib/common";
 import { slugifyTag, isValidTagSlug } from "@/lib/server/media-tags";
+import { adminBlogCategoryOf, listAdminBlogCategories } from "@/lib/server/admin-catalog";
 
 export const dynamic = "force-dynamic";
 
@@ -10,35 +11,7 @@ export async function GET() {
   const deny = await requireAdminOr401();
   if (deny) return deny;
 
-  const db = await getDb();
-
-  const [categories, counts] = await Promise.all([
-    db.collection("blog_categories").find({}).sort({ order: 1, createdAt: -1 }).toArray(),
-    db
-      .collection("blog_posts")
-      .aggregate<{ _id: string; count: number }>([
-        { $match: { categoryId: { $type: "string", $ne: "" } } },
-        { $group: { _id: "$categoryId", count: { $sum: 1 } } },
-      ])
-      .toArray(),
-  ]);
-
-  const countMap = new Map<string, number>();
-  for (const row of counts) countMap.set(row._id, row.count);
-
-  const items = categories.map((cat) => {
-    const id = String(cat._id);
-    return {
-      id,
-      name: typeof cat.name === "string" ? cat.name : "",
-      slug: typeof cat.slug === "string" ? cat.slug : "",
-      isActive: typeof cat.isActive === "boolean" ? cat.isActive : true,
-      order: typeof cat.order === "number" ? cat.order : 0,
-      postsCount: countMap.get(id) ?? 0,
-    };
-  });
-
-  return noStoreJson({ ok: true, items });
+  return noStoreJson({ ok: true, items: await listAdminBlogCategories(await getDb()) });
 }
 
 export async function POST(req: Request) {
@@ -75,16 +48,10 @@ export async function POST(req: Request) {
       : 0;
 
   const now = new Date();
-  const r = await db.collection("blog_categories").insertOne({
-    name,
-    slug,
-    isActive: true,
-    order: nextOrder,
-    createdAt: now,
-    updatedAt: now,
-  });
+  const doc = { name, slug, isActive: true, order: nextOrder, createdAt: now, updatedAt: now };
+  const r = await db.collection("blog_categories").insertOne(doc);
 
   revalidatePath("/blog", "layout");
 
-  return noStoreJson({ ok: true, id: r.insertedId.toString() });
+  return noStoreJson({ ok: true, id: r.insertedId.toString(), item: adminBlogCategoryOf({ ...doc, _id: r.insertedId }, 0) });
 }

@@ -48,8 +48,11 @@ export default function ServiceEditorModal({
     [categoriesClean]
   );
 
+  const latestCategories = useLatest({ categoriesClean, othersCategory });
+
   useEffect(() => {
     if (!open) return;
+    const { categoriesClean, othersCategory } = latestCategories.current;
 
     setName(initial?.name ?? "");
     setSlug(initial?.slug ?? "");
@@ -70,7 +73,7 @@ export default function ServiceEditorModal({
     setCurrency(initial?.currency ?? "AED");
     setImageUrl(initial?.imageUrl ?? "");
     setIsActive(initial?.isActive ?? true);
-  }, [open, initial, categoriesClean, othersCategory]);
+  }, [open, initial, latestCategories]);
 
   if (!open) return null;
 

@@ -21,6 +21,7 @@ import { BatchReviewList } from "./components/BatchReviewList";
 import { buildBatchPayload, createBatchItem } from "./lib/batch-save";
 import { batchItemLabel, useBatchMediaState } from "./lib/useBatchMediaState";
 import { adminInputClasses } from "@/components/admin/admin-input";
+import { ADMIN_REQUEST_LIMIT, settleLimited } from "@/lib/settle-limited";
 
 const STEPS = ["Category", "Media", "Details", "Appearances", "Review"] as const;
 
@@ -99,8 +100,8 @@ export default function BatchMediaClient() {
     const failed: string[] = [];
     const saved: SavedMedia[] = [];
     let postersMissing = 0;
-    const results = await Promise.allSettled(
-      itemsToSave.map((item) => createBatchItem(buildBatchPayload(item, shared)))
+    const results = await settleLimited(itemsToSave, ADMIN_REQUEST_LIMIT, (item) =>
+      createBatchItem(buildBatchPayload(item, shared))
     );
 
     for (let i = 0; i < results.length; i += 1) {

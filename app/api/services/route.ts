@@ -1,5 +1,7 @@
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
+import { ensureOthersCategory } from "@/lib/db/ensureSystemCategories";
+import { adminServiceOf } from "@/lib/server/admin-catalog";
 import { isAdminAuthedServer, requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
@@ -119,13 +121,9 @@ export async function POST(req: Request) {
     categorySlug =
       typeof foundCategory.slug === "string" ? normalizeSlug(foundCategory.slug) : "others";
   } else {
-    const others = await db.collection("service_categories").findOne(
-      { slug: "others" },
-      { projection: { _id: 1, slug: 1 } }
-    );
-
-    categoryId = others ? String(others._id) : null;
-    categorySlug = typeof others?.slug === "string" ? normalizeSlug(others.slug) : "others";
+    const others = await ensureOthersCategory(db);
+    categoryId = String(others._id);
+    categorySlug = normalizeSlug(others.slug) || "others";
   }
 
   const last = await db.collection("services").find({}).sort({ order: -1 }).limit(1).toArray();
@@ -136,7 +134,7 @@ export async function POST(req: Request) {
 
   const now = new Date();
 
-  const r = await db.collection("services").insertOne({
+  const doc = {
     name,
     slug,
     category: categorySlug,
@@ -151,10 +149,11 @@ export async function POST(req: Request) {
     inquiriesCount: 0,
     createdAt: now,
     updatedAt: now,
-  });
+  };
+  const r = await db.collection("services").insertOne(doc);
 
   revalidatePath("/services", "layout");
   revalidatePath("/");
 
-  return noStoreJson({ ok: true, id: r.insertedId.toString() });
+  return noStoreJson({ ok: true, id: r.insertedId.toString(), item: adminServiceOf({ ...doc, _id: r.insertedId }, 0) });
 }

@@ -217,23 +217,28 @@ export async function getPageSections<K extends PageSectionsSlug>(
   }
 }
 
-export async function getAllPageSections(): Promise<
-  { slug: PageSectionsSlug; data: PageSectionsMap[PageSectionsSlug] }[]
-> {
-  try {
-    const db = await getDb();
-    const docs = await db
-      .collection("page_sections")
-      .find({ slug: { $in: ALL_PAGE_SECTIONS_SLUGS } })
-      .toArray();
-    const map = new Map(docs.map((d) => [d.slug as string, d]));
-    return ALL_PAGE_SECTIONS_SLUGS.map((slug) => ({
-      slug,
-      data: mergeWithDefaults(slug, map.get(slug)),
-    }));
-  } catch {
-    return ALL_PAGE_SECTIONS_SLUGS.map((slug) => ({ slug, data: DEFAULTS[slug] }));
-  }
+type StoredPageSections = {
+  slug: PageSectionsSlug;
+  data: PageSectionsMap[PageSectionsSlug];
+  updatedAt: Date | null;
+};
+
+export function pageSectionsOf(slug: PageSectionsSlug, doc: Record<string, unknown> | null | undefined): StoredPageSections {
+  return {
+    slug,
+    data: mergeWithDefaults(slug, doc),
+    updatedAt: doc?.updatedAt instanceof Date ? doc.updatedAt : null,
+  };
+}
+
+export async function readAllPageSections(): Promise<StoredPageSections[]> {
+  const db = await getDb();
+  const docs = await db
+    .collection("page_sections")
+    .find({ slug: { $in: ALL_PAGE_SECTIONS_SLUGS } })
+    .toArray();
+  const map = new Map(docs.map((d) => [d.slug as string, d]));
+  return ALL_PAGE_SECTIONS_SLUGS.map((slug) => pageSectionsOf(slug, map.get(slug)));
 }
 
 export async function getSearchProfile(): Promise<SearchProfile> {

@@ -1,36 +1,28 @@
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import { E2E } from "./fixtures";
+import { otherDevice, signIn } from "./admin-helpers";
 
-async function signIn(page: Page) {
-  await page.goto("/admin");
-  await page.getByPlaceholder("Password").fill(E2E.adminPassword);
-  await page.getByRole("button", { name: "Login" }).click();
-  await expect(page).toHaveURL(/\/admin\/dashboard/, { timeout: 20_000 });
-}
+const DAY = 86_400;
 
-function cacheable(cacheControl: string | undefined) {
-  return !(cacheControl ?? "").includes("no-store") && !(cacheControl ?? "").includes("private");
-}
-
-async function otherDevice(browser: Browser) {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  await signIn(page);
-  return { context, page };
+function cachedUntilChanged(cacheControl: string | undefined) {
+  const value = cacheControl ?? "";
+  if (value.includes("no-store") || value.includes("private")) return false;
+  const shared = /s-maxage=(\d+)/.exec(value);
+  return !shared || Number(shared[1]) >= DAY;
 }
 
 test.describe("admin speed", () => {
-  test("serves the sign-in page and every admin screen pre-built and cacheable", async ({ page }) => {
+  test("serves the sign-in page and every admin screen pre-built, with no five-minute expiry", async ({ page }) => {
     const signInPage = await page.request.get("/admin");
     expect(signInPage.status()).toBe(200);
-    expect(cacheable(signInPage.headers()["cache-control"])).toBe(true);
+    expect(cachedUntilChanged(signInPage.headers()["cache-control"])).toBe(true);
     expect(signInPage.headers()["x-robots-tag"]).toContain("noindex");
 
     await signIn(page);
     for (const path of ["/admin/dashboard", "/admin/inquiries", "/admin/media/list", "/admin/blog/edit"]) {
       const screen = await page.request.get(path);
       expect(screen.status(), path).toBe(200);
-      expect(cacheable(screen.headers()["cache-control"]), path).toBe(true);
+      expect(cachedUntilChanged(screen.headers()["cache-control"]), path).toBe(true);
     }
 
     await page.goto("/admin");

@@ -1,4 +1,3 @@
-import { cache } from "react";
 import type { Collection, Document, Filter } from "mongodb";
 import { getDb } from "./db";
 
@@ -17,12 +16,14 @@ export type AdminDashboardStats = {
     byCategory: { key: string; label: string; count: number }[];
   };
   testimonials: { total: number; pending: number };
-  inquiries: { total: number; new: number; active: number };
+  inquiries: { new: number; active: number };
   people: number;
   removalRequests: number;
   services: number;
   privateGalleries: number;
 };
+
+const NOT_ARCHIVED = { isArchived: { $ne: true } };
 
 async function facetCounts<K extends string>(
   collection: Collection,
@@ -36,23 +37,6 @@ async function facetCounts<K extends string>(
     .toArray();
   return Object.fromEntries(keys.map((key) => [key, row?.[key]?.[0]?.n ?? 0])) as Record<K, number>;
 }
-
-const getAttentionCounts = cache(async () => {
-  const db = await getDb();
-  const [testimonials, inquiries, people] = await Promise.all([
-    facetCounts(db.collection("testimonials"), { total: {}, pending: { isApproved: { $ne: true } } }),
-    facetCounts(db.collection("inquiries"), {
-      total: {},
-      new: { status: "new" },
-      active: { status: { $nin: ["resolved", "rejected"] } },
-    }),
-    facetCounts(db.collection("people_profiles"), {
-      total: {},
-      removal: { removalRequestedAt: { $exists: true, $ne: null } },
-    }),
-  ]);
-  return { testimonials, inquiries, people };
-});
 
 async function getMediaCounts() {
   const db = await getDb();
@@ -84,25 +68,27 @@ async function getMediaCounts() {
   };
 }
 
-export async function getAdminNotificationCount(): Promise<number> {
-  const { testimonials, inquiries, people } = await getAttentionCounts();
-  return testimonials.pending + inquiries.new + people.removal;
-}
-
 export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
   const db = await getDb();
-  const [attention, media, services, privateGalleries] = await Promise.all([
-    getAttentionCounts(),
+  const [testimonials, inquiries, people, media, services, privateGalleries] = await Promise.all([
+    facetCounts(db.collection("testimonials"), { total: {}, pending: { isApproved: { $ne: true } } }),
+    facetCounts(db.collection("inquiries"), {
+      new: { status: "new", ...NOT_ARCHIVED },
+      active: { status: { $nin: ["resolved", "rejected"] }, ...NOT_ARCHIVED },
+    }),
+    facetCounts(db.collection("people_profiles"), {
+      total: {},
+      removal: { removalRequestedAt: { $exists: true, $ne: null } },
+    }),
     getMediaCounts(),
     db.collection("services").countDocuments({}),
     db.collection("private_galleries").countDocuments({}),
   ]);
-  const { testimonials, inquiries, people } = attention;
 
   return {
     media,
-    testimonials: { total: testimonials.total, pending: testimonials.pending },
-    inquiries: { total: inquiries.total, new: inquiries.new, active: inquiries.active },
+    testimonials,
+    inquiries,
     people: people.total,
     removalRequests: people.removal,
     services,

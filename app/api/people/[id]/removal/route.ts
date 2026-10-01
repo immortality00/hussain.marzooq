@@ -3,6 +3,17 @@ import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route"
 import { asNullableString, isRecord, noStoreJson } from "@/app/api/_lib/common";
 import { getDb } from "@/lib/server/db";
 import { MIN_PERSON_PASSWORD_LENGTH, hashPassword, makeAccessToken } from "@/lib/password-gate";
+import { getRemovalRequestHistory, getRemovalRequestQueue } from "@/lib/server/removal-requests";
+import { storedPerson } from "@/lib/server/admin-lists";
+
+async function decided(db: Awaited<ReturnType<typeof getDb>>, oid: Parameters<typeof storedPerson>[1]) {
+  const [items, history, person] = await Promise.all([
+    getRemovalRequestQueue(),
+    getRemovalRequestHistory(),
+    storedPerson(db, oid),
+  ]);
+  return noStoreJson({ ok: true, removal: { items, history }, person });
+}
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +54,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
       .updateMany({ personId: id, status: "pending" }, { $set: { status: "dismissed", decidedAt: now } });
 
     revalidatePath("/admin/removal-requests");
-    return noStoreJson({ ok: true });
+    return decided(db, oid);
   }
 
   const password = (asNullableString(body.password) ?? "").trim();
@@ -84,5 +95,5 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   revalidatePath("/", "layout");
   if (slug) revalidatePath(`/people/${slug}`);
 
-  return noStoreJson({ ok: true });
+  return decided(db, oid);
 }

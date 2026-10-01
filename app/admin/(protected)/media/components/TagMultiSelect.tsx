@@ -4,7 +4,8 @@ import { useMemo, useState } from "react";
 import { slugifyTag } from "@/lib/server/media-tags";
 import { createTagRequest } from "@/app/admin/(protected)/tags/lib/api";
 import { adminInputClasses } from "@/components/admin/admin-input";
-import { useMediaOptions, type MediaTagOption } from "./MediaOptionsContext";
+import { useAdminSlice } from "@/hooks/useAdminData";
+import { useMediaOptions } from "./MediaOptionsContext";
 
 export default function TagMultiSelect({
   selectedSlugs,
@@ -15,8 +16,8 @@ export default function TagMultiSelect({
   addTag: (slug: string) => void;
   removeTag: (slug: string) => void;
 }) {
-  const { tags } = useMediaOptions();
-  const [options, setOptions] = useState<MediaTagOption[]>(tags);
+  const { tags: options } = useMediaOptions();
+  const [, setTags] = useAdminSlice("mediaTags");
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
@@ -51,11 +52,7 @@ export default function TagMultiSelect({
 
     try {
       const created = await createTagRequest({ label, slug: "", description: "" });
-      setOptions((prev) =>
-        prev.some((o) => o.slug === created.slug)
-          ? prev
-          : [...prev, { slug: created.slug, label: created.label }]
-      );
+      setTags((prev) => [...prev.filter((tag) => tag.id !== created.id), created]);
       addTag(created.slug);
       setQuery("");
     } catch (e: unknown) {

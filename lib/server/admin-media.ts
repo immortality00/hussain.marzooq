@@ -1,5 +1,6 @@
 import { ObjectId, type Db, type Document } from "mongodb";
 import { asStringArray } from "@/app/api/_lib/common";
+import { ADMIN_MEDIA_MAX, ADMIN_MEDIA_PAGE } from "@/lib/admin-data";
 import { lookupPeople, pickPeople, sanitizeAppearances, uniquePeopleIds } from "@/app/api/_lib/media";
 import { mediaAssetPath } from "@/lib/media-asset-path";
 import { normalizeDeliveryType } from "./cloudinary-private";
@@ -12,9 +13,9 @@ type Cursor = {
   id: string;
 };
 
-const DEFAULT_LIMIT = 60;
-const MAX_LIMIT = 120;
-const MAX_ID_LOOKUP_LIMIT = 300;
+const DEFAULT_LIMIT = ADMIN_MEDIA_PAGE;
+const MAX_LIMIT = ADMIN_MEDIA_MAX;
+const MAX_ID_LOOKUP_LIMIT = ADMIN_MEDIA_MAX;
 
 function escapeRegExp(value: string) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

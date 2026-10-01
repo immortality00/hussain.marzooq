@@ -56,15 +56,20 @@ function collection(name: string) {
   return {
     find: (filter: Filter = {}) => ({ toArray: async () => docs().filter((doc) => matches(doc, filter)) }),
     findOne: async (filter: Filter = {}) => docs().find((doc) => matches(doc, filter)) ?? null,
+    countDocuments: async (filter: Filter = {}) => docs().filter((doc) => matches(doc, filter)).length,
     insertOne: async (doc: Doc) => {
       guardWrite();
       const insertedId = new ObjectId();
       docs().push({ _id: insertedId, ...doc });
       return { insertedId };
     },
-    updateOne: async (filter: Filter, update: { $set?: Doc }) => {
+    updateOne: async (filter: Filter, update: { $set?: Doc; $setOnInsert?: Doc }, options?: { upsert?: boolean }) => {
       guardWrite();
-      const doc = docs().find((entry) => matches(entry, filter));
+      let doc = docs().find((entry) => matches(entry, filter));
+      if (!doc && options?.upsert) {
+        doc = { _id: new ObjectId(), ...filter, ...update.$setOnInsert };
+        docs().push(doc);
+      }
       if (!doc) return { matchedCount: 0 };
       for (const [path, value] of Object.entries(update.$set ?? {})) write(doc, path, value);
       return { matchedCount: 1 };

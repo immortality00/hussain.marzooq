@@ -17,11 +17,17 @@ export default function TagRow({
   tag: Tag;
   selected: boolean;
   onToggleSelect: () => void;
-  onEdit: (id: string, patch: TagPatch) => void;
+  onEdit: (id: string, patch: TagPatch) => Promise<boolean>;
   onToggle: (id: string, value: boolean) => void;
   onDelete: (tag: Tag) => void;
 }) {
   const { setNodeRef, style, handleProps } = useSortableRow(tag.id);
+
+  async function save(input: HTMLInputElement, field: "label" | "slug" | "description", required: boolean) {
+    const value = input.value.trim();
+    if ((required && !value) || value === tag[field]) return;
+    if (!(await onEdit(tag.id, { [field]: value }))) input.value = tag[field];
+  }
 
   return (
     <div ref={setNodeRef} style={style} className="border-b p-4">
@@ -44,32 +50,26 @@ export default function TagRow({
         <div className="min-w-0 flex-1 space-y-3">
           <div className="grid gap-2 sm:grid-cols-2">
             <input
+              key={tag.label}
               defaultValue={tag.label}
               className={adminInputClasses("sm")}
-              onBlur={(e) => {
-                const v = e.target.value.trim();
-                if (v && v !== tag.label) onEdit(tag.id, { label: v });
-              }}
+              onBlur={(e) => void save(e.currentTarget, "label", true)}
               placeholder="Label"
             />
             <input
+              key={tag.slug}
               defaultValue={tag.slug}
               className={adminInputClasses("sm", "font-mono")}
-              onBlur={(e) => {
-                const v = e.target.value.trim();
-                if (v && v !== tag.slug) onEdit(tag.id, { slug: v });
-              }}
+              onBlur={(e) => void save(e.currentTarget, "slug", true)}
               placeholder="slug"
             />
           </div>
 
           <input
+            key={tag.description}
             defaultValue={tag.description}
             className={adminInputClasses("sm")}
-            onBlur={(e) => {
-              const v = e.target.value.trim();
-              if (v !== tag.description) onEdit(tag.id, { description: v });
-            }}
+            onBlur={(e) => void save(e.currentTarget, "description", false)}
             placeholder="Description (optional)"
           />
         </div>

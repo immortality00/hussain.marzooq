@@ -1,22 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useAdminNavigate } from "@/hooks/useAdminNavigate";
-import { useAdminSlice } from "@/hooks/useAdminData";
-import { markAdminDataChanged } from "@/lib/client/admin-store";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { AdminToggle } from "@/components/admin/AdminToggle";
 import { adminInputClasses } from "@/components/admin/admin-input";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
-import { useAdminAction } from "@/hooks/useAdminAction";
+import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
+import { useBlogPostSave } from "../lib/useBlogPostSave";
 import { ImageField } from "@/components/admin/media-picker/ImageField";
 import { CLOUDINARY_BLOG_FOLDER } from "@/lib/cloudinary-folders";
 import { slugifyTag } from "@/lib/server/media-tags";
 import { TagsInput } from "./TagsInput";
 import { BlogMarkdownField } from "./BlogMarkdownField";
-import { createPost, updatePost, deletePost } from "../lib/api";
-import { withSavedPost, withoutPost } from "../lib/blog-store";
 import type { BlogCategoryOption, BlogPostFormValues } from "../lib/types";
 
 const EMPTY: BlogPostFormValues = {
@@ -35,18 +31,22 @@ const EMPTY: BlogPostFormValues = {
 export function BlogPostEditor({
   id,
   initial,
+  version = null,
   categories,
 }: {
   id?: string;
   initial?: BlogPostFormValues;
+  version?: string | null;
   categories: BlogCategoryOption[];
 }) {
-  const { navigate, navigationCover } = useAdminNavigate();
-  const [, setBlog] = useAdminSlice("blog");
   const [values, setValues] = useState<BlogPostFormValues>(initial ?? EMPTY);
   const [slugTouched, setSlugTouched] = useState(Boolean(initial?.slug));
-  const [saving, setSaving] = useState(false);
-  const { feedback, notify, setFeedback } = useAdminAction();
+  const { saving, feedback, save: saveValues, remove, navigationCover, changedDialog } = useBlogPostSave(
+    id,
+    version,
+    setValues
+  );
+  const save = () => saveValues(values);
 
   const isEdit = Boolean(id);
 
@@ -62,52 +62,10 @@ export function BlogPostEditor({
     }));
   }
 
-  async function save() {
-    if (saving) return;
-    if (!values.title.trim()) {
-      notify("err", "Title is required.");
-      return;
-    }
-    setSaving(true);
-    setFeedback({ type: "info", text: "Saving…" });
-    try {
-      if (isEdit && id) {
-        await updatePost(id, values);
-        setBlog((blog) => withSavedPost(blog, id, values));
-        notify("ok", "Post saved.");
-      } else {
-        const newId = await createPost(values);
-        setBlog((blog) => withSavedPost(blog, newId, values));
-        markAdminDataChanged();
-        navigate("/admin/blog");
-        return;
-      }
-    } catch (e) {
-      notify("err", e instanceof Error ? e.message : "Save failed.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function remove() {
-    if (!id || saving) return;
-    if (!confirm("Delete this post forever? This cannot be undone.")) return;
-    setSaving(true);
-    setFeedback({ type: "info", text: "Deleting…" });
-    try {
-      await deletePost(id);
-      setBlog((blog) => withoutPost(blog, id));
-      markAdminDataChanged();
-      navigate("/admin/blog");
-    } catch (e) {
-      notify("err", e instanceof Error ? e.message : "Delete failed.");
-      setSaving(false);
-    }
-  }
-
   return (
     <div className="space-y-6">
       {navigationCover}
+      <RecordChangedDialog dialog={changedDialog} />
       <AdminPageHeader
         title={isEdit ? "Edit post" : "New post"}
         actions={

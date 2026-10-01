@@ -1,5 +1,5 @@
 import { revalidatePath, revalidateTag } from "next/cache";
-import { listAdminPrivateGalleries } from "@/lib/server/admin-lists";
+import { listAdminPrivateGalleries, storedGallery } from "@/lib/server/admin-lists";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { TRANSITION_IMAGES_TAG } from "@/lib/server/public-media";
@@ -126,5 +126,5 @@ export async function POST(req: Request) {
   revalidatePath("/", "layout");
   revalidateTag(TRANSITION_IMAGES_TAG, "max");
 
-  return noStoreJson({ ok: true, id: String(result.insertedId), slug });
+  return noStoreJson({ ok: true, id: String(result.insertedId), slug, item: await storedGallery(db, result.insertedId) });
 }

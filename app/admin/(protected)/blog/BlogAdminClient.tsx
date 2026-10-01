@@ -1,17 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { applyUpdate, useAdminSlice, type Update } from "@/hooks/useAdminData";
+import { useAdminSlice } from "@/hooks/useAdminData";
 import { AdminLink } from "@/components/admin/AdminLink";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useAdminAction } from "@/hooks/useAdminAction";
-import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
+import { useBulkRunner } from "@/components/admin/bulk/useBulkRunner";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
-import { fetchPosts, deletePost, updatePost } from "./lib/api";
-import type { BlogListItem } from "./lib/types";
+import { deletePost, updatePost } from "./lib/api";
+import { withSavedPost, withoutPost } from "./lib/blog-store";
 
 function formatDate(iso: string | null): string {
   if (!iso) return "—";
@@ -24,47 +23,26 @@ function formatDate(iso: string | null): string {
 export default function BlogAdminClient() {
   const [blog, setBlog] = useAdminSlice("blog");
   const items = blog.posts;
-  const setItems = (update: Update<BlogListItem[]>) =>
-    setBlog((current) => ({ ...current, posts: applyUpdate(update, current.posts) }));
-  const [bulkBusy, setBulkBusy] = useState(false);
-  const { feedback, setFeedback, notify } = useAdminAction();
+  const { feedback, setFeedback } = useAdminAction();
+  const labelOf = (id: string) => items.find((p) => p.id === id)?.title || "Untitled";
+  const { selection, busy: bulkBusy, run } = useBulkRunner(items.map((p) => p.id), labelOf, setFeedback);
 
-  const selection = useBulkSelection(items.map((p) => p.id));
-
-  async function refresh() {
-    try {
-      setItems(await fetchPosts());
-    } catch (e) {
-      notify("err", e instanceof Error ? e.message : "Failed to load posts.");
-    }
-  }
-
-  async function bulkPublish(value: boolean) {
-    if (bulkBusy || selection.count === 0) return;
-    setBulkBusy(true);
-    setFeedback({ type: "info", text: value ? "Publishing…" : "Unpublishing…" });
-    const { ok, failed } = await runBulkAction(selection.selectedIds, (id) =>
-      updatePost(id, { isPublished: value }),
+  const bulkPublish = (value: boolean) =>
+    run(
+      value ? "Publishing…" : "Unpublishing…",
+      value ? "published" : "unpublished",
+      async (id) => {
+        const saved = await updatePost(id, { isPublished: value });
+        setBlog((current) => withSavedPost(current, saved));
+      },
+      () => {}
     );
-    setFeedback({
-      type: failed ? "err" : "ok",
-      text: `${ok} ${value ? "published" : "unpublished"}${failed ? `, ${failed} failed` : ""}.`,
-    });
-    selection.clear();
-    await refresh();
-    setBulkBusy(false);
-  }
 
-  async function bulkDelete() {
-    if (bulkBusy || selection.count === 0) return;
+  function bulkDelete() {
     if (!confirm(`Delete ${selection.count} post(s)? This cannot be undone.`)) return;
-    setBulkBusy(true);
-    setFeedback({ type: "info", text: "Deleting…" });
-    const { ok, failed } = await runBulkAction(selection.selectedIds, (id) => deletePost(id));
-    setFeedback({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} failed` : ""}.` });
-    selection.clear();
-    await refresh();
-    setBulkBusy(false);
+    return run("Deleting…", "deleted", deletePost, (okIds) =>
+      setBlog((current) => okIds.reduce(withoutPost, current))
+    );
   }
 
   return (

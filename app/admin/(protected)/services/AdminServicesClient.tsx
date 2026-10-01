@@ -11,6 +11,7 @@ import ServiceSimpleSection from "./components/ServiceSimpleSection";
 import ServicesBanner from "./components/ServicesBanner";
 import ServicesToolbar from "./components/ServicesToolbar";
 import { useServicesAdmin } from "@/hooks/useServicesAdmin";
+import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 
 export default function AdminServicesClient() {
   const {
@@ -39,13 +40,14 @@ export default function AdminServicesClient() {
     bulkArchive,
     bulkRestore,
     bulkDeleteForever,
+    changedDialog,
   } = useServicesAdmin();
 
   const activeSel = useBulkSelection(active.map((s) => s.id));
   const inactiveSel = useBulkSelection(inactive.map((s) => s.id));
   const archivedSel = useBulkSelection(archived.map((s) => s.id));
 
-  async function runAndClear(fn: () => Promise<void>, clear: () => void) {
+  async function runAndClear(fn: () => Promise<void> | undefined, clear: () => void) {
     await fn();
     clear();
   }
@@ -184,6 +186,8 @@ export default function AdminServicesClient() {
         }}
         onSave={handleEditSave}
       />
+
+      <RecordChangedDialog dialog={changedDialog} />
     </main>
   );
 }

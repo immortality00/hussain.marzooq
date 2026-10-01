@@ -4,6 +4,8 @@ import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { resolveOptionalCardImage } from "@/lib/page-sections-shared";
 import { deleteReplacedSectionImages } from "@/lib/server/section-images";
+import { storedPageSettings } from "@/lib/server/admin-pages";
+import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 
 export const dynamic = "force-dynamic";
 
@@ -39,6 +41,8 @@ export async function PATCH(
   const cardImage = resolveOptionalCardImage(body);
 
   const db = await getDb();
+  const existing = await db.collection("page_settings").findOne({ slug });
+  if (changedSinceOpened(req, existing)) return recordChangedResponse(await storedPageSettings(db, slug));
 
   const set: Record<string, unknown> = {
     slug,
@@ -49,7 +53,6 @@ export async function PATCH(
   if (cardImage !== undefined) {
     // Delete a previously uploaded card image if it was replaced or removed.
     // Library-picked images have an empty publicId and are never deleted here.
-    const existing = await db.collection("page_settings").findOne({ slug });
     await deleteReplacedSectionImages({ cardImage: existing?.cardImage }, { cardImage });
     set.cardImage = cardImage;
   }
@@ -58,9 +61,5 @@ export async function PATCH(
 
   revalidatePath("/", "layout");
 
-  return NextResponse.json({
-    slug,
-    isActive: body.isActive,
-    ...(cardImage !== undefined ? { cardImage } : {}),
-  });
+  return NextResponse.json({ ok: true, item: await storedPageSettings(db, slug) });
 }

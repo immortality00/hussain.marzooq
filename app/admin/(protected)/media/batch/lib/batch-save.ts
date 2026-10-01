@@ -1,3 +1,4 @@
+import { adminWrite } from "@/lib/client/admin-store";
 import type { SavedMedia } from "../../lib/media-store";
 import type { BatchItem } from "./useBatchMediaState";
 
@@ -24,11 +25,11 @@ export function buildBatchPayload(item: BatchItem, shared: Record<string, unknow
 }
 
 export async function createBatchItem(payload: Record<string, unknown>): Promise<BatchCreateResult> {
-  const res = await fetch("/api/media/create", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const res = await adminWrite(
+    "/api/media/create",
+    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) },
+    ["media", "dashboard", "mediaTags"]
+  );
   const data = (await res.json().catch(() => null)) as
     | (Partial<SavedMedia> & { ok?: boolean; error?: string; posterMissing?: boolean })
     | null;

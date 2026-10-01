@@ -5,7 +5,7 @@ const calls: string[] = [];
 const facetRows: Record<string, unknown> = {
   media: { total: [{ n: 12 }], public: [{ n: 9 }], byCategory: [{ _id: "photography", count: 7 }, { _id: "nft", count: 2 }] },
   testimonials: { total: [{ n: 5 }], pending: [{ n: 2 }] },
-  inquiries: { total: [{ n: 8 }], new: [{ n: 3 }], active: [{ n: 4 }] },
+  inquiries: { new: [{ n: 3 }], active: [{ n: 4 }] },
   people_profiles: { total: [{ n: 6 }], removal: [] },
 };
 
@@ -26,7 +26,8 @@ vi.mock("@/lib/server/db", () => ({
   }),
 }));
 
-import { getAdminDashboardStats, getAdminNotificationCount } from "@/lib/server/admin-dashboard";
+import { getAdminDashboardStats } from "@/lib/server/admin-dashboard";
+import { pendingCount } from "@/lib/admin-data";
 
 beforeEach(() => {
   calls.length = 0;
@@ -38,7 +39,7 @@ describe("admin dashboard counts", () => {
     expect(stats).toMatchObject({
       media: { total: 12, public: 9 },
       testimonials: { total: 5, pending: 2 },
-      inquiries: { total: 8, new: 3, active: 4 },
+      inquiries: { new: 3, active: 4 },
       people: 6,
       removalRequests: 0,
       services: 4,
@@ -58,7 +59,10 @@ describe("admin dashboard counts", () => {
     );
   });
 
-  it("badge total = reviews to approve + new inquiries + removal requests", async () => {
-    await expect(getAdminNotificationCount()).resolves.toBe(5);
+  it("badge total = reviews to approve + new inquiries + removal requests, from the one set of counts", async () => {
+    const stats = await getAdminDashboardStats();
+    calls.length = 0;
+    expect(pendingCount(stats)).toBe(5);
+    expect(calls).toEqual([]);
   });
 });

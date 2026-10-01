@@ -44,6 +44,8 @@ import {
   getPrivateGalleryTitlesForMedia,
 } from "@/lib/server/private-gallery-admin";
 import { isMediaAssetPath } from "@/lib/media-asset-path";
+import { cloudinaryErrorMessage } from "@/lib/server/cloudinary-assets";
+import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 import { findAssetUsages } from "@/lib/server/asset-references";
 import {
   applyUsageEdit,
@@ -54,6 +56,18 @@ import { parseMediaUsageChoice } from "@/lib/media-in-use";
 import type { UsageEdit } from "@/lib/asset-usage-edits";
 
 export const dynamic = "force-dynamic";
+
+async function moveToCategoryFolder(asset: StoredMediaAsset, folder: string) {
+  const failure = "Could not move the media file to the selected category folder";
+  try {
+    const moved = await moveStoredMediaAssetToFolder(asset, folder);
+    return moved ? { moved } : { failed: noStoreJson({ ok: false, error: `${failure}.` }, { status: 502 }) };
+  } catch (error) {
+    console.error("[media] move failed", error);
+    const reason = cloudinaryErrorMessage(error);
+    return { failed: noStoreJson({ ok: false, error: `${failure}: ${reason}` }, { status: 502 }) };
+  }
+}
 
 async function restoreMovedAsset(moved: StoredMediaAsset | null, original: StoredMediaAsset) {
   if (!moved || !original.publicId) return;
@@ -160,6 +174,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const existingFound = await findByIdOr404(db, "media", oid);
   if (existingFound instanceof Response) return existingFound;
   const existingMedia = existingFound.doc;
+  if (changedSinceOpened(req, existingMedia)) return recordChangedResponse(await savedAdminMedia(db, existingMedia));
 
   const oldAsset = getStoredMediaAsset(existingMedia);
   const oldPosterId = existingMedia.posterPublicId;
@@ -285,14 +300,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     );
 
     if (isExistingAsset && !normalizedAsset.asset.isAlreadyInTargetFolder) {
-      const movedAsset = await moveStoredMediaAssetToFolder(oldAsset, targetFolder);
-
-      if (!movedAsset) {
-        return noStoreJson(
-          { ok: false, error: "Could not move the media file to the selected category folder." },
-          { status: 500 }
-        );
-      }
+      const move = await moveToCategoryFolder(oldAsset, targetFolder);
+      if (move.failed) return move.failed;
+      const movedAsset = move.moved;
 
       set.secureUrl = movedAsset.secureUrl;
       set.publicId = movedAsset.publicId;
@@ -328,14 +338,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     oldAsset.publicId &&
     !assetIsInsideFolder(oldAsset.publicId, targetFolder)
   ) {
-    const movedAsset = await moveStoredMediaAssetToFolder(oldAsset, targetFolder);
-
-    if (!movedAsset) {
-      return noStoreJson(
-        { ok: false, error: "Could not move the media file to the selected category folder." },
-        { status: 500 }
-      );
-    }
+    const move = await moveToCategoryFolder(oldAsset, targetFolder);
+    if (move.failed) return move.failed;
+    const movedAsset = move.moved;
 
     set.secureUrl = movedAsset.secureUrl;
     set.publicId = movedAsset.publicId;

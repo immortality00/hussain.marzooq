@@ -1,12 +1,14 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useAdminSlice } from "@/hooks/useAdminData";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { bulkResultText } from "@/components/admin/bulk/bulk-result";
 import { useMediaUsageDialog } from "@/components/admin/media-usage/useMediaUsageDialog";
 import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
-import { saveGalleryWithUsageCheck } from "./save-gallery";
+import { useRecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
+import { saveGuarded } from "@/lib/record-changed";
+import { deleteGallery, saveGalleryWithUsageCheck } from "./save-gallery";
 import type { GalleryItem } from "./types";
 import { buildGalleryUrl, MIN_PRIVATE_GALLERY_PASSWORD_LENGTH } from "./helpers";
 
@@ -27,14 +29,10 @@ export function usePrivateGalleriesAdmin() {
   const [expiresAtLocal, setExpiresAtLocal] = useState("");
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
   const usage = useMediaUsageDialog(() => setBanner(null));
+  const changed = useRecordChangedDialog(() => setBanner(null));
+  const [editingVersion, setEditingVersion] = useState<string | null>(null);
 
   const actionBusy = saving || Boolean(deletingId);
-
-  const loadGalleries = useCallback(async () => {
-    const res = await fetch("/api/private-galleries", { cache: "no-store" }).catch(() => null);
-    const data = res?.ok ? ((await res.json().catch(() => null)) as { ok?: boolean; items?: GalleryItem[] } | null) : null;
-    if (data?.ok && Array.isArray(data.items)) setItems(data.items);
-  }, [setItems]);
 
   function resetForm() {
     setEditingId("");
@@ -53,13 +51,9 @@ export function usePrivateGalleriesAdmin() {
     setView("form");
   }
 
-  function openEdit(id: string) {
-    if (actionBusy) return;
-    const item = items.find((gallery) => gallery.id === id);
-    if (!item) return;
-
-    setBanner(null);
+  function fill(item: GalleryItem) {
     setEditingId(item.id);
+    setEditingVersion(item.updatedAt);
     setTitle(item.title);
     setSlug(item.slug);
     setDescription(item.description ?? "");
@@ -68,6 +62,14 @@ export function usePrivateGalleriesAdmin() {
     setExpiresAtLocal(item.expiresAtLocal ?? "");
     setSelectedMediaIds(item.mediaIds ?? []);
     setView("form");
+  }
+
+  function openEdit(id: string) {
+    if (actionBusy) return;
+    const item = items.find((gallery) => gallery.id === id);
+    if (!item) return;
+    setBanner(null);
+    fill(item);
   }
 
   function backToList() {
@@ -114,21 +116,29 @@ export function usePrivateGalleriesAdmin() {
       text: editingId ? "Updating private gallery…" : "Creating private gallery…",
     });
 
+    const payload = {
+      title,
+      slug,
+      description,
+      password,
+      isActive,
+      expiresAtLocal,
+      timezoneOffsetMinutes: new Date().getTimezoneOffset(),
+      mediaIds: selectedMediaIds,
+    };
+
     try {
-      const result = await saveGalleryWithUsageCheck(
-        editingId,
-        {
-          title,
-          slug,
-          description,
-          password,
-          isActive,
-          expiresAtLocal,
-          timezoneOffsetMinutes: new Date().getTimezoneOffset(),
-          mediaIds: selectedMediaIds,
-        },
-        usage.ask
+      const result = await saveGuarded(
+        editingId ? editingVersion : undefined,
+        (expected) => saveGalleryWithUsageCheck(editingId, payload, usage.ask, expected),
+        changed.ask,
+        (current: GalleryItem) => current.updatedAt,
+        (current: GalleryItem) => {
+          setItems((prev) => prev.map((item) => (item.id === current.id ? current : item)));
+          fill(current);
+        }
       );
+      if (!result) return setBanner(null);
 
       setSelectedMediaIds(result.mediaIds);
       if (result.outcome === "cancelled") {
@@ -140,7 +150,8 @@ export function usePrivateGalleriesAdmin() {
         return;
       }
 
-      await loadGalleries();
+      const saved = result.item;
+      setItems((prev) => [saved, ...prev.filter((item) => item.id !== saved.id)]);
       setBanner({ type: "ok", text: editingId ? "✅ Gallery updated." : "✅ Gallery created." });
       backToList();
     } catch (e: unknown) {
@@ -160,16 +171,7 @@ export function usePrivateGalleriesAdmin() {
     setBanner({ type: "info", text: "Deleting private gallery…" });
 
     try {
-      const res = await fetch(`/api/private-galleries/${encodeURIComponent(id)}`, {
-        method: "DELETE",
-      });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
-
-      if (!res.ok || !data?.ok) {
-        setBanner({ type: "err", text: data?.error ?? "Delete failed." });
-        return;
-      }
-
+      await deleteGallery(id);
       setItems((prev) => prev.filter((item) => item.id !== id));
       setBanner({ type: "ok", text: "✅ Gallery deleted." });
 
@@ -186,11 +188,7 @@ export function usePrivateGalleriesAdmin() {
     if (!confirm(`Delete ${ids.length} private gallery(ies)?`)) return;
     setBulkBusy(true);
     notify("info", "Deleting selected galleries…");
-    const result = await runBulkAction(ids, async (id) => {
-      const res = await fetch(`/api/private-galleries/${encodeURIComponent(id)}`, { method: "DELETE" });
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null;
-      if (!res.ok || !data?.ok) throw new Error(data?.error ?? "Delete failed.");
-    });
+    const result = await runBulkAction(ids, deleteGallery);
     const titleOf = (id: string) => items.find((item) => item.id === id)?.title || "Untitled";
     setItems((prev) => prev.filter((item) => !result.okIds.includes(item.id)));
     notify(result.failed ? "err" : "ok", bulkResultText(result, "deleted", titleOf, "Delete failed."));
@@ -224,6 +222,7 @@ export function usePrivateGalleriesAdmin() {
   return {
     view,
     usageDialog: usage.dialog,
+    changedDialog: changed.dialog,
     items: filteredItems,
     banner,
     editingId,

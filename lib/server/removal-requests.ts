@@ -32,7 +32,7 @@ export async function getRemovalRequestQueue(): Promise<RemovalRequestItem[]> {
   const docs = await db
     .collection("removal_requests")
     .find({ status: "pending" })
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1, _id: -1 })
     .toArray();
 
   const seen = new Set<string>();
@@ -71,7 +71,7 @@ export async function getRemovalRequestHistory(limit = 100): Promise<RemovalDeci
   const docs = await db
     .collection("removal_requests")
     .find({ status: { $in: ["approved", "dismissed"] } })
-    .sort({ decidedAt: -1 })
+    .sort({ decidedAt: -1, _id: -1 })
     .limit(limit)
     .toArray();
 
@@ -85,10 +85,4 @@ export async function getRemovalRequestHistory(limit = 100): Promise<RemovalDeci
     requestedAt: toIso(doc.createdAt),
     decidedAt: toIso(doc.decidedAt),
   }));
-}
-
-export async function countPendingRemovalRequests(): Promise<number> {
-  const db = await getDb();
-  const ids = await db.collection("removal_requests").distinct("personId", { status: "pending" });
-  return ids.length;
 }
