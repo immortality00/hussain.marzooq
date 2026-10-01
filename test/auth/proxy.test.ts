@@ -16,13 +16,18 @@ const DAY = 24 * 60 * 60 * 1000;
 
 function request(
   path: string,
-  { cookie, fetchMode, fetchDest }: { cookie?: string; fetchMode?: string; fetchDest?: string } = {}
+  {
+    cookie,
+    fetchMode,
+    fetchDest,
+    method,
+  }: { cookie?: string; fetchMode?: string; fetchDest?: string; method?: string } = {}
 ) {
   const headers = new Headers();
   if (cookie) headers.set("cookie", cookie);
   if (fetchMode) headers.set("sec-fetch-mode", fetchMode);
   if (fetchDest) headers.set("sec-fetch-dest", fetchDest);
-  return new NextRequest(`https://hussain-marzooq.com${path}`, { headers });
+  return new NextRequest(`https://hussain-marzooq.com${path}`, { headers, method });
 }
 
 beforeEach(() => {
@@ -96,5 +101,37 @@ describe("proxy", () => {
 
     const check = await readSessionCookie(renewed?.value ?? "", SECRET);
     expect(check).toMatchObject({ ok: true, renew: false, session: { startedAt, remember: true } });
+  });
+
+  it("sends a signed-in visitor on the sign-in page straight to where they were going", async () => {
+    const cookie = `${COOKIE_NAME}=${await issueSessionCookie(SECRET, true)}`;
+
+    const home = await proxy(request("/admin", { cookie, fetchMode: "navigate" }));
+    expect(home.status).toBe(307);
+    expect(new URL(home.headers.get("location") ?? "").pathname).toBe("/admin/dashboard");
+
+    const next = await proxy(request("/admin?next=%2Fadmin%2Finquiries", { cookie }));
+    expect(new URL(next.headers.get("location") ?? "").pathname).toBe("/admin/inquiries");
+
+    const outside = await proxy(request("/admin?next=%2F%2Fevil.com", { cookie }));
+    const location = new URL(outside.headers.get("location") ?? "");
+    expect(location.origin).toBe("https://hussain-marzooq.com");
+    expect(location.pathname).toBe("/admin/dashboard");
+  });
+
+  it("shows the sign-in form after logout, a forced sign-out, a bad session or a form post", async () => {
+    const cookie = `${COOKIE_NAME}=${await issueSessionCookie(SECRET, true)}`;
+    const forged = `${COOKIE_NAME}=${await issueSessionCookie("another-secret", true)}`;
+
+    for (const res of [
+      await proxy(request("/admin?loggedout=1", { cookie })),
+      await proxy(request("/admin?signedout=expired", { cookie })),
+      await proxy(request("/admin", { cookie, method: "POST" })),
+      await proxy(request("/admin", { cookie: forged })),
+      await proxy(request("/admin")),
+    ]) {
+      expect(res.headers.get("x-middleware-next")).toBe("1");
+      expect(res.headers.get("location")).toBeNull();
+    }
   });
 });

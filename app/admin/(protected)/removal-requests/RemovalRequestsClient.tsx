@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { applyUpdate, useAdminSlice, type Update } from "@/hooks/useAdminData";
 import Image from "next/image";
-import Link from "next/link";
+import { AdminLink } from "@/components/admin/AdminLink";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
@@ -12,15 +13,14 @@ import { adminInputClasses } from "@/components/admin/admin-input";
 
 const MIN_PASSWORD_LENGTH = 8;
 
-export default function RemovalRequestsClient({
-  items,
-  history,
-}: {
-  items: RemovalRequestItem[];
-  history: RemovalDecisionItem[];
-}) {
-  const [rows, setRows] = useState(items);
-  const [historyRows, setHistoryRows] = useState(history);
+export default function RemovalRequestsClient() {
+  const [removal, setRemoval] = useAdminSlice("removal");
+  const rows = removal.items;
+  const historyRows = removal.history;
+  const setRows = (update: Update<RemovalRequestItem[]>) =>
+    setRemoval((current) => ({ ...current, items: applyUpdate(update, current.items) }));
+  const setHistoryRows = (update: Update<RemovalDecisionItem[]>) =>
+    setRemoval((current) => ({ ...current, history: applyUpdate(update, current.history) }));
   const [busyId, setBusyId] = useState("");
   const [approvingId, setApprovingId] = useState("");
   const [approvePassword, setApprovePassword] = useState("");
@@ -145,12 +145,12 @@ export default function RemovalRequestsClient({
                       </span>
                     ) : null}
                   </div>
-                  <Link
+                  <AdminLink
                     href={`/people/${item.slug}`}
                     className="mt-0.5 block text-xs text-muted-foreground underline-offset-2 hover:underline"
                   >
                     /people/{item.slug}
-                  </Link>
+                  </AdminLink>
                   {item.email ? (
                     <div className="mt-2 text-xs text-muted-foreground">Contact: {item.email}</div>
                   ) : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useAdminSlice } from "@/hooks/useAdminData";
 import { useSearchParams } from "next/navigation";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { useAdminAction } from "./useAdminAction";
@@ -32,8 +33,7 @@ export function usePeopleAdmin() {
   const searchParams = useSearchParams();
   const createPrefill = (searchParams.get("create") ?? "").trim();
 
-  const [items, setItems] = useState<PersonItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useAdminSlice("people");
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState("");
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -57,28 +57,10 @@ export function usePeopleAdmin() {
   const actionBusy = saving || Boolean(deletingId);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setBanner(null);
-    try {
-      const res = await fetch("/api/people", { cache: "no-store" });
-      const data = (await res.json().catch(() => null)) as {
-        ok?: boolean;
-        items?: PersonItem[];
-        error?: string;
-      };
-      if (!res.ok || !data?.ok || !Array.isArray(data.items)) {
-        setBanner({ type: "err", text: data?.error ?? "Failed to load people." });
-        return;
-      }
-      setItems(data.items);
-    } catch {
-      setBanner({ type: "err", text: "Failed to load people." });
-    } finally {
-      setLoading(false);
-    }
-  }, [setBanner]);
-
-  useEffect(() => { void load(); }, [load]);
+    const res = await fetch("/api/people", { cache: "no-store" }).catch(() => null);
+    const data = res?.ok ? ((await res.json().catch(() => null)) as { ok?: boolean; items?: PersonItem[] } | null) : null;
+    if (data?.ok && Array.isArray(data.items)) setItems(data.items);
+  }, [setItems]);
 
   useEffect(() => {
     if (!editingId && createPrefill) {
@@ -196,8 +178,8 @@ export function usePeopleAdmin() {
         return;
       }
 
-      setBanner({ type: "ok", text: editingId ? "✅ Person updated." : "✅ Person created." });
       await load();
+      setBanner({ type: "ok", text: editingId ? "✅ Person updated." : "✅ Person created." });
       resetForm();
       setMode("list");
     } catch {
@@ -255,7 +237,6 @@ export function usePeopleAdmin() {
 
   return {
     items: filtered,
-    loading,
     saving,
     deletingId,
     bulkBusy,

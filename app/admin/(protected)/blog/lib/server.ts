@@ -1,4 +1,3 @@
-import { ObjectId } from "mongodb";
 import { getDb } from "@/lib/server/db";
 import type { BlogCategoryOption, BlogListItem, BlogPostFormValues } from "./types";
 
@@ -44,11 +43,13 @@ export async function loadCategoryOptions(): Promise<BlogCategoryOption[]> {
   return cats.map((c) => ({ id: String(c._id), name: str(c.name), slug: str(c.slug) }));
 }
 
-export async function loadPostForm(id: string): Promise<BlogPostFormValues | null> {
-  if (!ObjectId.isValid(id)) return null;
+export async function loadPostForms(): Promise<Record<string, BlogPostFormValues>> {
   const db = await getDb();
-  const d = await db.collection("blog_posts").findOne({ _id: new ObjectId(id) });
-  if (!d) return null;
+  const docs = await db.collection("blog_posts").find({}).toArray();
+  return Object.fromEntries(docs.map((d) => [String(d._id), postFormOf(d)]));
+}
+
+function postFormOf(d: Record<string, unknown>): BlogPostFormValues {
   return {
     title: str(d.title),
     slug: str(d.slug),

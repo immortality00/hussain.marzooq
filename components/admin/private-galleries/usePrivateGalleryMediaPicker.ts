@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useAdminSlice } from "@/hooks/useAdminData";
 import type { MediaItem } from "./types";
 import { buildMediaQuery, mergeMediaItems, type MediaListResponse } from "./media-picker-utils";
 
@@ -8,11 +9,14 @@ const SEARCH_DEBOUNCE_MS = 250;
 
 type PickerMode = "browse" | "search";
 
+type Page = { query: string; items: MediaItem[]; nextCursor: string | null };
+
 export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
-  const [items, setItems] = useState<MediaItem[]>([]);
+  const [library] = useAdminSlice("media");
+  const [browseMore, setBrowseMore] = useState<Page | null>(null);
+  const [searchPage, setSearchPage] = useState<Page>({ query: "", items: [], nextCursor: null });
   const [selectedItems, setSelectedItems] = useState<MediaItem[]>([]);
   const [searchValue, setSearchValue] = useState("");
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -20,6 +24,17 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
 
   const activeSearch = searchValue.trim();
   const mode: PickerMode = activeSearch ? "search" : "browse";
+
+  const browse = useMemo<Page>(
+    () => ({
+      query: "",
+      items: browseMore ? mergeMediaItems(library.items, browseMore.items) : library.items,
+      nextCursor: browseMore ? browseMore.nextCursor : library.nextCursor,
+    }),
+    [library, browseMore]
+  );
+  const { items, nextCursor } = mode === "browse" ? browse : searchPage;
+  const searching = mode === "search" && (loading || searchPage.query !== activeSearch);
 
   const selectedIdSet = useMemo(() => new Set(selectedMediaIds), [selectedMediaIds]);
 
@@ -41,43 +56,46 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
     return selectedMedia.filter((item) => !visibleIds.has(item.id));
   }, [items, mode, selectedMedia]);
 
-  const loadMedia = useCallback(
-    async ({ q, cursor, append }: { q: string; cursor?: string | null; append: boolean }) => {
-      const requestId = requestIdRef.current + 1;
-      requestIdRef.current = requestId;
+  const loadMedia = useCallback(async ({ q, cursor }: { q: string; cursor?: string | null }) => {
+    const requestId = requestIdRef.current + 1;
+    requestIdRef.current = requestId;
+    const append = Boolean(cursor);
 
-      if (append) setLoadingMore(true);
-      else setLoading(true);
-      setError(null);
+    if (append) setLoadingMore(true);
+    else setLoading(true);
+    setError(null);
 
-      try {
-        const res = await fetch(buildMediaQuery({ q, cursor }), { cache: "no-store" });
-        const data = (await res.json().catch(() => null)) as MediaListResponse | null;
+    try {
+      const res = await fetch(buildMediaQuery({ q, cursor }), { cache: "no-store" });
+      const data = (await res.json().catch(() => null)) as MediaListResponse | null;
 
-        if (requestId !== requestIdRef.current) return;
+      if (requestId !== requestIdRef.current) return;
 
-        if (!res.ok || !data?.ok || !Array.isArray(data.items)) {
-          setError(data?.error ?? "Failed to load media.");
-          return;
-        }
-
-        setItems((prev) => (append ? mergeMediaItems(prev, data.items ?? []) : data.items ?? []));
-        setNextCursor(data.nextCursor ?? null);
-      } catch {
-        if (requestId === requestIdRef.current) setError("Failed to load media.");
-      } finally {
-        if (requestId === requestIdRef.current) {
-          setLoading(false);
-          setLoadingMore(false);
-        }
+      if (!res.ok || !data?.ok || !Array.isArray(data.items)) {
+        setError(data?.error ?? "Failed to load media.");
+        return;
       }
-    },
-    []
-  );
+
+      const page = { query: q, items: data.items, nextCursor: data.nextCursor ?? null };
+      if (!q) {
+        setBrowseMore((prev) => ({ ...page, items: mergeMediaItems(prev?.items ?? [], page.items) }));
+      } else {
+        setSearchPage((prev) => (append ? { ...page, items: mergeMediaItems(prev.items, page.items) } : page));
+      }
+    } catch {
+      if (requestId === requestIdRef.current) setError("Failed to load media.");
+    } finally {
+      if (requestId === requestIdRef.current) {
+        setLoading(false);
+        setLoadingMore(false);
+      }
+    }
+  }, []);
 
   useEffect(() => {
+    if (!activeSearch) return;
     const timer = window.setTimeout(() => {
-      void loadMedia({ q: activeSearch, append: false });
+      void loadMedia({ q: activeSearch });
     }, SEARCH_DEBOUNCE_MS);
 
     return () => window.clearTimeout(timer);
@@ -118,7 +136,7 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
 
   function loadMore() {
     if (!nextCursor) return;
-    void loadMedia({ q: activeSearch, cursor: nextCursor, append: true });
+    void loadMedia({ q: activeSearch, cursor: nextCursor });
   }
 
   return {
@@ -129,7 +147,7 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
     mode,
     hasSearch: mode === "search",
     nextCursor,
-    loading,
+    loading: searching,
     loadingMore,
     error,
     setSearchValue,

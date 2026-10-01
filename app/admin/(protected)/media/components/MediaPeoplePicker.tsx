@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { AdminLink } from "@/components/admin/AdminLink";
+import { useMemo, useState } from "react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { PersonProfileOption } from "../lib/types";
+import { useMediaOptions } from "./MediaOptionsContext";
 import { adminInputClasses } from "@/components/admin/admin-input";
 
 type SelectedPerson = {
@@ -21,40 +22,8 @@ export default function MediaPeoplePicker({
   selectedPeopleNames: string[];
   setSelectedPeople: (next: { ids: string[]; names: string[] }) => void;
 }) {
-  const [profiles, setProfiles] = useState<PersonProfileOption[]>([]);
+  const { people: profiles } = useMediaOptions();
   const [peopleQuery, setPeopleQuery] = useState("");
-  const [peopleError, setPeopleError] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadPeople() {
-      try {
-        const res = await fetch("/api/people", { cache: "no-store" });
-        const data = (await res.json().catch(() => null)) as {
-          ok?: boolean;
-          items?: PersonProfileOption[];
-        };
-
-        if (cancelled) return;
-
-        if (res.ok && data?.ok && Array.isArray(data.items)) {
-          setProfiles(data.items);
-          setPeopleError(false);
-        } else {
-          setPeopleError(true);
-        }
-      } catch {
-        if (!cancelled) setPeopleError(true);
-      }
-    }
-
-    void loadPeople();
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const selectedPeople = useMemo<SelectedPerson[]>(() => {
     const out: SelectedPerson[] = [];
@@ -137,12 +106,6 @@ export default function MediaPeoplePicker({
     <div className="space-y-3">
       <label className="text-sm font-medium">People</label>
 
-      {peopleError && (
-        <p className="text-xs text-destructive">
-          Could not load the people list — search may be incomplete. Reload the page to retry.
-        </p>
-      )}
-
       {gatedSelectedNames.length ? (
         <p className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-600 dark:text-amber-400">
           {gatedSelectedNames.join(", ")} {gatedSelectedNames.length > 1 ? "are" : "is"} a hidden or
@@ -191,12 +154,12 @@ export default function MediaPeoplePicker({
           ) : !exactMatchExists ? (
             <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               <span>No matching profile.</span>
-              <Link
+              <AdminLink
                 href={`/admin/people?create=${encodeURIComponent(peopleQuery.trim())}`}
                 className={adminButtonClasses("default", "md")}
               >
                 Create new profile
-              </Link>
+              </AdminLink>
             </div>
           ) : null
         ) : null}

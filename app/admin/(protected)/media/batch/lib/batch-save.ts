@@ -1,6 +1,9 @@
+import type { SavedMedia } from "../../lib/media-store";
 import type { BatchItem } from "./useBatchMediaState";
 
-export type BatchCreateResult = { ok: true; posterMissing: boolean } | { ok: false; error: string };
+export type BatchCreateResult =
+  | { ok: true; posterMissing: boolean; saved: SavedMedia | null }
+  | { ok: false; error: string };
 
 export function buildBatchPayload(item: BatchItem, shared: Record<string, unknown>) {
   const base = {
@@ -26,12 +29,11 @@ export async function createBatchItem(payload: Record<string, unknown>): Promise
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
   });
-  const data = (await res.json().catch(() => null)) as {
-    ok?: boolean;
-    error?: string;
-    posterMissing?: boolean;
-  } | null;
+  const data = (await res.json().catch(() => null)) as
+    | (Partial<SavedMedia> & { ok?: boolean; error?: string; posterMissing?: boolean })
+    | null;
 
   if (!res.ok || !data?.ok) return { ok: false, error: data?.error ?? "Save failed." };
-  return { ok: true, posterMissing: data.posterMissing === true };
+  const saved = data.item && data.listItem ? { item: data.item, listItem: data.listItem } : null;
+  return { ok: true, posterMissing: data.posterMissing === true, saved };
 }

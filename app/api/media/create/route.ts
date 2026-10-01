@@ -1,5 +1,6 @@
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { revalidateMediaSurfaces } from "@/app/api/_lib/revalidate";
+import { savedAdminMedia } from "@/lib/server/admin-media";
 import { getDb } from "@/lib/server/db";
 import {
   asBooleanOrNull,
@@ -192,12 +193,15 @@ export async function POST(req: Request) {
     { upsert: true }
   );
 
-  const found = await col.findOne(keyFilter, { projection: { _id: 1 } });
-  const id = found?._id ? String(found._id) : null;
-
-  if (!id) return noStoreJson({ ok: false, error: "Save failed" }, { status: 500 });
+  const found = await col.findOne(keyFilter);
+  if (!found) return noStoreJson({ ok: false, error: "Save failed" }, { status: 500 });
 
   revalidateMediaSurfaces(tags);
 
-  return noStoreJson({ ok: true, id, ...(video && !poster ? { posterMissing: true } : {}) });
+  return noStoreJson({
+    ok: true,
+    id: String(found._id),
+    ...(await savedAdminMedia(db, found)),
+    ...(video && !poster ? { posterMissing: true } : {}),
+  });
 }

@@ -1,28 +1,15 @@
-import { redirect } from "next/navigation";
-import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { AdminThemeToggle } from "@/components/admin/AdminThemeToggle";
 import { AdminSidebarNav } from "@/components/admin/AdminSidebarNav";
 import { AdminMobileNav } from "@/components/admin/AdminMobileNav";
 import { AdminServiceWorker } from "@/components/admin/AdminServiceWorker";
 import { AdminStickyRegion } from "@/components/admin/AdminStickyStack";
 import { AdminButton } from "@/components/admin/AdminButton";
-import { getAdminNotificationCount } from "@/lib/server/admin-dashboard";
-import { scheduleUploadSweep } from "@/lib/server/upload-ledger";
+import { ADMIN_CONTENT_ID } from "@/components/admin/AdminPageCover";
+import { AdminDataProvider } from "@/components/admin/AdminDataProvider";
+import { AdminLogoutButton } from "@/components/admin/AdminLogoutButton";
+import { AdminSessionNotice } from "@/components/admin/AdminSessionNotice";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
-export default async function AdminProtectedLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const ok = await isAdminAuthedServer();
-  if (!ok) redirect("/admin?signedout=signature");
-
-  const notificationCount = getAdminNotificationCount().catch(() => 0);
-  scheduleUploadSweep();
-
+export default function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen overflow-x-hidden bg-background">
       <div className="mx-auto max-w-6xl px-2 pt-4 pb-24 md:px-4 md:py-8">
@@ -39,28 +26,29 @@ export default async function AdminProtectedLayout({
             <AdminButton href="/" variant="ghost" size="sm">
               View site
             </AdminButton>
-            <form action="/admin/logout" method="post">
-              <AdminButton type="submit" variant="ghost" size="sm">
-                Logout
-              </AdminButton>
-            </form>
+            <AdminLogoutButton />
           </div>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-[220px_1fr]">
           <aside className="hidden rounded-2xl border bg-card p-3 shadow-[var(--shadow-soft)] md:block">
-            <AdminSidebarNav notificationCount={notificationCount} />
+            <AdminSidebarNav />
           </aside>
 
-          <section className="rounded-2xl border bg-card p-3 shadow-[var(--shadow-soft)] md:p-5">
+          <section
+            id={ADMIN_CONTENT_ID}
+            className="relative rounded-2xl border bg-card p-3 shadow-[var(--shadow-soft)] md:p-5"
+          >
             {children}
           </section>
         </div>
       </div>
 
       <AdminStickyRegion />
+      <AdminSessionNotice />
+      <AdminDataProvider />
       <AdminServiceWorker />
-      <AdminMobileNav notificationCount={notificationCount} />
+      <AdminMobileNav />
     </div>
   );
 }

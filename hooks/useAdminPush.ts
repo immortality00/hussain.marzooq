@@ -1,20 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { useRouter } from "next/navigation";
-import { useAdminAction } from "@/hooks/useAdminAction";
+import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
 import { readPushSupport, urlBase64ToUint8Array, withTimeout } from "@/lib/client/push-support";
 import {
   deletePushDevice,
+  forgetSavedPushDevice,
   registerAdminWorker,
+  resavePushDevice,
   savePushDevice,
   sendTestPush,
 } from "@/lib/client/admin-push-api";
+import { runAfterAdminData } from "@/lib/client/admin-store";
 
 const noopSubscribe = () => () => {};
 
 export function useAdminPush(publicKey: string | null) {
-  const router = useRouter();
   const support = useSyncExternalStore(noopSubscribe, readPushSupport, () => "checking" as const);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const [subscribed, setSubscribed] = useState(false);
@@ -35,7 +36,12 @@ export function useAdminPush(publicKey: string | null) {
         const granted = Notification.permission === "granted";
         setBlocked(Notification.permission === "denied");
         setSubscribed(Boolean(subscription) && granted);
-        if (subscription && granted) await savePushDevice(subscription);
+        if (!subscription || !granted) return;
+        void runAfterAdminData(() =>
+          resavePushDevice(subscription).catch((error: unknown) => {
+            if (!cancelled) notify("err", errorMessage(error, "Couldn't start notifications."));
+          })
+        );
       })
       .catch((error: unknown) => {
         if (!cancelled) {
@@ -79,7 +85,6 @@ export function useAdminPush(publicKey: string | null) {
       await subscribe(publicKey);
       setSubscribed(true);
       setBlocked(false);
-      router.refresh();
     }, "Notifications are on for this device.");
   };
 
@@ -90,8 +95,8 @@ export function useAdminPush(publicKey: string | null) {
         await deletePushDevice({ endpoint: subscription.endpoint });
         await subscription.unsubscribe();
       }
+      forgetSavedPushDevice();
       setSubscribed(false);
-      router.refresh();
     }, "Notifications are off for this device.");
 
   const sendTest = () =>
@@ -101,13 +106,11 @@ export function useAdminPush(publicKey: string | null) {
       const failed = json?.failed ?? 0;
       const devices = `${sent} device${sent === 1 ? "" : "s"}`;
       notify(failed ? "err" : "ok", `Sent to ${devices}${failed ? `, ${failed} failed` : ""}.`);
-      router.refresh();
     });
 
   const removeDevice = (id: string) =>
     act(async () => {
       await deletePushDevice({ id });
-      router.refresh();
     }, "Device removed.");
 
   return { support, subscribed, blocked, busy, feedback, enable, disable, sendTest, removeDevice };

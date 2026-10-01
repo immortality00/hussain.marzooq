@@ -136,47 +136,25 @@ export function duplicateVideoMessage(doc: Record<string, unknown>) {
     : "This video is already in the library.";
 }
 
-export async function resolvePeopleSelection(
-  db: Db,
-  input: {
-    peopleIds?: string[];
-  }
-): Promise<ResolvedPeopleSelection> {
-  const rawIds = Array.isArray(input.peopleIds) ? input.peopleIds : [];
-  const uniqueIds = Array.from(
-    new Set(
-      rawIds
-        .map((value) => value.trim())
-        .filter((value) => ObjectId.isValid(value))
-    )
-  ).slice(0, 60);
-
-  if (uniqueIds.length === 0) {
-    return { peopleIds: [], people: [], gatedPersonName: null };
-  }
-
-  const docs = await db
-    .collection("people_profiles")
-    .find(
-      { _id: { $in: uniqueIds.map((value) => new ObjectId(value)) } },
-      { projection: { _id: 1, name: 1, isPublic: 1, isPrivate: 1 } }
-    )
-    .toArray();
-
-  const docById = new Map(
-    docs
-      .filter((doc) => typeof doc.name === "string" && doc.name.trim())
-      .map((doc) => [String(doc._id), doc])
+export function uniquePeopleIds(rawIds: unknown): string[] {
+  const ids = Array.isArray(rawIds) ? rawIds.filter((value): value is string => typeof value === "string") : [];
+  return Array.from(new Set(ids.map((value) => value.trim()).filter((value) => ObjectId.isValid(value)))).slice(
+    0,
+    60
   );
+}
 
+type PersonLookupDoc = { name?: unknown; isPublic?: unknown; isPrivate?: unknown };
+
+export function pickPeople(uniqueIds: string[], docById: Map<string, PersonLookupDoc>): ResolvedPeopleSelection {
   const peopleIds: string[] = [];
   const people: string[] = [];
   let gatedPersonName: string | null = null;
 
   for (const id of uniqueIds) {
     const doc = docById.get(id);
-    if (!doc) continue;
-    const name = String(doc.name).trim();
+    if (!doc || typeof doc.name !== "string" || !doc.name.trim()) continue;
+    const name = doc.name.trim();
     peopleIds.push(id);
     people.push(name);
     if (!gatedPersonName && (doc.isPublic === false || doc.isPrivate === true)) {
@@ -185,6 +163,33 @@ export async function resolvePeopleSelection(
   }
 
   return { peopleIds, people, gatedPersonName };
+}
+
+export async function lookupPeople(db: Db, ids: string[]): Promise<Map<string, PersonLookupDoc>> {
+  if (ids.length === 0) return new Map();
+  const docs = await db
+    .collection("people_profiles")
+    .find(
+      { _id: { $in: ids.map((value) => new ObjectId(value)) } },
+      { projection: { _id: 1, name: 1, isPublic: 1, isPrivate: 1 } }
+    )
+    .toArray();
+  return new Map(
+    docs.map((doc) => [String(doc._id), { name: doc.name, isPublic: doc.isPublic, isPrivate: doc.isPrivate }])
+  );
+}
+
+export async function resolvePeopleSelection(
+  db: Db,
+  input: {
+    peopleIds?: string[];
+  }
+): Promise<ResolvedPeopleSelection> {
+  const uniqueIds = uniquePeopleIds(input.peopleIds);
+  if (uniqueIds.length === 0) {
+    return { peopleIds: [], people: [], gatedPersonName: null };
+  }
+  return pickPeople(uniqueIds, await lookupPeople(db, uniqueIds));
 }
 
 function toPositiveInt(v: unknown): number | null {

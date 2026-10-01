@@ -8,15 +8,18 @@ const PAGE_CACHE = "hm-admin-page-v1";
 const STATIC_CACHE = "hm-admin-static-v1";
 const CURRENT_CACHES = [LAUNCH_CACHE, PAGE_CACHE, STATIC_CACHE];
 const STATIC_LIMIT = 300;
+const SAVE_COPY_HEADER = "x-hm-save-copy";
+const DATA_CHANGED_MESSAGE = "hm-admin-data-changed";
 
 let signedOutAt = 0;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    Promise.allSettled([
-      caches.open(LAUNCH_CACHE).then((cache) => cache.addAll([LAUNCH_PATH, MASK_PATH])),
-      saveDashboard(false),
-    ]).then(() => self.skipWaiting())
+    caches
+      .open(LAUNCH_CACHE)
+      .then((cache) => cache.addAll([LAUNCH_PATH, MASK_PATH]))
+      .catch(() => {})
+      .then(() => self.skipWaiting())
   );
 });
 
@@ -55,12 +58,15 @@ async function keepCopy(response, requestedAt) {
   await cache.put(DASHBOARD_PATH, response);
 }
 
-async function saveDashboard(onlyIfMissing) {
+async function saveCopy(event) {
   const requestedAt = Date.now();
-  const cache = await caches.open(PAGE_CACHE);
-  if (onlyIfMissing && (await cache.match(DASHBOARD_PATH))) return;
-  const response = await fetch(DASHBOARD_PATH);
-  if (isPage(response)) await keepCopy(response, requestedAt);
+  const response = await fetch(event.request);
+  if (isPage(response)) {
+    await keepCopy(response.clone(), requestedAt);
+  } else if (response.status === 401) {
+    await caches.delete(PAGE_CACHE);
+  }
+  return response;
 }
 
 async function signOut(event) {
@@ -88,10 +94,7 @@ function fetchDashboard(event) {
 async function dashboard(event) {
   if (!event.request.referrer) {
     const cached = await (await caches.open(PAGE_CACHE)).match(DASHBOARD_PATH);
-    if (cached) {
-      event.waitUntil(fetchDashboard(event).catch(() => {}));
-      return cached;
-    }
+    if (cached) return cached;
     const screen = await launchScreen(event);
     if (screen) return screen;
   }
@@ -121,10 +124,6 @@ async function staticAsset(event) {
   return response;
 }
 
-self.addEventListener("message", (event) => {
-  if (event.data === "save-dashboard") event.waitUntil(saveDashboard(true).catch(() => {}));
-});
-
 self.addEventListener("fetch", (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -142,7 +141,9 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (request.method !== "GET") return;
-  if (url.pathname === MASK_PATH) {
+  if (url.pathname === DASHBOARD_PATH && request.headers.get(SAVE_COPY_HEADER) === "1") {
+    event.respondWith(saveCopy(event));
+  } else if (url.pathname === MASK_PATH) {
     event.respondWith(caches.match(MASK_PATH).then((hit) => hit || fetch(request)));
   } else if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(staticAsset(event));
@@ -161,12 +162,17 @@ self.addEventListener("push", (event) => {
   const url = typeof data.url === "string" && data.url.startsWith("/") ? data.url : FALLBACK_URL;
 
   event.waitUntil(
-    self.registration.showNotification(title, {
-      body: typeof data.body === "string" ? data.body : "",
-      icon: "/brand/icon-192.png",
-      badge: "/brand/icon-192.png",
-      data: { url },
-    })
+    Promise.all([
+      self.registration.showNotification(title, {
+        body: typeof data.body === "string" ? data.body : "",
+        icon: "/brand/icon-192.png",
+        badge: "/brand/icon-192.png",
+        data: { url },
+      }),
+      self.clients
+        .matchAll({ type: "window" })
+        .then((windows) => windows.forEach((client) => client.postMessage(DATA_CHANGED_MESSAGE))),
+    ])
   );
 });
 

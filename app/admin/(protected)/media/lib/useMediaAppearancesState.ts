@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { appearancesFrom } from "./editor-fields";
 import type { Appearance, MediaItem } from "./types";
 
-export function useMediaAppearancesState() {
-  const [appearances, setAppearances] = useState<Appearance[]>([]);
+export function useMediaAppearancesState(initial: MediaItem | null) {
+  const [appearances, setAppearances] = useState<Appearance[]>(() => appearancesFrom(initial));
 
   function addAppearance(kind: "featured" | "exhibited") {
     setAppearances((prev) => [
@@ -37,7 +38,7 @@ export function useMediaAppearancesState() {
   }
 
   function loadAppearancesIntoState(m: MediaItem) {
-    setAppearances(Array.isArray(m.appearances) ? m.appearances : []);
+    setAppearances(appearancesFrom(m));
   }
 
   return {

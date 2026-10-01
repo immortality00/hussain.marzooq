@@ -13,6 +13,7 @@ vi.mock("@/app/api/_lib/revalidate", () => ({ revalidateMediaSurfaces: vi.fn() }
 vi.mock("@/lib/server/video-posters", () => ({ storeVideoPoster, deleteVideoPoster, discardUnsavedPoster }));
 vi.mock("@/lib/server/private-gallery-admin", () => ({
   getPrivateGalleryTitlesForMedia: async () => [],
+  getPrivateGalleryTitlesByMedia: async () => new Map(),
   findPrivateGalleriesUsingMedia: async () => [],
   formatPrivateGalleryMediaDeleteBlocker: () => "",
 }));
@@ -132,7 +133,10 @@ describe("creating a video embed", () => {
     const res = await create(json({ ...base, type: "embed", embedUrl: `https://youtu.be/${YT_A}?si=x` }));
 
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true, id: expect.any(String) });
+    const body = await res.json();
+    expect(body).toMatchObject({ ok: true, id: expect.any(String) });
+    expect(body.item).toMatchObject({ id: body.id, posterUrl: NEW_POSTER.url, embedUrl: srcOf(YT_A) });
+    expect(body.listItem).toMatchObject({ id: body.id, posterUrl: NEW_POSTER.url, type: "embed" });
     expect(storeVideoPoster).toHaveBeenCalledWith(expect.anything(), { provider: "youtube", id: YT_A });
     expect(media[0]).toMatchObject({
       embedUrl: srcOf(YT_A),
@@ -190,7 +194,9 @@ describe("editing a video embed", () => {
       ctx(doc._id)
     );
 
-    expect(await res.json()).toEqual({ ok: true });
+    const body = await res.json();
+    expect(body).toMatchObject({ ok: true, item: { id: String(doc._id), posterUrl: NEW_POSTER.url } });
+    expect(body.listItem).toMatchObject({ id: String(doc._id), posterUrl: NEW_POSTER.url });
     expect(storeVideoPoster).toHaveBeenCalledTimes(1);
     expect(doc).toMatchObject({ posterUrl: NEW_POSTER.url, posterPublicId: NEW_POSTER.publicId });
     expect(deleteVideoPoster).not.toHaveBeenCalledWith(expect.any(String));

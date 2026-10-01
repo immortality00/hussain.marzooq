@@ -1,4 +1,5 @@
 import { revalidateMediaSurfaces, revalidateSitePages } from "@/app/api/_lib/revalidate";
+import { savedAdminMedia, serializeAdminMediaItem } from "@/lib/server/admin-media";
 import { mediaInUseResponse, usageUpdateFailedResponse } from "@/app/api/_lib/media-usage";
 import { getDb } from "@/lib/server/db";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
@@ -42,8 +43,7 @@ import {
   formatPrivateGalleryMediaDeleteBlocker,
   getPrivateGalleryTitlesForMedia,
 } from "@/lib/server/private-gallery-admin";
-import { isMediaAssetPath, mediaAssetPath } from "@/lib/media-asset-path";
-import { normalizeDeliveryType } from "@/lib/server/cloudinary-private";
+import { isMediaAssetPath } from "@/lib/media-asset-path";
 import { findAssetUsages } from "@/lib/server/asset-references";
 import {
   applyUsageEdit,
@@ -70,44 +70,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   if (found instanceof Response) return found;
   const { doc } = found;
 
-  const rawPeopleIds = asStringArray(doc.peopleIds);
-  const rawPeople = asStringArray(doc.people);
-  const resolvedPeople = await resolvePeopleSelection(db, { peopleIds: rawPeopleIds });
-  const privateGalleryTitles = await getPrivateGalleryTitlesForMedia(db, String(doc._id));
-  const isPrivateDelivery = normalizeDeliveryType(doc.deliveryType) === "authenticated";
-
-  const item = {
-    id: String(doc._id),
-    type: typeof doc.type === "string" ? doc.type : "image",
-    title: typeof doc.title === "string" ? doc.title : "",
-    description: typeof doc.description === "string" ? doc.description : null,
-    location: typeof doc.location === "string" ? doc.location : null,
-    locationId: typeof doc.locationId === "string" ? doc.locationId : null,
-    locationLat: typeof doc.locationLat === "number" ? doc.locationLat : null,
-    locationLon: typeof doc.locationLon === "number" ? doc.locationLon : null,
-    locationCountryCode: typeof doc.locationCountryCode === "string" ? doc.locationCountryCode : null,
-    event: typeof doc.event === "string" ? doc.event : null,
-    year: typeof doc.year === "number" ? doc.year : null,
-    tags: asStringArray(doc.tags),
-    categories: asStringArray(doc.categories),
-    peopleIds: resolvedPeople.peopleIds,
-    people: resolvedPeople.people.length ? resolvedPeople.people : rawPeople,
-    appearances: sanitizeAppearances(doc.appearances),
-    nft: doc.nft && typeof doc.nft === "object" ? doc.nft : null,
-    isPublic: typeof doc.isPublic === "boolean" ? doc.isPublic : true,
-    privateGalleryTitles,
-    secureUrl: isPrivateDelivery
-      ? mediaAssetPath(String(doc._id))
-      : typeof doc.secureUrl === "string"
-        ? doc.secureUrl
-        : null,
-    publicId: typeof doc.publicId === "string" ? doc.publicId : null,
-    resourceType: typeof doc.resourceType === "string" ? doc.resourceType : null,
-    embedUrl: typeof doc.embedUrl === "string" ? doc.embedUrl : null,
-    posterUrl: typeof doc.posterUrl === "string" ? doc.posterUrl : null,
-    createdAt: doc.createdAt ? new Date(doc.createdAt).toISOString() : null,
-    updatedAt: doc.updatedAt ? new Date(doc.updatedAt).toISOString() : null,
-  };
+  const item = await serializeAdminMediaItem(db, doc);
 
   return noStoreJson({ ok: true, item });
 }
@@ -446,8 +409,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   revalidateMediaSurfaces([...tags, ...asStringArray(existingMedia.tags)]);
   if (pageEdit) revalidateSitePages();
 
+  const saved = await db.collection("media").findOne({ _id: oid });
+
   return noStoreJson({
     ok: true,
+    ...(saved ? await savedAdminMedia(db, saved) : {}),
     ...(posterMissing ? { posterMissing: true } : {}),
     ...(pagesNotUpdated.length ? { pagesNotUpdated } : {}),
   });

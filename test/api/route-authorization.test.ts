@@ -72,6 +72,18 @@ const routes: Route[] = [
     load: () => import("@/app/api/admin/push/test/route"),
   },
   {
+    name: "GET /api/admin/snapshot",
+    method: "GET",
+    path: "/api/admin/snapshot",
+    load: () => import("@/app/api/admin/snapshot/route"),
+  },
+  {
+    name: "GET /api/admin/analytics",
+    method: "GET",
+    path: "/api/admin/analytics",
+    load: () => import("@/app/api/admin/analytics/route"),
+  },
+  {
     name: "GET /api/blog",
     method: "GET",
     path: "/api/blog",

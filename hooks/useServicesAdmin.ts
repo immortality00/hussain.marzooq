@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
-import { arrayMove } from "@dnd-kit/sortable";
+import { useDraftOrder } from "@/hooks/useDraftOrder";
+import { useAdminSlice } from "@/hooks/useAdminData";
 import type { Service, ServiceCategory } from "@/app/admin/(protected)/services/lib/types";
 import {
   createService,
@@ -20,14 +20,13 @@ import {
 import { useAdminAction } from "@/hooks/useAdminAction";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 
-export function useServicesAdmin(
-  initialServices: Service[],
-  initialCategories: ServiceCategory[]
-) {
-  const router = useRouter();
-
-  const [services, setServices] = useState<Service[]>(initialServices);
-  const categories = initialCategories;
+export function useServicesAdmin() {
+  const [services, setServices] = useAdminSlice("services");
+  const [serviceCategories] = useAdminSlice("serviceCategories");
+  const categories = useMemo<ServiceCategory[]>(
+    () => serviceCategories.map(({ id, name, slug, isActive, order }) => ({ id, name, slug, isActive, order })),
+    [serviceCategories]
+  );
 
   const [editing, setEditing] = useState<Service | null>(null);
   const [creating, setCreating] = useState(false);
@@ -64,10 +63,8 @@ export function useServicesAdmin(
     }
   }
 
-  const active = useMemo(
-    () => services.filter((s) => s.isActive && !s.isArchived).sort((a, b) => a.order - b.order),
-    [services]
-  );
+  const activeSaved = useMemo(() => services.filter((s) => s.isActive && !s.isArchived), [services]);
+  const { ordered: active, move, withSavedOrder, clearDraft } = useDraftOrder(activeSaved);
 
   const inactive = useMemo(
     () => services.filter((s) => !s.isActive && !s.isArchived).sort((a, b) => a.order - b.order),
@@ -82,15 +79,7 @@ export function useServicesAdmin(
   function onReorder(activeId: string, overId: string) {
     if (busy) return;
 
-    const oldIndex = active.findIndex((s) => s.id === activeId);
-    const newIndex = active.findIndex((s) => s.id === overId);
-    if (oldIndex < 0 || newIndex < 0) return;
-
-    const reordered = arrayMove(active, oldIndex, newIndex).map((s, idx) => ({ ...s, order: idx }));
-    setServices((prev) => {
-      const rest = prev.filter((p) => p.isArchived || !p.isActive);
-      return [...reordered, ...rest];
-    });
+    move(activeId, overId);
   }
 
   async function handleSaveOrder() {
@@ -98,6 +87,8 @@ export function useServicesAdmin(
       "Saving service order…",
       async () => {
         await saveOrder(active);
+        setServices((prev) => withSavedOrder(prev));
+        clearDraft();
       },
       { successText: "✅ Order saved.", errorFallback: "Save order failed." }
     );
@@ -108,7 +99,6 @@ export function useServicesAdmin(
       "Syncing inquiry counts…",
       async () => {
         await syncInquiryCounts();
-        router.refresh();
       },
       {
         successText: "✅ Inquiry counts synced from actual inquiries.",

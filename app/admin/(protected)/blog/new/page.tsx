@@ -1,10 +1,10 @@
-import { BlogPostEditor } from "../components/BlogPostEditor";
-import { loadCategoryOptions } from "../lib/server";
+import { BlogEditorScreen } from "../BlogEditorScreen";
+import { AdminScreen } from "@/components/admin/AdminScreen";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
-export default async function NewBlogPostPage() {
-  const categories = await loadCategoryOptions();
-  return <BlogPostEditor categories={categories} />;
+export default function Page() {
+  return (
+    <AdminScreen reads={["blog"]}>
+      <BlogEditorScreen editing={false} />
+    </AdminScreen>
+  );
 }

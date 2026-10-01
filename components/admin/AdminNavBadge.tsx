@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, use } from "react";
+import { useAdminPreview } from "@/hooks/useAdminData";
 
 const BADGE_CLASSES = {
   item: "inline-flex min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 py-0.5 font-mono text-[11px] font-semibold leading-none tabular-nums text-white",
@@ -9,8 +9,8 @@ const BADGE_CLASSES = {
 
 type BadgeVariant = keyof typeof BADGE_CLASSES;
 
-function PendingCount({ count, variant }: { count: Promise<number>; variant: BadgeVariant }) {
-  const value = use(count);
+export function AdminNavBadge({ variant = "item" }: { variant?: BadgeVariant }) {
+  const value = useAdminPreview()?.notificationCount ?? 0;
   if (value <= 0) return null;
 
   const text = value > 99 ? "99+" : value;
@@ -20,19 +20,5 @@ function PendingCount({ count, variant }: { count: Promise<number>; variant: Bad
     <span aria-label={`${value} pending`} className={BADGE_CLASSES.item}>
       {text}
     </span>
-  );
-}
-
-export function AdminNavBadge({
-  count,
-  variant = "item",
-}: {
-  count: Promise<number>;
-  variant?: BadgeVariant;
-}) {
-  return (
-    <Suspense fallback={null}>
-      <PendingCount count={count} variant={variant} />
-    </Suspense>
   );
 }

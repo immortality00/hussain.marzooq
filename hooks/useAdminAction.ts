@@ -5,6 +5,7 @@ import {
   type AdminActionFeedbackState,
   type AdminActionFeedbackType,
 } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { markAdminDataChanged } from "@/lib/client/admin-store";
 
 export function errorMessage(e: unknown, fallback = "Action failed."): string {
   if (e instanceof Error && e.message) return e.message;
@@ -12,9 +13,14 @@ export function errorMessage(e: unknown, fallback = "Action failed."): string {
   return fallback;
 }
 
-export function useAdminAction(opts?: { autoDismiss?: boolean }) {
-  const [feedback, setFeedback] = useState<AdminActionFeedbackState>(null);
+export function useAdminAction(opts?: { autoDismiss?: boolean; initial?: AdminActionFeedbackState }) {
+  const [feedback, setFeedbackState] = useState<AdminActionFeedbackState>(opts?.initial ?? null);
   const timerRef = useRef<number | null>(null);
+
+  const setFeedback = useCallback((next: AdminActionFeedbackState) => {
+    if (next && next.type !== "info") markAdminDataChanged();
+    setFeedbackState(next);
+  }, []);
 
   const clearTimer = useCallback(() => {
     if (timerRef.current) {
@@ -34,7 +40,7 @@ export function useAdminAction(opts?: { autoDismiss?: boolean }) {
         timerRef.current = window.setTimeout(() => setFeedback(null), ms);
       }
     },
-    [clearTimer, opts?.autoDismiss],
+    [clearTimer, opts?.autoDismiss, setFeedback],
   );
 
   async function run<T>(
@@ -48,6 +54,7 @@ export function useAdminAction(opts?: { autoDismiss?: boolean }) {
     }
     try {
       const result = await fn();
+      markAdminDataChanged();
       if (runOpts?.successText) notify("ok", runOpts.successText);
       return result;
     } catch (e) {

@@ -1,31 +1,32 @@
 import { useMemo, useState } from "react";
 import type { LocationOption } from "@/components/testimonials/review-form/types";
-import { toVideoWatchUrl } from "@/lib/video-embed";
+import { baseFieldsFrom, type BaseFields } from "./editor-fields";
 import type { MediaCategory, MediaItem, SavedPoster, Uploaded } from "./types";
 
-export function useBaseMediaEditorState() {
-  const [editingId, setEditingId] = useState<string>("");
+export function useBaseMediaEditorState(initial: MediaItem | null) {
+  const [start] = useState(() => baseFieldsFrom(initial));
+  const [editingId, setEditingId] = useState<string>(start.editingId);
 
-  const [mode, setMode] = useState<"upload" | "embed">("upload");
-  const [uploaded, setUploaded] = useState<Uploaded | null>(null);
-  const [embedUrl, setEmbedUrl] = useState("");
-  const [savedPoster, setSavedPoster] = useState<SavedPoster | null>(null);
+  const [mode, setMode] = useState<"upload" | "embed">(start.mode);
+  const [uploaded, setUploaded] = useState<Uploaded | null>(start.uploaded);
+  const [embedUrl, setEmbedUrl] = useState(start.embedUrl);
+  const [savedPoster, setSavedPoster] = useState<SavedPoster | null>(start.savedPoster);
 
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [location, setLocation] = useState("");
-  const [locationId, setLocationId] = useState<string | null>(null);
-  const [locationLat, setLocationLat] = useState<number | null>(null);
-  const [locationLon, setLocationLon] = useState<number | null>(null);
-  const [locationCountryCode, setLocationCountryCode] = useState<string | null>(null);
-  const [event, setEvent] = useState("");
-  const [year, setYear] = useState("");
-  const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>([]);
-  const [selectedPeopleIds, setSelectedPeopleIds] = useState<string[]>([]);
-  const [selectedPeopleNames, setSelectedPeopleNames] = useState<string[]>([]);
-  const [categories, setCategories] = useState<MediaCategory[]>([]);
-  const [isPublic, setIsPublic] = useState(true);
-  const [privateGalleryTitles, setPrivateGalleryTitles] = useState<string[]>([]);
+  const [title, setTitle] = useState(start.title);
+  const [description, setDescription] = useState(start.description);
+  const [location, setLocation] = useState(start.location);
+  const [locationId, setLocationId] = useState<string | null>(start.locationId);
+  const [locationLat, setLocationLat] = useState<number | null>(start.locationLat);
+  const [locationLon, setLocationLon] = useState<number | null>(start.locationLon);
+  const [locationCountryCode, setLocationCountryCode] = useState<string | null>(start.locationCountryCode);
+  const [event, setEvent] = useState(start.event);
+  const [year, setYear] = useState(start.year);
+  const [selectedTagSlugs, setSelectedTagSlugs] = useState<string[]>(start.tagSlugs);
+  const [selectedPeopleIds, setSelectedPeopleIds] = useState<string[]>(start.peopleIds);
+  const [selectedPeopleNames, setSelectedPeopleNames] = useState<string[]>(start.peopleNames);
+  const [categories, setCategories] = useState<MediaCategory[]>(start.categories);
+  const [isPublic, setIsPublic] = useState(start.isPublic);
+  const [privateGalleryTitles, setPrivateGalleryTitles] = useState<string[]>(start.privateGalleryTitles);
 
   const tags = useMemo(() => selectedTagSlugs.slice(0, 60), [selectedTagSlugs]);
   const peopleIds = useMemo(() => selectedPeopleIds.slice(0, 60), [selectedPeopleIds]);
@@ -89,65 +90,35 @@ export function useBaseMediaEditorState() {
     setSelectedTagSlugs((prev) => prev.filter((s) => s !== slug));
   }
 
+  function applyBaseFields(fields: BaseFields) {
+    setEditingId(fields.editingId);
+    setMode(fields.mode);
+    setUploaded(fields.uploaded);
+    setEmbedUrl(fields.embedUrl);
+    setSavedPoster(fields.savedPoster);
+    setTitle(fields.title);
+    setDescription(fields.description);
+    setLocation(fields.location);
+    setLocationId(fields.locationId);
+    setLocationLat(fields.locationLat);
+    setLocationLon(fields.locationLon);
+    setLocationCountryCode(fields.locationCountryCode);
+    setEvent(fields.event);
+    setYear(fields.year);
+    setSelectedTagSlugs(fields.tagSlugs);
+    setSelectedPeopleIds(fields.peopleIds);
+    setSelectedPeopleNames(fields.peopleNames);
+    setCategories(fields.categories);
+    setIsPublic(fields.isPublic);
+    setPrivateGalleryTitles(fields.privateGalleryTitles);
+  }
+
   function resetBaseFields() {
-    setEditingId("");
-    setMode("upload");
-    setUploaded(null);
-    setEmbedUrl("");
-    setSavedPoster(null);
-    setTitle("");
-    setDescription("");
-    clearLocation();
-    setEvent("");
-    setYear("");
-    setSelectedTagSlugs([]);
-    setSelectedPeopleIds([]);
-    setSelectedPeopleNames([]);
-    setCategories([]);
-    setIsPublic(true);
-    setPrivateGalleryTitles([]);
+    applyBaseFields(baseFieldsFrom(null));
   }
 
   function loadBaseIntoState(m: MediaItem) {
-    setEditingId(m.id);
-
-    setSavedPoster(
-      m.type === "embed" && m.embedUrl && m.posterUrl ? { url: m.posterUrl, embedUrl: m.embedUrl } : null
-    );
-
-    if (m.type === "embed") {
-      setMode("embed");
-      setEmbedUrl(toVideoWatchUrl(m.embedUrl ?? ""));
-      setUploaded(null);
-    } else {
-      setMode("upload");
-      setEmbedUrl("");
-      if (m.secureUrl && m.publicId && m.resourceType) {
-        setUploaded({
-          secureUrl: m.secureUrl,
-          publicId: m.publicId,
-          resourceType: m.resourceType,
-        });
-      } else {
-        setUploaded(null);
-      }
-    }
-
-    setTitle(m.title ?? "");
-    setDescription(m.description ?? "");
-    setLocation(m.location ?? "");
-    setLocationId(m.locationId ?? null);
-    setLocationLat(typeof m.locationLat === "number" ? m.locationLat : null);
-    setLocationLon(typeof m.locationLon === "number" ? m.locationLon : null);
-    setLocationCountryCode(m.locationCountryCode ?? null);
-    setEvent(m.event ?? "");
-    setYear(m.year ? String(m.year) : "");
-    setSelectedTagSlugs(m.tags ?? []);
-    setSelectedPeopleIds(m.peopleIds ?? []);
-    setSelectedPeopleNames(m.people ?? []);
-    setCategories((m.categories ?? []) as MediaCategory[]);
-    setIsPublic(Boolean(m.isPublic));
-    setPrivateGalleryTitles(m.privateGalleryTitles ?? []);
+    applyBaseFields(baseFieldsFrom(m));
   }
 
   return {

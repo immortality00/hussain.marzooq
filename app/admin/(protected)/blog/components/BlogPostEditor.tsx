@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useAdminNavigate } from "@/hooks/useAdminNavigate";
+import { useAdminSlice } from "@/hooks/useAdminData";
+import { markAdminDataChanged } from "@/lib/client/admin-store";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { AdminToggle } from "@/components/admin/AdminToggle";
@@ -14,6 +16,7 @@ import { slugifyTag } from "@/lib/server/media-tags";
 import { TagsInput } from "./TagsInput";
 import { BlogMarkdownField } from "./BlogMarkdownField";
 import { createPost, updatePost, deletePost } from "../lib/api";
+import { withSavedPost, withoutPost } from "../lib/blog-store";
 import type { BlogCategoryOption, BlogPostFormValues } from "../lib/types";
 
 const EMPTY: BlogPostFormValues = {
@@ -38,7 +41,8 @@ export function BlogPostEditor({
   initial?: BlogPostFormValues;
   categories: BlogCategoryOption[];
 }) {
-  const router = useRouter();
+  const { navigate, navigationCover } = useAdminNavigate();
+  const [, setBlog] = useAdminSlice("blog");
   const [values, setValues] = useState<BlogPostFormValues>(initial ?? EMPTY);
   const [slugTouched, setSlugTouched] = useState(Boolean(initial?.slug));
   const [saving, setSaving] = useState(false);
@@ -69,12 +73,13 @@ export function BlogPostEditor({
     try {
       if (isEdit && id) {
         await updatePost(id, values);
+        setBlog((blog) => withSavedPost(blog, id, values));
         notify("ok", "Post saved.");
-        router.refresh();
       } else {
-        await createPost(values);
-        router.push("/admin/blog");
-        router.refresh();
+        const newId = await createPost(values);
+        setBlog((blog) => withSavedPost(blog, newId, values));
+        markAdminDataChanged();
+        navigate("/admin/blog");
         return;
       }
     } catch (e) {
@@ -91,8 +96,9 @@ export function BlogPostEditor({
     setFeedback({ type: "info", text: "Deleting…" });
     try {
       await deletePost(id);
-      router.push("/admin/blog");
-      router.refresh();
+      setBlog((blog) => withoutPost(blog, id));
+      markAdminDataChanged();
+      navigate("/admin/blog");
     } catch (e) {
       notify("err", e instanceof Error ? e.message : "Delete failed.");
       setSaving(false);
@@ -101,6 +107,7 @@ export function BlogPostEditor({
 
   return (
     <div className="space-y-6">
+      {navigationCover}
       <AdminPageHeader
         title={isEdit ? "Edit post" : "New post"}
         actions={

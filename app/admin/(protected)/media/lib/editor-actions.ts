@@ -2,6 +2,11 @@ import { parseVideoLink } from "@/lib/video-embed";
 import { throwIfMediaInUse } from "@/lib/client/media-usage-api";
 import type { MediaUsageChoice } from "@/lib/media-in-use";
 import type { MediaItem } from "./types";
+import type { SavedMedia } from "./media-store";
+
+function savedFrom(data: Partial<SavedMedia> | null): SavedMedia | null {
+  return data?.item && data.listItem ? { item: data.item, listItem: data.listItem } : null;
+}
 
 export async function fetchMediaItem(id: string): Promise<MediaItem> {
   const res = await fetch(`/api/media/${encodeURIComponent(id)}`, { cache: "no-store" });
@@ -139,18 +144,20 @@ export async function saveMediaItem(args: {
       body: JSON.stringify(args.payloadWithAsset),
     });
 
-    const data = (await res.json().catch(() => null)) as {
-      ok?: boolean;
-      id?: string;
-      error?: string;
-      posterMissing?: boolean;
-    };
+    const data = (await res.json().catch(() => null)) as
+      | (Partial<SavedMedia> & { ok?: boolean; id?: string; error?: string; posterMissing?: boolean })
+      | null;
 
     if (!res.ok || !data?.ok) {
       throw new Error(data?.error ?? "Save failed.");
     }
 
-    return { mode: "created" as const, id: data.id ?? null, posterMissing: data.posterMissing === true };
+    return {
+      mode: "created" as const,
+      id: data.id ?? null,
+      posterMissing: data.posterMissing === true,
+      saved: savedFrom(data),
+    };
   }
 
   const updateBody = { ...(args.payloadWithAsset ?? args.payloadBase), usages: args.usages };
@@ -161,12 +168,9 @@ export async function saveMediaItem(args: {
     body: JSON.stringify(updateBody),
   });
 
-  const data = (await res.json().catch(() => null)) as {
-    ok?: boolean;
-    error?: string;
-    posterMissing?: boolean;
-    pagesNotUpdated?: string[];
-  };
+  const data = (await res.json().catch(() => null)) as
+    | (Partial<SavedMedia> & { ok?: boolean; error?: string; posterMissing?: boolean; pagesNotUpdated?: string[] })
+    | null;
 
   if (!res.ok || !data?.ok) {
     throwIfMediaInUse(data);
@@ -178,6 +182,7 @@ export async function saveMediaItem(args: {
     id: args.editingId,
     posterMissing: data.posterMissing === true,
     pagesNotUpdated: Array.isArray(data.pagesNotUpdated) ? data.pagesNotUpdated : [],
+    saved: savedFrom(data),
   };
 }
 

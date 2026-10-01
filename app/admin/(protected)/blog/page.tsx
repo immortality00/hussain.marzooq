@@ -1,10 +1,10 @@
 import BlogAdminClient from "./BlogAdminClient";
-import { loadBlogList } from "./lib/server";
+import { AdminScreen } from "@/components/admin/AdminScreen";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
-
-export default async function AdminBlogPage() {
-  const initial = await loadBlogList();
-  return <BlogAdminClient initial={initial} />;
+export default function Page() {
+  return (
+    <AdminScreen reads={["blog"]}>
+      <BlogAdminClient />
+    </AdminScreen>
+  );
 }

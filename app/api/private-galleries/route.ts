@@ -1,4 +1,5 @@
 import { revalidatePath, revalidateTag } from "next/cache";
+import { listAdminPrivateGalleries } from "@/lib/server/admin-lists";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { TRANSITION_IMAGES_TAG } from "@/lib/server/public-media";
@@ -19,7 +20,6 @@ import {
 } from "@/lib/private-galleries";
 import {
   ensureUniquePrivateGallerySlug,
-  serializePrivateGalleryAdminItem,
   validatePrivateGalleryMediaIds,
 } from "@/lib/server/private-gallery-admin";
 import {
@@ -34,15 +34,7 @@ export async function GET() {
   const deny = await requireAdminOr401();
   if (deny) return deny;
 
-  const db = await getDb();
-
-  const docs = await db
-    .collection("private_galleries")
-    .find({})
-    .sort({ updatedAt: -1, createdAt: -1 })
-    .toArray();
-
-  return noStoreJson({ ok: true, items: docs.map(serializePrivateGalleryAdminItem) });
+  return noStoreJson({ ok: true, items: await listAdminPrivateGalleries() });
 }
 
 export async function POST(req: Request) {

@@ -1,15 +1,4 @@
-export type GalleryItem = {
-  id: string;
-  title: string;
-  slug: string;
-  description: string | null;
-  mediaIds: string[];
-  isActive: boolean;
-  expiresAtLocal: string;
-  expiresAtUtc?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
-};
+export type { PrivateGalleryAdminItem as GalleryItem } from "@/lib/server/private-gallery-admin";
 
 export type MediaItem = {
   id: string;

@@ -1,4 +1,5 @@
 import { createHash } from "node:crypto";
+import { listAdminInquiries } from "@/lib/server/admin-lists";
 import { ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
@@ -28,36 +29,10 @@ export async function GET(req: Request) {
   if (deny) return deny;
 
   const url = new URL(req.url);
-  const status = (url.searchParams.get("status") ?? "").trim();
-  const all = url.searchParams.get("all") === "1";
-
-  const filter: Record<string, unknown> = {};
-  if (status) filter.status = status;
-  if (!all) filter.isArchived = { $ne: true };
-
-  const db = await getDb();
-
-  const docs = await db
-    .collection("inquiries")
-    .find(filter)
-    .sort({ createdAt: -1 })
-    .limit(300)
-    .toArray();
-
-  const items = docs.map((d) => ({
-    id: String(d._id),
-    name: typeof d.name === "string" ? d.name : "",
-    email: typeof d.email === "string" ? d.email : "",
-    message: typeof d.message === "string" ? d.message : "",
-    category: typeof d.category === "string" ? d.category : null,
-    serviceId: typeof d.serviceId === "string" ? d.serviceId : null,
-    serviceName: typeof d.serviceName === "string" ? d.serviceName : null,
-    status: typeof d.status === "string" ? d.status : "new",
-    adminNotes: typeof d.adminNotes === "string" ? d.adminNotes : "",
-    isArchived: typeof d.isArchived === "boolean" ? d.isArchived : false,
-    createdAt: d.createdAt ? new Date(d.createdAt).toISOString() : null,
-    updatedAt: d.updatedAt ? new Date(d.updatedAt).toISOString() : null,
-  }));
+  const items = await listAdminInquiries({
+    status: (url.searchParams.get("status") ?? "").trim(),
+    all: url.searchParams.get("all") === "1",
+  });
 
   return noStoreJson({ ok: true, items });
 }

@@ -22,7 +22,6 @@ export type AdminDashboardStats = {
   removalRequests: number;
   services: number;
   privateGalleries: number;
-  generatedAt: number;
 };
 
 async function facetCounts<K extends string>(
@@ -108,6 +107,5 @@ export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
     removalRequests: people.removal,
     services,
     privateGalleries,
-    generatedAt: Date.now(),
   };
 }

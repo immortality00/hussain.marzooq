@@ -1,12 +1,12 @@
 "use client";
 
-import Link from "next/link";
+import { AdminLink } from "@/components/admin/AdminLink";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { AdminNavBadge } from "./AdminNavBadge";
 import { NAV_GROUPS } from "./nav-groups";
 
-export function AdminSidebarNav({ notificationCount }: { notificationCount: Promise<number> }) {
+export function AdminSidebarNav() {
   const pathname = usePathname();
 
   return (
@@ -20,7 +20,7 @@ export function AdminSidebarNav({ notificationCount }: { notificationCount: Prom
             const active =
               pathname === item.href || pathname.startsWith(`${item.href}/`);
             return (
-              <Link
+              <AdminLink
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
@@ -33,9 +33,9 @@ export function AdminSidebarNav({ notificationCount }: { notificationCount: Prom
               >
                 <span>{item.label}</span>
                 {item.href === "/admin/dashboard" ? (
-                  <AdminNavBadge count={notificationCount} />
+                  <AdminNavBadge />
                 ) : null}
-              </Link>
+              </AdminLink>
             );
           })}
         </div>

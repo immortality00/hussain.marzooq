@@ -1,37 +1,21 @@
-import { notFound, redirect } from "next/navigation";
-import { isAdminAuthedServer } from "@/lib/auth/admin";
-import { getAllPageSettings } from "@/lib/server/page-settings";
-import { getAllPageSeo } from "@/lib/server/page-seo";
-import { getAllPageSections } from "@/lib/server/page-sections";
+import { notFound } from "next/navigation";
 import { PAGE_ROWS } from "../lib/rows";
 import { PageEditorClient } from "./PageEditorClient";
+import { AdminScreen } from "@/components/admin/AdminScreen";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+export const dynamicParams = false;
 
-export default async function AdminPageEditor({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}) {
+export function generateStaticParams() {
+  return PAGE_ROWS.map((row) => ({ slug: row.key }));
+}
+
+export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const ok = await isAdminAuthedServer();
-  if (!ok) redirect(`/admin?next=/admin/pages/${slug}`);
-
   if (!PAGE_ROWS.some((row) => row.key === slug)) notFound();
 
-  const [settings, seo, sections] = await Promise.all([
-    getAllPageSettings(),
-    getAllPageSeo(),
-    getAllPageSections(),
-  ]);
-
   return (
-    <PageEditorClient
-      slug={slug}
-      initialSettings={settings}
-      initialSeo={seo}
-      initialSections={sections}
-    />
+    <AdminScreen reads={["pages"]}>
+      <PageEditorClient key={slug} slug={slug} />
+    </AdminScreen>
   );
 }

@@ -1,6 +1,6 @@
-import Link from "next/link";
 import type { ComponentProps, ReactNode, Ref } from "react";
 import { cn } from "@/lib/utils";
+import { AdminLink } from "./AdminLink";
 
 export type AdminButtonVariant = "default" | "solid" | "danger" | "warning" | "ghost";
 export type AdminButtonSize = "xs" | "sm" | "md";
@@ -41,7 +41,7 @@ type BaseProps = {
 
 type AdminButtonProps = BaseProps &
   (
-    | ({ href: string } & Omit<ComponentProps<typeof Link>, "href" | "className" | "children" | "ref">)
+    | ({ href: string } & Omit<ComponentProps<typeof AdminLink>, "href" | "className" | "children" | "ref">)
     | ({ href?: undefined } & Omit<ComponentProps<"button">, "className" | "children" | "ref">)
   );
 
@@ -58,9 +58,9 @@ export function AdminButton({
   if (rest.href !== undefined) {
     const { href, ...linkRest } = rest;
     return (
-      <Link ref={ref} href={href} className={classes} {...linkRest}>
+      <AdminLink ref={ref} href={href} className={classes} {...linkRest}>
         {children}
-      </Link>
+      </AdminLink>
     );
   }
 

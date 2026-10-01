@@ -1,9 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import type { PageSettings } from "@/lib/server/page-settings";
-import type { PageSeo } from "@/lib/server/page-seo";
-import type { PageSectionsSlug, PageSectionsMap } from "@/lib/server/page-sections";
+import { AdminLink } from "@/components/admin/AdminLink";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminToggle } from "@/components/admin/AdminToggle";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
@@ -16,16 +13,8 @@ const GROUPS: { key: PageGroup; label: string }[] = [
   { key: "template", label: "Templates" },
 ];
 
-export function PagesAdminClient({
-  initialSettings,
-  initialSeo,
-  initialSections,
-}: {
-  initialSettings: PageSettings[];
-  initialSeo: PageSeo[];
-  initialSections: { slug: PageSectionsSlug; data: PageSectionsMap[PageSectionsSlug] }[];
-}) {
-  const admin = usePagesAdmin({ initialSettings, initialSeo, initialSections });
+export function PagesAdminClient() {
+  const admin = usePagesAdmin();
 
   return (
     <div>
@@ -75,7 +64,7 @@ function PageCard({
   const hasToggle = Boolean(row.settingsSlug);
   return (
     <div className="group relative flex items-center justify-between gap-3 rounded-2xl border bg-card p-4 transition-colors hover:border-foreground/20 hover:bg-accent/40">
-      <Link
+      <AdminLink
         href={`/admin/pages/${row.key}`}
         aria-label={`Edit ${row.label}`}
         className="absolute inset-0 rounded-2xl"

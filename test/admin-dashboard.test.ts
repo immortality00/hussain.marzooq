@@ -46,7 +46,6 @@ describe("admin dashboard counts", () => {
     });
     expect(stats.media.byCategory.find((c) => c.key === "photography")?.count).toBe(7);
     expect(stats.media.byCategory.find((c) => c.key === "showreel")?.count).toBe(0);
-    expect(typeof stats.generatedAt).toBe("number");
     expect(calls.sort()).toEqual(
       [
         "aggregate:inquiries",

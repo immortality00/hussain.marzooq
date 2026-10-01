@@ -93,6 +93,21 @@ export function pageGroup(row: PageRow): PageGroup {
   return "main";
 }
 
+type PageSettingsRecord = Record<string, { isActive?: boolean; cardImage?: { url?: string } } | undefined>;
+
+export function pageFlags(pages: { settings: PageSettingsRecord; sections: Record<string, unknown> }) {
+  const missingImage = PAGE_ROWS.filter((row) =>
+    pageNeedsImage(row, {
+      isActive: row.settingsSlug ? (pages.settings[row.settingsSlug]?.isActive ?? true) : true,
+      cardImageUrl: row.settingsSlug ? pages.settings[row.settingsSlug]?.cardImage?.url : undefined,
+      homeSections: row.sectionsSlug === "home" ? (pages.sections.home as HomeSections | undefined) : undefined,
+    })
+  ).length;
+  const hidden = PAGE_ROWS.filter((row) => row.settingsSlug && pages.settings[row.settingsSlug]?.isActive === false)
+    .length;
+  return { missingImage, hidden };
+}
+
 export function pageNeedsImage(
   row: PageRow,
   ctx: { isActive: boolean; cardImageUrl?: string; homeSections?: HomeSections },

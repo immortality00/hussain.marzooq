@@ -1,11 +1,12 @@
 "use client";
 
-import { useSyncExternalStore, type KeyboardEvent } from "react";
+import { Suspense, useSyncExternalStore, type KeyboardEvent } from "react";
 import { createPortal, useFormStatus } from "react-dom";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { adminCheckboxClasses, adminInputClasses } from "@/components/admin/admin-input";
 import { LoadingScreen } from "@/components/shared/LoadingScreen";
 import { isStandalone } from "@/lib/client/push-support";
+import { NextPathField } from "./LoginNotice";
 
 const subscribeNever = () => () => {};
 
@@ -15,13 +16,7 @@ function SigningIn() {
   return createPortal(<LoadingScreen className="fixed inset-0 z-50 bg-background" />, document.body);
 }
 
-export function AdminLoginForm({
-  login,
-  nextPath,
-}: {
-  login: (formData: FormData) => void;
-  nextPath: string;
-}) {
+export function AdminLoginForm({ login }: { login: (formData: FormData) => void }) {
   const installed = useSyncExternalStore(subscribeNever, isStandalone, () => false);
 
   function submitOnEnter(event: KeyboardEvent<HTMLInputElement>) {
@@ -46,7 +41,9 @@ export function AdminLoginForm({
         required
       />
 
-      <input type="hidden" name="next" value={nextPath} />
+      <Suspense fallback={null}>
+        <NextPathField />
+      </Suspense>
 
       <label className="flex items-center gap-2 text-sm text-muted-foreground">
         <input

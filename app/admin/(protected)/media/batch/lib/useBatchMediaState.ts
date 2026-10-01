@@ -62,7 +62,7 @@ export function useBatchMediaState() {
   const [event, setEvent] = useState("");
   const [year, setYear] = useState("");
 
-  const appearanceState = useMediaAppearancesState();
+  const appearanceState = useMediaAppearancesState(null);
   const [items, setItems] = useState<BatchItem[]>([]);
 
   const primaryCategory = categories[0] ?? null;

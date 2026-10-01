@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { arrayMove } from "@dnd-kit/sortable";
+import { useState } from "react";
+import { useDraftOrder } from "@/hooks/useDraftOrder";
+import { useAdminSlice } from "@/hooks/useAdminData";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useAdminAction } from "@/hooks/useAdminAction";
 import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
@@ -17,8 +18,8 @@ import { getErrorMessage } from "./lib/utils";
 
 const EMPTY_DRAFT: NewTag = { label: "", slug: "", description: "" };
 
-export default function AdminTagsClient({ initial }: { initial: Tag[] }) {
-  const [items, setItems] = useState<Tag[]>(initial);
+export default function AdminTagsClient() {
+  const [items, setItems] = useAdminSlice("mediaTags");
   const [draft, setDraft] = useState<NewTag>(EMPTY_DRAFT);
   const [creating, setCreating] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
@@ -26,7 +27,7 @@ export default function AdminTagsClient({ initial }: { initial: Tag[] }) {
 
   const actionBusy = creating || savingOrder;
 
-  const ordered = useMemo(() => [...items].sort((a, b) => a.order - b.order), [items]);
+  const { ordered, move, withSavedOrder, clearDraft } = useDraftOrder(items);
 
   const selection = useBulkSelection(ordered.map((t) => t.id));
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -158,12 +159,7 @@ export default function AdminTagsClient({ initial }: { initial: Tag[] }) {
   function onReorder(activeId: string, overId: string) {
     if (actionBusy) return;
 
-    const oldIndex = ordered.findIndex((t) => t.id === activeId);
-    const newIndex = ordered.findIndex((t) => t.id === overId);
-    if (oldIndex < 0 || newIndex < 0) return;
-
-    const moved = arrayMove(ordered, oldIndex, newIndex).map((t, idx) => ({ ...t, order: idx }));
-    setItems(moved);
+    move(activeId, overId);
   }
 
   async function saveOrder() {
@@ -174,6 +170,8 @@ export default function AdminTagsClient({ initial }: { initial: Tag[] }) {
 
     try {
       await Promise.all(ordered.map((t, idx) => patchTag(t.id, { order: idx })));
+      setItems((prev) => withSavedOrder(prev));
+      clearDraft();
       await refresh();
       setFeedback({ type: "ok", text: "✅ Order saved." });
     } catch (e: unknown) {

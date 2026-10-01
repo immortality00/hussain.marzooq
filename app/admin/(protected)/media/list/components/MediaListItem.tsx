@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import type { AdminMediaListItem } from "@/lib/server/media-serializers";
+import { AdminLink } from "@/components/admin/AdminLink";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 
 type NftData = {
@@ -13,24 +14,7 @@ type NftData = {
   marketplaceUrl: string | null;
 };
 
-export type MediaItem = {
-  id: string;
-  type: string;
-  title: string;
-  description: string | null;
-  location: string | null;
-  event: string | null;
-  year: number | null;
-  tags: string[];
-  categories: string[];
-  people: string[];
-  nft: NftData | null;
-  isPublic: boolean;
-  secureUrl: string | null;
-  embedUrl: string | null;
-  posterUrl: string | null;
-  createdAt: string | null;
-};
+export type MediaItem = AdminMediaListItem;
 
 function statusClasses(status: "available" | "sold" | "coming-soon") {
   if (status === "sold") return "border-rose-500/30 bg-rose-500/12 text-rose-700 dark:text-rose-300";
@@ -58,7 +42,6 @@ export function MediaListItem({
   actionDisabled: boolean;
   onDelete: (id: string) => void;
 }) {
-  const router = useRouter();
   const stillSrc = item.type === "embed" ? item.posterUrl : item.secureUrl;
 
   return (
@@ -106,14 +89,14 @@ export function MediaListItem({
             </div>
 
             <div className="flex shrink-0 gap-2">
-              <button
-                type="button"
-                disabled={actionDisabled}
-                onClick={() => router.push(`/admin/media?edit=${encodeURIComponent(item.id)}`)}
-                className={adminButtonClasses("default", "md")}
+              <AdminLink
+                href={`/admin/media?edit=${encodeURIComponent(item.id)}`}
+                aria-disabled={actionDisabled}
+                tabIndex={actionDisabled ? -1 : undefined}
+                className={adminButtonClasses("default", "md", actionDisabled ? "pointer-events-none opacity-60" : undefined)}
               >
                 Edit
-              </button>
+              </AdminLink>
               <button
                 type="button"
                 disabled={actionDisabled}

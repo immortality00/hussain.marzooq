@@ -8,6 +8,7 @@ import {
   sessionCookieOptions,
   type SessionCheck,
 } from "@/lib/auth/session-token";
+import { safeAdminNextPath } from "@/lib/auth/admin-next-path";
 
 // Edge runtime: Web Crypto only. Do not import node:crypto here.
 
@@ -16,13 +17,17 @@ function isPageLoad(req: NextRequest) {
   return !mode || mode === "navigate" || req.headers.get("sec-fetch-dest") === "document";
 }
 
+function isSignInPage(pathname: string) {
+  return pathname === "/admin" || pathname === "/admin/";
+}
+
 function isPublicAdminRoute(pathname: string) {
-  return (
-    pathname === "/admin" ||
-    pathname === "/admin/" ||
-    pathname === "/admin/logout" ||
-    pathname === "/admin/logout/"
-  );
+  return isSignInPage(pathname) || pathname === "/admin/logout" || pathname === "/admin/logout/";
+}
+
+function wantsSignInForm(req: NextRequest) {
+  const params = req.nextUrl.searchParams;
+  return req.method !== "GET" || params.has("loggedout") || params.has("signedout");
 }
 
 type AuthResult = SessionCheck | { ok: false; reason: "missing" | "config" };
@@ -40,9 +45,20 @@ export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   if (!pathname.startsWith("/admin")) return NextResponse.next();
-  if (isPublicAdminRoute(pathname)) return NextResponse.next();
 
   const secret = (process.env.ADMIN_COOKIE_SECRET ?? "").trim();
+
+  if (isPublicAdminRoute(pathname)) {
+    if (!isSignInPage(pathname) || wantsSignInForm(req)) return NextResponse.next();
+    const signedIn = await checkAdminAuth(req, secret);
+    if (!signedIn.ok) return NextResponse.next();
+    const url = req.nextUrl.clone();
+    const target = new URL(safeAdminNextPath(req.nextUrl.searchParams.get("next")), url);
+    url.pathname = target.pathname;
+    url.search = target.search;
+    return NextResponse.redirect(url);
+  }
+
   const auth = await checkAdminAuth(req, secret);
 
   if (auth.ok) {

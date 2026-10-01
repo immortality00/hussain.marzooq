@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { arrayMove } from "@dnd-kit/sortable";
+import { useState } from "react";
+import { useDraftOrder } from "@/hooks/useDraftOrder";
+import { useAdminSlice } from "@/hooks/useAdminData";
 import { GripVertical } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminButton } from "@/components/admin/AdminButton";
@@ -28,13 +29,13 @@ async function readError(res: Response): Promise<string> {
   return data?.error ?? `Request failed (${res.status})`;
 }
 
-export default function BlogCategoriesAdminClient({ initial }: { initial: Category[] }) {
-  const [items, setItems] = useState<Category[]>(initial);
+export default function BlogCategoriesAdminClient() {
+  const [items, setItems] = useAdminSlice("blogCategories");
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const { feedback, notify, setFeedback } = useAdminAction();
 
-  const ordered = useMemo(() => [...items].sort((a, b) => a.order - b.order), [items]);
+  const { ordered, move, withSavedOrder, clearDraft } = useDraftOrder(items);
 
   async function create() {
     const n = name.trim();
@@ -118,10 +119,7 @@ export default function BlogCategoriesAdminClient({ initial }: { initial: Catego
   }
 
   function onReorder(activeId: string, overId: string) {
-    const oldIndex = ordered.findIndex((c) => c.id === activeId);
-    const newIndex = ordered.findIndex((c) => c.id === overId);
-    if (oldIndex < 0 || newIndex < 0) return;
-    setItems(arrayMove(ordered, oldIndex, newIndex).map((c, idx) => ({ ...c, order: idx })));
+    move(activeId, overId);
   }
 
   async function saveOrder() {
@@ -129,6 +127,8 @@ export default function BlogCategoriesAdminClient({ initial }: { initial: Catego
     setFeedback({ type: "info", text: "Saving order…" });
     try {
       await Promise.all(ordered.map((c, idx) => patch(c.id, { order: idx })));
+      setItems((prev) => withSavedOrder(prev));
+      clearDraft();
       notify("ok", "Order saved.");
     } catch (e) {
       notify("err", e instanceof Error ? e.message : "Failed to save order.");

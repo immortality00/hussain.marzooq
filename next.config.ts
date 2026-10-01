@@ -84,12 +84,8 @@ const nextConfig: NextConfig = {
         headers: securityHeaders,
       },
       {
-        // Admin must never be cached or indexed.
         source: "/admin/:path*",
-        headers: [
-          { key: "Cache-Control", value: "no-store, max-age=0" },
-          { key: "X-Robots-Tag", value: "noindex, nofollow" },
-        ],
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
       },
       {
         // Private client galleries must never be indexed.

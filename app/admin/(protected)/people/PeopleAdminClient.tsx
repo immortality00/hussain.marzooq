@@ -52,7 +52,6 @@ const VISIBILITY_OPTIONS: { value: "public" | "private" | "hidden"; label: strin
 export default function PeopleAdminClient() {
   const {
     items,
-    loading,
     saving,
     deletingId,
     actionBusy,
@@ -143,9 +142,7 @@ export default function PeopleAdminClient() {
           )}
 
           <div className="mt-4 space-y-3">
-            {loading ? (
-              <div className="rounded-2xl border p-4 text-sm text-muted-foreground">Loading…</div>
-            ) : items.length === 0 ? (
+            {items.length === 0 ? (
               <div className="rounded-2xl border p-4 text-sm text-muted-foreground">No profiles yet.</div>
             ) : (
               items.map((item) => (

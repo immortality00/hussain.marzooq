@@ -12,6 +12,7 @@ import {
 import { fetchMediaUsages } from "@/lib/client/media-usage-api";
 import { deleteMediaItem } from "../../lib/editor-actions";
 import { deleteWithUsageCheck, REMOVE_AND_DELETE } from "../../lib/media-usage-flows";
+import { forgetFoundMedia } from "../../lib/found-media";
 import type { MediaItem } from "../components/MediaListItem";
 
 type Selection = { selectedIds: string[]; count: number; deselect: (ids: string[]) => void };
@@ -41,6 +42,7 @@ export function useMediaListDelete({
         setBanner(null);
         return;
       }
+      forgetFoundMedia([id]);
       setItems((prev) => prev.filter((x) => x.id !== id));
       setBanner({ type: "ok", text: "✅ Media deleted." });
     } catch (e: unknown) {
@@ -84,6 +86,7 @@ export function useMediaListDelete({
       const result = await runBulkAction(plan.targets, (id) =>
         deleteMediaItem(id, plan.removeFromPages.has(id))
       );
+      forgetFoundMedia(result.okIds);
       setItems((prev) => prev.filter((x) => !result.okIds.includes(x.id)));
       const titleOf = (id: string) => items.find((item) => item.id === id)?.title || "Untitled";
       setBanner({

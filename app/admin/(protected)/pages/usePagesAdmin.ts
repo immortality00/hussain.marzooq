@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { applyUpdate, useAdminSlice, type Update } from "@/hooks/useAdminData";
 import type { PageSettings } from "@/lib/server/page-settings";
 import type { PageSeo } from "@/lib/server/page-seo";
 import type { PageSectionsSlug, PageSectionsMap, HomeSections } from "@/lib/server/page-sections";
 import type { SectionImage } from "@/lib/page-sections-shared";
 import { useAdminAction } from "@/hooks/useAdminAction";
+import { markAdminDataChanged } from "@/lib/client/admin-store";
 import type { SeoDraft } from "./components/SeoPageForm";
 import { pageNeedsImage, type PageRow } from "./lib/rows";
 
@@ -28,24 +30,15 @@ function seoDraftOf(seo: PageSeo): SeoDraft {
   };
 }
 
-export function usePagesAdmin({
-  initialSettings,
-  initialSeo,
-  initialSections,
-}: {
-  initialSettings: PageSettings[];
-  initialSeo: PageSeo[];
-  initialSections: { slug: PageSectionsSlug; data: PageSectionsMap[PageSectionsSlug] }[];
-}) {
-  const [settings, setSettings] = useState<Record<string, PageSettings>>(
-    Object.fromEntries(initialSettings.map((s) => [s.slug, s])),
-  );
-  const [seo, setSeo] = useState<Record<string, PageSeo>>(
-    Object.fromEntries(initialSeo.map((s) => [s.slug, s])),
-  );
-  const [sections, setSections] = useState<Record<string, PageSectionsMap[PageSectionsSlug]>>(
-    Object.fromEntries(initialSections.map((s) => [s.slug, s.data])),
-  );
+export function usePagesAdmin() {
+  const [pages, setPages] = useAdminSlice("pages");
+  const { settings, seo, sections } = pages;
+  const setSettings = (update: Update<Record<string, PageSettings>>) =>
+    setPages((current) => ({ ...current, settings: applyUpdate(update, current.settings) }));
+  const setSeo = (update: Update<Record<string, PageSeo>>) =>
+    setPages((current) => ({ ...current, seo: applyUpdate(update, current.seo) }));
+  const setSections = (update: Update<Record<string, PageSectionsMap[PageSectionsSlug]>>) =>
+    setPages((current) => ({ ...current, sections: applyUpdate(update, current.sections) }));
 
   const [settingsDrafts, setSettingsDrafts] = useState<Partial<Record<string, SettingsDraft>>>({});
   const [seoDrafts, setSeoDrafts] = useState<Partial<Record<string, SeoDraft>>>({});
@@ -132,6 +125,8 @@ export function usePagesAdmin({
         body: JSON.stringify({ isActive: next }),
       });
       if (!res.ok) throw new Error();
+      setSettings((prev) => ({ ...prev, [slug]: { ...prev[slug]!, isActive: next } }));
+      markAdminDataChanged();
     } catch {
       setSettings((prev) => ({ ...prev, [slug]: { ...prev[slug]!, isActive: previous } }));
       setFeedback({ type: "err", text: `Could not update ${row.label}. Try again.` });

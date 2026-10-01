@@ -47,13 +47,12 @@ export default function PrivateGalleriesAdminClient() {
         <>
         <GalleryList
           items={admin.items}
-          loading={admin.loading}
           searchValue={admin.gallerySearchValue}
           deletingId={admin.deletingId}
           onSearchChange={admin.setGallerySearchValue}
           onSearchClear={admin.clearGallerySearch}
           onCopyLink={(slug) => void admin.copyLink(slug)}
-          onEdit={(id) => void admin.openEdit(id)}
+          onEdit={admin.openEdit}
           onDelete={(id) => void admin.remove(id)}
           isSelected={selection.isSelected}
           onToggleSelect={selection.toggle}

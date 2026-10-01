@@ -15,7 +15,3 @@ export type Inquiry = {
 export const STATUSES = ["new", "pending", "replied", "approved", "rejected", "resolved"] as const;
 
 export type InquiryStatus = (typeof STATUSES)[number];
-
-export type ApiInquiriesResponse =
-  | { ok: true; items: Inquiry[] }
-  | { ok: false; error?: string };

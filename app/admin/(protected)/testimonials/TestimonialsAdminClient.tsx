@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useAdminSlice } from "@/hooks/useAdminData";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useAdminAction } from "@/hooks/useAdminAction";
 import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
@@ -12,8 +13,7 @@ import { TestimonialInspectModal } from "./components/TestimonialForm";
 import { adminInputClasses } from "@/components/admin/admin-input";
 
 export default function TestimonialsAdminClient() {
-  const [items, setItems] = useState<TestimonialItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useAdminSlice("testimonials");
   const { feedback: banner, setFeedback: setBanner } = useAdminAction();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState<"all" | "pending" | "approved">("all");
@@ -24,28 +24,10 @@ export default function TestimonialsAdminClient() {
   const actionBusy = Boolean(updatingId || deletingId);
 
   const load = useCallback(async () => {
-    setLoading(true);
-    setBanner(null);
-    try {
-      const res = await fetch("/api/testimonials", { cache: "no-store" });
-      const data = (await res.json().catch(() => null)) as {
-        ok?: boolean;
-        items?: TestimonialItem[];
-        error?: string;
-      };
-      if (!res.ok || !data?.ok || !Array.isArray(data.items)) {
-        setBanner({ type: "err", text: data?.error ?? "Failed to load testimonials." });
-        return;
-      }
-      setItems(data.items);
-    } catch {
-      setBanner({ type: "err", text: "Failed to load testimonials." });
-    } finally {
-      setLoading(false);
-    }
-  }, [setBanner]);
-
-  useEffect(() => { void load(); }, [load]);
+    const res = await fetch("/api/testimonials", { cache: "no-store" }).catch(() => null);
+    const data = res?.ok ? ((await res.json().catch(() => null)) as { ok?: boolean; items?: TestimonialItem[] } | null) : null;
+    if (data?.ok && Array.isArray(data.items)) setItems(data.items);
+  }, [setItems]);
 
   const stats = useMemo(() => {
     const approved = items.filter((i) => i.isApproved).length;
@@ -111,12 +93,12 @@ export default function TestimonialsAdminClient() {
       const data = (await res.json().catch(() => null)) as { ok?: boolean };
       if (!res.ok || !data?.ok) throw new Error();
     });
+    selection.clear();
+    await load();
     setBanner({
       type: failed ? "err" : "ok",
       text: `${ok} ${value ? "approved" : "moved to pending"}${failed ? `, ${failed} failed` : ""}.`,
     });
-    selection.clear();
-    await load();
     setBulkBusy(false);
   }
 
@@ -131,9 +113,9 @@ export default function TestimonialsAdminClient() {
       const data = (await res.json().catch(() => null)) as { ok?: boolean };
       if (!res.ok || !data?.ok) throw new Error();
     });
-    setBanner({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} failed` : ""}.` });
     selection.clear();
     await load();
+    setBanner({ type: failed ? "err" : "ok", text: `${ok} deleted${failed ? `, ${failed} failed` : ""}.` });
     setBulkBusy(false);
   }
 
@@ -226,9 +208,7 @@ export default function TestimonialsAdminClient() {
         )}
 
         <div className="mt-4 space-y-3">
-          {loading ? (
-            <div className="rounded-2xl border border-border/50 p-4 text-sm text-muted-foreground">Loading…</div>
-          ) : filtered.length === 0 ? (
+          {filtered.length === 0 ? (
             <div className="rounded-2xl border border-border/50 p-4 text-sm text-muted-foreground">
               No reviews match this view.
             </div>

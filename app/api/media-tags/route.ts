@@ -1,4 +1,6 @@
 import { revalidatePath } from "next/cache";
+import { listAdminMediaTags } from "@/lib/server/admin-catalog";
+import { listActiveMediaTags } from "@/lib/server/admin-lists";
 import { requireAdminOr401, isAdminAuthedServer } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { getClientAddress } from "@/app/api/_lib/public-form-security";
@@ -15,33 +17,6 @@ export const dynamic = "force-dynamic";
 const TAG_LIST_RATE_LIMIT_WINDOW_MS = 60_000;
 const TAG_LIST_RATE_LIMIT_MAX = 60;
 
-async function tagCounts(db: Awaited<ReturnType<typeof getDb>>) {
-  const rows = await db
-    .collection("media")
-    .aggregate<{ _id: string; count: number }>([
-      { $unwind: "$tags" },
-      { $group: { _id: "$tags", count: { $sum: 1 } } },
-    ])
-    .toArray();
-
-  const map = new Map<string, number>();
-  for (const row of rows) if (typeof row._id === "string") map.set(row._id, row.count);
-  return map;
-}
-
-function serializeTag(doc: Record<string, unknown>, counts: Map<string, number>) {
-  const slug = typeof doc.slug === "string" ? doc.slug : "";
-  return {
-    id: String(doc._id),
-    label: typeof doc.label === "string" ? doc.label : "",
-    slug,
-    description: typeof doc.description === "string" ? doc.description : "",
-    isActive: typeof doc.isActive === "boolean" ? doc.isActive : true,
-    order: typeof doc.order === "number" ? doc.order : 0,
-    mediaCount: counts.get(slug) ?? 0,
-  };
-}
-
 export async function GET(req: Request) {
   const url = new URL(req.url);
   const scope = url.searchParams.get("scope");
@@ -51,13 +26,7 @@ export async function GET(req: Request) {
       return noStoreJson({ ok: false, error: "Unauthorized" }, { status: 401 });
     }
 
-    const db = await getDb();
-    const [docs, counts] = await Promise.all([
-      db.collection("media_tags").find({}).sort({ order: 1, createdAt: -1 }).toArray(),
-      tagCounts(db),
-    ]);
-
-    return noStoreJson({ ok: true, items: docs.map((d) => serializeTag(d, counts)) });
+    return noStoreJson({ ok: true, items: await listAdminMediaTags(await getDb()) });
   }
 
   const rateLimit = await consumeFixedWindowRateLimit({
@@ -71,21 +40,7 @@ export async function GET(req: Request) {
     return noStoreJson({ ok: false, error: "Too many requests. Try again later." }, { status: 429 });
   }
 
-  const db = await getDb();
-  const docs = await db
-    .collection("media_tags")
-    .find({ isActive: true })
-    .sort({ order: 1, createdAt: -1 })
-    .toArray();
-
-  const items = docs.map((doc) => ({
-    id: String(doc._id),
-    label: typeof doc.label === "string" ? doc.label : "",
-    slug: typeof doc.slug === "string" ? doc.slug : "",
-    description: typeof doc.description === "string" ? doc.description : "",
-  }));
-
-  return noStoreJson({ ok: true, items });
+  return noStoreJson({ ok: true, items: await listActiveMediaTags() });
 }
 
 export async function POST(req: Request) {

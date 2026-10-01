@@ -1,19 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { CloudinaryMultiUploadButton } from "@/components/shared/upload/CloudinaryMultiUploadButton";
 import { WizardTabs } from "@/components/admin/wizard/WizardTabs";
 import { LocationSearch } from "@/components/testimonials/review-form/LocationSearch";
 import { useAdminAction } from "@/hooks/useAdminAction";
+import { useAdminSlice } from "@/hooks/useAdminData";
 import { getCloudinaryMediaFolderForCategory } from "@/lib/cloudinary-folders";
 import MediaAppearancesSection from "../components/MediaAppearancesSection";
 import MediaPeoplePicker from "../components/MediaPeoplePicker";
 import MediaPlacementSection from "../components/MediaPlacementSection";
 import TagMultiSelect from "../components/TagMultiSelect";
 import { findFirstAppearanceError, MEDIA_CATEGORIES } from "../lib/utils";
+import { withSavedMedia, type SavedMedia } from "../lib/media-store";
 import { BatchItemThumb } from "./components/BatchItemThumb";
 import { BatchLinkInput } from "./components/BatchLinkInput";
 import { BatchReviewList } from "./components/BatchReviewList";
@@ -26,9 +27,9 @@ const STEPS = ["Category", "Media", "Details", "Appearances", "Review"] as const
 const BATCH_CATEGORY_OPTIONS = MEDIA_CATEGORIES.filter((c) => c.key !== "nft");
 
 export default function BatchMediaClient() {
-  const router = useRouter();
   const s = useBatchMediaState();
   const { feedback, notify, setFeedback } = useAdminAction();
+  const [, setMedia] = useAdminSlice("media");
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
 
@@ -96,6 +97,7 @@ export default function BatchMediaClient() {
     const itemsToSave = s.items;
     const shared = sharedPayload();
     const failed: string[] = [];
+    const saved: SavedMedia[] = [];
     let postersMissing = 0;
     const results = await Promise.allSettled(
       itemsToSave.map((item) => createBatchItem(buildBatchPayload(item, shared)))
@@ -116,9 +118,11 @@ export default function BatchMediaClient() {
       }
 
       s.dropItem(item.id);
+      if (r.value.saved) saved.push(r.value.saved);
       if (r.value.posterMissing) postersMissing += 1;
     }
 
+    setMedia((media) => saved.reduce((next, entry) => withSavedMedia(next, entry, true), media));
     setSaving(false);
 
     const created = itemsToSave.length - failed.length;
@@ -130,7 +134,6 @@ export default function BatchMediaClient() {
       notify("ok", `✅ Created ${created} media.${posterNote}`);
       s.resetAll();
       setStep(0);
-      router.refresh();
     } else {
       notify(
         "err",

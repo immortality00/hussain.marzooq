@@ -1,50 +1,29 @@
+import { Suspense } from "react";
 import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import {
   createAdminSessionCookies,
-  isAdminAuthedServer,
   isAdminPasswordConfigured,
   verifyAdminPassword,
 } from "@/lib/auth/admin";
+import { safeAdminNextPath } from "@/lib/auth/admin-next-path";
 import {
   clearFixedWindowRateLimit,
   consumeFixedWindowRateLimit,
 } from "@/lib/server/request-guards";
 import { getClientAddress } from "@/app/api/_lib/public-form-security";
 import { AdminLoginForm } from "./AdminLoginForm";
-
-type SearchParams = {
-  [key: string]: string | string[] | undefined;
-};
+import { LoginNotice } from "./LoginNotice";
 
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const MAX_LOGIN_ATTEMPTS = 5;
-
-const SIGNED_OUT_REASONS: Record<string, string> = {
-  expired: "session expired",
-  signature: "session no longer valid",
-  future: "session no longer valid",
-  malformed: "session no longer valid",
-  config: "admin is not configured",
-};
-
-function getSearchParamValue(value: string | string[] | undefined) {
-  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
-}
-
-function getSafeNextPath(nextPath: string) {
-  if (!nextPath.startsWith("/admin")) return "/admin/dashboard";
-  if (nextPath === "/admin" || nextPath.startsWith("/admin?")) return "/admin/dashboard";
-
-  return nextPath;
-}
 
 async function login(formData: FormData) {
   "use server";
 
   const password = String(formData.get("password") ?? "").trim();
-  const nextPath = String(formData.get("next") ?? "/admin/dashboard");
+  const nextPath = String(formData.get("next") ?? "");
   const remember = formData.get("remember") === "on";
   const adminCookieSecret = String(process.env.ADMIN_COOKIE_SECRET ?? "").trim();
 
@@ -83,27 +62,10 @@ async function login(formData: FormData) {
     cookieStore.set(cookie.name, cookie.value, cookie.options);
   }
 
-  redirect(getSafeNextPath(nextPath));
+  redirect(safeAdminNextPath(nextPath));
 }
 
-export default async function AdminLoginPage({
-  searchParams,
-}: {
-  searchParams: Promise<SearchParams>;
-}) {
-  const params = await searchParams;
-  const error = getSearchParamValue(params.error);
-  const nextPath = getSearchParamValue(params.next);
-  const signedOutReason = getSearchParamValue(params.signedout);
-  const loggedOut = getSearchParamValue(params.loggedout) === "1";
-
-  if (!loggedOut && !signedOutReason && (await isAdminAuthedServer())) {
-    redirect(getSafeNextPath(nextPath));
-  }
-
-  const signedOut = SIGNED_OUT_REASONS[signedOutReason];
-  const notice = loggedOut ? "Logged out." : signedOut ? `Signed out: ${signedOut}.` : null;
-
+export default function AdminLoginPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6 py-16">
       <div className="rounded-[2rem] border bg-background/80 p-7 shadow-sm backdrop-blur">
@@ -111,31 +73,11 @@ export default async function AdminLoginPage({
 
         <h1 className="mt-6 text-2xl font-semibold tracking-tight">Admin</h1>
 
-        {notice ? (
-          <div className="mt-6 rounded-2xl border p-4 text-sm text-muted-foreground">{notice}</div>
-        ) : null}
+        <Suspense fallback={null}>
+          <LoginNotice />
+        </Suspense>
 
-        {error === "wrong" ? (
-          <div className="mt-6 rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-            Wrong password.
-          </div>
-        ) : null}
-
-        {error === "locked" ? (
-          <div className="mt-6 rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-            Too many failed attempts. Please wait before trying again.
-          </div>
-        ) : null}
-
-        {error === "config" ? (
-          <div className="mt-6 rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-            Admin is not configured. Check <code>.env.local</code> for{" "}
-            <code>ADMIN_PASSWORD_HASH</code> and <code>ADMIN_COOKIE_SECRET</code>, then
-            restart the dev server.
-          </div>
-        ) : null}
-
-        <AdminLoginForm login={login} nextPath={nextPath} />
+        <AdminLoginForm login={login} />
       </div>
     </main>
   );

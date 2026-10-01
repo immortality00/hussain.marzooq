@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { useAdminSlice } from "@/hooks/useAdminData";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { bulkResultText } from "@/components/admin/bulk/bulk-result";
 import { useMediaUsageDialog } from "@/components/admin/media-usage/useMediaUsageDialog";
@@ -11,8 +12,7 @@ import { buildGalleryUrl, MIN_PRIVATE_GALLERY_PASSWORD_LENGTH } from "./helpers"
 
 export function usePrivateGalleriesAdmin() {
   const [view, setView] = useState<"list" | "form">("list");
-  const [items, setItems] = useState<GalleryItem[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [items, setItems] = useAdminSlice("galleries");
   const { feedback: banner, setFeedback: setBanner, notify } = useAdminAction();
   const [editingId, setEditingId] = useState("");
   const [saving, setSaving] = useState(false);
@@ -31,33 +31,10 @@ export function usePrivateGalleriesAdmin() {
   const actionBusy = saving || Boolean(deletingId);
 
   const loadGalleries = useCallback(async () => {
-    setLoading(true);
-    setBanner(null);
-
-    try {
-      const res = await fetch("/api/private-galleries", { cache: "no-store" });
-      const data = (await res.json().catch(() => null)) as {
-        ok?: boolean;
-        items?: GalleryItem[];
-        error?: string;
-      } | null;
-
-      if (!res.ok || !data?.ok || !Array.isArray(data.items)) {
-        setBanner({ type: "err", text: data?.error ?? "Failed to load galleries." });
-        return;
-      }
-
-      setItems(data.items);
-    } catch (e: unknown) {
-      notify("err", errorMessage(e, "Failed to load private galleries."));
-    } finally {
-      setLoading(false);
-    }
-  }, [notify, setBanner]);
-
-  useEffect(() => {
-    void loadGalleries();
-  }, [loadGalleries]);
+    const res = await fetch("/api/private-galleries", { cache: "no-store" }).catch(() => null);
+    const data = res?.ok ? ((await res.json().catch(() => null)) as { ok?: boolean; items?: GalleryItem[] } | null) : null;
+    if (data?.ok && Array.isArray(data.items)) setItems(data.items);
+  }, [setItems]);
 
   function resetForm() {
     setEditingId("");
@@ -76,38 +53,21 @@ export function usePrivateGalleriesAdmin() {
     setView("form");
   }
 
-  async function openEdit(id: string) {
+  function openEdit(id: string) {
     if (actionBusy) return;
+    const item = items.find((gallery) => gallery.id === id);
+    if (!item) return;
 
     setBanner(null);
-
-    try {
-      const res = await fetch(`/api/private-galleries/${encodeURIComponent(id)}`, {
-        cache: "no-store",
-      });
-      const data = (await res.json().catch(() => null)) as {
-        ok?: boolean;
-        item?: GalleryItem;
-        error?: string;
-      } | null;
-
-      if (!res.ok || !data?.ok || !data.item) {
-        setBanner({ type: "err", text: data?.error ?? "Failed to load gallery." });
-        return;
-      }
-
-      setEditingId(data.item.id);
-      setTitle(data.item.title);
-      setSlug(data.item.slug);
-      setDescription(data.item.description ?? "");
-      setPassword("");
-      setIsActive(data.item.isActive);
-      setExpiresAtLocal(data.item.expiresAtLocal ?? "");
-      setSelectedMediaIds(data.item.mediaIds ?? []);
-      setView("form");
-    } catch (e: unknown) {
-      notify("err", errorMessage(e, "Failed to load gallery."));
-    }
+    setEditingId(item.id);
+    setTitle(item.title);
+    setSlug(item.slug);
+    setDescription(item.description ?? "");
+    setPassword("");
+    setIsActive(item.isActive);
+    setExpiresAtLocal(item.expiresAtLocal ?? "");
+    setSelectedMediaIds(item.mediaIds ?? []);
+    setView("form");
   }
 
   function backToList() {
@@ -180,8 +140,8 @@ export function usePrivateGalleriesAdmin() {
         return;
       }
 
-      setBanner({ type: "ok", text: editingId ? "✅ Gallery updated." : "✅ Gallery created." });
       await loadGalleries();
+      setBanner({ type: "ok", text: editingId ? "✅ Gallery updated." : "✅ Gallery created." });
       backToList();
     } catch (e: unknown) {
       notify("err", errorMessage(e, "Save failed."));
@@ -265,7 +225,6 @@ export function usePrivateGalleriesAdmin() {
     view,
     usageDialog: usage.dialog,
     items: filteredItems,
-    loading,
     banner,
     editingId,
     saving,

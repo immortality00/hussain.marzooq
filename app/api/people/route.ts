@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { listAdminPeople } from "@/lib/server/admin-lists";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
@@ -45,30 +46,7 @@ export async function GET() {
   const deny = await requireAdminOr401();
   if (deny) return deny;
 
-  const db = await getDb();
-
-  const docs = await db
-    .collection("people_profiles")
-    .find({})
-    .sort({ updatedAt: -1, createdAt: -1 })
-    .toArray();
-
-  const items = docs.map((doc) => ({
-    id: String(doc._id),
-    name: typeof doc.name === "string" ? doc.name : "",
-    slug: typeof doc.slug === "string" ? doc.slug : "",
-    bio: typeof doc.bio === "string" ? doc.bio : null,
-    avatarUrl: typeof doc.avatarUrl === "string" ? doc.avatarUrl : null,
-    isPublic: typeof doc.isPublic === "boolean" ? doc.isPublic : true,
-    isPrivate: doc.isPrivate === true,
-    hasPassword: typeof doc.passwordHash === "string" && doc.passwordHash.length > 0,
-    removalRequestedAt:
-      doc.removalRequestedAt instanceof Date ? doc.removalRequestedAt.toISOString() : null,
-    removalApprovedAt:
-      doc.removalApprovedAt instanceof Date ? doc.removalApprovedAt.toISOString() : null,
-  }));
-
-  return noStoreJson({ ok: true, items });
+  return noStoreJson({ ok: true, items: await listAdminPeople() });
 }
 
 export async function POST(req: Request) {

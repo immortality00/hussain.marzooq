@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { applyUpdate, useAdminSlice, type Update } from "@/hooks/useAdminData";
+import { AdminLink } from "@/components/admin/AdminLink";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
@@ -20,8 +21,11 @@ function formatDate(iso: string | null): string {
     : new Intl.DateTimeFormat("en-US", { year: "numeric", month: "short", day: "numeric" }).format(d);
 }
 
-export default function BlogAdminClient({ initial }: { initial: BlogListItem[] }) {
-  const [items, setItems] = useState<BlogListItem[]>(initial);
+export default function BlogAdminClient() {
+  const [blog, setBlog] = useAdminSlice("blog");
+  const items = blog.posts;
+  const setItems = (update: Update<BlogListItem[]>) =>
+    setBlog((current) => ({ ...current, posts: applyUpdate(update, current.posts) }));
   const [bulkBusy, setBulkBusy] = useState(false);
   const { feedback, setFeedback, notify } = useAdminAction();
 
@@ -98,14 +102,14 @@ export default function BlogAdminClient({ initial }: { initial: BlogListItem[] }
                   label={`Select ${post.title}`}
                 />
 
-                <Link href={`/admin/blog/${post.id}`} className="min-w-0 flex-1">
+                <AdminLink href={`/admin/blog/edit?id=${post.id}`} className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{post.title || "Untitled"}</div>
                   <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
                     /{post.slug}
                     {post.categoryLabel ? ` · ${post.categoryLabel}` : ""}
                     {` · ${formatDate(post.updatedAt)}`}
                   </div>
-                </Link>
+                </AdminLink>
 
                 <span
                   className={`shrink-0 rounded-full border px-2.5 py-1 text-[11px] ${
@@ -117,7 +121,7 @@ export default function BlogAdminClient({ initial }: { initial: BlogListItem[] }
                   {post.isPublished ? "Published" : "Draft"}
                 </span>
 
-                <AdminButton href={`/admin/blog/${post.id}`} variant="default" size="sm">
+                <AdminButton href={`/admin/blog/edit?id=${post.id}`} variant="default" size="sm">
                   Edit
                 </AdminButton>
               </li>

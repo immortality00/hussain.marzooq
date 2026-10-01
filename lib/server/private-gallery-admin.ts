@@ -106,14 +106,37 @@ export async function findPrivateGalleriesUsingMedia(db: Db, mediaId: string) {
     .toArray();
 }
 
+function galleryTitle(gallery: Record<string, unknown>) {
+  const title = typeof gallery.title === "string" ? gallery.title.trim() : "";
+  const slug = typeof gallery.slug === "string" ? gallery.slug.trim() : "";
+  return title || (slug ? `/g/${slug}` : "Untitled private gallery");
+}
+
 export async function getPrivateGalleryTitlesForMedia(db: Db, mediaId: string) {
   const galleries = await findPrivateGalleriesUsingMedia(db, mediaId);
+  return galleries.map(galleryTitle);
+}
 
-  return galleries.map((gallery) => {
-    const title = typeof gallery.title === "string" ? gallery.title.trim() : "";
-    const slug = typeof gallery.slug === "string" ? gallery.slug.trim() : "";
-    return title || (slug ? `/g/${slug}` : "Untitled private gallery");
-  });
+export async function getPrivateGalleryTitlesByMedia(db: Db, mediaIds: string[]) {
+  const titles = new Map<string, string[]>();
+  if (mediaIds.length === 0) return titles;
+
+  const galleries = await db
+    .collection("private_galleries")
+    .find({ mediaIds: { $in: mediaIds } })
+    .project({ _id: 1, title: 1, slug: 1, mediaIds: 1 })
+    .sort({ updatedAt: -1, createdAt: -1 })
+    .toArray();
+
+  const wanted = new Set(mediaIds);
+  for (const gallery of galleries) {
+    const ids: unknown[] = Array.isArray(gallery.mediaIds) ? gallery.mediaIds : [];
+    for (const id of ids) {
+      if (typeof id !== "string" || !wanted.has(id)) continue;
+      titles.set(id, [...(titles.get(id) ?? []), galleryTitle(gallery)]);
+    }
+  }
+  return titles;
 }
 
 export function formatPrivateGalleryMediaDeleteBlocker(galleries: Record<string, unknown>[]) {

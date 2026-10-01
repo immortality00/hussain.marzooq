@@ -21,6 +21,7 @@ vi.mock("@/lib/server/video-posters", () => ({
 }));
 vi.mock("@/lib/server/private-gallery-admin", () => ({
   getPrivateGalleryTitlesForMedia: async () => [],
+  getPrivateGalleryTitlesByMedia: async () => new Map(),
   findPrivateGalleriesUsingMedia: async () => [],
   formatPrivateGalleryMediaDeleteBlocker: () => "",
 }));
@@ -179,7 +180,7 @@ describe("PATCH /api/media/[id] — replacing a file a page uses", () => {
 
     const res = await edit({ ...withNewFile, usages: "replace" });
 
-    expect(await res.json()).toEqual({ ok: true, pagesNotUpdated: ["Work overlay — NFT"] });
+    expect(await res.json()).toMatchObject({ ok: true, pagesNotUpdated: ["Work overlay — NFT"] });
     expect(heroUrl()).toBe(NEW_URL);
     expect(deleteStoredMediaAsset).not.toHaveBeenCalled();
   });

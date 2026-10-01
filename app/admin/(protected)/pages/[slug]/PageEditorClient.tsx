@@ -1,9 +1,6 @@
 "use client";
 
-import Link from "next/link";
-import type { PageSettings } from "@/lib/server/page-settings";
-import type { PageSeo } from "@/lib/server/page-seo";
-import type { PageSectionsSlug, PageSectionsMap } from "@/lib/server/page-sections";
+import { AdminLink } from "@/components/admin/AdminLink";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { usePagesAdmin } from "../usePagesAdmin";
@@ -18,30 +15,20 @@ const EMPTY_SEO_DRAFT = {
   ogImageUrl: "",
 };
 
-export function PageEditorClient({
-  slug,
-  initialSettings,
-  initialSeo,
-  initialSections,
-}: {
-  slug: string;
-  initialSettings: PageSettings[];
-  initialSeo: PageSeo[];
-  initialSections: { slug: PageSectionsSlug; data: PageSectionsMap[PageSectionsSlug] }[];
-}) {
-  const admin = usePagesAdmin({ initialSettings, initialSeo, initialSections });
+export function PageEditorClient({ slug }: { slug: string }) {
+  const admin = usePagesAdmin();
   useUnsavedChangesGuard(admin.hasUnsavedChanges);
 
   const row = PAGE_ROWS.find((r) => r.key === slug)!;
 
   return (
     <div>
-      <Link
+      <AdminLink
         href="/admin/pages"
         className="text-sm text-muted-foreground transition-colors hover:text-foreground"
       >
         ← All pages
-      </Link>
+      </AdminLink>
 
       <AdminPageHeader title={row.label} className="mb-6 mt-3" />
 

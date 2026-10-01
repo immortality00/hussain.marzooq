@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { arrayMove } from "@dnd-kit/sortable";
+import { useState } from "react";
+import { useDraftOrder } from "@/hooks/useDraftOrder";
+import { useAdminSlice } from "@/hooks/useAdminData";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useAdminAction } from "@/hooks/useAdminAction";
 import { useBulkSelection, runBulkAction } from "@/components/admin/bulk/useBulkSelection";
@@ -15,8 +16,8 @@ import { createCategoryRequest, deleteCategoryRequest, fetchCategories, patchCat
 import type { Category, CategoryPatch } from "./lib/types";
 import { getErrorMessage, slugify } from "./lib/utils";
 
-export default function AdminServiceCategoriesClient({ initial }: { initial: Category[] }) {
-  const [items, setItems] = useState<Category[]>(initial);
+export default function AdminServiceCategoriesClient() {
+  const [items, setItems] = useAdminSlice("serviceCategories");
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [creating, setCreating] = useState(false);
@@ -25,7 +26,7 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
 
   const actionBusy = creating || savingOrder;
 
-  const ordered = useMemo(() => [...items].sort((a, b) => a.order - b.order), [items]);
+  const { ordered, move, withSavedOrder, clearDraft } = useDraftOrder(items);
 
   const selection = useBulkSelection(ordered.map((c) => c.id));
   const [bulkBusy, setBulkBusy] = useState(false);
@@ -166,12 +167,7 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
   function onReorder(activeId: string, overId: string) {
     if (actionBusy) return;
 
-    const oldIndex = ordered.findIndex((c) => c.id === activeId);
-    const newIndex = ordered.findIndex((c) => c.id === overId);
-    if (oldIndex < 0 || newIndex < 0) return;
-
-    const moved = arrayMove(ordered, oldIndex, newIndex).map((c, idx) => ({ ...c, order: idx }));
-    setItems(moved);
+    move(activeId, overId);
   }
 
   async function saveOrder() {
@@ -182,6 +178,8 @@ export default function AdminServiceCategoriesClient({ initial }: { initial: Cat
 
     try {
       await Promise.all(ordered.map((c, idx) => patchCategory(c.id, { order: idx })));
+      setItems((prev) => withSavedOrder(prev));
+      clearDraft();
       await refresh();
       setFeedback({ type: "ok", text: "✅ Order saved." });
     } catch (e: unknown) {

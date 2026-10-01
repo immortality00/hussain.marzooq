@@ -1,23 +1,3 @@
-import type { ApiInquiriesResponse } from "./types";
-
-export function isApiResponse(v: unknown): v is ApiInquiriesResponse {
-  if (typeof v !== "object" || v === null) return false;
-  const r = v as Record<string, unknown>;
-  if (r.ok === true) return Array.isArray(r.items);
-  if (r.ok === false) return true;
-  return false;
-}
-
-export async function fetchInquiries(statusFilter: string) {
-  const params = new URLSearchParams();
-  params.set("all", "1");
-  if (statusFilter) params.set("status", statusFilter);
-
-  const res = await fetch(`/api/inquiries?${params.toString()}`, { cache: "no-store" });
-  const raw = (await res.json().catch(() => null)) as unknown;
-  return { res, raw };
-}
-
 export async function patchInquiry(id: string, body: Record<string, unknown>) {
   const res = await fetch(`/api/inquiries/${encodeURIComponent(id)}`, {
     method: "PATCH",

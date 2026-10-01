@@ -9,7 +9,6 @@ import { getGalleryStatus } from "./helpers";
 
 type GalleryListProps = {
   items: GalleryItem[];
-  loading: boolean;
   searchValue: string;
   deletingId: string | null;
   onSearchChange: (value: string) => void;
@@ -24,7 +23,6 @@ type GalleryListProps = {
 
 export function GalleryList({
   items,
-  loading,
   searchValue,
   deletingId,
   onSearchChange,
@@ -65,9 +63,7 @@ export function GalleryList({
       )}
 
       <div className="mt-4 space-y-3">
-        {loading ? (
-          <div className="rounded-2xl border p-4 text-sm text-muted-foreground">Loading…</div>
-        ) : items.length === 0 ? (
+        {items.length === 0 ? (
           <div className="rounded-2xl border p-4 text-sm text-muted-foreground">
             No galleries yet.
           </div>

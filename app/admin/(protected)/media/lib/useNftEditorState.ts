@@ -1,15 +1,17 @@
 import { useState } from "react";
+import { nftFieldsFrom, type NftFields } from "./editor-fields";
 import type { CryptoCurrency, MediaItem, NftEditionType, NftStatus } from "./types";
 
-export function useNftEditorState() {
-  const [nftPrice, setNftPrice] = useState("");
-  const [nftCurrency, setNftCurrency] = useState<CryptoCurrency>("ETH");
-  const [nftEditionType, setNftEditionTypeState] = useState<NftEditionType>("1/1");
-  const [nftEditionsTotal, setNftEditionsTotalState] = useState("1");
-  const [nftEditionsRemaining, setNftEditionsRemainingState] = useState("1");
-  const [nftOpenUntil, setNftOpenUntil] = useState("");
-  const [nftStatus, setNftStatusState] = useState<NftStatus>("available");
-  const [nftMarketplaceUrl, setNftMarketplaceUrl] = useState("");
+export function useNftEditorState(initial: MediaItem | null) {
+  const [start] = useState(() => nftFieldsFrom(initial));
+  const [nftPrice, setNftPrice] = useState(start.price);
+  const [nftCurrency, setNftCurrency] = useState<CryptoCurrency>(start.currency);
+  const [nftEditionType, setNftEditionTypeState] = useState<NftEditionType>(start.editionType);
+  const [nftEditionsTotal, setNftEditionsTotalState] = useState(start.editionsTotal);
+  const [nftEditionsRemaining, setNftEditionsRemainingState] = useState(start.editionsRemaining);
+  const [nftOpenUntil, setNftOpenUntil] = useState(start.openUntil);
+  const [nftStatus, setNftStatusState] = useState<NftStatus>(start.status);
+  const [nftMarketplaceUrl, setNftMarketplaceUrl] = useState(start.marketplaceUrl);
 
   function setNftEditionType(value: NftEditionType) {
     setNftEditionTypeState(value);
@@ -98,34 +100,23 @@ export function useNftEditorState() {
     setNftEditionsRemainingState(next);
   }
 
+  function applyNftFields(fields: NftFields) {
+    setNftPrice(fields.price);
+    setNftCurrency(fields.currency);
+    setNftEditionTypeState(fields.editionType);
+    setNftEditionsTotalState(fields.editionsTotal);
+    setNftEditionsRemainingState(fields.editionsRemaining);
+    setNftOpenUntil(fields.openUntil);
+    setNftStatusState(fields.status);
+    setNftMarketplaceUrl(fields.marketplaceUrl);
+  }
+
   function resetNftFields() {
-    setNftPrice("");
-    setNftCurrency("ETH");
-    setNftEditionTypeState("1/1");
-    setNftEditionsTotalState("1");
-    setNftEditionsRemainingState("1");
-    setNftOpenUntil("");
-    setNftStatusState("available");
-    setNftMarketplaceUrl("");
+    applyNftFields(nftFieldsFrom(null));
   }
 
   function loadNftIntoState(m: MediaItem) {
-    setNftPrice(m.nft?.price === null || m.nft?.price === undefined ? "" : String(m.nft.price));
-    setNftCurrency(m.nft?.currency ?? "ETH");
-    setNftEditionTypeState(m.nft?.editionType ?? "1/1");
-    setNftEditionsTotalState(
-      m.nft?.editionsTotal === null || m.nft?.editionsTotal === undefined
-        ? ""
-        : String(m.nft.editionsTotal)
-    );
-    setNftEditionsRemainingState(
-      m.nft?.editionsRemaining === null || m.nft?.editionsRemaining === undefined
-        ? ""
-        : String(m.nft.editionsRemaining)
-    );
-    setNftOpenUntil(m.nft?.openUntil ? m.nft.openUntil.slice(0, 16) : "");
-    setNftStatusState(m.nft?.status ?? "available");
-    setNftMarketplaceUrl(m.nft?.marketplaceUrl ?? "");
+    applyNftFields(nftFieldsFrom(m));
   }
 
   return {

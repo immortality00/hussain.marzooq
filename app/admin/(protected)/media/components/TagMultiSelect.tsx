@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { slugifyTag } from "@/lib/server/media-tags";
 import { createTagRequest } from "@/app/admin/(protected)/tags/lib/api";
 import { adminInputClasses } from "@/components/admin/admin-input";
-
-type TagOption = { slug: string; label: string };
+import { useMediaOptions, type MediaTagOption } from "./MediaOptionsContext";
 
 export default function TagMultiSelect({
   selectedSlugs,
@@ -16,34 +15,11 @@ export default function TagMultiSelect({
   addTag: (slug: string) => void;
   removeTag: (slug: string) => void;
 }) {
-  const [options, setOptions] = useState<TagOption[]>([]);
+  const { tags } = useMediaOptions();
+  const [options, setOptions] = useState<MediaTagOption[]>(tags);
   const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      try {
-        const res = await fetch("/api/media-tags", { cache: "no-store" });
-        const data = (await res.json().catch(() => null)) as {
-          ok?: boolean;
-          items?: TagOption[];
-        } | null;
-        if (!cancelled && res.ok && data?.ok && Array.isArray(data.items)) {
-          setOptions(data.items.map((t) => ({ slug: t.slug, label: t.label })));
-        }
-      } catch {
-        if (!cancelled) setError("Could not load tags.");
-      }
-    }
-
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const labelOf = useMemo(() => {
     const map = new Map(options.map((o) => [o.slug, o.label]));

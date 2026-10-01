@@ -5,7 +5,6 @@ import { useBulkSelection } from "@/components/admin/bulk/useBulkSelection";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 
-import type { Service, ServiceCategory } from "./lib/types";
 import SortableServiceItem from "./components/SortableServiceItem";
 import ServiceEditorModal from "./components/ServiceEditorModal";
 import ServiceSimpleSection from "./components/ServiceSimpleSection";
@@ -13,13 +12,7 @@ import ServicesBanner from "./components/ServicesBanner";
 import ServicesToolbar from "./components/ServicesToolbar";
 import { useServicesAdmin } from "@/hooks/useServicesAdmin";
 
-export default function AdminServicesClient({
-  initialServices,
-  initialCategories,
-}: {
-  initialServices: Service[];
-  initialCategories: ServiceCategory[];
-}) {
+export default function AdminServicesClient() {
   const {
     editing,
     setEditing,
@@ -46,7 +39,7 @@ export default function AdminServicesClient({
     bulkArchive,
     bulkRestore,
     bulkDeleteForever,
-  } = useServicesAdmin(initialServices, initialCategories);
+  } = useServicesAdmin();
 
   const activeSel = useBulkSelection(active.map((s) => s.id));
   const inactiveSel = useBulkSelection(inactive.map((s) => s.id));

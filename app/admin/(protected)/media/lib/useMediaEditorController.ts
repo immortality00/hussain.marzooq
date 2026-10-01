@@ -1,13 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { useAdminAction } from "@/hooks/useAdminAction";
+import { useAdminNavigate } from "@/hooks/useAdminNavigate";
+import { useAdminSlice } from "@/hooks/useAdminData";
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 import { useMediaUsageDialog } from "@/components/admin/media-usage/useMediaUsageDialog";
 import { fetchMediaItem, buildMediaPayload } from "./editor-actions";
 import { deleteWithUsageCheck, saveWithUsageCheck } from "./media-usage-flows";
 import { useMediaEditorState } from "./editor-state";
+import { withSavedMedia, withoutMedia } from "./media-store";
+import { forgetFoundMedia, keepFoundMedia } from "./found-media";
 import type { MediaCategory, MediaItem } from "./types";
 import { findFirstAppearanceError } from "./utils";
 
@@ -21,26 +25,33 @@ const allowedCategories: MediaCategory[] = [
 
 type BusyAction = "load" | "save" | "delete" | null;
 
-export function useMediaEditorController() {
+export function useMediaEditorController({
+  initialItem,
+  loadError,
+}: {
+  initialItem: MediaItem | null;
+  loadError: string | null;
+}) {
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const { navigate, navigationCover } = useAdminNavigate();
+  const [, setMedia] = useAdminSlice("media");
 
   const editId = (searchParams.get("edit") ?? "").trim();
   const prefillCategory = (searchParams.get("category") ?? "").trim() as MediaCategory;
 
-  const editor = useMediaEditorState();
+  const editor = useMediaEditorState(initialItem);
   const [busyAction, setBusyAction] = useState<BusyAction>(null);
-  const { feedback: banner, setFeedback: setBanner } = useAdminAction();
+  const { feedback: banner, setFeedback: setBanner } = useAdminAction({
+    initial: loadError ? { type: "err", text: loadError } : null,
+  });
   const usage = useMediaUsageDialog(() => setBanner(null));
 
   const busy = busyAction !== null;
   const setPrimaryCategoryRef = useRef(editor.setPrimaryCategory);
-  const loadIntoStateRef = useRef(editor.loadIntoState);
 
   useEffect(() => {
     setPrimaryCategoryRef.current = editor.setPrimaryCategory;
-    loadIntoStateRef.current = editor.loadIntoState;
-  }, [editor.setPrimaryCategory, editor.loadIntoState]);
+  }, [editor.setPrimaryCategory]);
 
   useEffect(() => {
     if (
@@ -52,39 +63,6 @@ export function useMediaEditorController() {
       setPrimaryCategoryRef.current(prefillCategory);
     }
   }, [editId, prefillCategory, editor.categories.length]);
-
-  useEffect(() => {
-    if (!editId) return;
-
-    let cancelled = false;
-
-    async function run() {
-      setBanner(null);
-      setBusyAction("load");
-
-      try {
-        const item: MediaItem = await fetchMediaItem(editId);
-        if (!cancelled) {
-          loadIntoStateRef.current(item);
-        }
-      } catch (e: unknown) {
-        if (!cancelled) {
-          setBanner({
-            type: "err",
-            text: e instanceof Error ? e.message : "Failed to load media.",
-          });
-        }
-      } finally {
-        if (!cancelled) setBusyAction(null);
-      }
-    }
-
-    void run();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [editId, setBanner]);
 
   async function save() {
     if (busyAction === "save") return;
@@ -170,6 +148,13 @@ export function useMediaEditorController() {
         cleanupUploadedAsset({ publicId: editor.uploaded.publicId });
       }
 
+      const { saved } = result;
+      if (saved) {
+        keepFoundMedia({ [saved.listItem.id]: saved.item });
+        setMedia((media) => withSavedMedia(media, saved, result.mode === "created"));
+      }
+      const reloaded = async () => (saved ? (saved.item as MediaItem) : await fetchMediaItem(editor.editingId));
+
       const posterNote = result.posterMissing ? " — the video thumbnail couldn't be fetched." : "";
 
       if (result.mode === "created") {
@@ -180,13 +165,10 @@ export function useMediaEditorController() {
           type: "err",
           text: `Media updated, but these places could not be updated: ${result.pagesNotUpdated.join(", ")}.`,
         });
-        editor.loadIntoState(await fetchMediaItem(editor.editingId));
-        router.refresh();
+        editor.loadIntoState(await reloaded());
       } else {
         setBanner({ type: "ok", text: posterNote ? `✅ Media updated${posterNote}` : "✅ Media updated successfully." });
-        const reloaded = await fetchMediaItem(editor.editingId);
-        editor.loadIntoState(reloaded);
-        router.refresh();
+        editor.loadIntoState(await reloaded());
       }
     } catch (e: unknown) {
       setBanner({
@@ -210,9 +192,12 @@ export function useMediaEditorController() {
         setBanner(null);
         return;
       }
+      const deletedId = editor.editingId;
+      forgetFoundMedia([deletedId]);
+      setMedia((media) => withoutMedia(media, [deletedId]));
       setBanner({ type: "ok", text: "✅ Media deleted." });
       editor.resetFields(true, () => setBanner(null));
-      router.push("/admin/media/list");
+      navigate("/admin/media/list");
     } catch (e: unknown) {
       setBanner({
         type: "err",
@@ -226,7 +211,7 @@ export function useMediaEditorController() {
   function startNewUpload() {
     if (busy) return;
     editor.resetFields(false, () => setBanner(null));
-    router.push("/admin/media");
+    navigate("/admin/media");
   }
 
   return {
@@ -238,6 +223,7 @@ export function useMediaEditorController() {
     banner,
     setBanner,
     usageDialog: usage.dialog,
+    navigationCover,
     save,
     remove,
     startNewUpload,

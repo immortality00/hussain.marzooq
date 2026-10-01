@@ -3,10 +3,10 @@ import { useMediaAppearancesState } from "./useMediaAppearancesState";
 import { useNftEditorState } from "./useNftEditorState";
 import type { MediaCategory, MediaItem } from "./types";
 
-export function useMediaEditorState() {
-  const base = useBaseMediaEditorState();
-  const nft = useNftEditorState();
-  const appearanceState = useMediaAppearancesState();
+export function useMediaEditorState(initial: MediaItem | null) {
+  const base = useBaseMediaEditorState(initial);
+  const nft = useNftEditorState(initial);
+  const appearanceState = useMediaAppearancesState(initial);
 
   function resetFields(keepBanner: boolean, clearBanner?: () => void) {
     base.resetBaseFields();
