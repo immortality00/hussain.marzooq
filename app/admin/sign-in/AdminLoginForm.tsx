@@ -1,36 +1,57 @@
 "use client";
 
-import { Suspense, useSyncExternalStore, type KeyboardEvent } from "react";
-import { createPortal, useFormStatus } from "react-dom";
+import { Suspense, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent } from "react";
+import { createPortal } from "react-dom";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { adminCheckboxClasses, adminInputClasses } from "@/components/admin/admin-input";
 import { LoadingScreen } from "@/components/shared/LoadingScreen";
+import { requestAdminLogin } from "@/lib/auth/admin-login";
 import { isStandalone } from "@/lib/client/push-support";
 import { NextPathField } from "./LoginNotice";
 
 const subscribeNever = () => () => {};
 
-function SigningIn() {
-  const { pending } = useFormStatus();
+function SigningIn({ pending }: { pending: boolean }) {
   if (!pending) return null;
   return createPortal(<LoadingScreen className="fixed inset-0 z-50 bg-background" />, document.body);
 }
 
-export function AdminLoginForm({ login }: { login: (formData: FormData) => void }) {
+function submitOnEnter(event: KeyboardEvent<HTMLInputElement>) {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  event.currentTarget.form?.requestSubmit();
+}
+
+export function AdminLoginForm() {
   const installed = useSyncExternalStore(subscribeNever, isStandalone, () => false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  function submitOnEnter(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key !== "Enter") return;
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    event.currentTarget.form?.requestSubmit();
-  }
-
-  function releaseFocus() {
+    if (pending) return;
     if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+    const form = event.currentTarget;
+    setPending(true);
+    setError(null);
+    const result = await requestAdminLogin(new FormData(form));
+    if (result.ok) {
+      location.replace(result.next);
+      return;
+    }
+    form.reset();
+    setPending(false);
+    setError(result.message);
   }
 
   return (
-    <form action={login} onSubmit={releaseFocus} className="mt-8 space-y-4">
+    <form method="post" onSubmit={submit} className="mt-8 space-y-4">
+      {error ? (
+        <div role="alert" className="rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+          {error}
+        </div>
+      ) : null}
+
       <input
         type="password"
         name="password"
@@ -60,7 +81,7 @@ export function AdminLoginForm({ login }: { login: (formData: FormData) => void 
         Login
       </AdminButton>
 
-      <SigningIn />
+      <SigningIn pending={pending} />
     </form>
   );
 }

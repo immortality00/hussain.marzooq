@@ -36,16 +36,27 @@ beforeEach(() => {
 });
 
 describe("proxy", () => {
-  it("lets the sign-in and logout routes through without a session", async () => {
-    const res = await proxy(request("/admin"));
-    expect(res.headers.get("x-middleware-next")).toBe("1");
+  it("lets the sign-in page, login and logout through without a session", async () => {
+    for (const path of ["/admin/sign-in", "/admin/login", "/admin/logout"]) {
+      const res = await proxy(request(path, { method: path === "/admin/sign-in" ? "GET" : "POST" }));
+      expect(res.headers.get("x-middleware-next"), path).toBe("1");
+    }
+  });
+
+  it("forwards the old sign-in address to the new one, keeping its query", async () => {
+    const res = await proxy(request("/admin?next=%2Fadmin%2Finquiries&signedout=expired"));
+    expect(res.status).toBe(307);
+    const location = new URL(res.headers.get("location") ?? "");
+    expect(location.pathname).toBe("/admin/sign-in");
+    expect(location.searchParams.get("next")).toBe("/admin/inquiries");
+    expect(location.searchParams.get("signedout")).toBe("expired");
   });
 
   it("sends a page request with no cookie to sign-in, with no reason shown", async () => {
     const res = await proxy(request("/admin/dashboard", { fetchMode: "navigate" }));
     expect(res.status).toBe(307);
     const location = new URL(res.headers.get("location") ?? "");
-    expect(location.pathname).toBe("/admin");
+    expect(location.pathname).toBe("/admin/sign-in");
     expect(location.searchParams.get("next")).toBe("/admin/dashboard");
     expect(location.searchParams.has("signedout")).toBe(false);
   });
@@ -106,29 +117,30 @@ describe("proxy", () => {
   it("sends a signed-in visitor on the sign-in page straight to where they were going", async () => {
     const cookie = `${COOKIE_NAME}=${await issueSessionCookie(SECRET, true)}`;
 
-    const home = await proxy(request("/admin", { cookie, fetchMode: "navigate" }));
+    const home = await proxy(request("/admin/sign-in", { cookie, fetchMode: "navigate" }));
     expect(home.status).toBe(307);
     expect(new URL(home.headers.get("location") ?? "").pathname).toBe("/admin/dashboard");
 
-    const next = await proxy(request("/admin?next=%2Fadmin%2Finquiries", { cookie }));
+    const next = await proxy(request("/admin/sign-in?next=%2Fadmin%2Finquiries", { cookie }));
     expect(new URL(next.headers.get("location") ?? "").pathname).toBe("/admin/inquiries");
 
-    const outside = await proxy(request("/admin?next=%2F%2Fevil.com", { cookie }));
+    const outside = await proxy(request("/admin/sign-in?next=%2F%2Fevil.com", { cookie }));
     const location = new URL(outside.headers.get("location") ?? "");
     expect(location.origin).toBe("https://hussain-marzooq.com");
     expect(location.pathname).toBe("/admin/dashboard");
   });
 
-  it("shows the sign-in form after logout, a forced sign-out, a bad session or a form post", async () => {
+  it("shows the sign-in form after logout, a forced sign-out, a bad session, a form post or a background fetch", async () => {
     const cookie = `${COOKIE_NAME}=${await issueSessionCookie(SECRET, true)}`;
     const forged = `${COOKIE_NAME}=${await issueSessionCookie("another-secret", true)}`;
 
     for (const res of [
-      await proxy(request("/admin?loggedout=1", { cookie })),
-      await proxy(request("/admin?signedout=expired", { cookie })),
-      await proxy(request("/admin", { cookie, method: "POST" })),
-      await proxy(request("/admin", { cookie: forged })),
-      await proxy(request("/admin")),
+      await proxy(request("/admin/sign-in?loggedout=1", { cookie })),
+      await proxy(request("/admin/sign-in?signedout=expired", { cookie })),
+      await proxy(request("/admin/sign-in", { cookie, method: "POST" })),
+      await proxy(request("/admin/sign-in", { cookie, fetchMode: "cors" })),
+      await proxy(request("/admin/sign-in", { cookie: forged })),
+      await proxy(request("/admin/sign-in")),
     ]) {
       expect(res.headers.get("x-middleware-next")).toBe("1");
       expect(res.headers.get("location")).toBeNull();

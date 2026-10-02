@@ -16,6 +16,7 @@ test.describe("public site", () => {
     expect(response?.status()).toBe(404);
     await expect(page.getByText("Page not found")).toBeVisible();
     await expect(page.getByRole("link", { name: "Back home" })).toBeVisible();
+    await expect(page.locator("footer")).toBeVisible();
     await expect(page.locator("body")).not.toContainText("This page could not be found");
   });
 

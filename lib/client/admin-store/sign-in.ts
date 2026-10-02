@@ -1,9 +1,11 @@
+import { ADMIN_SIGN_IN_PATH } from "@/lib/auth/admin-next-path";
+
 const SIGN_IN_REDIRECT_KEY = "hm.admin.signin-redirect";
 const SIGN_IN_REDIRECT_GAP_MS = 60_000;
 const RELOADED_FOR_KEY = "hm.admin.reloaded-for";
 
 export function adminSignInHref() {
-  const target = new URL("/admin", location.origin);
+  const target = new URL(ADMIN_SIGN_IN_PATH, location.origin);
   target.searchParams.set("next", `${location.pathname}${location.search}`);
   return target.href;
 }

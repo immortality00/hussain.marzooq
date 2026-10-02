@@ -7,6 +7,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { LOADING_LINES, LOADING_LINE_MS, loadingLine } from "@/lib/loading-lines";
 import { LAUNCH_SCREEN_PATH, SIGNATURE_MASK_PATH, launchScreenHtml } from "@/lib/launch-screen";
 import { LoadingScreen } from "@/components/shared/LoadingScreen";
+import { ADMIN_LOGOUT_PATH, ADMIN_SIGN_IN_PATH } from "@/lib/auth/admin-next-path";
+import { HINT_NAME } from "@/lib/auth/session-token";
 
 describe("loadingLine", () => {
   it("cycles through every line and wraps in both directions", () => {
@@ -30,10 +32,17 @@ describe("launchScreenHtml", () => {
     expect(html).toContain(`location.pathname!==${JSON.stringify(LAUNCH_SCREEN_PATH)}`);
   });
 
-  it("is what the admin service worker caches and serves", () => {
+  it("goes straight to the sign-in page when the visitor is signed out", () => {
+    expect(html).toContain(JSON.stringify(ADMIN_SIGN_IN_PATH));
+    expect(html).toContain(JSON.stringify(`${HINT_NAME}=1`));
+  });
+
+  it("is what the admin service worker caches and serves, beside the sign-in page and logout", () => {
     const worker = readFileSync("public/admin-sw.js", "utf8");
     expect(worker).toContain(`const LAUNCH_PATH = "${LAUNCH_SCREEN_PATH}";`);
     expect(worker).toContain(`const MASK_PATH = "${SIGNATURE_MASK_PATH}";`);
+    expect(worker).toContain(`const SIGN_IN_PATH = "${ADMIN_SIGN_IN_PATH}";`);
+    expect(worker).toContain(`const LOGOUT_PATH = "${ADMIN_LOGOUT_PATH}";`);
   });
 });
 

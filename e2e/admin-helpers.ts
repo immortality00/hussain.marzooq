@@ -24,7 +24,8 @@ export async function openScreen(page: Page, name: string | RegExp) {
 
 export async function freshLoad(page: Page) {
   await page.reload();
-  await page.waitForLoadState("networkidle");
+  await expect(page.locator("aside").first()).toBeVisible();
+  await expect(page.getByText("Loading", { exact: true })).toHaveCount(0);
 }
 
 export const snapshot = (page: Page) =>

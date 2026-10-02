@@ -8,8 +8,9 @@ test.describe("admin inbox", () => {
     const badge = page.locator("aside").getByLabel(/pending$/);
     await expect(badge).toHaveAccessibleName("3 pending");
 
+    const checked = page.waitForResponse((response) => response.url().includes("/api/admin/snapshot"));
     await openScreen(page, "Inquiries");
-    await page.waitForLoadState("networkidle");
+    await checked;
     await page.route(/\/api\/admin\/snapshot/, async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 5_000));
       await route.continue();

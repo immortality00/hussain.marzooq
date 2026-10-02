@@ -7,7 +7,7 @@ import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
 import { WorkOverlay } from "@/components/site/WorkOverlay";
 import { useMagneticHover } from "@/hooks/useMagneticHover";
-import { HINT_NAME } from "@/lib/auth/session-token";
+import { hasAdminHint } from "@/lib/client/admin-hint";
 
 const ADMIN_HREF = "/admin/dashboard";
 
@@ -16,10 +16,6 @@ const NAV_PILL =
 
 const noopSubscribe = () => () => {};
 
-function readAdminHint() {
-  return document.cookie.split("; ").includes(`${HINT_NAME}=1`);
-}
-
 export function Navbar() {
   const [hiddenByModal, setHiddenByModal] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -27,7 +23,7 @@ export function Navbar() {
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
   const bookRef = useMagneticHover<HTMLAnchorElement>();
-  const isAdmin = useSyncExternalStore(noopSubscribe, readAdminHint, () => false);
+  const isAdmin = useSyncExternalStore(noopSubscribe, hasAdminHint, () => false);
   const [mounted, setMounted] = useState(false);
   // next-themes hydration guard: the resolved theme is unknown during SSR, so we
   // render a stable placeholder until mounted. The one-shot setState on mount is the

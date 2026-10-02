@@ -348,7 +348,7 @@ describe("loading and signing in", () => {
     vi.stubGlobal("location", { ...window.location, origin: "https://hussain-marzooq.com", pathname: "/admin/inquiries", search: "", assign });
     fetchMock.mockImplementationOnce(() => reply({ ok: false, error: "Unauthorized" }, 401));
     await store.refreshAdminData();
-    expect(assign).toHaveBeenCalledWith("https://hussain-marzooq.com/admin?next=%2Fadmin%2Finquiries");
+    expect(assign).toHaveBeenCalledWith("https://hussain-marzooq.com/admin/sign-in?next=%2Fadmin%2Finquiries");
   });
 
   it("never bounces between a screen and sign-in: a second sign-out within a minute stays put", async () => {

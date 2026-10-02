@@ -14,6 +14,10 @@ const serverEnv = {
   PERSON_GATE_COOKIE_SECRET: E2E.galleryCookieSecret,
   RESEND_API_KEY: "e2e_resend_key",
   NEXT_PUBLIC_SITE_URL: baseURL,
+  CLOUDINARY_CLOUD_NAME: E2E.cloudName,
+  NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: E2E.cloudName,
+  CLOUDINARY_API_KEY: "",
+  CLOUDINARY_API_SECRET: "",
 };
 
 export default defineConfig({

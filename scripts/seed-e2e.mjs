@@ -70,12 +70,11 @@ const E2E = {
   reviewerName: "Seed Reviewer",
   inquiryName: "Seed Client",
   blogPostTitle: "Seed Post",
+  cloudName: "demo",
 };
 
-const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "demo";
-
-function assetUrl(publicId, resourceType = "image", ext = "jpg") {
-  return `https://res.cloudinary.com/${CLOUD}/${resourceType}/upload/v1700000000/${publicId}.${ext}`;
+function assetUrl(publicId, resourceType = "image", ext = "jpg", delivery = "upload") {
+  return `https://res.cloudinary.com/${E2E.cloudName}/${resourceType}/${delivery}/v1700000000/${publicId}.${ext}`;
 }
 
 const BASE_TIME = Date.parse("2026-09-01T12:00:00.000Z");
@@ -181,6 +180,8 @@ async function main() {
     title: "Seed Private Frame",
     isPublic: false,
   });
+  galleryMedia.deliveryType = "authenticated";
+  galleryMedia.secureUrl = assetUrl(galleryMedia.publicId, "image", "jpg", "authenticated");
 
   await db.collection("media").insertMany([...photography, ...videography, nft, galleryMedia]);
 

@@ -1,5 +1,7 @@
 import { LOADING_LINES, LOADING_LINE_MS } from "@/lib/loading-lines";
 import { serializeJsonLd } from "@/lib/seo/structured-data";
+import { HINT_NAME } from "@/lib/auth/session-token";
+import { ADMIN_SIGN_IN_PATH } from "@/lib/auth/admin-next-path";
 
 export const LAUNCH_SCREEN_PATH = "/launch-screen";
 export const SIGNATURE_MASK_PATH = "/brand/signature-mask.webp";
@@ -33,7 +35,11 @@ var el=document.getElementById("line");
 function show(){el.textContent=lines[index%lines.length];el.classList.remove("in");void el.offsetWidth;el.classList.add("in")}
 show();
 setInterval(function(){index+=1;show()},${LOADING_LINE_MS});
-if(location.pathname!==${serializeJsonLd(LAUNCH_SCREEN_PATH)})location.replace(location.href);
+var signIn=${serializeJsonLd(ADMIN_SIGN_IN_PATH)};
+var signedIn=document.cookie.split("; ").indexOf(${serializeJsonLd(`${HINT_NAME}=1`)})>=0;
+var here=location.pathname+location.search;
+var target=signedIn||location.pathname===signIn?location.href:signIn+"?next="+encodeURIComponent(here);
+if(location.pathname!==${serializeJsonLd(LAUNCH_SCREEN_PATH)})location.replace(target);
 })();`;
 
 export function launchScreenHtml(): string {

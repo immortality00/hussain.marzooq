@@ -1,6 +1,7 @@
 const FALLBACK_URL = "/admin/dashboard";
 const DASHBOARD_PATH = "/admin/dashboard";
 const LOGOUT_PATH = "/admin/logout";
+const SIGN_IN_PATH = "/admin/sign-in";
 const LAUNCH_PATH = "/launch-screen";
 const MASK_PATH = "/brand/signature-mask.webp";
 const LAUNCH_CACHE = "hm-admin-launch-v1";
@@ -12,6 +13,7 @@ const SAVE_COPY_HEADER = "x-hm-save-copy";
 const DATA_CHANGED_MESSAGE = "hm-admin-data-changed";
 const NAVIGATE_MESSAGE = "hm-admin-navigate";
 const NAVIGATE_ANSWER_MS = 1000;
+const STATIC_FILE = /\/_next\/static\/[^"'\\\s<>)]+/g;
 
 let signedOutAt = 0;
 
@@ -21,6 +23,7 @@ self.addEventListener("install", (event) => {
       .open(LAUNCH_CACHE)
       .then((cache) => cache.addAll([LAUNCH_PATH, MASK_PATH]))
       .catch(() => {})
+      .then(() => refreshSignIn().catch(() => {}))
       .then(() => self.skipWaiting())
   );
 });
@@ -103,6 +106,29 @@ async function dashboard(event) {
   return fetchDashboard(event);
 }
 
+async function keepStatic(cache, path) {
+  if (await cache.match(path)) return;
+  const response = await fetch(path);
+  if (!response.ok) throw new Error(`${path} ${response.status}`);
+  if ((response.headers.get("cache-control") || "").includes("immutable")) await cache.put(path, response);
+}
+
+async function refreshSignIn() {
+  const response = await fetch(SIGN_IN_PATH, { cache: "no-store" });
+  if (!isPage(response) || response.redirected) return;
+  const files = [...new Set((await response.clone().text()).match(STATIC_FILE) || [])];
+  const statics = await caches.open(STATIC_CACHE);
+  await Promise.all(files.map((path) => keepStatic(statics, path)));
+  await trimStatic(statics);
+  await (await caches.open(LAUNCH_CACHE)).put(SIGN_IN_PATH, response);
+}
+
+async function signInPage(event) {
+  const cached = await (await caches.open(LAUNCH_CACHE)).match(SIGN_IN_PATH);
+  event.waitUntil(refreshSignIn().catch(() => {}));
+  return cached || fetch(event.request);
+}
+
 async function launchScreenOrNetwork(event) {
   return (await launchScreen(event)) || fetch(event.request);
 }
@@ -131,9 +157,14 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
 
+  if (request.method === "POST" && url.pathname === LOGOUT_PATH) {
+    event.respondWith(signOut(event));
+    return;
+  }
+
   if (request.mode === "navigate") {
-    if (request.method === "POST" && url.pathname === LOGOUT_PATH) {
-      event.respondWith(signOut(event));
+    if (request.method === "GET" && url.pathname === SIGN_IN_PATH) {
+      event.respondWith(signInPage(event));
     } else if (request.method === "GET" && url.pathname === DASHBOARD_PATH) {
       event.respondWith(dashboard(event));
     } else if (request.method === "GET" && !request.referrer) {

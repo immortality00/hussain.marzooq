@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { slugifyTag } from "@/lib/server/media-tags";
 import { createTagRequest } from "@/app/admin/(protected)/tags/lib/api";
 import { adminInputClasses } from "@/components/admin/admin-input";
+import { AdminLink } from "@/components/admin/AdminLink";
 import { useAdminSlice } from "@/hooks/useAdminData";
 import { useMediaOptions } from "./MediaOptionsContext";
 
@@ -127,9 +128,9 @@ export default function TagMultiSelect({
 
       <div className="text-xs text-muted-foreground">
         Tags come from the{" "}
-        <a href="/admin/tags" className="underline">
+        <AdminLink href="/admin/tags" className="underline">
           Tags
-        </a>{" "}
+        </AdminLink>{" "}
         taxonomy. New tags created here are added to it.
       </div>
     </div>

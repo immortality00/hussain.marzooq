@@ -90,16 +90,4 @@ test.describe("admin on two devices", () => {
     await page.getByRole("button", { name: /Details/ }).click();
     await expect(page.locator("input").first()).toHaveValue("Changed Elsewhere");
   });
-
-  test("a screen never visited before shows its data with every server request held", async ({ page }) => {
-    await signIn(page);
-    await expect(page.getByText("New inquiries")).toBeVisible();
-    await page.waitForLoadState("networkidle");
-    await page.route(/\/api\//, async (route) => {
-      await new Promise((resolve) => setTimeout(resolve, 5_000));
-      await route.continue();
-    });
-    await openScreen(page, "Testimonials");
-    await expect(page.getByText("Seed Reviewer").first()).toBeVisible({ timeout: 2_000 });
-  });
 });

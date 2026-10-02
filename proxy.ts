@@ -8,7 +8,12 @@ import {
   sessionCookieOptions,
   type SessionCheck,
 } from "@/lib/auth/session-token";
-import { safeAdminNextPath } from "@/lib/auth/admin-next-path";
+import {
+  ADMIN_LOGIN_PATH,
+  ADMIN_LOGOUT_PATH,
+  ADMIN_SIGN_IN_PATH,
+  safeAdminNextPath,
+} from "@/lib/auth/admin-next-path";
 
 // Edge runtime: Web Crypto only. Do not import node:crypto here.
 
@@ -17,12 +22,16 @@ function isPageLoad(req: NextRequest) {
   return !mode || mode === "navigate" || req.headers.get("sec-fetch-dest") === "document";
 }
 
+function isPath(pathname: string, path: string) {
+  return pathname === path || pathname === `${path}/`;
+}
+
 function isSignInPage(pathname: string) {
-  return pathname === "/admin" || pathname === "/admin/";
+  return isPath(pathname, ADMIN_SIGN_IN_PATH);
 }
 
 function isPublicAdminRoute(pathname: string) {
-  return isSignInPage(pathname) || pathname === "/admin/logout" || pathname === "/admin/logout/";
+  return isSignInPage(pathname) || isPath(pathname, ADMIN_LOGIN_PATH) || isPath(pathname, ADMIN_LOGOUT_PATH);
 }
 
 function wantsSignInForm(req: NextRequest) {
@@ -46,10 +55,16 @@ export async function proxy(req: NextRequest) {
 
   if (!pathname.startsWith("/admin")) return NextResponse.next();
 
+  if (isPath(pathname, "/admin")) {
+    const url = req.nextUrl.clone();
+    url.pathname = ADMIN_SIGN_IN_PATH;
+    return NextResponse.redirect(url);
+  }
+
   const secret = (process.env.ADMIN_COOKIE_SECRET ?? "").trim();
 
   if (isPublicAdminRoute(pathname)) {
-    if (!isSignInPage(pathname) || wantsSignInForm(req)) return NextResponse.next();
+    if (!isSignInPage(pathname) || wantsSignInForm(req) || !isPageLoad(req)) return NextResponse.next();
     const signedIn = await checkAdminAuth(req, secret);
     if (!signedIn.ok) return NextResponse.next();
     const url = req.nextUrl.clone();
@@ -81,7 +96,7 @@ export async function proxy(req: NextRequest) {
   }
 
   const url = req.nextUrl.clone();
-  url.pathname = "/admin";
+  url.pathname = ADMIN_SIGN_IN_PATH;
   url.search = "";
   url.searchParams.set("next", pathname);
   if (auth.reason !== "missing") url.searchParams.set("signedout", auth.reason);

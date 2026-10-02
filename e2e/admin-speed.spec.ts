@@ -13,16 +13,18 @@ function cachedUntilChanged(cacheControl: string | undefined) {
 
 test.describe("admin speed", () => {
   test("serves the sign-in page and every admin screen pre-built, with no five-minute expiry", async ({ page }) => {
-    const signInPage = await page.request.get("/admin");
+    const signInPage = await page.request.get("/admin/sign-in");
     expect(signInPage.status()).toBe(200);
     expect(cachedUntilChanged(signInPage.headers()["cache-control"])).toBe(true);
     expect(signInPage.headers()["x-robots-tag"]).toContain("noindex");
+    expect(await signInPage.text()).not.toContain("available worldwide");
 
     await signIn(page);
     for (const path of ["/admin/dashboard", "/admin/inquiries", "/admin/media/list", "/admin/blog/edit"]) {
       const screen = await page.request.get(path);
       expect(screen.status(), path).toBe(200);
       expect(cachedUntilChanged(screen.headers()["cache-control"]), path).toBe(true);
+      expect(await screen.text(), path).not.toContain("available worldwide");
     }
 
     await page.goto("/admin");
@@ -32,7 +34,6 @@ test.describe("admin speed", () => {
   test("a screen never visited before shows its data without waiting for the server", async ({ page }) => {
     await signIn(page);
     await expect(page.getByText("New inquiries")).toBeVisible();
-    await page.waitForLoadState("networkidle");
 
     await page.route(/\/api\//, async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 5_000));

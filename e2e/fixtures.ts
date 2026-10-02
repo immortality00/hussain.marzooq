@@ -18,4 +18,5 @@ export const E2E = {
   reviewerName: "Seed Reviewer",
   inquiryName: "Seed Client",
   blogPostTitle: "Seed Post",
+  cloudName: "demo",
 } as const;
