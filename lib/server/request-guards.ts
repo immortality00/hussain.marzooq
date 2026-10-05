@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { getDb } from "@/lib/server/db";
 
 type GuardDoc = {
@@ -11,6 +12,12 @@ type GuardDoc = {
   createdAt: Date;
   updatedAt: Date;
 };
+
+const MAX_STORED_KEY_LENGTH = 128;
+
+export function storedGuardKey(key: string) {
+  return key.length > MAX_STORED_KEY_LENGTH ? createHash("sha256").update(key).digest("hex") : key;
+}
 
 function buildRateLimitId(bucket: string, key: string) {
   return `rate:${bucket}:${key}`;
@@ -27,7 +34,8 @@ export async function consumeFixedWindowRateLimit(params: {
   limit: number;
   windowMs: number;
 }) {
-  const { bucket, key, limit, windowMs } = params;
+  const { bucket, limit, windowMs } = params;
+  const key = storedGuardKey(params.key);
   const collection = await getRequestGuardsCollection();
 
   const now = new Date();
@@ -84,7 +92,8 @@ export async function consumeFixedWindowRateLimit(params: {
 }
 
 export async function clearFixedWindowRateLimit(params: { bucket: string; key: string }) {
-  const { bucket, key } = params;
+  const { bucket } = params;
+  const key = storedGuardKey(params.key);
   const collection = await getRequestGuardsCollection();
   const id = buildRateLimitId(bucket, key);
 
@@ -96,7 +105,8 @@ export async function claimDuplicateWindow(params: {
   key: string;
   windowMs: number;
 }) {
-  const { bucket, key, windowMs } = params;
+  const { bucket, windowMs } = params;
+  const key = storedGuardKey(params.key);
   const collection = await getRequestGuardsCollection();
 
   const now = new Date();

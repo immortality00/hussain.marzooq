@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { CloudinaryUploaded } from "@/components/shared/upload/CloudinaryUploadButton";
 import { uploadFileToCloudinary, type UploadTarget } from "@/lib/client/cloudinary-direct-upload";
+import { errorMessage } from "@/lib/error-message";
+import { uploadFailureMessage, type UploadFailure } from "@/components/shared/upload/upload-failures";
 
 export type CloudinaryUploadedFile = CloudinaryUploaded & {
   originalFilename: string;
@@ -33,29 +35,19 @@ export function CloudinaryMultiUploadButton({
   const inputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
 
-  async function uploadOne(file: File): Promise<CloudinaryUploadedFile> {
-    try {
-      const uploaded = await uploadFileToCloudinary(file, folder, target);
-      return { ...uploaded, originalFilename: file.name };
-    } catch (error) {
-      const message = error instanceof Error ? error.message : "Upload failed.";
-      throw new Error(`${file.name}: ${message}`);
-    }
-  }
-
   async function handleFiles(fileList: FileList) {
     const files = Array.from(fileList).slice(0, maxFiles);
     if (files.length === 0) return;
 
     setProgress({ done: 0, total: files.length });
-    let uploadedCount = 0;
+    const failures: UploadFailure[] = [];
 
     for (const file of files) {
       try {
-        onUploaded([await uploadOne(file)]);
-        uploadedCount += 1;
+        const uploaded = await uploadFileToCloudinary(file, folder, target);
+        onUploaded([{ ...uploaded, originalFilename: file.name }]);
       } catch (error) {
-        onError?.(error instanceof Error ? error.message : "Upload failed.");
+        failures.push({ name: file.name, reason: errorMessage(error, "Upload failed.") });
       } finally {
         setProgress((prev) => (prev ? { ...prev, done: prev.done + 1 } : prev));
       }
@@ -64,7 +56,8 @@ export function CloudinaryMultiUploadButton({
     setProgress(null);
     if (inputRef.current) inputRef.current.value = "";
 
-    if (uploadedCount === 0) onError?.("None of the files uploaded.");
+    const message = uploadFailureMessage(files.length, failures);
+    if (message) onError?.(message);
   }
 
   const busy = progress !== null;

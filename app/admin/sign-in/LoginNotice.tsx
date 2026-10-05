@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useSyncExternalStore } from "react";
 import { safeAdminNextPath } from "@/lib/auth/admin-next-path";
 import { hasAdminHint } from "@/lib/client/admin-hint";
 
@@ -13,12 +12,19 @@ const SIGNED_OUT_REASONS: Record<string, string> = {
   config: "admin is not configured",
 };
 
+const subscribeNever = () => () => {};
+
+function useQueryAfterHydration() {
+  const search = useSyncExternalStore(subscribeNever, () => location.search, () => null);
+  return search === null ? null : new URLSearchParams(search);
+}
+
 export function LoginNotice() {
-  const params = useSearchParams();
-  const loggedOut = params.get("loggedout") === "1";
-  const signedOut = SIGNED_OUT_REASONS[params.get("signedout") ?? ""];
+  const params = useQueryAfterHydration();
+  const loggedOut = params?.get("loggedout") === "1";
+  const signedOut = SIGNED_OUT_REASONS[params?.get("signedout") ?? ""];
   const notice = loggedOut ? "Logged out." : signedOut ? `Signed out: ${signedOut}.` : null;
-  const forwardTo = loggedOut || params.has("signedout") ? null : safeAdminNextPath(params.get("next"));
+  const forwardTo = !params || loggedOut || params.has("signedout") ? null : safeAdminNextPath(params.get("next"));
 
   useEffect(() => {
     if (forwardTo && hasAdminHint()) location.replace(forwardTo);
@@ -28,6 +34,6 @@ export function LoginNotice() {
 }
 
 export function NextPathField() {
-  const next = useSearchParams().get("next") ?? "";
+  const next = useQueryAfterHydration()?.get("next") ?? "";
   return <input type="hidden" name="next" value={next} />;
 }

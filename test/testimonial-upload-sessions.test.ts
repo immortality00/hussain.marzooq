@@ -80,6 +80,16 @@ describe("cookie parsing", () => {
     });
     expect(readUploadCookie(request)).toEqual({ sessionId: SESSION_A, token: TOKEN_A });
   });
+
+  test("readUploadCookie treats a cookie that cannot be decoded as no cookie", () => {
+    for (const raw of ["%E0%A4%A", "%", `${SESSION_A}.%ZZ`]) {
+      const request = new Request("https://example.com", {
+        method: "POST",
+        headers: { cookie: `${UPLOAD_SESSION_COOKIE}=${raw}` },
+      });
+      expect(readUploadCookie(request), raw).toBeNull();
+    }
+  });
 });
 
 describe("verifyUploadSession", () => {

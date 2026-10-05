@@ -3,6 +3,8 @@ import { ensureCloudinaryConfigured, isCloudinaryConfigured } from "@/lib/server
 
 export type CloudinaryResourceType = "image" | "video" | "raw";
 
+const PREFIX_RESOURCE_TYPES: readonly CloudinaryResourceType[] = ["image", "video", "raw"];
+
 type ParsedCloudinaryAsset = {
   publicId: string;
   resourceType: CloudinaryResourceType;
@@ -260,10 +262,12 @@ export async function deleteManagedCloudinaryResourcesByPrefix(
   ensureCloudinaryConfigured();
 
   try {
-    await cloudinary.api.delete_resources_by_prefix(normalizedPrefix, {
-      resource_type: "image",
-      invalidate: true,
-    });
+    for (const resourceType of PREFIX_RESOURCE_TYPES) {
+      await cloudinary.api.delete_resources_by_prefix(normalizedPrefix, {
+        resource_type: resourceType,
+        invalidate: true,
+      });
+    }
     if (!strict) return true;
     return { ok: true, target: normalizedPrefix, action: "delete-prefix" };
   } catch (error) {

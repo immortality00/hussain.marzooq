@@ -3,6 +3,7 @@ import { getClientAddress } from "@/app/api/_lib/public-form-security";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { isConfiguredProjectUrl, toProjectUrl } from "@/lib/web-projects";
 import { getPageSections } from "@/lib/server/page-sections";
+import { isProxiedImageType } from "@/app/api/_lib/proxy-content-type";
 
 export const dynamic = "force-dynamic";
 
@@ -43,11 +44,11 @@ export async function GET(req: Request) {
       cache: "no-store",
     });
 
-    if (!upstream.ok) {
+    const contentType = upstream.headers.get("content-type");
+    if (!upstream.ok || !isProxiedImageType(contentType)) {
       return NextResponse.json({ ok: false, error: "Preview unavailable" }, { status: 502 });
     }
 
-    const contentType = upstream.headers.get("content-type") ?? "image/jpeg";
     const body = await upstream.arrayBuffer();
 
     return new NextResponse(body, {

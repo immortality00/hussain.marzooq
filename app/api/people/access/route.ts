@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     return noStoreJson({ ok: false, error: "Invalid body." }, { status: 400 });
   }
 
-  const slug = (asNullableString(body.slug) ?? "").trim();
+  const slug = (asNullableString(body.slug) ?? "").trim().slice(0, 100);
   const password = (asNullableString(body.password) ?? "").trim();
 
   if (!slug || !password) {

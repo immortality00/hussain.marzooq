@@ -7,10 +7,11 @@ import {
   signCloudinaryParams,
 } from "@/lib/server/cloudinary";
 import { getDb } from "@/lib/server/db";
-import { newUploadPublicId } from "@/lib/server/upload-ledger";
+import { markSessionFolderUsed, newUploadPublicId } from "@/lib/server/upload-ledger";
 import {
   claimUploadSlot,
   readUploadCookie,
+  sessionFolder,
   sessionPhotosFolder,
   sessionProfileFolder,
   verifyUploadSession,
@@ -20,6 +21,7 @@ export const dynamic = "force-dynamic";
 
 const SIGNATURE_RATE_LIMIT_WINDOW_MS = 60_000;
 const SIGNATURE_RATE_LIMIT_MAX = 18;
+const REVIEW_PHOTO_FORMATS = "jpg,jpeg,png,webp,gif,heic,heif,avif";
 
 function requestedFolder(body: unknown) {
   if (!isRecord(body) || !isRecord(body.paramsToSign)) return "";
@@ -61,10 +63,12 @@ export async function POST(request: Request) {
     return noStoreJson({ error: "Upload limit reached for this session." }, { status: 403 });
   }
 
+  await markSessionFolderUsed(db, sessionFolder(session.sessionId));
+
   const publicId = newUploadPublicId(folder);
   const timestamp = Math.round(Date.now() / 1000);
-  const signature = signCloudinaryParams({ public_id: publicId, timestamp });
+  const signature = signCloudinaryParams({ allowed_formats: REVIEW_PHOTO_FORMATS, public_id: publicId, timestamp });
   const { cloudName, apiKey } = getCloudinaryPublicConfig();
 
-  return noStoreJson({ signature, cloudName, apiKey, publicId, timestamp });
+  return noStoreJson({ signature, cloudName, apiKey, publicId, timestamp, allowedFormats: REVIEW_PHOTO_FORMATS });
 }

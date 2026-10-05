@@ -17,6 +17,7 @@ export const UPLOAD_LEASE_MS = 24 * 60 * 60 * 1000;
 export const SESSION_FOLDER_LEASE_MS = 3 * 60 * 60 * 1000;
 
 const RETRY_DELAY_MS = 60 * 60 * 1000;
+const MAX_ATTEMPTS = 5;
 const CLAIM_MS = 2 * 60 * 1000;
 const BATCH_SIZE = 25;
 const MAX_BATCHES = 4;
@@ -30,6 +31,8 @@ type LedgerEntry = {
   expiresAt: Date;
   lockedUntil?: Date;
   attempts?: number;
+  unused?: true;
+  gaveUpAt?: Date;
 };
 
 export type DiscardResult = "deleted" | "kept" | "unknown" | "failed";
@@ -61,12 +64,17 @@ export async function registerSessionFolder(db: Db, folder: string, now: Date = 
     {
       $setOnInsert: {
         kind: "folder" as const,
+        unused: true as const,
         createdAt: now,
         expiresAt: new Date(now.getTime() + SESSION_FOLDER_LEASE_MS),
       },
     },
     { upsert: true }
   );
+}
+
+export async function markSessionFolderUsed(db: Db, folder: string) {
+  await ledger(db).updateOne({ _id: folderEntryId(folder) }, { $unset: { unused: "" } });
 }
 
 async function destroyAsset(publicId: string): Promise<void> {
@@ -125,8 +133,31 @@ export async function discardPendingUpload(db: Db, publicId: string): Promise<Di
 function dueFilter(now: Date) {
   return {
     expiresAt: { $lte: now },
+    gaveUpAt: { $exists: false },
     $or: [{ lockedUntil: { $exists: false } }, { lockedUntil: { $lte: now } }],
   };
+}
+
+async function recordFailure(db: Db, entry: LedgerEntry, now: Date) {
+  const attempts = (entry.attempts ?? 0) + 1;
+
+  if (attempts >= MAX_ATTEMPTS) {
+    console.error(`[upload-ledger] giving up ${entry._id}`);
+    await ledger(db).updateOne(
+      { _id: entry._id },
+      { $set: { attempts, gaveUpAt: now }, $unset: { lockedUntil: "" } }
+    );
+    return;
+  }
+
+  await ledger(db).updateOne(
+    { _id: entry._id },
+    {
+      $set: { expiresAt: new Date(now.getTime() + RETRY_DELAY_MS) },
+      $unset: { lockedUntil: "" },
+      $inc: { attempts: 1 },
+    }
+  );
 }
 
 export async function sweepExpiredUploads(db: Db, now: Date = new Date()) {
@@ -144,21 +175,14 @@ export async function sweepExpiredUploads(db: Db, now: Date = new Date()) {
       if (!claimed) continue;
 
       try {
-        if (entry.kind === "folder") await settleFolder(db, entry._id.slice("folder:".length));
-        else await settleAsset(db, entry._id);
+        if (entry.kind === "asset") await settleAsset(db, entry._id);
+        else if (!entry.unused) await settleFolder(db, entry._id.slice("folder:".length));
 
         await ledger(db).deleteOne({ _id: entry._id });
         summary.settled += 1;
       } catch (error) {
         console.error("[upload-ledger] sweep failed", entry._id, error);
-        await ledger(db).updateOne(
-          { _id: entry._id },
-          {
-            $set: { expiresAt: new Date(now.getTime() + RETRY_DELAY_MS) },
-            $unset: { lockedUntil: "" },
-            $inc: { attempts: 1 },
-          }
-        );
+        await recordFailure(db, entry, now);
         summary.failed += 1;
       }
     }

@@ -12,6 +12,7 @@ type SignedParams = {
   timestamp: number;
   publicId: string;
   signature: string;
+  allowedFormats?: string;
 };
 
 // Cloudinary rejects a single non-chunked upload over 100MB outright, which is what
@@ -28,12 +29,13 @@ export function computeChunkRanges(totalBytes: number, chunkSize: number) {
   return ranges;
 }
 
-function buildForm(file: File | Blob, { apiKey, timestamp, publicId, signature }: SignedParams) {
+function buildForm(file: File | Blob, { apiKey, timestamp, publicId, signature, allowedFormats }: SignedParams) {
   const form = new FormData();
   form.append("file", file);
   form.append("api_key", apiKey);
   form.append("timestamp", String(timestamp));
   form.append("public_id", publicId);
+  if (allowedFormats) form.append("allowed_formats", allowedFormats);
   form.append("signature", signature);
   return form;
 }
@@ -106,10 +108,16 @@ export async function uploadFileToCloudinary(
     body: JSON.stringify({ paramsToSign: { folder } }),
   });
   if (!signRes.ok) return throwForFailedSign(signRes);
-  const { signature, cloudName, apiKey, publicId, timestamp } = await signRes.json();
+  const { signature, cloudName, apiKey, publicId, timestamp, allowedFormats } = await signRes.json();
 
   const endpoint = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
-  const params: SignedParams = { apiKey, timestamp, publicId, signature };
+  const params: SignedParams = {
+    apiKey,
+    timestamp,
+    publicId,
+    signature,
+    allowedFormats: typeof allowedFormats === "string" ? allowedFormats : undefined,
+  };
   const data =
     uploadFile.size > CHUNK_UPLOAD_THRESHOLD
       ? await uploadInChunks(uploadFile, endpoint, params)

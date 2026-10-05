@@ -2,7 +2,7 @@ import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
 import { ensureOthersCategory } from "@/lib/db/ensureSystemCategories";
 import { adminServiceOf } from "@/lib/server/admin-catalog";
-import { isAdminAuthedServer, requireAdminOr401 } from "@/lib/auth/admin";
+import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
   asNullableString,
@@ -15,49 +15,6 @@ import { isAllowedCloudinaryUrl } from "@/lib/server/cloudinary-assets";
 import { CLOUDINARY_SERVICES_FOLDER } from "@/lib/cloudinary-folders";
 
 export const dynamic = "force-dynamic";
-
-export async function GET(req: Request) {
-  const url = new URL(req.url);
-  const wantsAll = url.searchParams.get("all") === "1";
-
-  const admin = await isAdminAuthedServer();
-  const all = wantsAll && admin;
-
-  const db = await getDb();
-
-  const filter: Record<string, unknown> = {};
-  if (!all) {
-    filter.isActive = true;
-    filter.isArchived = { $ne: true };
-  }
-
-  const docs = await db
-    .collection("services")
-    .find(filter)
-    .sort({ order: 1, createdAt: -1 })
-    .toArray();
-
-  const items = docs.map((d) => ({
-    id: typeof d._id?.toString === "function" ? d._id.toString() : String(d._id),
-    name: typeof d.name === "string" ? d.name : "",
-    slug: typeof d.slug === "string" ? d.slug : "",
-    category: typeof d.category === "string" ? d.category : "others",
-    categoryId: typeof d.categoryId === "string" ? d.categoryId : null,
-    description: typeof d.description === "string" ? d.description : "",
-    startingPrice: asNumberOrNull(d.startingPrice),
-    currency: typeof d.currency === "string" ? d.currency : "AED",
-    isActive: typeof d.isActive === "boolean" ? d.isActive : true,
-    isArchived: typeof d.isArchived === "boolean" ? d.isArchived : false,
-    imageUrl: typeof d.imageUrl === "string" ? d.imageUrl : "",
-    order: typeof d.order === "number" && Number.isFinite(d.order) ? d.order : 0,
-    inquiriesCount:
-      typeof d.inquiriesCount === "number" && Number.isFinite(d.inquiriesCount)
-        ? d.inquiriesCount
-        : 0,
-  }));
-
-  return noStoreJson({ ok: true, items });
-}
 
 export async function POST(req: Request) {
   const deny = await requireAdminOr401();

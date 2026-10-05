@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import { AdminLoginForm } from "./AdminLoginForm";
 import { LoginNotice } from "./LoginNotice";
 
@@ -10,9 +9,7 @@ export default function AdminLoginPage() {
 
         <h1 className="mt-6 text-2xl font-semibold tracking-tight">Admin</h1>
 
-        <Suspense fallback={null}>
-          <LoginNotice />
-        </Suspense>
+        <LoginNotice />
 
         <AdminLoginForm />
       </div>

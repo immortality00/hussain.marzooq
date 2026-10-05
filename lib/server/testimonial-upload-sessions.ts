@@ -100,7 +100,11 @@ export function readUploadCookie(request: Request): UploadSessionCredentials | n
     if (name !== UPLOAD_SESSION_COOKIE) continue;
 
     const raw = part.slice(eq + 1).trim();
-    return parseUploadCookieValue(decodeURIComponent(raw));
+    try {
+      return parseUploadCookieValue(decodeURIComponent(raw));
+    } catch {
+      return null;
+    }
   }
 
   return null;

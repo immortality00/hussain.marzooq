@@ -183,6 +183,15 @@ self.addEventListener("fetch", (event) => {
   }
 });
 
+function isSamePath(value) {
+  if (typeof value !== "string" || !/^\/(?![\/\\])/.test(value)) return false;
+  try {
+    return new URL(value, self.location.origin).origin === self.location.origin;
+  } catch {
+    return false;
+  }
+}
+
 self.addEventListener("push", (event) => {
   let data = {};
   try {
@@ -192,7 +201,7 @@ self.addEventListener("push", (event) => {
   }
 
   const title = typeof data.title === "string" && data.title ? data.title : "Hussain.Art admin";
-  const url = typeof data.url === "string" && data.url.startsWith("/") ? data.url : FALLBACK_URL;
+  const url = isSamePath(data.url) ? data.url : FALLBACK_URL;
 
   event.waitUntil(
     Promise.all([
@@ -224,7 +233,7 @@ function askToNavigate(client, target) {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const path = event.notification.data && event.notification.data.url;
-  const target = new URL(typeof path === "string" ? path : FALLBACK_URL, self.location.origin).href;
+  const target = new URL(isSamePath(path) ? path : FALLBACK_URL, self.location.origin).href;
 
   event.waitUntil(
     (async () => {

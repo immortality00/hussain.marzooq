@@ -67,6 +67,39 @@ describe("GET /api/web-projects/preview", () => {
     expect(getPageSections).not.toHaveBeenCalled();
   });
 
+  it.each(["text/html; charset=utf-8", "image/svg+xml", "application/javascript", "image/jpegx"])(
+    "502s with JSON instead of re-serving an upstream %j answer",
+    async (contentType) => {
+      fetchMock.mockResolvedValueOnce(
+        new Response("<script>alert(1)</script>", { headers: { "content-type": contentType } })
+      );
+
+      const res = await call("https://example.com");
+
+      expect(res.status).toBe(502);
+      expect(res.headers.get("content-type")).toMatch(/^application\/json/);
+      expect(await res.json()).toEqual({ ok: false, error: "Preview unavailable" });
+    }
+  );
+
+  it("502s when upstream sends no content type at all", async () => {
+    fetchMock.mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+    expect((await call("https://example.com")).status).toBe(502);
+  });
+
+  it.each(["image/jpeg", "image/png; charset=binary", "image/webp", "image/gif", "image/avif"])(
+    "serves an upstream %s screenshot",
+    async (contentType) => {
+      fetchMock.mockResolvedValueOnce(new Response(new Uint8Array([1, 2, 3]), { headers: { "content-type": contentType } }));
+
+      const res = await call("https://example.com");
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe(contentType);
+    }
+  );
+
   it("returns 429 when the rate limit trips", async () => {
     consumeFixedWindowRateLimit.mockResolvedValueOnce({ limited: true, count: 61, resetAt: "" });
 

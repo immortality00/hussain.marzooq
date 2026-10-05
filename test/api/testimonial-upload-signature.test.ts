@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const SESSION = "0123456789abcdef0123";
-const { verifyUploadSession, claimUploadSlot, consumeFixedWindowRateLimit } = vi.hoisted(() => ({
+const { verifyUploadSession, claimUploadSlot, consumeFixedWindowRateLimit, markSessionFolderUsed } = vi.hoisted(() => ({
   verifyUploadSession: vi.fn(),
   claimUploadSlot: vi.fn(async () => true),
   consumeFixedWindowRateLimit: vi.fn(async () => ({ limited: false, count: 1, resetAt: "" })),
+  markSessionFolderUsed: vi.fn(async () => undefined),
 }));
 
 vi.mock("@/lib/server/db", () => ({ getDb: async () => ({}) }));
@@ -12,7 +13,11 @@ vi.mock("@/lib/server/request-guards", () => ({ consumeFixedWindowRateLimit }));
 vi.mock("@/lib/server/cloudinary", () => ({
   isCloudinaryConfigured: () => true,
   getCloudinaryPublicConfig: () => ({ cloudName: "demo", apiKey: "key" }),
-  signCloudinaryParams: (params: Record<string, unknown>) => `sig:${params.public_id}`,
+  signCloudinaryParams: (params: Record<string, unknown>) => `sig:${JSON.stringify(params)}`,
+}));
+vi.mock("@/lib/server/upload-ledger", async (original) => ({
+  ...(await original<typeof import("@/lib/server/upload-ledger")>()),
+  markSessionFolderUsed,
 }));
 vi.mock("@/lib/server/testimonial-upload-sessions", async (original) => ({
   ...(await original<typeof import("@/lib/server/testimonial-upload-sessions")>()),
@@ -21,7 +26,7 @@ vi.mock("@/lib/server/testimonial-upload-sessions", async (original) => ({
 }));
 
 import { POST } from "@/app/api/testimonials/upload-signature/route";
-import { sessionPhotosFolder } from "@/lib/server/testimonial-upload-sessions";
+import { sessionFolder, sessionPhotosFolder } from "@/lib/server/testimonial-upload-sessions";
 
 function call(folder: string) {
   return POST(
@@ -43,8 +48,27 @@ describe("POST /api/testimonials/upload-signature", () => {
 
     expect(res.status).toBe(200);
     expect(body.publicId).toMatch(new RegExp(`^${sessionPhotosFolder(SESSION)}/[a-f0-9]{32}$`));
-    expect(body.signature).toBe(`sig:${body.publicId}`);
     expect(body).toMatchObject({ cloudName: "demo", apiKey: "key" });
+  });
+
+  it("signs the allowed photo formats along with the id, and returns them for the upload form", async () => {
+    verifyUploadSession.mockResolvedValue({ sessionId: SESSION, status: "pending" });
+
+    const body = await (await call(sessionPhotosFolder(SESSION))).json();
+
+    expect(body.allowedFormats).toBe("jpg,jpeg,png,webp,gif,heic,heif,avif");
+    expect(body.allowedFormats).not.toContain("svg");
+    expect(body.signature).toBe(
+      `sig:${JSON.stringify({ allowed_formats: body.allowedFormats, public_id: body.publicId, timestamp: body.timestamp })}`
+    );
+  });
+
+  it("marks the session's folder as used once an upload is signed", async () => {
+    verifyUploadSession.mockResolvedValue({ sessionId: SESSION, status: "pending" });
+
+    await call(sessionPhotosFolder(SESSION));
+
+    expect(markSessionFolderUsed).toHaveBeenCalledWith(expect.anything(), sessionFolder(SESSION));
   });
 
   it("refuses a folder outside the session without spending an upload slot", async () => {
@@ -52,6 +76,7 @@ describe("POST /api/testimonials/upload-signature", () => {
 
     expect((await call("hm_visuals/media")).status).toBe(400);
     expect(claimUploadSlot).not.toHaveBeenCalled();
+    expect(markSessionFolderUsed).not.toHaveBeenCalled();
   });
 
   it("refuses when there is no valid session", async () => {
@@ -65,5 +90,6 @@ describe("POST /api/testimonials/upload-signature", () => {
     claimUploadSlot.mockResolvedValueOnce(false);
 
     expect((await call(sessionPhotosFolder(SESSION))).status).toBe(403);
+    expect(markSessionFolderUsed).not.toHaveBeenCalled();
   });
 });

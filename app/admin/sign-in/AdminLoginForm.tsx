@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent } from "react";
+import { useState, useSyncExternalStore, type FormEvent, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { adminCheckboxClasses, adminInputClasses } from "@/components/admin/admin-input";
@@ -62,9 +62,7 @@ export function AdminLoginForm() {
         required
       />
 
-      <Suspense fallback={null}>
-        <NextPathField />
-      </Suspense>
+      <NextPathField />
 
       <label className="flex items-center gap-2 text-sm text-muted-foreground">
         <input

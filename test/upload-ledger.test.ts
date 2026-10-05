@@ -27,6 +27,7 @@ vi.mock("@/lib/server/cloudinary-assets", async () => {
 import {
   UPLOAD_LEASE_MS,
   discardPendingUpload,
+  markSessionFolderUsed,
   newUploadPublicId,
   registerAssetUpload,
   registerSessionFolder,
@@ -274,6 +275,48 @@ describe("sweepExpiredUploads", () => {
     await sweepExpiredUploads(db, NOW);
     expect(folderTree).toHaveBeenCalledWith(folder, ["hm_visuals/testimonials"]);
     expect(ledger().size).toBe(0);
+  });
+
+  test("a review form that never got an upload signature is released without calling Cloudinary", async () => {
+    const folder = "hm_visuals/testimonials/s4";
+    const { db, ledger } = makeDb();
+    await registerSessionFolder(db, folder, new Date(PAST.getTime() - 3 * 60 * 60 * 1000));
+    expect(ledger().get(`folder:${folder}`)!.unused).toBe(true);
+
+    expect(await sweepExpiredUploads(db, NOW)).toEqual({ settled: 1, failed: 0 });
+    expect(folderTree).not.toHaveBeenCalled();
+    expect(ledger().size).toBe(0);
+  });
+
+  test("once an upload is signed for the session, its folder is cleaned up as before", async () => {
+    const folder = "hm_visuals/testimonials/s5";
+    const { db, ledger } = makeDb();
+    await registerSessionFolder(db, folder, new Date(PAST.getTime() - 3 * 60 * 60 * 1000));
+    await markSessionFolderUsed(db, folder);
+    expect(ledger().get(`folder:${folder}`)!.unused).toBeUndefined();
+
+    await sweepExpiredUploads(db, NOW);
+    expect(folderTree).toHaveBeenCalledWith(folder, ["hm_visuals/testimonials"]);
+    expect(ledger().size).toBe(0);
+  });
+
+  test("gives up after the fifth failure: logged, kept as a record, never picked up again", async () => {
+    const { db, ledger } = makeDb({ upload_ledger: [{ _id: ID, kind: "asset", expiresAt: PAST, attempts: 4 }] });
+    destroy.mockRejectedValue(new Error("cloudinary down"));
+    const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    expect(await sweepExpiredUploads(db, NOW)).toEqual({ settled: 0, failed: 1 });
+    const entry = ledger().get(ID)!;
+    expect(entry.attempts).toBe(5);
+    expect(entry.gaveUpAt).toEqual(NOW);
+    expect(entry.lockedUntil).toBeUndefined();
+    expect(log).toHaveBeenCalledWith(`[upload-ledger] giving up ${ID}`);
+
+    destroy.mockClear();
+    const later = new Date(NOW.getTime() + 48 * 60 * 60 * 1000);
+    expect(await sweepExpiredUploads(db, later)).toEqual({ settled: 0, failed: 0 });
+    expect(destroy).not.toHaveBeenCalled();
+    log.mockRestore();
   });
 
   test("a folder that fails to delete is retried", async () => {

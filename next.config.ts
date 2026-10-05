@@ -65,6 +65,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  poweredByHeader: false,
   env: {
     NEXT_PUBLIC_ADMIN_BUILD: process.env.DEPLOY_ID ?? process.env.COMMIT_REF ?? "dev",
   },

@@ -2,6 +2,7 @@ import { ObjectId } from "mongodb";
 import { cookies } from "next/headers";
 import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { getClientAddress } from "@/app/api/_lib/public-form-security";
+import { isProxiedMediaType } from "@/app/api/_lib/proxy-content-type";
 import { getDb } from "@/lib/server/db";
 import {
   isPrivateGalleryUnavailable,
@@ -96,7 +97,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ mediaId: string
     cache: "no-store",
   });
 
-  if (!upstream.ok && upstream.status !== 206) {
+  if ((!upstream.ok && upstream.status !== 206) || !isProxiedMediaType(upstream.headers.get("content-type"))) {
     return new Response("Asset unavailable", { status: 502 });
   }
 

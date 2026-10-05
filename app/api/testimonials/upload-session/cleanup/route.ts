@@ -44,10 +44,8 @@ export async function POST(request: Request) {
   const failedResult = cleanupResults.find((result) => !result.ok);
 
   if (failedResult) {
-    return noStoreJson(
-      { ok: false, error: failedResult.error ?? "Cloudinary cleanup failed." },
-      { status: 502 },
-    );
+    console.error("[review-upload-cleanup] failed", failedResult.target, failedResult.error);
+    return noStoreJson({ ok: false, error: "Could not remove the uploaded photos." }, { status: 502 });
   }
 
   await deleteUploadSession(db, session.sessionId);

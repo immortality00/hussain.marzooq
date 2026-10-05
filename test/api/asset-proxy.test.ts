@@ -297,6 +297,32 @@ describe("GET /api/media/asset/[mediaId] — delivery", () => {
     expect(res.status).toBe(502);
   });
 
+  test.each(["text/html; charset=utf-8", "image/svg+xml", "application/javascript", "application/pdf", ""])(
+    "502s instead of re-serving an upstream %j answer from our origin",
+    async (contentType) => {
+      const headers = contentType ? { "content-type": contentType } : undefined;
+      vi.stubGlobal("fetch", vi.fn(async () => new Response("<script>alert(1)</script>", { status: 200, headers })));
+
+      const res = await GET(request(`/api/media/asset/${MEDIA_ID}`), ctx(MEDIA_ID));
+
+      expect(res.status).toBe(502);
+      expect(res.headers.get("content-type")).toMatch(/^text\/plain/);
+      expect(await res.text()).toBe("Asset unavailable");
+    }
+  );
+
+  test.each(["image/jpeg", "image/webp", "image/avif", "video/mp4", "video/quicktime"])(
+    "serves an upstream %s answer",
+    async (contentType) => {
+      vi.stubGlobal("fetch", vi.fn(async () => new Response("bytes", { status: 200, headers: { "content-type": contentType } })));
+
+      const res = await GET(request(`/api/media/asset/${MEDIA_ID}`), ctx(MEDIA_ID));
+
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-type")).toBe(contentType);
+    }
+  );
+
   test("404s media that is missing or has no public id", async () => {
     mediaFindOne.mockResolvedValueOnce(null);
     expect((await GET(request(`/api/media/asset/${MEDIA_ID}`), ctx(MEDIA_ID))).status).toBe(404);

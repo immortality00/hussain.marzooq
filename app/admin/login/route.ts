@@ -2,6 +2,7 @@ import { NextResponse, after } from "next/server";
 import { createAdminSessionCookies, isAdminPasswordConfigured, verifyAdminPassword } from "@/lib/auth/admin";
 import { safeAdminNextPath } from "@/lib/auth/admin-next-path";
 import type { LoginRefusal } from "@/lib/auth/admin-login";
+import { fromAnotherSite } from "@/lib/auth/same-site";
 import { clearFixedWindowRateLimit, consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { getClientAddress } from "@/app/api/_lib/public-form-security";
 
@@ -11,21 +12,6 @@ const NO_STORE = { "Cache-Control": "no-store" };
 
 function refuse(error: LoginRefusal, status: number) {
   return NextResponse.json({ ok: false, error }, { status, headers: NO_STORE });
-}
-
-function requestHost(req: Request) {
-  const forwarded = req.headers.get("x-forwarded-host")?.split(",")[0]?.trim();
-  return forwarded || req.headers.get("host");
-}
-
-function fromAnotherSite(req: Request) {
-  const origin = req.headers.get("origin");
-  if (!origin) return false;
-  try {
-    return origin === "null" || new URL(origin).host !== requestHost(req);
-  } catch {
-    return true;
-  }
 }
 
 export async function POST(req: Request) {
