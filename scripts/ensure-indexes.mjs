@@ -164,8 +164,6 @@ async function ensureIndexes() {
   await createIndex(db, "inquiries", { category: 1, createdAt: -1 });
   await createIndex(db, "inquiries", { email: 1, createdAt: -1 });
 
-  await createIndex(db, "site_settings", { key: 1 }, { unique: true });
-
   await createIndex(db, "push_subscriptions", { endpoint: 1 }, { unique: true });
 
   await createIndex(db, "request_guards", { expiresAt: 1 }, { expireAfterSeconds: 0 });

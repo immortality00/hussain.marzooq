@@ -1,10 +1,10 @@
 import type { MediaItem } from "@/components/media/types";
+import { textureTransform } from "@/lib/cloudinary-delivery";
+import { TEXTURE_WIDTH, TEXTURE_WIDTH_SMALL } from "@/lib/image-sizes";
 
 /** Texture budget. Phones get fewer, smaller textures — same scene, less GPU/bandwidth. */
 export const CYLINDER_MAX_TEXTURES = 30;
 export const CYLINDER_MAX_TEXTURES_SMALL = 16;
-const TEXTURE_WIDTH = 600;
-const TEXTURE_WIDTH_SMALL = 420;
 const SMALL_SCREEN_PX = 768;
 
 function isSmallScreen(): boolean {
@@ -27,7 +27,7 @@ export function maxTextures(): number {
 export function cloudinaryTextureUrl(url: string, width = textureWidth()): string {
   if (!url.includes("/upload/")) return url;
   if (/\/upload\/[^/]*[whqf]_/.test(url)) return url; // already transformed
-  return url.replace("/upload/", `/upload/w_${width},c_limit,q_auto,f_auto/`);
+  return url.replace("/upload/", `/upload/${textureTransform(width)}/`);
 }
 
 /** Image items with a usable source, capped for GPU/memory. Unique — no repeats. */

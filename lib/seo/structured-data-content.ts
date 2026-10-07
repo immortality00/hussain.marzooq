@@ -1,3 +1,4 @@
+import { VIDEO_FRAME_TRANSFORM } from "@/lib/cloudinary-delivery";
 import { absoluteUrl } from "@/lib/seo/site-url";
 import { DEFAULT_SEARCH_PROFILE, type PublishedProfile } from "@/lib/seo/search-profile";
 import { compact, personRef, type JsonLdNode } from "@/lib/seo/structured-data";
@@ -63,7 +64,7 @@ export function serviceNode(
 
 export function cloudinaryVideoFrameUrl(url: string): string {
   const match = url.match(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/video\/upload\/)(.+)\.[a-z0-9]+$/i);
-  return match ? `${match[1]}so_0/${match[2]}.jpg` : "";
+  return match ? `${match[1]}${VIDEO_FRAME_TRANSFORM}/${match[2]}.jpg` : "";
 }
 
 export function videoObjectNode(video: {

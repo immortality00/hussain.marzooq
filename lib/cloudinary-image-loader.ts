@@ -13,7 +13,7 @@
  * (/api/media/asset/...), which is same-origin and takes its width from a `w` query param.
  */
 
-import { heightCapForWidth } from "@/lib/cloudinary-limits";
+import { imageTransform } from "@/lib/cloudinary-delivery";
 import { isMediaAssetPath } from "@/lib/media-asset-path";
 
 type LoaderArgs = {
@@ -30,7 +30,7 @@ function hasTransform(src: string): boolean {
   return /\/upload\/[^/]*(?:^|,)?[whqf]_/.test(src);
 }
 
-export default function cloudinaryImageLoader({ src, width, quality }: LoaderArgs): string {
+export default function cloudinaryImageLoader({ src, width }: LoaderArgs): string {
   if (isMediaAssetPath(src)) {
     return `${src}${src.includes("?") ? "&" : "?"}w=${width}`;
   }
@@ -38,9 +38,5 @@ export default function cloudinaryImageLoader({ src, width, quality }: LoaderArg
   if (!src.includes(CLOUDINARY_HOST) || !src.includes(UPLOAD_SEGMENT)) return src;
   if (hasTransform(src)) return src;
 
-  // c_limit never upscales past the original. q_auto/f_auto let Cloudinary pick
-  // the best quality/format (AVIF/WebP) per browser. The height bound keeps a tall
-  // original under Cloudinary's 25 MP output cap — see lib/cloudinary-limits.ts.
-  const transform = `w_${width},h_${heightCapForWidth(width)},c_limit,q_${quality ?? "auto"},f_auto`;
-  return src.replace(UPLOAD_SEGMENT, `${UPLOAD_SEGMENT}${transform}/`);
+  return src.replace(UPLOAD_SEGMENT, `${UPLOAD_SEGMENT}${imageTransform(width)}/`);
 }

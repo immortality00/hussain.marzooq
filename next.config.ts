@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { IMAGE_DEVICE_SIZES, IMAGE_SIZES } from "./lib/image-sizes";
 
 const isDev = process.env.NODE_ENV !== "production";
 
@@ -74,6 +75,8 @@ const nextConfig: NextConfig = {
     // See lib/cloudinary-image-loader.ts for why.
     loader: "custom",
     loaderFile: "./lib/cloudinary-image-loader.ts",
+    deviceSizes: IMAGE_DEVICE_SIZES,
+    imageSizes: IMAGE_SIZES,
     remotePatterns: [
       {
         protocol: "https",

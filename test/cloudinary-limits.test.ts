@@ -36,8 +36,10 @@ describe("cloudinaryImageLoader", () => {
     );
   });
 
-  it("honours an explicit quality", () => {
-    expect(cloudinaryImageLoader({ src: SRC, width: 640, quality: 60 })).toContain("q_60");
+  it("keeps q_auto when a quality is passed, so the URL stays on the strict allow list", () => {
+    const url = cloudinaryImageLoader({ src: SRC, width: 640, quality: 60 });
+    expect(url).toContain("q_auto");
+    expect(url).not.toContain("q_60");
   });
 
   it("leaves a src that already carries a transform alone", () => {

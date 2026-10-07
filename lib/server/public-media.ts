@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { getDb } from "@/lib/server/db";
 import cloudinaryImageLoader from "@/lib/cloudinary-image-loader";
+import { TRANSITION_IMAGE_WIDTH } from "@/lib/image-sizes";
 import { PUBLIC_MEDIA_PAGE_SIZE } from "@/lib/media-cursor";
 import {
   buildPublicMediaQuery,
@@ -60,7 +61,7 @@ export const getTransitionImages = unstable_cache(
       return items
         .map((item) => item.secureUrl)
         .filter((url): url is string => Boolean(url))
-        .map((url) => cloudinaryImageLoader({ src: url, width: 400 }));
+        .map((url) => cloudinaryImageLoader({ src: url, width: TRANSITION_IMAGE_WIDTH }));
     } catch {
       // Root layout depends on this — never let a failed query break every page.
       return [];
