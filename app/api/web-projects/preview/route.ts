@@ -4,6 +4,7 @@ import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { isConfiguredProjectUrl, toProjectUrl } from "@/lib/web-projects";
 import { getPageSections } from "@/lib/server/page-sections";
 import { isProxiedImageType } from "@/app/api/_lib/proxy-content-type";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +14,7 @@ const PREVIEW_WIDTH = 1200;
 const PREVIEW_HEIGHT = 900;
 const UPSTREAM_TIMEOUT_MS = 15_000;
 
-export async function GET(req: Request) {
+async function handleGet(req: Request) {
   const target = new URL(req.url).searchParams.get("url") ?? "";
   const normalized = toProjectUrl(target);
   if (!normalized) {
@@ -62,3 +63,5 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: false, error: "Preview unavailable" }, { status: 502 });
   }
 }
+
+export const GET = withRouteErrors(handleGet);

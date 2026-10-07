@@ -8,6 +8,7 @@ import {
   buildPublicMediaQuery,
   toPublicMediaItem,
 } from "@/lib/server/media-serializers";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -103,7 +104,7 @@ function buildCursorCondition(cursor: Cursor | null) {
   };
 }
 
-export async function GET(req: Request) {
+async function handleGet(req: Request) {
   const rateLimit = await consumeFixedWindowRateLimit({
     bucket: "media-search",
     key: getClientAddress(req),
@@ -159,3 +160,5 @@ export async function GET(req: Request) {
 
   return noStoreJson({ items, nextCursor });
 }
+
+export const GET = withRouteErrors(handleGet);

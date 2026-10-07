@@ -11,13 +11,14 @@ import {
   sessionFolder,
   verifyUploadSession,
 } from "@/lib/server/testimonial-upload-sessions";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
 const DISCARD_RATE_LIMIT_WINDOW_MS = 60_000;
 const DISCARD_RATE_LIMIT_MAX = 30;
 
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const rateLimit = await consumeFixedWindowRateLimit({
     bucket: "public-testimonials-upload-discard",
     key: getClientAddress(request),
@@ -50,3 +51,5 @@ export async function POST(request: Request) {
   const deleted = await deleteManagedCloudinaryAsset({ url }, [folder]);
   return noStoreJson({ ok: deleted });
 }
+
+export const POST = withRouteErrors(handlePost);

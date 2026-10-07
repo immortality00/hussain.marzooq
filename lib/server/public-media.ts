@@ -8,6 +8,7 @@ import {
   toPublicMediaItem,
   type PublicMediaItem,
 } from "@/lib/server/media-serializers";
+import { buildFallback } from "@/lib/server/public-read";
 
 const PUBLIC_MEDIA_FIELDS = {
   type: 1,
@@ -54,22 +55,25 @@ export const TRANSITION_IMAGES_TAG = "transition-images";
 // A single, consistent gallery pool for the page transition — recent public
 // photos, sized down for the grid. Used on every page so the transition reads
 // the same everywhere instead of depending on the current page's own images.
-export const getTransitionImages = unstable_cache(
+const getCachedTransitionImages = unstable_cache(
   async (): Promise<string[]> => {
-    try {
-      const items = await listPublicMedia({ type: "image", limit: 24 });
-      return items
-        .map((item) => item.secureUrl)
-        .filter((url): url is string => Boolean(url))
-        .map((url) => cloudinaryImageLoader({ src: url, width: TRANSITION_IMAGE_WIDTH }));
-    } catch {
-      // Root layout depends on this — never let a failed query break every page.
-      return [];
-    }
+    const items = await listPublicMedia({ type: "image", limit: 24 });
+    return items
+      .map((item) => item.secureUrl)
+      .filter((url): url is string => Boolean(url))
+      .map((url) => cloudinaryImageLoader({ src: url, width: TRANSITION_IMAGE_WIDTH }));
   },
   ["transition-images"],
   { revalidate: 300, tags: [TRANSITION_IMAGES_TAG] },
 );
+
+export async function getTransitionImages(): Promise<string[]> {
+  try {
+    return await getCachedTransitionImages();
+  } catch {
+    return [];
+  }
+}
 
 export async function getPhotographyItems(): Promise<PublicMediaItem[]> {
   try {
@@ -78,8 +82,8 @@ export async function getPhotographyItems(): Promise<PublicMediaItem[]> {
       category: "photography",
       limit: PUBLIC_MEDIA_PAGE_SIZE,
     });
-  } catch {
-    return [];
+  } catch (error) {
+    return buildFallback(error, []);
   }
 }
 
@@ -100,8 +104,8 @@ export async function getVideographyItems(): Promise<PublicMediaItem[]> {
       .toArray();
 
     return docs.map((doc) => toPublicMediaItem(doc as Record<string, unknown>));
-  } catch {
-    return [];
+  } catch (error) {
+    return buildFallback(error, []);
   }
 }
 
@@ -145,8 +149,8 @@ export async function getMediaByTag(args: {
 }): Promise<PublicMediaItem[]> {
   try {
     return await getMediaByTagImpl(args);
-  } catch {
-    return [];
+  } catch (error) {
+    return buildFallback(error, []);
   }
 }
 
@@ -214,8 +218,8 @@ async function getExhibitionCitiesImpl(): Promise<ExhibitionCity[]> {
 export async function getExhibitionCities(): Promise<ExhibitionCity[]> {
   try {
     return await getExhibitionCitiesImpl();
-  } catch {
-    return [];
+  } catch (error) {
+    return buildFallback(error, []);
   }
 }
 
@@ -236,7 +240,7 @@ export async function getShowreelItem(): Promise<PublicMediaItem | null> {
       .next();
 
     return doc ? toPublicMediaItem(doc as Record<string, unknown>) : null;
-  } catch {
-    return null;
+  } catch (error) {
+    return buildFallback(error, null);
   }
 }

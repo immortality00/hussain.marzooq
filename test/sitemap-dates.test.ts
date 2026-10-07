@@ -107,9 +107,13 @@ describe("detail pages", () => {
 });
 
 describe("getSitemapSources", () => {
-  test("falls back to empty sources when the database is unreachable", async () => {
-    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+  test("throws at request time so the last good sitemap is kept", async () => {
+    await expect(getSitemapSources()).rejects.toThrow("unreachable in these tests");
+  });
+
+  test("falls back to empty sources during the build", async () => {
+    vi.stubEnv("NEXT_PHASE", "phase-production-build");
     await expect(getSitemapSources()).resolves.toBe(EMPTY_SITEMAP_SOURCES);
-    error.mockRestore();
+    vi.unstubAllEnvs();
   });
 });

@@ -2,6 +2,7 @@ import { cache } from "react";
 import { getDb } from "@/lib/server/db";
 import { EMPTY_SECTION_IMAGE, isSectionImage } from "@/lib/page-sections-shared";
 import type { SectionImage } from "@/lib/page-sections-shared";
+import { buildFallback } from "@/lib/server/public-read";
 
 export type PageSettings = {
   slug: string;
@@ -33,8 +34,8 @@ export async function getPageSettings(slug: string): Promise<PageSettings> {
   try {
     const db = await getDb();
     return pageSettingsOf(slug, await db.collection("page_settings").findOne({ slug }));
-  } catch {
-    return defaultPageSettings(slug);
+  } catch (error) {
+    return buildFallback(error, defaultPageSettings(slug));
   }
 }
 
@@ -46,8 +47,8 @@ export async function getBlogActive(): Promise<boolean> {
     const db = await getDb();
     const doc = await db.collection("page_settings").findOne({ slug: "blog" });
     return typeof doc?.isActive === "boolean" ? doc.isActive : true;
-  } catch {
-    return true;
+  } catch (error) {
+    return buildFallback(error, true);
   }
 }
 
@@ -63,7 +64,15 @@ export async function readAllPageSettings(): Promise<PageSettings[]> {
 export const getAllPageSettings = cache(async (): Promise<PageSettings[]> => {
   try {
     return await readAllPageSettings();
+  } catch (error) {
+    return buildFallback(error, SETTINGS_SLUGS.map(defaultPageSettings));
+  }
+});
+
+export async function getFooterPageSettings(): Promise<PageSettings[]> {
+  try {
+    return await getAllPageSettings();
   } catch {
     return SETTINGS_SLUGS.map(defaultPageSettings);
   }
-});
+}

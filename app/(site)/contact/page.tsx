@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { ContactForm } from "@/components/contact/ContactForm";
+import { ContactFromUrl, ContactSuccess } from "@/components/contact/ContactFromUrl";
 import { getActiveServicesForContact } from "@/lib/server/public-services";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("contact");
@@ -17,26 +19,7 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-type SP = {
-  success?: string;
-  service?: string;
-  category?: string;
-  context?: string;
-};
-
-export default async function ContactPage({
-  searchParams,
-}: {
-  searchParams: Promise<SP>;
-}) {
-  const sp = await searchParams;
-
-  const success = sp?.success === "1";
-  const initialService = typeof sp?.service === "string" ? sp.service : "";
-  const initialCategory = typeof sp?.category === "string" ? sp.category : "";
-  const initialContextMessage =
-    typeof sp?.context === "string" ? sp.context : "";
-
+export default async function ContactPage() {
   const [services, seo] = await Promise.all([
     getActiveServicesForContact(),
     getPageSeo("contact"),
@@ -50,19 +33,14 @@ export default async function ContactPage({
           description={seo.headerDescription}
         />
 
-        {success ? (
-          <div className="mt-8 rounded-2xl border bg-muted p-4 text-sm">
-            ✅ Sent successfully. I&apos;ll get back to you soon.
-          </div>
-        ) : null}
+        <Suspense fallback={null}>
+          <ContactSuccess />
+        </Suspense>
 
         <div className="mt-10">
-          <ContactForm
-            services={services}
-            initialService={initialService}
-            initialCategory={initialCategory}
-            initialContextMessage={initialContextMessage}
-          />
+          <Suspense fallback={<ContactForm services={services} />}>
+            <ContactFromUrl services={services} />
+          </Suspense>
         </div>
       </section>
     </main>

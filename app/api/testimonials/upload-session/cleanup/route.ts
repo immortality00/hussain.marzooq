@@ -10,13 +10,14 @@ import {
   sessionFolder,
   verifyUploadSession,
 } from "@/lib/server/testimonial-upload-sessions";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
 const CLEANUP_RATE_LIMIT_WINDOW_MS = 60_000;
 const CLEANUP_RATE_LIMIT_MAX = 12;
 
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const clientKey = getClientAddress(request);
 
   const rateLimit = await consumeFixedWindowRateLimit({
@@ -52,3 +53,5 @@ export async function POST(request: Request) {
 
   return noStoreJson({ ok: true });
 }
+
+export const POST = withRouteErrors(handlePost);

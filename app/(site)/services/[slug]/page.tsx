@@ -3,6 +3,7 @@ import Link from "next/link";
 import SmartImage from "@/components/shared/SmartImage";
 import { notFound } from "next/navigation";
 import { getDb } from "@/lib/server/db";
+import { buildFallback } from "@/lib/server/public-read";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { workLinkForCategory } from "@/lib/server/public-services";
@@ -31,8 +32,8 @@ async function getPublicService(slug: string): Promise<PublicService | null> {
       description: typeof doc.description === "string" ? doc.description : "",
       imageUrl: typeof doc.imageUrl === "string" ? doc.imageUrl : "",
     };
-  } catch {
-    return null;
+  } catch (error) {
+    return buildFallback(error, null);
   }
 }
 

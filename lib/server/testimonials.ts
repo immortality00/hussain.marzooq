@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/server/db";
 import { asFiniteNumber } from "@/app/api/_lib/common";
+import { buildFallback } from "@/lib/server/public-read";
 
 export type PublicTestimonial = {
   id: string;
@@ -87,7 +88,7 @@ async function getPublicTestimonialsImpl(limit: number): Promise<PublicTestimoni
 export async function getPublicTestimonials(limit = 200): Promise<PublicTestimonialsData> {
   try {
     return await getPublicTestimonialsImpl(limit);
-  } catch {
-    return { items: [], totalReviews: 0, averageRating: 0 };
+  } catch (error) {
+    return buildFallback(error, { items: [], totalReviews: 0, averageRating: 0 });
   }
 }

@@ -8,13 +8,14 @@ import {
   sessionFolder,
 } from "@/lib/server/testimonial-upload-sessions";
 import { registerSessionFolder, scheduleUploadSweep } from "@/lib/server/upload-ledger";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 12;
 
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const clientKey = getClientAddress(request);
 
   const rateLimit = await consumeFixedWindowRateLimit({
@@ -50,3 +51,5 @@ export async function POST(request: Request) {
 
   return response;
 }
+
+export const POST = withRouteErrors(handlePost);

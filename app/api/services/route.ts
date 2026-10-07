@@ -110,6 +110,7 @@ export async function POST(req: Request) {
   const r = await db.collection("services").insertOne(doc);
 
   revalidatePath("/services", "layout");
+  revalidatePath("/contact");
   revalidatePath("/");
 
   return noStoreJson({ ok: true, id: r.insertedId.toString(), item: adminServiceOf({ ...doc, _id: r.insertedId }, 0) });

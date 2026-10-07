@@ -1,11 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { connect, close } = vi.hoisted(() => ({ connect: vi.fn(), close: vi.fn(async () => undefined) }));
+const { connect, close, options } = vi.hoisted(() => ({
+  connect: vi.fn(),
+  close: vi.fn(async () => undefined),
+  options: [] as unknown[],
+}));
 
 vi.mock("mongodb", () => ({
   MongoClient: class {
     connect = connect;
     close = close;
+    constructor(_uri: string, opts: unknown) {
+      options.push(opts);
+    }
   },
 }));
 
@@ -22,7 +29,9 @@ beforeEach(() => {
   vi.spyOn(Date, "now").mockImplementation(() => now);
   globalThis._mongoClientPromise = undefined;
   globalThis._mongoRetryAt = undefined;
+  options.length = 0;
   vi.spyOn(console, "error").mockImplementation(() => {});
+  vi.spyOn(console, "info").mockImplementation(() => {});
 });
 
 afterEach(() => {
@@ -39,16 +48,16 @@ describe("the database connection", () => {
     await settle();
 
     expect(close).toHaveBeenCalledTimes(1);
-    expect(globalThis._mongoRetryAt).toBe(now + 30_000);
+    expect(globalThis._mongoRetryAt).toBe(now + 10_000);
   });
 
-  it("answers at once from the failure for 30 seconds, then connects again", async () => {
+  it("answers at once from the failure for 10 seconds, then connects again", async () => {
     const client = { db: vi.fn() };
     connect.mockImplementationOnce(timedOut).mockResolvedValueOnce(client);
     const { mongoClient } = await import("@/lib/mongodb");
     await settle();
 
-    now += 29_000;
+    now += 9_000;
     await expect(mongoClient()).rejects.toThrow("Server selection timed out");
     expect(connect).toHaveBeenCalledTimes(1);
 
@@ -73,5 +82,14 @@ describe("the database connection", () => {
     const { mongoClient } = await import("@/lib/mongodb");
     await Promise.all([mongoClient(), mongoClient(), mongoClient()]);
     expect(connect).toHaveBeenCalledTimes(1);
+  });
+
+  it("gives up selecting a server after 10 seconds and logs how long a connection took", async () => {
+    connect.mockResolvedValue({ db: vi.fn() });
+    const { mongoClient } = await import("@/lib/mongodb");
+    await mongoClient();
+    await settle();
+    expect(options[0]).toMatchObject({ serverSelectionTimeoutMS: 10_000 });
+    expect(console.info).toHaveBeenCalledWith(expect.stringMatching(/^\[mongodb\] connected in \d+ ms$/));
   });
 });

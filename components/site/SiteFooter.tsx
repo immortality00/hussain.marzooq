@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getAllPageSettings } from "@/lib/server/page-settings";
+import { getFooterPageSettings } from "@/lib/server/page-settings";
 import { DISCIPLINES } from "@/lib/disciplines";
 
 const ALWAYS_ON_PRIMARY = [
@@ -10,7 +10,7 @@ const ALWAYS_ON_PRIMARY = [
 const PRIMARY_DISCIPLINE_SLUGS = new Set(["photography", "videography"]);
 
 export async function SiteFooter() {
-  const pageSettings = await getAllPageSettings();
+  const pageSettings = await getFooterPageSettings();
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
   const secondaryAlwaysOn = [

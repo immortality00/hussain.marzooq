@@ -10,13 +10,14 @@ import {
   normalizeAssetResourceType,
   normalizeDeliveryType,
 } from "@/lib/server/cloudinary-private";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
 const ARCHIVE_RATE_LIMIT_MAX = 10;
 const ARCHIVE_RATE_LIMIT_WINDOW_MS = 60_000;
 
-export async function GET(req: Request, ctx: { params: Promise<{ slug: string }> }) {
+async function handleGet(req: Request, ctx: { params: Promise<{ slug: string }> }) {
   const rateLimit = await consumeFixedWindowRateLimit({
     bucket: "gallery-zip",
     key: getClientAddress(req),
@@ -59,3 +60,5 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string }>
 
   return Response.redirect(archiveUrl, 302);
 }
+
+export const GET = withRouteErrors(handleGet);

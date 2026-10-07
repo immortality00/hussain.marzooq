@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
-import Link from "next/link";
+import { Suspense } from "react";
 import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel";
 import { ServiceCard } from "@/components/services/ServiceCard";
 import {
@@ -10,8 +10,9 @@ import {
 } from "@/lib/server/public-services";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getAllPageSettings } from "@/lib/server/page-settings";
+import { ServicesFilter, ServicesView } from "@/components/services/ServicesFilter";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 export async function generateMetadata(): Promise<Metadata> {
   const seo = await getPageSeo("services");
@@ -23,15 +24,7 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default async function ServicesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ category?: string }>;
-}) {
-  const sp = await searchParams;
-  const selectedCategory =
-    typeof sp.category === "string" ? sp.category : "all";
-
+export default async function ServicesPage() {
   const [{ services: servicesAll, categories }, pageSettings, seo] = await Promise.all([
     getPublicServicesData(),
     getAllPageSettings(),
@@ -44,17 +37,40 @@ export default async function ServicesPage({
     return activeSet.has(discipline) || !["photography", "videography", "nft", "dancing", "web-development"].includes(discipline);
   });
 
-  const services =
-    selectedCategory === "all"
-      ? activeServices
-      : activeServices.filter(
-          (s) => s.category.toLowerCase() === selectedCategory.toLowerCase(),
-        );
-
   const tabs = [
     { slug: "all", name: "All" },
     ...categories.map((c) => ({ slug: c.slug, name: c.name })),
   ];
+
+  const view = {
+    tabs,
+    cards: activeServices.map((s, index) => ({
+      id: s.id,
+      category: s.category,
+      node: <ServiceCard service={s} priority={index === 0} />,
+    })),
+    empty: (
+      <PortfolioFallbackPanel
+        title="Creative services shaped around visual direction and clean delivery."
+        text="Every project starts with the right format, mood, and production approach."
+        items={[
+          {
+            title: "Photography",
+            text: "Portraits, fashion, weddings, events, and image-led creative direction.",
+          },
+          {
+            title: "Film",
+            text: "Dance, events, fashion, weddings, festivals, and cinematic stories.",
+          },
+          {
+            title: "Digital",
+            text: "Web systems, NFT presentation, portfolio structure, and custom creative tools.",
+          },
+        ]}
+        links={[{ href: "/contact", label: "Start a project", primary: true }]}
+      />
+    ),
+  };
 
   return (
     <main className="section-shell py-12 sm:py-16">
@@ -64,57 +80,9 @@ export default async function ServicesPage({
         className="max-w-3xl"
       />
 
-      <div className="mt-8 flex flex-wrap gap-2">
-        {tabs.map((t) => {
-          const active = t.slug === selectedCategory;
-          return (
-            <Link
-              key={t.slug}
-              href={
-                t.slug === "all"
-                  ? "/services"
-                  : `/services?category=${encodeURIComponent(t.slug)}`
-              }
-              className={[
-                "rounded-full border px-4 py-2 text-xs transition-colors",
-                active ? "bg-foreground text-background" : "hover:bg-accent",
-              ].join(" ")}
-            >
-              {t.name}
-            </Link>
-          );
-        })}
-      </div>
-
-      {services.length === 0 ? (
-        <PortfolioFallbackPanel
-          title="Creative services shaped around visual direction and clean delivery."
-          text="Every project starts with the right format, mood, and production approach."
-          items={[
-            {
-              title: "Photography",
-              text: "Portraits, fashion, weddings, events, and image-led creative direction.",
-            },
-            {
-              title: "Film",
-              text: "Dance, events, fashion, weddings, festivals, and cinematic stories.",
-            },
-            {
-              title: "Digital",
-              text: "Web systems, NFT presentation, portfolio structure, and custom creative tools.",
-            },
-          ]}
-          links={[
-            { href: "/contact", label: "Start a project", primary: true },
-          ]}
-        />
-      ) : (
-        <section className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-          {services.map((s, index) => (
-            <ServiceCard key={s.id} service={s} priority={index === 0} />
-          ))}
-        </section>
-      )}
+      <Suspense fallback={<ServicesView category="all" {...view} />}>
+        <ServicesFilter {...view} />
+      </Suspense>
     </main>
   );
 }

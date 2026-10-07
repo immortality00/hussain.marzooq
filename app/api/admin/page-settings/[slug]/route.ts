@@ -30,8 +30,8 @@ export async function PATCH(
     return NextResponse.json({ error: "Unknown page slug" }, { status: 400 });
   }
 
-  const body = await req.json();
-  if (typeof body.isActive !== "boolean") {
+  const body = (await req.json().catch(() => null)) as { isActive?: unknown; cardImage?: unknown } | null;
+  if (typeof body?.isActive !== "boolean") {
     return NextResponse.json({ error: "isActive must be a boolean" }, { status: 400 });
   }
 

@@ -35,7 +35,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Unknown slug" }, { status: 400 });
   }
 
-  const data = await req.json();
+  const data: unknown = await req.json().catch(() => null);
   // The whole body is the sections blob, always replaced wholesale. Guard the
   // shape: a null/array/primitive body would corrupt the stored document and,
   // via the replace-delete diff below, orphan-delete every uploaded asset. An

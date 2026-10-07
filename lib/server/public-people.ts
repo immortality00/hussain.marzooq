@@ -8,6 +8,7 @@ import {
   personGateCookieName,
   verifyPersonGateCookieValue,
 } from "@/lib/password-gate";
+import { buildFallback } from "@/lib/server/public-read";
 
 export type PublicPersonIndexItem = {
   id: string;
@@ -279,8 +280,8 @@ async function getPublicPeopleImpl(): Promise<PublicPersonIndexItem[]> {
 export async function getPublicPeople(): Promise<PublicPersonIndexItem[]> {
   try {
     return await getPublicPeopleImpl();
-  } catch {
-    return [];
+  } catch (error) {
+    return buildFallback(error, []);
   }
 }
 
@@ -297,8 +298,8 @@ export async function getPublicPersonBySlug(slug: string): Promise<PublicPersonD
     if (!doc) return null;
 
     return await buildPersonDetail(db, doc as Record<string, unknown>);
-  } catch {
-    return null;
+  } catch (error) {
+    return buildFallback(error, null);
   }
 }
 
@@ -349,7 +350,7 @@ async function getPersonPageBySlugImpl(slug: string): Promise<PersonPageState> {
 export async function getPersonPageBySlug(slug: string): Promise<PersonPageState> {
   try {
     return await getPersonPageBySlugImpl(slug);
-  } catch {
-    return { state: "missing" };
+  } catch (error) {
+    return buildFallback(error, { state: "missing" });
   }
 }

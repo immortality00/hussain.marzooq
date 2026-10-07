@@ -13,6 +13,7 @@ import {
   clearFixedWindowRateLimit,
   consumeFixedWindowRateLimit,
 } from "@/lib/server/request-guards";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +24,7 @@ function buildAccessRateLimitKey(req: Request, slug: string) {
   return `${slug}:${getClientAddress(req)}`;
 }
 
-export async function POST(req: Request) {
+async function handlePost(req: Request) {
   const body = (await req.json().catch(() => null)) as unknown;
   if (!isRecord(body)) {
     return noStoreJson({ ok: false, error: "Invalid body." }, { status: 400 });
@@ -93,3 +94,5 @@ export async function POST(req: Request) {
 
   return noStoreJson({ ok: true });
 }
+
+export const POST = withRouteErrors(handlePost);

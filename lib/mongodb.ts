@@ -1,7 +1,9 @@
 import { MongoClient } from "mongodb";
+import { isBuildPhase } from "@/lib/server/public-read";
 
 const uri = process.env.MONGODB_URI ?? "";
-const RETRY_AFTER_MS = process.env.NEXT_PHASE === "phase-production-build" ? Infinity : 30_000;
+const SERVER_SELECTION_TIMEOUT_MS = 10_000;
+const RETRY_AFTER_MS = isBuildPhase() ? Infinity : 10_000;
 
 if (!uri) {
   throw new Error("Missing MONGODB_URI in environment variables.");
@@ -14,8 +16,16 @@ declare global {
 }
 
 function connect() {
-  const client = new MongoClient(uri, { maxConnecting: 10 });
+  const client = new MongoClient(uri, {
+    maxConnecting: 10,
+    serverSelectionTimeoutMS: SERVER_SELECTION_TIMEOUT_MS,
+  });
+  const startedAt = Date.now();
   const connecting = client.connect();
+  connecting.then(
+    () => console.info(`[mongodb] connected in ${Date.now() - startedAt} ms`),
+    () => {},
+  );
   connecting.catch((error: unknown) => {
     console.error("[mongodb] connection failed", error);
     if (global._mongoClientPromise === connecting) global._mongoRetryAt = Date.now() + RETRY_AFTER_MS;

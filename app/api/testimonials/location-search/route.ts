@@ -2,13 +2,14 @@ import { noStoreJson } from "@/app/api/_lib/common";
 import { getClientAddress } from "@/app/api/_lib/public-form-security";
 import { searchTestimonialLocations } from "@/lib/server/location-search";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
 const LOCATION_SEARCH_RATE_LIMIT_WINDOW_MS = 60_000;
 const LOCATION_SEARCH_RATE_LIMIT_MAX = 30;
 
-export async function GET(request: Request) {
+async function handleGet(request: Request) {
   const clientKey = getClientAddress(request);
 
   const rateLimit = await consumeFixedWindowRateLimit({
@@ -36,3 +37,5 @@ export async function GET(request: Request) {
 
   return noStoreJson({ ok: true, items });
 }
+
+export const GET = withRouteErrors(handleGet);

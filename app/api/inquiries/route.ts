@@ -16,6 +16,7 @@ import {
   isValidEmail,
   isValidFormStartedAt,
 } from "@/app/api/_lib/public-form-security";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export async function GET() {
   return noStoreJson({ ok: true, items: await listAdminInquiries() });
 }
 
-export async function POST(req: Request) {
+async function handlePost(req: Request) {
   const bodyUnknown = (await req.json().catch(() => null)) as unknown;
 
   if (!isRecord(bodyUnknown)) {
@@ -186,3 +187,5 @@ export async function POST(req: Request) {
 
   return noStoreJson({ ok: true, id: String(insertResult.insertedId) });
 }
+
+export const POST = withRouteErrors(handlePost);

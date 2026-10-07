@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/server/db";
 import { sanitizeAppearances, type Appearance } from "@/app/api/_lib/media";
+import { buildFallback } from "@/lib/server/public-read";
 
 export type PublicNftItem = {
   id: string;
@@ -91,7 +92,7 @@ async function getPublicNftsImpl(): Promise<PublicNftItem[]> {
 export async function getPublicNfts(): Promise<PublicNftItem[]> {
   try {
     return await getPublicNftsImpl();
-  } catch {
-    return [];
+  } catch (error) {
+    return buildFallback(error, []);
   }
 }

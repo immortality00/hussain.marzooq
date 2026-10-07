@@ -7,8 +7,8 @@ export function BlogContent({ content }: { content: string }) {
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          a: ({ href, children, ...props }) => (
-            <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+          a: ({ href, title, children }) => (
+            <a href={href} title={title} target="_blank" rel="noopener noreferrer">
               {children}
             </a>
           ),

@@ -15,6 +15,7 @@ import {
   signedDeliveryUrl,
 } from "@/lib/server/cloudinary-private";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,7 @@ async function hasGalleryAccess(mediaId: string, slug: string) {
   return verifyPrivateGalleryCookieValue({ galleryId, accessToken, cookieValue });
 }
 
-export async function GET(req: Request, ctx: { params: Promise<{ mediaId: string }> }) {
+async function handleGet(req: Request, ctx: { params: Promise<{ mediaId: string }> }) {
   const { mediaId } = await ctx.params;
   if (!ObjectId.isValid(mediaId)) return new Response("Not found", { status: 404 });
 
@@ -110,3 +111,5 @@ export async function GET(req: Request, ctx: { params: Promise<{ mediaId: string
 
   return new Response(upstream.body, { status: upstream.status, headers });
 }
+
+export const GET = withRouteErrors(handleGet);

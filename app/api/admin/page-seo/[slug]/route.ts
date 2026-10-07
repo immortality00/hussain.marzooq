@@ -36,7 +36,10 @@ export async function PATCH(
     return NextResponse.json({ error: "Unknown slug" }, { status: 400 });
   }
 
-  const body = await req.json();
+  const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return NextResponse.json({ error: "Body must be a JSON object" }, { status: 400 });
+  }
   const update: Record<string, string | Date> = { updatedAt: new Date() };
   if (typeof body.title === "string") update.title = body.title;
   if (typeof body.description === "string") update.description = body.description;

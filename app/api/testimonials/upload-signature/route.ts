@@ -16,6 +16,7 @@ import {
   sessionProfileFolder,
   verifyUploadSession,
 } from "@/lib/server/testimonial-upload-sessions";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +30,7 @@ function requestedFolder(body: unknown) {
   return typeof folder === "string" ? folder.trim() : "";
 }
 
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   if (!isCloudinaryConfigured()) {
     return noStoreJson({ error: "Cloudinary config missing." }, { status: 500 });
   }
@@ -72,3 +73,5 @@ export async function POST(request: Request) {
 
   return noStoreJson({ signature, cloudName, apiKey, publicId, timestamp, allowedFormats: REVIEW_PHOTO_FORMATS });
 }
+
+export const POST = withRouteErrors(handlePost);

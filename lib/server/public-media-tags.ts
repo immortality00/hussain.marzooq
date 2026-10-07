@@ -1,6 +1,7 @@
 import { getDb } from "@/lib/server/db";
 import { buildPublicMediaQuery } from "@/lib/server/media-serializers";
 import type { TagDiscipline } from "@/lib/server/media-tags";
+import { buildFallback } from "@/lib/server/public-read";
 
 export type PublicMediaTag = {
   slug: string;
@@ -38,8 +39,8 @@ export async function getPublicMediaTag(slug: string): Promise<PublicMediaTag | 
     const db = await getDb();
     const doc = await db.collection("media_tags").findOne({ slug, isActive: true });
     return doc ? serialize(doc as Record<string, unknown>) : null;
-  } catch {
-    return null;
+  } catch (error) {
+    return buildFallback(error, null);
   }
 }
 
@@ -94,7 +95,7 @@ export async function getDisciplineTags(args: {
 }): Promise<DisciplineTag[]> {
   try {
     return await getDisciplineTagsImpl(args);
-  } catch {
-    return [];
+  } catch (error) {
+    return buildFallback(error, []);
   }
 }

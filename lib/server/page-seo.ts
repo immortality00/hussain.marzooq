@@ -1,4 +1,5 @@
 import { getDb } from "@/lib/server/db";
+import { buildFallback } from "@/lib/server/public-read";
 
 export type PageSeo = {
   slug: string;
@@ -202,8 +203,8 @@ export async function getPageSeo(slug: string): Promise<PageSeo> {
   try {
     const db = await getDb();
     return pageSeoOf(slug, await db.collection("page_seo").findOne({ slug }));
-  } catch {
-    return pageSeoOf(slug, null);
+  } catch (error) {
+    return buildFallback(error, pageSeoOf(slug, null));
   }
 }
 

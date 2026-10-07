@@ -1,5 +1,6 @@
 import type { Db } from "mongodb";
 import { getDb } from "@/lib/server/db";
+import { buildFallback } from "@/lib/server/public-read";
 import { buildPublicMediaQuery } from "@/lib/server/media-serializers";
 import { disciplineMatch } from "@/lib/server/public-media-tags";
 import { mergeNewest, newestBy, newestOf } from "@/lib/server/newest-dates";
@@ -111,7 +112,6 @@ export async function getSitemapSources(): Promise<SitemapSources> {
   try {
     return await loadSources(await getDb());
   } catch (error) {
-    console.error("[sitemap] could not load lastModified dates", error);
-    return EMPTY_SITEMAP_SOURCES;
+    return buildFallback(error, EMPTY_SITEMAP_SOURCES);
   }
 }

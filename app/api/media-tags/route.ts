@@ -11,13 +11,14 @@ import {
   isValidTagSlug,
   slugifyTag,
 } from "@/lib/server/media-tags";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
 const TAG_LIST_RATE_LIMIT_WINDOW_MS = 60_000;
 const TAG_LIST_RATE_LIMIT_MAX = 60;
 
-export async function GET(req: Request) {
+async function handleGet(req: Request) {
   const url = new URL(req.url);
   const scope = url.searchParams.get("scope");
 
@@ -92,3 +93,5 @@ export async function POST(req: Request) {
     { status: 201 }
   );
 }
+
+export const GET = withRouteErrors(handleGet);

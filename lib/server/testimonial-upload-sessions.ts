@@ -177,6 +177,12 @@ export async function commitUploadSession(db: Db, sessionId: string) {
   return result.matchedCount > 0;
 }
 
+export async function releaseUploadSession(db: Db, sessionId: string) {
+  await db
+    .collection<UploadSessionDoc>(COLLECTION)
+    .updateOne({ _id: sessionId, status: "committed" }, { $set: { status: "pending", updatedAt: new Date() } });
+}
+
 export async function deleteUploadSession(db: Db, sessionId: string) {
   await db.collection<UploadSessionDoc>(COLLECTION).deleteOne({ _id: sessionId });
 }

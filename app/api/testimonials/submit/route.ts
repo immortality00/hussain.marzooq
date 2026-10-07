@@ -20,11 +20,13 @@ import {
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
 import {
   commitUploadSession,
+  releaseUploadSession,
   isUrlInSession,
   readUploadCookie,
   sessionFolder,
   verifyUploadSession,
 } from "@/lib/server/testimonial-upload-sessions";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
@@ -127,7 +129,7 @@ function normalizeResolvedLocation(value: unknown): NormalizedResolvedLocation |
   };
 }
 
-export async function POST(req: Request) {
+async function handlePost(req: Request) {
   const body = (await req.json().catch(() => null)) as unknown;
 
   if (!isRecord(body)) {
@@ -227,56 +229,66 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!(await commitUploadSession(db, session.sessionId))) {
+      return noStoreJson(
+        { ok: false, error: "This review was already submitted." },
+        { status: 409 }
+      );
+    }
+
     verifiedSessionId = session.sessionId;
   }
 
-  const firstExisting = await db
-    .collection("testimonials")
-    .find({}, { projection: { sortOrder: 1 } })
-    .sort({ sortOrder: 1, createdAt: 1 })
-    .limit(1)
-    .toArray();
+  try {
+    const firstExisting = await db
+      .collection("testimonials")
+      .find({}, { projection: { sortOrder: 1 } })
+      .sort({ sortOrder: 1, createdAt: 1 })
+      .limit(1)
+      .toArray();
 
-  const currentSmallestSortOrder =
-    firstExisting.length > 0 && typeof firstExisting[0]?.sortOrder === "number"
-      ? firstExisting[0].sortOrder
-      : 0;
+    const currentSmallestSortOrder =
+      firstExisting.length > 0 && typeof firstExisting[0]?.sortOrder === "number"
+        ? firstExisting[0].sortOrder
+        : 0;
 
-  const nextSortOrder = currentSmallestSortOrder - 1;
+    const nextSortOrder = currentSmallestSortOrder - 1;
 
-  const reviewAssetFolder = verifiedSessionId ? sessionFolder(verifiedSessionId) : null;
+    const reviewAssetFolder = verifiedSessionId ? sessionFolder(verifiedSessionId) : null;
 
-  await db.collection("testimonials").insertOne({
-    name,
-    email,
-    about: about || null,
-    location: resolvedLocation?.location ?? (locationLabel || null),
-    locationId: resolvedLocation?.locationId ?? null,
-    locationLabel: resolvedLocation?.locationLabel ?? null,
-    locationLat: resolvedLocation?.locationLat ?? null,
-    locationLon: resolvedLocation?.locationLon ?? null,
-    locationCountryCode: resolvedLocation?.locationCountryCode ?? null,
-    review,
-    rating,
-    profilePhotoUrl,
-    photoUrls,
-    uploadSessionId: verifiedSessionId,
-    reviewAssetFolder,
-    reviewProfileFolder: reviewAssetFolder ? `${reviewAssetFolder}/pfp` : null,
-    reviewPhotosFolder: reviewAssetFolder ? `${reviewAssetFolder}/photos` : null,
-    publicationConsent: true,
-    publicationConsentAt: now,
-    isApproved: false,
-    sortOrder: nextSortOrder,
-    createdAt: now,
-    updatedAt: now,
-  });
-
-  if (verifiedSessionId) {
-    await commitUploadSession(db, verifiedSessionId);
+    await db.collection("testimonials").insertOne({
+      name,
+      email,
+      about: about || null,
+      location: resolvedLocation?.location ?? (locationLabel || null),
+      locationId: resolvedLocation?.locationId ?? null,
+      locationLabel: resolvedLocation?.locationLabel ?? null,
+      locationLat: resolvedLocation?.locationLat ?? null,
+      locationLon: resolvedLocation?.locationLon ?? null,
+      locationCountryCode: resolvedLocation?.locationCountryCode ?? null,
+      review,
+      rating,
+      profilePhotoUrl,
+      photoUrls,
+      uploadSessionId: verifiedSessionId,
+      reviewAssetFolder,
+      reviewProfileFolder: reviewAssetFolder ? `${reviewAssetFolder}/pfp` : null,
+      reviewPhotosFolder: reviewAssetFolder ? `${reviewAssetFolder}/photos` : null,
+      publicationConsent: true,
+      publicationConsentAt: now,
+      isApproved: false,
+      sortOrder: nextSortOrder,
+      createdAt: now,
+      updatedAt: now,
+    });
+  } catch (error) {
+    if (verifiedSessionId) await releaseUploadSession(db, verifiedSessionId).catch(() => {});
+    throw error;
   }
 
   queueAdminAlert({ kind: "testimonial", name, email, review, rating, about: about || null });
 
   return noStoreJson({ ok: true });
 }
+
+export const POST = withRouteErrors(handlePost);

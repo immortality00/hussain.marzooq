@@ -3,13 +3,14 @@ import { getClientAddress } from "@/app/api/_lib/public-form-security";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 import { DISCIPLINES } from "@/lib/disciplines";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
 const RATE_LIMIT_MAX = 60;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 
-export async function GET(req: Request) {
+async function handleGet(req: Request) {
   const rateLimit = await consumeFixedWindowRateLimit({
     bucket: "work-overlay",
     key: getClientAddress(req),
@@ -37,3 +38,5 @@ export async function GET(req: Request) {
 
   return noStoreJson(cards);
 }
+
+export const GET = withRouteErrors(handleGet);

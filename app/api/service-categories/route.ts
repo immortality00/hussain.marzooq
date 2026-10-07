@@ -62,6 +62,7 @@ export async function POST(req: Request) {
   const r = await db.collection("service_categories").insertOne(doc);
 
   revalidatePath("/services", "layout");
+  revalidatePath("/contact");
 
   return noStoreJson(
     { ok: true, id: r.insertedId.toString(), item: adminServiceCategoryOf({ ...doc, _id: r.insertedId }, 0) },

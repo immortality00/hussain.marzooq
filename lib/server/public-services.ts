@@ -1,5 +1,6 @@
 import { getDb } from "@/lib/server/db";
 import { DISCIPLINE_HREF, disciplineForCategory } from "@/lib/disciplines";
+import { buildFallback } from "@/lib/server/public-read";
 
 export type PublicServiceItem = {
   id: string;
@@ -71,8 +72,8 @@ async function getActiveServicesForContactImpl() {
 export async function getActiveServicesForContact() {
   try {
     return await getActiveServicesForContactImpl();
-  } catch {
-    return [];
+  } catch (error) {
+    return buildFallback(error, []);
   }
 }
 
@@ -122,7 +123,7 @@ async function getPublicServicesDataImpl() {
 export async function getPublicServicesData() {
   try {
     return await getPublicServicesDataImpl();
-  } catch {
-    return { services: [] as PublicServiceItem[], categories: [] as PublicServiceCategoryItem[] };
+  } catch (error) {
+    return buildFallback(error, { services: [] as PublicServiceItem[], categories: [] as PublicServiceCategoryItem[] });
   }
 }

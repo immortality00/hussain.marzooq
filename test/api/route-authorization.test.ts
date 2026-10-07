@@ -78,6 +78,12 @@ const routes: Route[] = [
     load: () => import("@/app/api/admin/snapshot/route"),
   },
   {
+    name: "GET /api/admin/backups/latest",
+    method: "GET",
+    path: "/api/admin/backups/latest",
+    load: () => import("@/app/api/admin/backups/latest/route"),
+  },
+  {
     name: "GET /api/admin/analytics",
     method: "GET",
     path: "/api/admin/analytics",

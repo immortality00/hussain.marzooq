@@ -54,7 +54,18 @@ function collection(name: string) {
   };
 
   return {
-    find: (filter: Filter = {}) => ({ toArray: async () => docs().filter((doc) => matches(doc, filter)) }),
+    find: (filter: Filter = {}) => {
+      let max = Infinity;
+      const cursor = {
+        sort: () => cursor,
+        limit: (count: number) => {
+          max = count;
+          return cursor;
+        },
+        toArray: async () => docs().filter((doc) => matches(doc, filter)).slice(0, max),
+      };
+      return cursor;
+    },
     findOne: async (filter: Filter = {}) => docs().find((doc) => matches(doc, filter)) ?? null,
     countDocuments: async (filter: Filter = {}) => docs().filter((doc) => matches(doc, filter)).length,
     insertOne: async (doc: Doc) => {

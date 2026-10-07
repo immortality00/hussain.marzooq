@@ -1,6 +1,7 @@
 import type { Document, WithId } from "mongodb";
 import { getDb } from "@/lib/server/db";
 import { readingMinutes } from "@/lib/reading-time";
+import { buildFallback } from "@/lib/server/public-read";
 
 export type BlogPostCard = {
   id: string;
@@ -90,8 +91,8 @@ export async function getPublishedPosts(categorySlug?: string): Promise<BlogPost
     ]);
 
     return docs.map((d) => toCard(d, labels));
-  } catch {
-    return [];
+  } catch (error) {
+    return buildFallback(error, []);
   }
 }
 
@@ -113,8 +114,8 @@ export async function getPostBySlug(slug: string): Promise<BlogPostDetail | null
       ogImageUrl: asString(doc.coverImageUrl),
       updatedAt: toIso(doc.updatedAt),
     };
-  } catch {
-    return null;
+  } catch (error) {
+    return buildFallback(error, null);
   }
 }
 
@@ -145,7 +146,7 @@ export async function getPublicBlogCategories(): Promise<PublicBlogCategory[]> {
         return { slug, label: asString(c.name) || slug, count: countMap.get(slug) ?? 0 };
       })
       .filter((c) => c.slug && c.count > 0);
-  } catch {
-    return [];
+  } catch (error) {
+    return buildFallback(error, []);
   }
 }

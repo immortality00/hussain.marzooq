@@ -205,6 +205,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const newSlug = typeof patch.slug === "string" ? patch.slug : oldSlug;
 
   revalidatePath("/services", "layout");
+  revalidatePath("/contact");
   revalidatePath("/");
   if (oldSlug) revalidatePath(`/services/${oldSlug}`);
   if (newSlug && newSlug !== oldSlug) revalidatePath(`/services/${newSlug}`);
@@ -234,6 +235,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
     );
 
     revalidatePath("/services", "layout");
+    revalidatePath("/contact");
     revalidatePath("/");
     if (serviceSlug) revalidatePath(`/services/${serviceSlug}`);
 
@@ -260,6 +262,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   }
 
   revalidatePath("/services", "layout");
+  revalidatePath("/contact");
   revalidatePath("/");
   if (serviceSlug) revalidatePath(`/services/${serviceSlug}`);
 

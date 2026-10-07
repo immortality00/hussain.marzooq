@@ -4,13 +4,14 @@ import { asNullableString, isRecord, noStoreJson } from "@/app/api/_lib/common";
 import { getClientAddress, isValidEmail } from "@/app/api/_lib/public-form-security";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { queueAdminAlert } from "@/lib/server/admin-alerts";
+import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
 
 const REQUEST_LIMIT = 5;
 const REQUEST_WINDOW_MS = 60 * 60 * 1000;
 
-export async function POST(req: Request) {
+async function handlePost(req: Request) {
   const body = (await req.json().catch(() => null)) as unknown;
   if (!isRecord(body)) {
     return noStoreJson({ ok: false, error: "Invalid body." }, { status: 400 });
@@ -94,3 +95,5 @@ export async function POST(req: Request) {
 
   return noStoreJson({ ok: true });
 }
+
+export const POST = withRouteErrors(handlePost);

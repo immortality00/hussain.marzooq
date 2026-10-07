@@ -10,6 +10,7 @@ import { getPageSections } from "@/lib/server/page-sections";
 import type { TagDiscipline } from "@/lib/server/media-tags";
 import type { TagChip } from "@/components/media/TagChipRow";
 import type { TagLink } from "@/components/media/types";
+import { buildFallback } from "@/lib/server/public-read";
 
 type TagPageInput = {
   category: TagDiscipline;
@@ -61,8 +62,8 @@ export async function getDisciplineTagNav(args: {
 }): Promise<{ chips: TagChip[]; tagLinks: Record<string, TagLink> }> {
   try {
     return await getDisciplineTagNavImpl(args);
-  } catch {
-    return { chips: [], tagLinks: {} };
+  } catch (error) {
+    return buildFallback(error, { chips: [], tagLinks: {} });
   }
 }
 
@@ -80,8 +81,8 @@ export async function getTagMeta({
     ]);
     if (!tag) return null;
     return { tag, seo };
-  } catch {
-    return null;
+  } catch (error) {
+    return buildFallback(error, null);
   }
 }
 
@@ -118,7 +119,7 @@ async function getTagPageImpl({
 export async function getTagPage(input: TagPageInput): Promise<TagPageData | null> {
   try {
     return await getTagPageImpl(input);
-  } catch {
-    return null;
+  } catch (error) {
+    return buildFallback(error, null);
   }
 }

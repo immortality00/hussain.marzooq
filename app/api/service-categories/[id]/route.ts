@@ -90,6 +90,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   await db.collection("services").updateMany({ categoryId: id }, { $set: servicePatch });
 
   revalidatePath("/services", "layout");
+  revalidatePath("/contact");
   revalidatePath("/");
 
   return noStoreJson({ ok: true });
@@ -127,6 +128,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   await db.collection("service_categories").deleteOne({ _id: oid });
 
   revalidatePath("/services", "layout");
+  revalidatePath("/contact");
 
   return noStoreJson({ ok: true });
 }

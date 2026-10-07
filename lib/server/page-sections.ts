@@ -11,6 +11,7 @@ import {
   normalizeSearchProfile,
   type SearchProfile,
 } from "@/lib/seo/search-profile";
+import { buildFallback } from "@/lib/server/public-read";
 
 export type {
   FeaturedCard,
@@ -212,8 +213,8 @@ export async function getPageSections<K extends PageSectionsSlug>(
     const db = await getDb();
     const doc = await db.collection("page_sections").findOne({ slug });
     return mergeWithDefaults(slug, doc);
-  } catch {
-    return DEFAULTS[slug];
+  } catch (error) {
+    return buildFallback(error, DEFAULTS[slug]);
   }
 }
 

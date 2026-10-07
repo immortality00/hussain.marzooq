@@ -72,8 +72,10 @@ function dedupeLocations(locations: ResolvedTestimonialLocation[]) {
   return result;
 }
 
+export const MAX_LOCATION_QUERY_LENGTH = 60;
+
 export async function searchTestimonialLocations(query: string, limit = 8) {
-  const normalizedQuery = normalizeLocationValue(query).slice(0, 120);
+  const normalizedQuery = normalizeLocationValue(query.slice(0, MAX_LOCATION_QUERY_LENGTH));
 
   if (normalizedQuery.length < 2) return [];
 
@@ -81,31 +83,14 @@ export async function searchTestimonialLocations(query: string, limit = 8) {
 
   try {
     const db = await getDb();
-    const collection = db.collection<LocationDocument>(LOCATION_COLLECTION);
-
-    const prefixRegex = new RegExp(`^${escapeRegex(normalizedQuery)}`, "i");
-    const containsRegex = new RegExp(escapeRegex(normalizedQuery), "i");
-
-    const prefixDocs = await collection
-      .find({ searchNames: prefixRegex })
+    const docs = await db
+      .collection<LocationDocument>(LOCATION_COLLECTION)
+      .find({ searchNames: new RegExp(`^${escapeRegex(normalizedQuery)}`) })
       .sort({ population: -1, label: 1 })
       .limit(limit)
       .toArray();
 
-    const remaining = Math.max(0, limit - prefixDocs.length);
-    let containsDocs: LocationDocument[] = [];
-
-    if (remaining > 0) {
-      containsDocs = await collection
-        .find({ searchNames: containsRegex })
-        .sort({ population: -1, label: 1 })
-        .limit(remaining)
-        .toArray();
-    }
-
-    const datasetResults = [...prefixDocs, ...containsDocs]
-      .filter(isValidLocationDoc)
-      .map(toSearchResult);
+    const datasetResults = docs.filter(isValidLocationDoc).map(toSearchResult);
 
     return dedupeLocations([...datasetResults, ...fallbackResults]).slice(0, limit);
   } catch {
