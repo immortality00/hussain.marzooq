@@ -19,12 +19,24 @@ export function LocationSearch({
   const [isSearching, setIsSearching] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [syncedLocation, setSyncedLocation] = useState(selectedLocation);
   const debounceRef = useRef<number | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  useEffect(() => {
-    if (selectedLocation) setQuery(selectedLocation.label);
-  }, [selectedLocation]);
+  function resetResults() {
+    setItems([]);
+    setIsOpen(false);
+    setMessage(null);
+    setIsSearching(false);
+  }
+
+  if (selectedLocation !== syncedLocation) {
+    setSyncedLocation(selectedLocation);
+    if (selectedLocation) {
+      setQuery(selectedLocation.label);
+      resetResults();
+    }
+  }
 
   useEffect(() => {
     if (debounceRef.current) window.clearTimeout(debounceRef.current);
@@ -32,21 +44,8 @@ export function LocationSearch({
 
     const trimmedQuery = query.trim();
 
-    if (selectedLocation && trimmedQuery === selectedLocation.label) {
-      setItems([]);
-      setIsOpen(false);
-      setMessage(null);
-      setIsSearching(false);
-      return;
-    }
-
-    if (trimmedQuery.length < 2) {
-      setItems([]);
-      setIsOpen(false);
-      setMessage(null);
-      setIsSearching(false);
-      return;
-    }
+    if (selectedLocation && trimmedQuery === selectedLocation.label) return;
+    if (trimmedQuery.length < 2) return;
 
     debounceRef.current = window.setTimeout(async () => {
       const controller = new AbortController();
@@ -103,17 +102,13 @@ export function LocationSearch({
   function chooseLocation(location: LocationOption) {
     onSelect(location);
     setQuery(location.label);
-    setItems([]);
-    setIsOpen(false);
-    setMessage(null);
+    resetResults();
   }
 
   function clearLocation() {
     onClear();
     setQuery("");
-    setItems([]);
-    setIsOpen(false);
-    setMessage(null);
+    resetResults();
   }
 
   return (
@@ -129,6 +124,7 @@ export function LocationSearch({
           onChange={(event) => {
             if (selectedLocation) onClear();
             setQuery(event.target.value);
+            if (event.target.value.trim().length < 2) resetResults();
           }}
           onFocus={() => {
             if (items.length > 0) setIsOpen(true);

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { CLOUDINARY_SERVICES_FOLDER } from "@/lib/cloudinary-folders";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { CloudinaryUploadButton } from "@/components/shared/upload/CloudinaryUploadButton";
@@ -48,12 +48,12 @@ export default function ServiceEditorModal({
     [categoriesClean]
   );
 
-  const latestCategories = useLatest({ categoriesClean, othersCategory });
+  const [seeded, setSeeded] = useState<{ initial: Service | null } | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    const { categoriesClean, othersCategory } = latestCategories.current;
+  if (!open && seeded) setSeeded(null);
 
+  if (open && (!seeded || seeded.initial !== initial)) {
+    setSeeded({ initial });
     setName(initial?.name ?? "");
     setSlug(initial?.slug ?? "");
 
@@ -73,7 +73,7 @@ export default function ServiceEditorModal({
     setCurrency(initial?.currency ?? "AED");
     setImageUrl(initial?.imageUrl ?? "");
     setIsActive(initial?.isActive ?? true);
-  }, [open, initial, latestCategories]);
+  }
 
   if (!open) return null;
 

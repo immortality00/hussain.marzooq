@@ -5,6 +5,7 @@ import * as THREE from "three";
 import gsap from "gsap";
 import type { MediaItem } from "@/components/media/types";
 import { NoResults } from "@/components/shared/NoResults";
+import { useLatest } from "@/hooks/useLatest";
 import { cloudinaryTextureUrl, cylinderItems } from "./lib";
 import { CYLINDER_HEIGHT } from "./viewer-heights";
 
@@ -63,8 +64,7 @@ export default function PhotographyCylinder({
   onSelect: (item: MediaItem) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const onSelectRef = useRef(onSelect);
-  onSelectRef.current = onSelect;
+  const onSelectRef = useLatest(onSelect);
 
   const ringItems = cylinderItems(items);
   const signature = ringItems.map((m) => m.id).join(",");

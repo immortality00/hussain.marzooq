@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useAdminSlice } from "@/hooks/useAdminData";
 import { useSearchParams } from "next/navigation";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
@@ -63,12 +63,15 @@ export function usePeopleAdmin() {
 
   const actionBusy = saving || Boolean(deletingId);
 
-  useEffect(() => {
+  const [prefillSynced, setPrefillSynced] = useState({ createPrefill, editingId });
+
+  if (prefillSynced.createPrefill !== createPrefill || prefillSynced.editingId !== editingId) {
+    setPrefillSynced({ createPrefill, editingId });
     if (!editingId && createPrefill) {
       setName(createPrefill);
       setMode("form");
     }
-  }, [createPrefill, editingId]);
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();

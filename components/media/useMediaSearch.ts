@@ -86,23 +86,27 @@ export function useMediaSearch({
   // user-initiated search must stay scoped to it, so it's the tag sent to the
   // API when the user hasn't picked a chip.
   const effectiveTag = cleanTag || cleanLockedTag;
+  const browsing = hasDbSearch && !hasActiveSearch;
+  const [synced, setSynced] = useState({ items, browsing });
 
-  useEffect(() => {
-    setRemoteItems(items);
-    setNextCursor(null);
-    setBrowseHasMore(items.length >= PUBLIC_MEDIA_PAGE_SIZE);
-  }, [items]);
+  if (synced.items !== items || synced.browsing !== browsing) {
+    setSynced({ items, browsing });
+    if (synced.items !== items || browsing) {
+      setRemoteItems(items);
+      setNextCursor(null);
+      setBrowseHasMore(items.length >= PUBLIC_MEDIA_PAGE_SIZE);
+    }
+    if (browsing) {
+      setIsSearching(false);
+      setSearchError("");
+    }
+  }
 
   useEffect(() => {
     if (!hasDbSearch || !searchCategory) return;
 
     if (!hasActiveSearch) {
       requestIdRef.current += 1;
-      setRemoteItems(items);
-      setNextCursor(null);
-      setBrowseHasMore(items.length >= PUBLIC_MEDIA_PAGE_SIZE);
-      setIsSearching(false);
-      setSearchError("");
       return;
     }
 
