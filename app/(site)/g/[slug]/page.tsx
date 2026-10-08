@@ -37,13 +37,7 @@ export default async function PrivateGalleryPage({
   if (result.state === "missing") notFound();
 
   if (result.state === "locked") {
-    return (
-      <GalleryPasswordForm
-        slug={result.slug}
-        title={result.title}
-        description={result.description}
-      />
-    );
+    return <GalleryPasswordForm slug={result.slug} />;
   }
 
   const gallery = result.gallery;

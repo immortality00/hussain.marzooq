@@ -34,7 +34,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
   const [website, setWebsite] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [banner, setBanner] = useState<BannerState>(null);
-  const [formStartedAt, setFormStartedAt] = useState(Date.now());
+  const [formToken, setFormToken] = useState<string | null>(null);
   const [uploadSessionId, setUploadSessionId] = useState<string | null>(null);
   const uploadSessionIdRef = useRef<string | null>(uploadSessionId);
   const committedRef = useRef(false);
@@ -49,9 +49,13 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
     void (async () => {
       try {
         const res = await fetch("/api/testimonials/upload-session", { method: "POST" });
-        const data = (await res.json().catch(() => null)) as { sessionId?: string } | null;
+        const data = (await res.json().catch(() => null)) as {
+          sessionId?: string;
+          formToken?: string | null;
+        } | null;
         if (!cancelled && res.ok && data?.sessionId) {
           setUploadSessionId(data.sessionId);
+          setFormToken(data.formToken ?? null);
         }
       } catch {
         // Uploads stay disabled until a session is available.
@@ -138,7 +142,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
     setWebsite("");
     setSubmitting(false);
     setBanner(null);
-    setFormStartedAt(Date.now());
+    setFormToken(null);
     setUploadSessionId(null);
     committedRef.current = false;
   }
@@ -220,7 +224,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
           photoUrls,
           consent,
           website,
-          formStartedAt,
+          formToken,
         }),
       });
 

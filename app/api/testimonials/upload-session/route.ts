@@ -9,6 +9,7 @@ import {
 } from "@/lib/server/testimonial-upload-sessions";
 import { registerSessionFolder, scheduleUploadSweep } from "@/lib/server/upload-ledger";
 import { withRouteErrors } from "@/app/api/_lib/route-errors";
+import { issueFormToken } from "@/lib/server/form-token";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,11 @@ async function handlePost(request: Request) {
   await registerSessionFolder(db, sessionFolder(session.sessionId));
   scheduleUploadSweep();
 
-  const response = noStoreJson({ ok: true, sessionId: session.sessionId });
+  const response = noStoreJson({
+    ok: true,
+    sessionId: session.sessionId,
+    formToken: issueFormToken("review"),
+  });
 
   response.cookies.set({
     name: UPLOAD_SESSION_COOKIE,

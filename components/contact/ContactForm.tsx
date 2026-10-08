@@ -32,6 +32,7 @@ export function ContactForm({
     <form
       className="rounded-2xl border p-6"
       noValidate
+      onFocusCapture={() => void form.prime().catch(() => undefined)}
       onSubmit={(event) => {
         event.preventDefault();
         void form.submit();

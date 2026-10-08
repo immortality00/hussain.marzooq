@@ -12,11 +12,8 @@ import {
   isRecord,
   noStoreJson,
 } from "@/app/api/_lib/common";
-import {
-  getClientAddress,
-  isValidEmail,
-  isValidFormStartedAt,
-} from "@/app/api/_lib/public-form-security";
+import { getClientAddress, isValidEmail } from "@/app/api/_lib/public-form-security";
+import { formTokenRefusal } from "@/lib/server/form-token";
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
 import {
   commitUploadSession,
@@ -33,7 +30,6 @@ export const dynamic = "force-dynamic";
 const TESTIMONIALS_FOLDER = CLOUDINARY_TESTIMONIALS_FOLDER;
 const SUBMIT_RATE_LIMIT_WINDOW_MS = 10 * 60_000;
 const SUBMIT_RATE_LIMIT_MAX = 4;
-const MINIMUM_FORM_TIME_MS = 2500;
 
 type NormalizedResolvedLocation = {
   locationId: string | null;
@@ -166,11 +162,9 @@ async function handlePost(req: Request) {
     );
   }
 
-  if (!isValidFormStartedAt(body.formStartedAt, MINIMUM_FORM_TIME_MS)) {
-    return noStoreJson(
-      { ok: false, error: "Submission was too fast. Please try again." },
-      { status: 400 }
-    );
+  const tokenRefusal = formTokenRefusal(body.formToken, "review");
+  if (tokenRefusal) {
+    return noStoreJson({ ok: false, error: tokenRefusal }, { status: 400 });
   }
 
   const clientKey = getClientAddress(req);

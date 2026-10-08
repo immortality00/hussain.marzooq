@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/shared/Button";
+import { useFormToken } from "@/hooks/useFormToken";
 
 export default function RemovalRequestButton({ slug }: { slug: string }) {
   const [open, setOpen] = useState(false);
@@ -10,6 +11,7 @@ export default function RemovalRequestButton({ slug }: { slug: string }) {
   const [msg, setMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const formToken = useFormToken("removal");
 
   async function submit() {
     setMsg("");
@@ -24,11 +26,17 @@ export default function RemovalRequestButton({ slug }: { slug: string }) {
     }
 
     setLoading(true);
+    const issued = await formToken.take();
+    if ("error" in issued) {
+      setMsg(issued.error);
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch("/api/people/removal-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, email, reason }),
+        body: JSON.stringify({ slug, email, reason, formToken: issued.token }),
       });
       const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
       if (!res.ok || !data?.ok) {
@@ -89,7 +97,10 @@ export default function RemovalRequestButton({ slug }: { slug: string }) {
       ) : (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setOpen(true);
+            void formToken.prime().catch(() => undefined);
+          }}
           className="text-xs text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
         >
           Request removal of this profile

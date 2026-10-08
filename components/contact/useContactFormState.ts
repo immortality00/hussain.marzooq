@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useFormToken } from "@/hooks/useFormToken";
 import type { CategoryMode, ServiceItem, ServiceMode } from "./types";
 import {
   findInitialServiceMatch,
@@ -23,6 +24,7 @@ export function useContactFormState({
   initialContextMessage?: string;
 }) {
   const router = useRouter();
+  const formToken = useFormToken("inquiry");
 
   const categories = useMemo(() => getServiceCategories(services), [services]);
 
@@ -42,7 +44,6 @@ export function useContactFormState({
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [website, setWebsite] = useState("");
-  const [formStartedAt, setFormStartedAt] = useState<number>(() => Date.now());
 
   const [serviceMode, setServiceMode] = useState<ServiceMode>(
     initialServiceMatch ? "select" : initialService.trim() ? "other" : "select"
@@ -151,7 +152,7 @@ export function useContactFormState({
     setEmail("");
     setMessage("");
     setWebsite("");
-    setFormStartedAt(Date.now());
+    formToken.renew();
     setMsg("");
 
     setServiceMode("select");
@@ -215,6 +216,12 @@ export function useContactFormState({
       : userMessage;
 
     setLoading(true);
+    const issued = await formToken.take();
+    if ("error" in issued) {
+      setMsg(`Send failed: ${issued.error}`);
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch("/api/inquiries", {
         method: "POST",
@@ -227,7 +234,7 @@ export function useContactFormState({
           serviceId: finalServiceId,
           serviceName: finalServiceName,
           website: honeypot,
-          formStartedAt,
+          formToken: issued.token,
         }),
       });
 
@@ -283,5 +290,6 @@ export function useContactFormState({
     bookingBadge,
     resetForm,
     submit,
+    prime: formToken.prime,
   };
 }

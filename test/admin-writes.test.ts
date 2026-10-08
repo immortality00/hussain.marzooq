@@ -6,6 +6,7 @@ const READ_ONLY_POSTS = [
   "lib/client/media-usage-api.ts",
   "lib/client/cloudinary-direct-upload.ts",
   "lib/client/admin-store/write.ts",
+  "hooks/useFormToken.ts",
 ];
 
 function callAt(source: string, start: number) {

@@ -5,15 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatedText } from "@/components/shared/AnimatedText";
 import { Button } from "@/components/shared/Button";
 
-export default function GalleryPasswordForm({
-  slug,
-  title,
-  description,
-}: {
-  slug: string;
-  title: string;
-  description: string | null;
-}) {
+export default function GalleryPasswordForm({ slug }: { slug: string }) {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState("");
@@ -53,11 +45,8 @@ export default function GalleryPasswordForm({
     <main className="mx-auto max-w-xl px-4 py-16">
       <section className="rounded-[2rem] border p-6 text-center">
         <h1 className="text-3xl font-semibold tracking-tight">
-          <AnimatedText>{title}</AnimatedText>
+          <AnimatedText>Private gallery</AnimatedText>
         </h1>
-        {description ? (
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">{description}</p>
-        ) : null}
 
         <div className="mt-6 space-y-3">
           <input
