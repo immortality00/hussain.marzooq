@@ -32,6 +32,7 @@ export function ContactForm({
     <form
       className="rounded-2xl border p-6"
       noValidate
+      onFocusCapture={() => void form.prime().catch(() => undefined)}
       onSubmit={(event) => {
         event.preventDefault();
         void form.submit();
@@ -42,8 +43,6 @@ export function ContactForm({
           Booking: {form.bookingBadge}
         </div>
       ) : null}
-
-      {form.msg ? <div className="mb-4 text-sm text-muted-foreground">{form.msg}</div> : null}
 
       <div className="sr-only" aria-hidden="true">
         <label htmlFor="contact-website">Website</label>
@@ -98,6 +97,7 @@ export function ContactForm({
 
       <ContactActions
         loading={form.loading}
+        status={form.status}
         onSubmit={() => void form.submit()}
         onReset={form.resetForm}
       />

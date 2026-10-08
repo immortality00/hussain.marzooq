@@ -2,43 +2,53 @@
 
 import { useState } from "react";
 import { Button } from "@/components/shared/Button";
+import { useFormToken } from "@/hooks/useFormToken";
+import { FormStatus, type FormStatusState } from "@/components/shared/FormStatus";
 
 export default function RemovalRequestButton({ slug }: { slug: string }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [reason, setReason] = useState("");
-  const [msg, setMsg] = useState("");
+  const [status, setStatus] = useState<FormStatusState>(null);
+  const fail = (text: string) => setStatus({ type: "err", text });
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
+  const formToken = useFormToken("removal");
 
   async function submit() {
-    setMsg("");
+    setStatus(null);
 
     if (!email.trim()) {
-      setMsg("Email is required.");
+      fail("Email is required.");
       return;
     }
     if (!reason.trim()) {
-      setMsg("A message is required.");
+      fail("A message is required.");
       return;
     }
 
     setLoading(true);
+    const issued = await formToken.take();
+    if ("error" in issued) {
+      fail(`Not sent: ${issued.error}`);
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch("/api/people/removal-request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug, email, reason }),
+        body: JSON.stringify({ slug, email, reason, formToken: issued.token }),
       });
       const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
       if (!res.ok || !data?.ok) {
-        setMsg(data?.error ?? "Something went wrong.");
+        fail(`Not sent: ${data?.error ?? `error ${res.status}`}`);
         setLoading(false);
         return;
       }
       setDone(true);
     } catch {
-      setMsg("Something went wrong.");
+      fail("Not sent: no connection.");
     } finally {
       setLoading(false);
     }
@@ -76,7 +86,7 @@ export default function RemovalRequestButton({ slug }: { slug: string }) {
             placeholder="Your message"
             className="h-24 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
           />
-          {msg ? <div className="text-xs text-muted-foreground">{msg}</div> : null}
+          <FormStatus status={status} />
           <div className="flex gap-2">
             <Button variant="solid" disabled={loading} onClick={() => void submit()}>
               {loading ? "Sending..." : "Send request"}
@@ -89,7 +99,10 @@ export default function RemovalRequestButton({ slug }: { slug: string }) {
       ) : (
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setOpen(true);
+            void formToken.prime().catch(() => undefined);
+          }}
           className="text-xs text-muted-foreground underline underline-offset-4 transition-colors hover:text-foreground"
         >
           Request removal of this profile

@@ -8,7 +8,9 @@ import { LocationSearch } from "./review-form/LocationSearch";
 import { ProfilePhotoField } from "./review-form/ProfilePhotoField";
 import { ReviewPhotosField } from "./review-form/ReviewPhotosField";
 import { StarPicker } from "./review-form/StarPicker";
-import type { BannerState, LocationOption } from "./review-form/types";
+import type { LocationOption } from "./review-form/types";
+import { FormStatus, type FormStatusState } from "@/components/shared/FormStatus";
+import { tokenWaitMs } from "@/hooks/useFormToken";
 import { discardUpload } from "./review-form/discardUpload";
 import { MAX_REVIEW_PHOTOS, isValidEmail } from "./review-form/utils";
 import { useModalVisibilityEvents } from "./review-form/useModalVisibilityEvents";
@@ -33,8 +35,8 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
   const [consent, setConsent] = useState(false);
   const [website, setWebsite] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [banner, setBanner] = useState<BannerState>(null);
-  const [formStartedAt, setFormStartedAt] = useState(Date.now());
+  const [banner, setBanner] = useState<FormStatusState>(null);
+  const [formToken, setFormToken] = useState<{ token: string; receivedAt: number } | null>(null);
   const [uploadSessionId, setUploadSessionId] = useState<string | null>(null);
   const uploadSessionIdRef = useRef<string | null>(uploadSessionId);
   const committedRef = useRef(false);
@@ -49,12 +51,20 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
     void (async () => {
       try {
         const res = await fetch("/api/testimonials/upload-session", { method: "POST" });
-        const data = (await res.json().catch(() => null)) as { sessionId?: string } | null;
-        if (!cancelled && res.ok && data?.sessionId) {
+        const data = (await res.json().catch(() => null)) as {
+          sessionId?: string;
+          formToken?: string | null;
+          error?: string;
+        } | null;
+        if (cancelled) return;
+        if (res.ok && data?.sessionId) {
           setUploadSessionId(data.sessionId);
+          setFormToken(data.formToken ? { token: data.formToken, receivedAt: Date.now() } : null);
+        } else {
+          setBanner({ type: "err", text: `The review form could not open: ${data?.error ?? `error ${res.status}`}` });
         }
       } catch {
-        // Uploads stay disabled until a session is available.
+        if (!cancelled) setBanner({ type: "err", text: "The review form could not open: no connection." });
       }
     })();
 
@@ -138,7 +148,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
     setWebsite("");
     setSubmitting(false);
     setBanner(null);
-    setFormStartedAt(Date.now());
+    setFormToken(null);
     setUploadSessionId(null);
     committedRef.current = false;
   }
@@ -205,6 +215,9 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
 
     setSubmitting(true);
 
+    const wait = formToken ? tokenWaitMs(formToken.receivedAt) : 0;
+    if (wait) await new Promise((resolve) => setTimeout(resolve, wait));
+
     try {
       const res = await fetch("/api/testimonials/submit", {
         method: "POST",
@@ -220,7 +233,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
           photoUrls,
           consent,
           website,
-          formStartedAt,
+          formToken: formToken?.token ?? null,
         }),
       });
 
@@ -397,17 +410,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                     onError={showUploadError}
                   />
 
-                  {banner ? (
-                    <div
-                      className={`rounded-2xl px-4 py-3 text-sm ring-1 ${
-                        banner.type === "ok"
-                          ? "bg-green-500/10 text-foreground ring-green-500/20"
-                          : "bg-red-500/10 text-foreground ring-red-500/20"
-                      }`}
-                    >
-                      {banner.text}
-                    </div>
-                  ) : null}
+                  <FormStatus status={banner} />
 
                   <div className="space-y-4 rounded-[2rem] border border-border/60 bg-muted/20 p-4">
                     <label

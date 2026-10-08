@@ -132,14 +132,7 @@ export async function getPrivateGalleryPublicBySlug(
   slug: string
 ): Promise<
   | { state: "missing" }
-  | {
-      state: "locked";
-      id: string;
-      title: string;
-      slug: string;
-      description: string | null;
-      expiresAtLocal: string;
-    }
+  | { state: "locked"; slug: string }
   | { state: "open"; gallery: PrivateGalleryPublic }
 > {
   const db = await getDb();
@@ -163,14 +156,7 @@ export async function getPrivateGalleryPublicBySlug(
   const hasAccess = verifyPrivateGalleryCookieValue({ galleryId: id, accessToken, cookieValue });
 
   if (!hasAccess) {
-    return {
-      state: "locked",
-      id,
-      title,
-      slug,
-      description,
-      expiresAtLocal,
-    };
+    return { state: "locked", slug };
   }
 
   if (expiresAtUtc && expiresAtUtc.getTime() <= Date.now()) {

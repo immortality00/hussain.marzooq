@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { E2E } from "@/e2e/fixtures";
 import { COOKIE_NAME, HINT_NAME, readSessionCookie } from "@/lib/auth/session-token";
+import { TRUSTED_DEVICE_COOKIE, isTrustedDevice, issueTrustedDevice } from "@/lib/auth/trusted-device";
 
 const { consumeFixedWindowRateLimit, clearFixedWindowRateLimit, after } = vi.hoisted(() => ({
   consumeFixedWindowRateLimit: vi.fn(),
@@ -59,8 +60,49 @@ describe("POST /admin/login", () => {
     expect(res.status).toBe(401);
     expect(await res.json()).toEqual({ ok: false, error: "wrong" });
     expect(res.cookies.get(COOKIE_NAME)).toBeUndefined();
-    expect(consumeFixedWindowRateLimit).toHaveBeenCalledTimes(1);
+    expect(consumeFixedWindowRateLimit).toHaveBeenCalledTimes(2);
     expect(clearFixedWindowRateLimit).not.toHaveBeenCalled();
+    expect(res.cookies.get(TRUSTED_DEVICE_COOKIE)).toBeUndefined();
+  });
+
+  it("marks the device as trusted after a successful sign-in", async () => {
+    const res = await login({ password: E2E.adminPassword });
+    const device = res.cookies.get(TRUSTED_DEVICE_COOKIE);
+    expect(isTrustedDevice(device?.value, SECRET)).toBe(true);
+    expect(device).toMatchObject({ httpOnly: true, path: "/admin", sameSite: "strict" });
+  });
+
+  it("counts an unknown device against the site-wide ceiling and refuses once it is reached", async () => {
+    consumeFixedWindowRateLimit.mockImplementation(async ({ bucket }: { bucket: string }) => ({
+      limited: bucket === "admin-login-site",
+    }));
+    const res = await login({ password: E2E.adminPassword });
+    expect(res.status).toBe(429);
+    expect(await res.json()).toEqual({ ok: false, error: "locked" });
+    expect(res.cookies.get(COOKIE_NAME)).toBeUndefined();
+  });
+
+  it("lets a trusted device past the site-wide ceiling, but not past its own IP limit", async () => {
+    consumeFixedWindowRateLimit.mockImplementation(async ({ bucket }: { bucket: string }) => ({
+      limited: bucket === "admin-login-site",
+    }));
+    const cookie = `${TRUSTED_DEVICE_COOKIE}=${issueTrustedDevice(SECRET)}`;
+    const res = await login({ password: E2E.adminPassword }, { cookie });
+    expect(res.status).toBe(200);
+    expect(consumeFixedWindowRateLimit).toHaveBeenCalledTimes(1);
+
+    consumeFixedWindowRateLimit.mockResolvedValue({ limited: true });
+    expect((await login({ password: E2E.adminPassword }, { cookie })).status).toBe(429);
+  });
+
+  it("ignores a forged or foreign trusted-device cookie", async () => {
+    consumeFixedWindowRateLimit.mockImplementation(async ({ bucket }: { bucket: string }) => ({
+      limited: bucket === "admin-login-site",
+    }));
+    for (const value of [issueTrustedDevice("another-secret"), "v1.1.aa.bb", "garbage"]) {
+      const res = await login({ password: E2E.adminPassword }, { cookie: `${TRUSTED_DEVICE_COOKIE}=${value}` });
+      expect(res.status, value).toBe(429);
+    }
   });
 
   it("locks out before checking the password once the attempts run out", async () => {

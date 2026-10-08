@@ -7,5 +7,3 @@ export type LocationOption = {
   population: number | null;
   source: "dataset" | "fallback";
 };
-
-export type BannerState = { type: "ok" | "err"; text: string } | null;

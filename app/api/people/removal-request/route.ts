@@ -5,6 +5,7 @@ import { getClientAddress, isValidEmail } from "@/app/api/_lib/public-form-secur
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { queueAdminAlert } from "@/lib/server/admin-alerts";
 import { withRouteErrors } from "@/app/api/_lib/route-errors";
+import { formTokenRefusal } from "@/lib/server/form-token";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ async function handlePost(req: Request) {
     return noStoreJson({ ok: false, error: "Invalid body." }, { status: 400 });
   }
 
-  const slug = (asNullableString(body.slug) ?? "").trim();
+  const slug = (asNullableString(body.slug) ?? "").trim().slice(0, 100);
   const email = (asNullableString(body.email) ?? "").trim().slice(0, 200);
   const reason = (asNullableString(body.reason) ?? "").trim().slice(0, 1000);
 
@@ -31,6 +32,11 @@ async function handlePost(req: Request) {
 
   if (!reason) {
     return noStoreJson({ ok: false, error: "A message is required." }, { status: 400 });
+  }
+
+  const tokenRefusal = formTokenRefusal(body.formToken, "removal");
+  if (tokenRefusal) {
+    return noStoreJson({ ok: false, error: tokenRefusal }, { status: 400 });
   }
 
   const key = getClientAddress(req);

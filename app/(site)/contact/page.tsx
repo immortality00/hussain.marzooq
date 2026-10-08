@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { ContactForm } from "@/components/contact/ContactForm";
-import { ContactFromUrl, ContactSuccess } from "@/components/contact/ContactFromUrl";
+import { ContactFromUrl } from "@/components/contact/ContactFromUrl";
 import { getActiveServicesForContact } from "@/lib/server/public-services";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { getPageSeo } from "@/lib/server/page-seo";
@@ -32,10 +32,6 @@ export default async function ContactPage() {
           title={seo.headerTitle}
           description={seo.headerDescription}
         />
-
-        <Suspense fallback={null}>
-          <ContactSuccess />
-        </Suspense>
 
         <div className="mt-10">
           <Suspense fallback={<ContactForm services={services} />}>

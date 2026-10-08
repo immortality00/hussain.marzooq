@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useFormToken } from "@/hooks/useFormToken";
+import type { FormStatusState } from "@/components/shared/FormStatus";
 import type { CategoryMode, ServiceItem, ServiceMode } from "./types";
 import {
   findInitialServiceMatch,
@@ -22,7 +23,7 @@ export function useContactFormState({
   initialCategory?: string;
   initialContextMessage?: string;
 }) {
-  const router = useRouter();
+  const formToken = useFormToken("inquiry");
 
   const categories = useMemo(() => getServiceCategories(services), [services]);
 
@@ -42,7 +43,6 @@ export function useContactFormState({
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [website, setWebsite] = useState("");
-  const [formStartedAt, setFormStartedAt] = useState<number>(() => Date.now());
 
   const [serviceMode, setServiceMode] = useState<ServiceMode>(
     initialServiceMatch ? "select" : initialService.trim() ? "other" : "select"
@@ -76,7 +76,8 @@ export function useContactFormState({
   });
 
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState("");
+  const [status, setStatus] = useState<FormStatusState>(null);
+  const fail = (text: string) => setStatus({ type: "err", text });
 
   const selectedService = useMemo(() => {
     if (!selectedServiceId) return null;
@@ -151,8 +152,8 @@ export function useContactFormState({
     setEmail("");
     setMessage("");
     setWebsite("");
-    setFormStartedAt(Date.now());
-    setMsg("");
+    formToken.renew();
+    setStatus(null);
 
     setServiceMode("select");
     setSelectedServiceId(initialServiceMatch?.id ?? "");
@@ -186,28 +187,28 @@ export function useContactFormState({
   }
 
   async function submit() {
-    setMsg("");
+    setStatus(null);
 
     const n = safeTrim(name);
     const e = safeTrim(email);
     const userMessage = safeTrim(message);
     const honeypot = safeTrim(website);
 
-    if (!n) return setMsg("Name is required.");
-    if (!e) return setMsg("Email is required.");
-    if (!isValidEmail(e)) return setMsg("Email format is invalid.");
-    if (!userMessage) return setMsg("Message is required.");
+    if (!n) return fail("Name is required.");
+    if (!e) return fail("Email is required.");
+    if (!isValidEmail(e)) return fail("Email format is invalid.");
+    if (!userMessage) return fail("Message is required.");
 
     if (serviceMode === "select" && !selectedService?.id) {
-      return setMsg("Please choose a service.");
+      return fail("Please choose a service.");
     }
 
     if (serviceMode === "other" && !safeTrim(otherService)) {
-      return setMsg("Please specify the service you need.");
+      return fail("Please specify the service you need.");
     }
 
     if (!finalCategory) {
-      return setMsg("Please choose a category.");
+      return fail("Please choose a category.");
     }
 
     const composedMessage = lockedContextMessage
@@ -215,6 +216,12 @@ export function useContactFormState({
       : userMessage;
 
     setLoading(true);
+    const issued = await formToken.take();
+    if ("error" in issued) {
+      fail(`Not sent: ${issued.error}`);
+      setLoading(false);
+      return;
+    }
     try {
       const res = await fetch("/api/inquiries", {
         method: "POST",
@@ -227,25 +234,22 @@ export function useContactFormState({
           serviceId: finalServiceId,
           serviceName: finalServiceName,
           website: honeypot,
-          formStartedAt,
+          formToken: issued.token,
         }),
       });
 
       const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
 
       if (!res.ok || !data?.ok) {
-        router.replace("/contact");
-        setMsg(data?.error ? `Send failed: ${data.error}` : "Send failed.");
+        fail(`Not sent: ${data?.error ?? `error ${res.status}`}`);
         setLoading(false);
         return;
       }
 
       resetForm();
-      router.replace("/contact?success=1");
-      router.refresh();
+      setStatus({ type: "ok", text: "Sent. I'll get back to you soon." });
     } catch {
-      router.replace("/contact");
-      setMsg("Send failed.");
+      fail("Not sent: no connection.");
     } finally {
       setLoading(false);
     }
@@ -275,7 +279,7 @@ export function useContactFormState({
     otherCategory,
     setOtherCategory,
     loading,
-    msg,
+    status,
     selectedService,
     handleSelectService,
     setModeSelect,
@@ -283,5 +287,6 @@ export function useContactFormState({
     bookingBadge,
     resetForm,
     submit,
+    prime: formToken.prime,
   };
 }

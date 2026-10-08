@@ -19,6 +19,8 @@ export const dynamic = "force-dynamic";
 
 const ACCESS_ATTEMPT_LIMIT = 5;
 const ACCESS_ATTEMPT_WINDOW_MS = 10 * 60 * 1000;
+const SLUG_ATTEMPT_LIMIT = 30;
+const SLUG_ATTEMPT_WINDOW_MS = 60 * 60 * 1000;
 
 function buildAccessRateLimitKey(req: Request, slug: string) {
   return `${slug}:${getClientAddress(req)}`;
@@ -51,6 +53,20 @@ async function handlePost(req: Request) {
   if (rateLimit.limited) {
     return noStoreJson(
       { ok: false, error: "Too many wrong attempts. Try again later." },
+      { status: 429 }
+    );
+  }
+
+  const slugLimit = await consumeFixedWindowRateLimit({
+    bucket: "private-gallery-access-slug",
+    key: slug,
+    limit: SLUG_ATTEMPT_LIMIT,
+    windowMs: SLUG_ATTEMPT_WINDOW_MS,
+  });
+
+  if (slugLimit.limited) {
+    return noStoreJson(
+      { ok: false, error: "Too many attempts on this page. Try again in an hour." },
       { status: 429 }
     );
   }

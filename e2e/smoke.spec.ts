@@ -90,11 +90,9 @@ test.describe("contact", () => {
       .getByPlaceholder(/tell me about your project|add your message here/i)
       .fill(`Seeded end-to-end enquiry ${Date.now()}.`);
 
-    // The route rejects anything submitted under 2.5s as bot traffic.
-    await page.waitForTimeout(3_000);
     await page.getByRole("button", { name: "Send" }).click();
 
-    await expect(page).toHaveURL(/success=1/, { timeout: 20_000 });
+    await expect(page.getByRole("status")).toHaveText("Sent. I'll get back to you soon.", { timeout: 20_000 });
   });
 });
 

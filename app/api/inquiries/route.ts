@@ -11,11 +11,8 @@ import {
   isValidObjectIdString,
   noStoreJson,
 } from "@/app/api/_lib/common";
-import {
-  getClientAddress,
-  isValidEmail,
-  isValidFormStartedAt,
-} from "@/app/api/_lib/public-form-security";
+import { getClientAddress, isValidEmail } from "@/app/api/_lib/public-form-security";
+import { formTokenRefusal } from "@/lib/server/form-token";
 import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +20,6 @@ export const dynamic = "force-dynamic";
 const INQUIRIES_RATE_LIMIT_WINDOW_MS = 10 * 60_000;
 const INQUIRIES_RATE_LIMIT_MAX = 6;
 const INQUIRIES_DUPLICATE_WINDOW_MS = 2 * 60_000;
-const MINIMUM_FORM_TIME_MS = 2500;
 
 export async function GET() {
   const deny = await requireAdminOr401();
@@ -80,11 +76,9 @@ async function handlePost(req: Request) {
     serviceId = rawServiceId;
   }
 
-  if (!isValidFormStartedAt(bodyUnknown.formStartedAt, MINIMUM_FORM_TIME_MS)) {
-    return noStoreJson(
-      { ok: false, error: "Submission was too fast. Please try again." },
-      { status: 400 }
-    );
+  const tokenRefusal = formTokenRefusal(bodyUnknown.formToken, "inquiry");
+  if (tokenRefusal) {
+    return noStoreJson({ ok: false, error: tokenRefusal }, { status: 400 });
   }
 
   const clientAddress = getClientAddress(req);

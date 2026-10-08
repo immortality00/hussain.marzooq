@@ -18,7 +18,10 @@ vi.mock("@/lib/server/testimonial-upload-sessions", async () => {
 const SESSION = "a".repeat(32);
 vi.stubEnv("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME", "demo");
 
+vi.stubEnv("ADMIN_COOKIE_SECRET", "form-token-test-secret");
+
 import { POST } from "@/app/api/testimonials/submit/route";
+import { issueFormToken } from "@/lib/server/form-token";
 
 const submit = () =>
   POST(
@@ -30,7 +33,7 @@ const submit = () =>
         review: "Lovely work.",
         rating: 5,
         consent: true,
-        formStartedAt: Date.now() - 60_000,
+        formToken: issueFormToken("review", Date.now() - 60_000),
         photoUrls: [`https://res.cloudinary.com/demo/image/upload/v1/hm_visuals/testimonials/${SESSION}/photos/one.jpg`],
       }),
     })
