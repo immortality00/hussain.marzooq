@@ -1,48 +1,13 @@
-import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
-import { GeistMono } from "geist/font/mono";
-import { ThemeProvider } from "next-themes";
 import "./globals.css";
-import { AppShell } from "@/components/site/AppShell";
-import { SITE_URL } from "@/lib/seo/site-url";
+import { RootDocument } from "@/components/site/RootDocument";
+import { ROOT_METADATA } from "@/lib/seo/root-metadata";
 
-export const metadata: Metadata = {
-  metadataBase: new URL(SITE_URL),
-  title: "Hussain.Art",
-  description:
-    "Cinematic photography, film, NFTs, dance, and creative development by Hussain Marzooq.",
-  openGraph: {
-    type: "website",
-    siteName: "Hussain.Art",
-    title: "Hussain.Art",
-    description:
-      "Cinematic photography, film, NFTs, dance, and creative development by Hussain Marzooq.",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Hussain.Art",
-    description:
-      "Cinematic photography, film, NFTs, dance, and creative development by Hussain Marzooq.",
-  },
-};
+export const metadata = ROOT_METADATA;
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return (
-    <html
-      lang="en"
-      data-scroll-behavior="smooth"
-      className={`${GeistSans.variable} ${GeistMono.variable}`}
-      suppressHydrationWarning
-    >
-      <body>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
-          <AppShell>{children}</AppShell>
-        </ThemeProvider>
-      </body>
-    </html>
-  );
+  return <RootDocument>{children}</RootDocument>;
 }

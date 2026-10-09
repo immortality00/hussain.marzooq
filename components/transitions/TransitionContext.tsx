@@ -28,9 +28,11 @@ function hrefToPath(href: string): string {
 export function TransitionProvider({
   children,
   images,
+  fullPageLoads = false,
 }: {
   children: React.ReactNode;
   images?: string[];
+  fullPageLoads?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -68,6 +70,10 @@ export function TransitionProvider({
 
   const navigate = useCallback(
     (href: string) => {
+      if (fullPageLoads) {
+        window.location.assign(href);
+        return;
+      }
       if (playing.current) return;
 
       const path = hrefToPath(href);
@@ -111,7 +117,7 @@ export function TransitionProvider({
         startOut();
       }, CONTACT_SHEET_IN_MS + CONTACT_SHEET_MAX_WAIT_MS);
     },
-    [images, pathname, router, startOut],
+    [fullPageLoads, images, pathname, router, startOut],
   );
 
   // Site-wide trigger: intercept every same-origin internal link click (capture
@@ -139,7 +145,7 @@ export function TransitionProvider({
         return;
       }
       if (url.origin !== window.location.origin) return;
-      if (url.pathname.startsWith("/admin")) return;
+      if (url.pathname.startsWith("/admin") && !fullPageLoads) return;
       if (url.pathname === window.location.pathname) return;
 
       e.preventDefault();
@@ -148,7 +154,7 @@ export function TransitionProvider({
 
     document.addEventListener("click", onClick, true);
     return () => document.removeEventListener("click", onClick, true);
-  }, [navigate]);
+  }, [fullPageLoads, navigate]);
 
   return (
     <TransitionCtx.Provider value={{ navigate }}>

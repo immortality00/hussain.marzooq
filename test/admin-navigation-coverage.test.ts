@@ -27,7 +27,13 @@ describe("admin navigation", () => {
   });
 
   it("keeps the root layout and 404 free of data reads, since Next renders the 404 into every page", () => {
-    for (const file of ["app/layout.tsx", "app/not-found.tsx", "app/admin/layout.tsx", "app/admin/sign-in/page.tsx"]) {
+    for (const file of [
+      "app/layout.tsx",
+      "app/not-found.tsx",
+      "components/site/RootDocument.tsx",
+      "app/admin/layout.tsx",
+      "app/admin/sign-in/page.tsx",
+    ]) {
       expect(read(file), file).not.toMatch(/PublicFrame|SiteFooter|lib\/server\/|cookies\(|headers\(/);
     }
   });

@@ -1,5 +1,6 @@
 import { MongoClient } from "mongodb";
 import { isBuildPhase } from "@/lib/server/public-read";
+import { logPoolConnections } from "@/lib/server/mongodb-pool-log";
 
 const uri = process.env.MONGODB_URI ?? "";
 const SERVER_SELECTION_TIMEOUT_MS = 10_000;
@@ -20,6 +21,7 @@ function connect() {
     maxConnecting: 10,
     serverSelectionTimeoutMS: SERVER_SELECTION_TIMEOUT_MS,
   });
+  logPoolConnections(client);
   const startedAt = Date.now();
   const connecting = client.connect();
   connecting.then(
