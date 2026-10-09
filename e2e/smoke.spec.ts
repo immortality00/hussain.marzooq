@@ -20,6 +20,38 @@ test.describe("public site", () => {
     await expect(page.locator("body")).not.toContainText("This page could not be found");
   });
 
+  test("a bad URL's 404 is complete in the server HTML", async ({ page }) => {
+    const response = await page.request.get("/definitely-not-a-real-page");
+    const html = await response.text();
+
+    expect(response.status()).toBe(404);
+    expect(html).not.toContain("__next_error__");
+    expect(html).toContain("Page not found");
+    expect(html).toContain("<title>Page not found — Hussain.Art</title>");
+    expect(html).toMatch(/<meta name="robots" content="noindex"/);
+    expect(html).toContain("Dubai based, available worldwide.");
+
+    const applied = [...html.matchAll(/<link rel="stylesheet" href="([^"]+)"/g)].map((match) => match[1]);
+    const preloaded = [...html.matchAll(/<link rel="preload" href="([^"]+\.css)" as="style"/g)].map((match) => match[1]);
+    expect(applied.length).toBeGreaterThan(0);
+    expect(preloaded.filter((href) => !applied.includes(href))).toEqual([]);
+  });
+
+  test("links on the 404 open the page they point to", async ({ page }) => {
+    const notFound = page.getByRole("heading", { name: "Page not found" });
+
+    await page.goto("/definitely-not-a-real-page");
+    await page.getByRole("link", { name: "Back home" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole("link", { name: "See the work" }).first()).toBeVisible();
+    await expect(notFound).toHaveCount(0);
+
+    await page.goto("/definitely-not-a-real-page");
+    await page.locator("footer").getByRole("link", { name: "Privacy" }).click();
+    await expect(page).toHaveURL(/\/privacy$/);
+    await expect(notFound).toHaveCount(0);
+  });
+
   test("videography loads its seeded films", async ({ page }) => {
     await page.goto("/videography");
 

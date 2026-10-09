@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { connect, close, options } = vi.hoisted(() => ({
+const { connect, close, on, options } = vi.hoisted(() => ({
   connect: vi.fn(),
   close: vi.fn(async () => undefined),
+  on: vi.fn(),
   options: [] as unknown[],
 }));
 
@@ -10,6 +11,7 @@ vi.mock("mongodb", () => ({
   MongoClient: class {
     connect = connect;
     close = close;
+    on = on;
     constructor(_uri: string, opts: unknown) {
       options.push(opts);
     }
@@ -25,6 +27,7 @@ beforeEach(() => {
   vi.resetModules();
   connect.mockReset();
   close.mockClear();
+  on.mockClear();
   now = 1_000_000;
   vi.spyOn(Date, "now").mockImplementation(() => now);
   globalThis._mongoClientPromise = undefined;
@@ -91,5 +94,12 @@ describe("the database connection", () => {
     await settle();
     expect(options[0]).toMatchObject({ serverSelectionTimeoutMS: 10_000 });
     expect(console.info).toHaveBeenCalledWith(expect.stringMatching(/^\[mongodb\] connected in \d+ ms$/));
+  });
+
+  it("logs every pooled connection the client opens", async () => {
+    connect.mockResolvedValue({ db: vi.fn() });
+    await import("@/lib/mongodb");
+    const events = on.mock.calls.map(([name]) => name);
+    expect(events).toEqual(expect.arrayContaining(["connectionCreated", "connectionReady", "connectionClosed"]));
   });
 });

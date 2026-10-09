@@ -1,10 +1,11 @@
 "use client";
 
 import "./globals.css";
+import { FONT_VARIABLES } from "@/lib/fonts";
 
 export default function GlobalError({ reset }: { error: Error & { digest?: string }; reset: () => void }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className={`${FONT_VARIABLES} dark`}>
       <body className="bg-background text-foreground">
         <main className="mx-auto flex min-h-dvh max-w-2xl flex-col justify-center px-4">
           <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
