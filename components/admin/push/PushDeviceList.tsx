@@ -22,8 +22,8 @@ export function PushDeviceList({
     <div className="divide-y rounded-xl border">
       {devices.map((device) => (
         <div key={device.id} className="flex items-center gap-3 px-4 py-2.5">
-          <span className="flex-1 truncate">{device.label}</span>
-          <span className="font-mono text-xs text-muted-foreground">{formatDate(device.createdAt)}</span>
+          <span className="min-w-0 flex-1 wrap-anywhere">{device.label}</span>
+          <span className="shrink-0 font-mono text-xs text-muted-foreground">{formatDate(device.createdAt)}</span>
           <AdminButton
             size="xs"
             variant="ghost"

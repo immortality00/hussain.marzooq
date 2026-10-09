@@ -62,7 +62,7 @@ export default function SortableServiceItem({
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <div className="w-full truncate font-medium sm:w-auto">{service.name}</div>
+          <div className="w-full font-medium wrap-anywhere sm:w-auto">{service.name}</div>
 
           {!service.isActive ? (
             <span className="shrink-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] text-muted-foreground">
@@ -79,8 +79,8 @@ export default function SortableServiceItem({
           </span>
         </div>
 
-        <div className="truncate text-xs text-muted-foreground">/{service.slug}</div>
-        <div className="truncate text-xs text-muted-foreground">
+        <div className="text-xs text-muted-foreground wrap-anywhere">/{service.slug}</div>
+        <div className="text-xs text-muted-foreground wrap-anywhere">
           category: <span className="font-mono">{service.category}</span>
         </div>
       </div>

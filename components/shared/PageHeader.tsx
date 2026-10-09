@@ -11,7 +11,7 @@ export function PageHeader({ title, description, className, titleClassName }: Pa
   return (
     <div className={className}>
       <h1
-        className={`text-4xl font-semibold tracking-tight sm:text-5xl${titleClassName ? ` ${titleClassName}` : ""}`}
+        className={`text-4xl font-semibold tracking-tight wrap-anywhere sm:text-5xl${titleClassName ? ` ${titleClassName}` : ""}`}
       >
         <AnimatedText>{title}</AnimatedText>
       </h1>

@@ -50,8 +50,8 @@ export function PrivateGalleryMediaCard({
       </div>
 
       <div className="space-y-1 p-3">
-        <div className="line-clamp-1 text-sm font-medium">{item.title}</div>
-        <div className="line-clamp-2 text-xs text-muted-foreground">{mediaMetaText(item)}</div>
+        <div className="text-sm font-medium wrap-anywhere">{item.title}</div>
+        <div className="text-xs text-muted-foreground wrap-anywhere">{mediaMetaText(item)}</div>
       </div>
     </button>
   );

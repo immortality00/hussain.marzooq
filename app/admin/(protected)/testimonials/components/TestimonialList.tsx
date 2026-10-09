@@ -37,7 +37,7 @@ export function ReviewRow({
         <button type="button" onClick={() => onInspect(item)} className="min-w-0 text-left">
           <div className="flex gap-4">
             <Avatar name={item.name} profilePhotoUrl={item.profilePhotoUrl} />
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 wrap-anywhere">
               <div className="flex flex-wrap items-center gap-2">
                 <div className="text-sm font-medium">{item.name}</div>
                 <StatusPill approved={item.isApproved} />

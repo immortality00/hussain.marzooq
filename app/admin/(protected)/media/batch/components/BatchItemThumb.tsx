@@ -58,7 +58,7 @@ export function BatchItemThumb({
       ) : null}
 
       {!compact ? (
-        <div className="truncate px-2 py-1 text-[11px] text-muted-foreground">{label}</div>
+        <div className="px-2 py-1 text-[11px] text-muted-foreground wrap-anywhere">{label}</div>
       ) : null}
     </div>
   );

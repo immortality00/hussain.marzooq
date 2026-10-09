@@ -73,7 +73,7 @@ export function SingleReviewCard({
 
         <blockquote
           key={item.id}
-          className="mt-5 text-balance text-xl font-medium leading-[1.12] tracking-[-0.045em] sm:text-2xl lg:text-3xl"
+          className="mt-5 text-balance text-xl font-medium leading-[1.12] tracking-[-0.045em] wrap-anywhere sm:text-2xl lg:text-3xl"
         >
           &quot;{item.review}&quot;
         </blockquote>

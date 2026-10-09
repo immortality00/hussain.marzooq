@@ -65,8 +65,8 @@ export default function ServiceSimpleSection({
                   label={`Select ${s.name}`}
                 />
                 <div className="min-w-0">
-                  <div className="font-medium truncate">{s.name}</div>
-                  <div className="text-xs text-muted-foreground truncate">/{s.slug}</div>
+                  <div className="font-medium wrap-anywhere">{s.name}</div>
+                  <div className="text-xs text-muted-foreground wrap-anywhere">/{s.slug}</div>
                 </div>
               </div>
 

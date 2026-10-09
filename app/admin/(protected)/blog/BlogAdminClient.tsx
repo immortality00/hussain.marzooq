@@ -81,8 +81,8 @@ export default function BlogAdminClient() {
                 />
 
                 <AdminLink href={`/admin/blog/edit?id=${post.id}`} className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{post.title || "Untitled"}</div>
-                  <div className="mt-0.5 truncate font-mono text-[11px] text-muted-foreground">
+                  <div className="text-sm font-medium wrap-anywhere">{post.title || "Untitled"}</div>
+                  <div className="mt-0.5 font-mono wrap-anywhere text-[11px] text-muted-foreground">
                     /{post.slug}
                     {post.categoryLabel ? ` · ${post.categoryLabel}` : ""}
                     {` · ${formatDate(post.updatedAt)}`}

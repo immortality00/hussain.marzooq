@@ -90,7 +90,7 @@ export default async function BlogPostPage({
             ) : null}
           </div>
 
-          <h1 className="mt-5 text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h1 className="mt-5 text-4xl font-semibold tracking-tight wrap-anywhere sm:text-5xl">
             <AnimatedText>{post.title}</AnimatedText>
           </h1>
 

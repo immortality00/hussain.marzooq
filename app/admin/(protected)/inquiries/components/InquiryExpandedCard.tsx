@@ -41,7 +41,7 @@ export default function InquiryExpandedCard({
 
         <div className="text-sm">
           <div className="text-xs text-muted-foreground">Message</div>
-          <div className="whitespace-pre-wrap rounded-xl border bg-muted/25 px-3 py-3">{inquiry.message}</div>
+          <div className="whitespace-pre-wrap rounded-xl border bg-muted/25 px-3 py-3 wrap-anywhere">{inquiry.message}</div>
         </div>
 
         {!archivedMode ? (

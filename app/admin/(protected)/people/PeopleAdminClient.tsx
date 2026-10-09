@@ -162,15 +162,15 @@ export default function PeopleAdminClient() {
                     </div>
 
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-medium">{item.name}</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="min-w-0 text-sm font-medium wrap-anywhere">{item.name}</span>
                         {item.removalRequestedAt ? (
                           <span className="shrink-0 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-amber-600 dark:text-amber-400">
                             Removal requested
                           </span>
                         ) : null}
                       </div>
-                      <div className="mt-1 text-xs text-muted-foreground">
+                      <div className="mt-1 text-xs text-muted-foreground wrap-anywhere">
                         /people/{item.slug} • {statusLabel(item)}
                       </div>
                     </div>

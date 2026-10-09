@@ -37,7 +37,7 @@ export default function NftModal({
       >
         <div className="flex items-center justify-between gap-3 border-b p-4">
           <div className="min-w-0">
-            <div className="truncate text-lg font-semibold">{item.title}</div>
+            <div className="text-lg font-semibold wrap-anywhere">{item.title}</div>
             <div className="mt-1 text-xs text-muted-foreground">{editionLabel(item)}</div>
           </div>
 

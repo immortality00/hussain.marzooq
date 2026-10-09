@@ -48,7 +48,7 @@ export default async function TestimonialsPage() {
               <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-px bg-border/60 lg:block" />
 
               <div className="max-w-3xl">
-                <h1 className="text-balance text-3xl font-semibold leading-[1.02] tracking-[-0.055em] sm:text-4xl lg:text-5xl">
+                <h1 className="text-balance text-3xl font-semibold leading-[1.02] tracking-[-0.055em] wrap-anywhere sm:text-4xl lg:text-5xl">
                   <AnimatedText>{seo.headerTitle}</AnimatedText>
                 </h1>
 

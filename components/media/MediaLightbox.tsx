@@ -82,8 +82,8 @@ export default function MediaLightbox({
       >
         <div className="flex items-center justify-between gap-3 border-b bg-background/80 p-4 backdrop-blur">
           <div className="min-w-0">
-            <div className="truncate text-lg font-semibold">{active.title}</div>
-            <div className="mt-1 text-xs text-muted-foreground">
+            <div className="text-lg font-semibold wrap-anywhere">{active.title}</div>
+            <div className="mt-1 text-xs text-muted-foreground wrap-anywhere">
               {[active.year ? String(active.year) : "", active.location ?? "", active.event ?? ""]
                 .filter(Boolean)
                 .join(" • ")}

@@ -62,7 +62,7 @@ export default function PersonPasswordForm({
           </div>
         </div>
 
-        <h1 className="mt-5 text-3xl font-semibold tracking-tight">{name}</h1>
+        <h1 className="mt-5 text-3xl font-semibold tracking-tight wrap-anywhere">{name}</h1>
         {bio ? (
           <p className="mt-3 text-sm leading-6 text-muted-foreground">{bio}</p>
         ) : (

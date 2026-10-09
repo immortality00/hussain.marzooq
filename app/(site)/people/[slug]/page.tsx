@@ -81,7 +81,7 @@ export default async function PersonDetailPage({
               ) : null}
             </div>
           </div>
-          <h1 className="mt-5 text-3xl font-semibold tracking-tight">{state.name}</h1>
+          <h1 className="mt-5 text-3xl font-semibold tracking-tight wrap-anywhere">{state.name}</h1>
           <p className="mt-3 text-sm leading-6 text-muted-foreground">Content not available.</p>
         </section>
       </main>
@@ -120,7 +120,7 @@ export default async function PersonDetailPage({
             </div>
           </div>
 
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h1 className="mt-6 text-4xl font-semibold tracking-tight wrap-anywhere sm:text-5xl">
             <AnimatedText>{person.name}</AnimatedText>
           </h1>
 

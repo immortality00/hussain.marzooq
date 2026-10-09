@@ -251,7 +251,7 @@
   }
 
   .blog-prose {
-    @apply text-base leading-8 text-foreground/90;
+    @apply text-base leading-8 text-foreground/90 wrap-break-word;
   }
   .blog-prose > * + * {
     @apply mt-6;

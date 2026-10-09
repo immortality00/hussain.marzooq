@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { WizardSummaryRow } from "@/components/admin/wizard/WizardSummaryRow";
 import { WizardTabs } from "@/components/admin/wizard/WizardTabs";
 import { GalleryFormFields } from "./GalleryFormFields";
 import { PrivateGalleryMediaPicker } from "./PrivateGalleryMediaPicker";
@@ -52,11 +53,11 @@ export function GalleryWizard({ admin }: { admin: Admin }) {
           <section className="rounded-[2rem] border p-5">
             <div className="text-sm font-medium">Review</div>
             <dl className="mt-4 grid gap-2 text-sm">
-              <SummaryRow label="Title" value={admin.title || "—"} />
-              <SummaryRow label="Link" value={admin.slug ? `/g/${admin.slug}` : "—"} />
-              <SummaryRow label="Media items" value={String(admin.selectedMediaIds.length)} />
-              <SummaryRow label="Status" value={admin.isActive ? "Active" : "Inactive"} />
-              <SummaryRow label="Expires" value={admin.expiresAtLocal || "Never"} />
+              <WizardSummaryRow label="Title" value={admin.title || "—"} />
+              <WizardSummaryRow label="Link" value={admin.slug ? `/g/${admin.slug}` : "—"} />
+              <WizardSummaryRow label="Media items" value={String(admin.selectedMediaIds.length)} />
+              <WizardSummaryRow label="Status" value={admin.isActive ? "Active" : "Inactive"} />
+              <WizardSummaryRow label="Expires" value={admin.expiresAtLocal || "Never"} />
             </dl>
           </section>
         ) : null}
@@ -114,14 +115,5 @@ export function GalleryWizard({ admin }: { admin: Admin }) {
         ) : null}
       </div>
     </section>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-4 border-b py-1 last:border-0">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="truncate font-medium">{value}</dd>
-    </div>
   );
 }

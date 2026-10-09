@@ -49,7 +49,7 @@ export function ServiceCard({
           ) : null}
 
           <div className="absolute inset-x-0 bottom-0 p-5">
-            <h2 className="text-2xl font-semibold tracking-tight text-white">
+            <h2 className="text-2xl font-semibold tracking-tight text-white wrap-anywhere">
               {service.name || "Service"}
             </h2>
           </div>

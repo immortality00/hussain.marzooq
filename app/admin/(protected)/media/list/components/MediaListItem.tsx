@@ -73,14 +73,14 @@ export function MediaListItem({
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <div className="truncate text-lg font-semibold">{item.title}</div>
+                <div className="min-w-0 text-lg font-semibold wrap-anywhere">{item.title}</div>
                 {deleting ? (
                   <span className="inline-flex rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[11px] uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
                     Processing
                   </span>
                 ) : null}
               </div>
-              <div className="mt-1 text-xs text-muted-foreground">
+              <div className="mt-1 text-xs text-muted-foreground wrap-anywhere">
                 {item.type} • {item.isPublic ? "Public" : "Private"}
                 {item.year ? ` • ${item.year}` : ""}
                 {item.location ? ` • ${item.location}` : ""}

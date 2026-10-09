@@ -80,7 +80,7 @@ export default function NftCard({
           ) : null}
 
           <div className="absolute inset-x-0 bottom-0 p-5">
-            <div className="text-2xl font-semibold tracking-tight text-white">{item.title}</div>
+            <div className="text-2xl font-semibold tracking-tight text-white wrap-anywhere">{item.title}</div>
             <div className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.2em] text-white/60">
               {editionLabel(item)}
             </div>

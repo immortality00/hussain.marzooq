@@ -90,9 +90,9 @@ export default function InquirySection({
                 className="col-span-11 grid grid-cols-11 gap-2 text-left"
               >
                 <div className="col-span-2 self-center text-xs text-muted-foreground">{fmt(it.createdAt)}</div>
-                <div className="col-span-2 truncate self-center font-medium">{it.name}</div>
-                <div className="col-span-3 truncate self-center text-muted-foreground">{it.email}</div>
-                <div className="col-span-2 truncate self-center">{it.serviceName ?? it.serviceId ?? "Other"}</div>
+                <div className="col-span-2 self-center font-medium wrap-anywhere">{it.name}</div>
+                <div className="col-span-3 self-center text-muted-foreground wrap-anywhere">{it.email}</div>
+                <div className="col-span-2 self-center wrap-anywhere">{it.serviceName ?? it.serviceId ?? "Other"}</div>
                 <div className="col-span-2 self-center">
                   <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-medium ${statusPill(it.status)}`}>
                     {it.status}

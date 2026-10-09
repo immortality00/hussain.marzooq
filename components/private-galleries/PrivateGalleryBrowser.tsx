@@ -96,7 +96,7 @@ export default function PrivateGalleryBrowser({
                   <div className="absolute inset-0 bg-linear-to-t from-black/72 via-black/10 to-transparent" />
 
                   <div className="absolute inset-x-0 bottom-0 p-5">
-                    <div className="text-2xl font-semibold tracking-tight text-white">
+                    <div className="text-2xl font-semibold tracking-tight text-white wrap-anywhere">
                       {item.title}
                     </div>
                   </div>
@@ -147,9 +147,9 @@ export default function PrivateGalleryBrowser({
           >
             <div className="flex items-center justify-between gap-3 border-b p-4">
               <div className="min-w-0">
-                <div className="truncate text-lg font-semibold">{active.title}</div>
+                <div className="text-lg font-semibold wrap-anywhere">{active.title}</div>
                 {active.description ? (
-                  <div className="mt-1 text-xs text-muted-foreground">
+                  <div className="mt-1 text-xs text-muted-foreground wrap-anywhere">
                     {active.description}
                   </div>
                 ) : null}

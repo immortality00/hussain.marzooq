@@ -64,7 +64,7 @@ export function TestimonialInspectModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/50 p-5">
-          <div>
+          <div className="min-w-0 wrap-anywhere">
             <div className="flex flex-wrap items-center gap-2">
               <h2 className="text-2xl font-semibold tracking-[-0.04em]">{item.name}</h2>
               {actionBusy ? (
@@ -121,7 +121,7 @@ export function TestimonialInspectModal({
               <section className="rounded-[1.6rem] border border-border/60 p-5">
                 <div className="flex items-start gap-4">
                   <Avatar name={item.name} profilePhotoUrl={item.profilePhotoUrl} />
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 wrap-anywhere">
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="text-lg font-semibold tracking-[-0.02em]">{item.name}</div>
                       <StatusPill approved={item.isApproved} />
@@ -157,7 +157,7 @@ export function TestimonialInspectModal({
 
             <div className="space-y-5">
               <section className="rounded-[1.6rem] border border-border/60 bg-muted/20 p-5">
-                <blockquote className="whitespace-pre-wrap text-2xl leading-10 tracking-[-0.04em] text-foreground">
+                <blockquote className="whitespace-pre-wrap text-2xl leading-10 tracking-[-0.04em] text-foreground wrap-anywhere">
                   &quot;{item.review}&quot;
                 </blockquote>
               </section>

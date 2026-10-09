@@ -76,14 +76,14 @@ export function GalleryList({
             return (
               <article key={item.id} className="rounded-[2rem] border p-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
+                  <div className="flex min-w-0 items-start gap-3">
                     <BulkCheckbox
                       checked={isSelected(item.id)}
                       onChange={() => onToggleSelect(item.id)}
                       label={`Select ${item.title}`}
                       className="mt-1"
                     />
-                    <div>
+                    <div className="min-w-0 wrap-anywhere">
                     <div className="flex flex-wrap items-center gap-2">
                       <div className="text-sm font-medium">{item.title}</div>
                       <span

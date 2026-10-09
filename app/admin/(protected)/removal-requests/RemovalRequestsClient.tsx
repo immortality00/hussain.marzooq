@@ -112,24 +112,24 @@ export default function RemovalRequestsClient() {
 
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="truncate text-sm font-medium">{item.name}</span>
+                    <span className="min-w-0 text-sm font-medium wrap-anywhere">{item.name}</span>
                     {item.requestedAt ? (
-                      <span className="font-mono text-[11px] text-muted-foreground">
+                      <span className="shrink-0 font-mono text-[11px] text-muted-foreground">
                         {item.requestedAt.slice(0, 10)}
                       </span>
                     ) : null}
                   </div>
                   <AdminLink
                     href={`/people/${item.slug}`}
-                    className="mt-0.5 block text-xs text-muted-foreground underline-offset-2 hover:underline"
+                    className="mt-0.5 block text-xs text-muted-foreground underline-offset-2 wrap-anywhere hover:underline"
                   >
                     /people/{item.slug}
                   </AdminLink>
                   {item.email ? (
-                    <div className="mt-2 text-xs text-muted-foreground">Contact: {item.email}</div>
+                    <div className="mt-2 text-xs text-muted-foreground wrap-anywhere">Contact: {item.email}</div>
                   ) : null}
                   {item.reason ? (
-                    <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-muted-foreground">
+                    <p className="mt-2 whitespace-pre-wrap text-xs leading-5 text-muted-foreground wrap-anywhere">
                       “{item.reason}”
                     </p>
                   ) : null}

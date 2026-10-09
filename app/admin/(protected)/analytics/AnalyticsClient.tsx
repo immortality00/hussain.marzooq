@@ -98,8 +98,8 @@ function StatList({ title, rows }: { title: string; rows: AnalyticsRow[] }) {
                 aria-hidden
               />
               <div className="relative flex items-center justify-between gap-4">
-                <span className="truncate text-sm">{row.name}</span>
-                <span className="font-mono text-sm tabular-nums text-muted-foreground">
+                <span className="min-w-0 text-sm wrap-anywhere">{row.name}</span>
+                <span className="shrink-0 font-mono text-sm tabular-nums text-muted-foreground">
                   {row.count.toLocaleString()}
                 </span>
               </div>

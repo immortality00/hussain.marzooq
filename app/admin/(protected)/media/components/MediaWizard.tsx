@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { WizardSummaryRow } from "@/components/admin/wizard/WizardSummaryRow";
 import { WizardTabs } from "@/components/admin/wizard/WizardTabs";
 import { getCloudinaryMediaFolderForCategory } from "@/lib/cloudinary-folders";
 import { toEmbedUrl } from "@/lib/video-embed";
@@ -153,10 +154,10 @@ export default function MediaWizard({
           <section className="rounded-3xl border p-5">
             <div className="text-sm font-medium">Review</div>
             <dl className="mt-4 grid gap-2 text-sm">
-              <SummaryRow label="Title" value={editor.title || "—"} />
-              <SummaryRow label="Category" value={editor.primaryCategory ?? "—"} />
-              <SummaryRow label="Visibility" value={editor.isPublic ? "Public" : "Hidden"} />
-              <SummaryRow
+              <WizardSummaryRow label="Title" value={editor.title || "—"} />
+              <WizardSummaryRow label="Category" value={editor.primaryCategory ?? "—"} />
+              <WizardSummaryRow label="Visibility" value={editor.isPublic ? "Public" : "Hidden"} />
+              <WizardSummaryRow
                 label="Media"
                 value={
                   editor.mode === "embed"
@@ -170,8 +171,8 @@ export default function MediaWizard({
                       : "None"
                 }
               />
-              <SummaryRow label="Tags" value={String(editor.selectedTagSlugs.length)} />
-              <SummaryRow label="Appearances" value={String(editor.appearances.length)} />
+              <WizardSummaryRow label="Tags" value={String(editor.selectedTagSlugs.length)} />
+              <WizardSummaryRow label="Appearances" value={String(editor.appearances.length)} />
             </dl>
           </section>
         ) : null}
@@ -230,15 +231,6 @@ export default function MediaWizard({
           <span className="text-xs text-muted-foreground">{blockedReason}</span>
         ) : null}
       </div>
-    </div>
-  );
-}
-
-function SummaryRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-center justify-between gap-4 border-b py-1 last:border-0">
-      <dt className="text-muted-foreground">{label}</dt>
-      <dd className="truncate font-medium">{value}</dd>
     </div>
   );
 }

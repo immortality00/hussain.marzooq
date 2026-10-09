@@ -33,10 +33,10 @@ export function ReviewModal({
             <Avatar name={item.name} profilePhotoUrl={item.profilePhotoUrl} size="card" />
 
             <div className="min-w-0">
-              <div className="truncate text-lg font-semibold tracking-[-0.03em]">{item.name}</div>
+              <div className="text-lg font-semibold tracking-[-0.03em] wrap-anywhere">{item.name}</div>
 
               {getIdentityLine(item) ? (
-                <div className="mt-1 truncate text-sm text-muted-foreground">
+                <div className="mt-1 text-sm text-muted-foreground wrap-anywhere">
                   {getIdentityLine(item)}
                 </div>
               ) : null}
@@ -57,7 +57,7 @@ export function ReviewModal({
             <div className="space-y-6">
               <div className="text-xl text-amber-600 dark:text-amber-400">{renderStars(item.rating)}</div>
 
-              <blockquote className="rounded-[2rem] border border-border/60 bg-muted/25 p-5 text-xl leading-9 tracking-[-0.02em] sm:text-2xl sm:leading-10">
+              <blockquote className="rounded-[2rem] border border-border/60 bg-muted/25 p-5 text-xl leading-9 tracking-[-0.02em] wrap-anywhere sm:text-2xl sm:leading-10">
                 &quot;{item.review}&quot;
               </blockquote>
             </div>

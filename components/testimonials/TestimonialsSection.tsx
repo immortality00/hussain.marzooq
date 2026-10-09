@@ -63,7 +63,7 @@ export default function TestimonialsSection({ items }: { items: PublicTestimonia
 
   return (
     <>
-      <section className="grid gap-5 lg:grid-cols-[minmax(260px,0.72fr)_minmax(0,1.28fr)] lg:items-start">
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(260px,0.72fr)_minmax(0,1.28fr)] lg:items-start">
         <div className="lg:sticky lg:top-20">
           <TestimonialMap activePoint={activePoint} />
         </div>
