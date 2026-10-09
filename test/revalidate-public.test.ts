@@ -38,15 +38,18 @@ function collected(pattern: RegExp) {
   return [...new Set(apiSources.flatMap((file) => [...readSource(file).matchAll(pattern)].map((m) => m[1])))];
 }
 
-const treePaths = [...collected(/revalidatePublicTree\("([^"]+)"\)/g), "/people"];
+const treePaths = [
+  ...new Set([...collected(/revalidatePublicTree\("([^"]+)"\)/g), ...collected(/^\s+"?[\w-]+"?: "(\/[a-z-]+)",$/gm), "/people"]),
+];
 const routePatterns = [
-  ...collected(/revalidatePublicPattern\("([^"]+)"\)/g),
-  ...collected(/^\s+"?[\w-]+"?: "(\/[^"]*\[[^"]*)",$/gm),
+  ...new Set([...collected(/revalidatePublicPattern\("([^"]+)"\)/g), ...collected(/^\s+"?[\w-]+"?: "(\/[^"]*\[[^"]*)",$/gm)]),
 ];
 
 describe("public page revalidation", () => {
   it("collects every path the routes revalidate", () => {
-    expect(treePaths).toEqual(expect.arrayContaining(["/people", "/blog", "/services", "/photography", "/videography"]));
+    expect(treePaths).toEqual(
+      expect.arrayContaining(["/people", "/blog", "/services", "/photography", "/videography", "/about", "/privacy"])
+    );
     expect(routePatterns).toEqual(
       expect.arrayContaining(["/people/[slug]", "/services/[slug]", "/blog/[slug]", "/photography/[tag]", "/videography/[tag]"])
     );

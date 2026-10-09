@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { revalidatePublicPattern } from "@/app/api/_lib/revalidate";
+import { revalidatePublicPattern, revalidatePublicTree } from "@/app/api/_lib/revalidate";
 import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { ALL_PAGE_SECTIONS_SLUGS, type PageSectionsSlug } from "@/lib/server/page-sections";
@@ -68,10 +68,15 @@ export async function PATCH(
   const path = SLUG_TO_PATH[slug as PageSectionsSlug];
   if (path === "/people/[slug]") {
     revalidatePublicPattern(path);
-  } else if (path) {
+  } else if (path === "/") {
     revalidatePath(path);
+  } else if (path) {
+    revalidatePublicTree(path);
   }
-  if (slug === "about") revalidatePath("/");
+  if (slug === "about") {
+    revalidatePath("/");
+    revalidatePublicPattern("/services/[slug]");
+  }
 
   return NextResponse.json({ ok: true, item: await storedPageSections(db, slug as PageSectionsSlug) });
 }

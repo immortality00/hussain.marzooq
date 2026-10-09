@@ -95,11 +95,12 @@ describe("PATCH /api/admin/page-sections/about", () => {
     expect(getDb).not.toHaveBeenCalled();
   });
 
-  test("a valid save refreshes both /about and the homepage", async () => {
+  test("a valid save refreshes /about, the homepage and every service page", async () => {
     const res = await save({ profile: { ...DEFAULT_SEARCH_PROFILE, links: ["https://a.test"] } });
     expect(res.status).toBe(200);
     expect(updateOne).toHaveBeenCalledOnce();
-    expect(revalidatePath).toHaveBeenCalledWith("/about");
+    expect(revalidatePath).toHaveBeenCalledWith("/(site)/about", "layout");
     expect(revalidatePath).toHaveBeenCalledWith("/");
+    expect(revalidatePath).toHaveBeenCalledWith("/(site)/services/[slug]", "page");
   });
 });
