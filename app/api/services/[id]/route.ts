@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
+import { revalidatePublicTree } from "@/app/api/_lib/revalidate";
 import { ensureOthersCategory } from "@/lib/db/ensureSystemCategories";
 import { getDb } from "@/lib/server/db";
 import {
@@ -201,14 +202,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     );
   }
 
-  const oldSlug = typeof existing.slug === "string" ? existing.slug : null;
-  const newSlug = typeof patch.slug === "string" ? patch.slug : oldSlug;
-
-  revalidatePath("/services", "layout");
+  revalidatePublicTree("/services");
   revalidatePath("/contact");
   revalidatePath("/");
-  if (oldSlug) revalidatePath(`/services/${oldSlug}`);
-  if (newSlug && newSlug !== oldSlug) revalidatePath(`/services/${newSlug}`);
 
   return noStoreJson({ ok: true, item: await savedAdminService(db, oid) });
 }
@@ -226,18 +222,15 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   if (found instanceof Response) return found;
   const service = found.doc;
 
-  const serviceSlug = typeof service.slug === "string" ? service.slug : null;
-
   if (!hard) {
     await db.collection("services").updateOne(
       { _id: oid },
       { $set: { isArchived: true, isActive: false, updatedAt: new Date() } }
     );
 
-    revalidatePath("/services", "layout");
+    revalidatePublicTree("/services");
     revalidatePath("/contact");
     revalidatePath("/");
-    if (serviceSlug) revalidatePath(`/services/${serviceSlug}`);
 
     return noStoreJson({ ok: true, mode: "archived" });
   }
@@ -261,10 +254,9 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
     );
   }
 
-  revalidatePath("/services", "layout");
+  revalidatePublicTree("/services");
   revalidatePath("/contact");
   revalidatePath("/");
-  if (serviceSlug) revalidatePath(`/services/${serviceSlug}`);
 
   return noStoreJson({ ok: true, mode: "deleted" });
 }

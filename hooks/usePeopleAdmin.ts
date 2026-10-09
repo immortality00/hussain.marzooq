@@ -63,16 +63,6 @@ export function usePeopleAdmin() {
 
   const actionBusy = saving || Boolean(deletingId);
 
-  const [prefillSynced, setPrefillSynced] = useState({ createPrefill, editingId });
-
-  if (prefillSynced.createPrefill !== createPrefill || prefillSynced.editingId !== editingId) {
-    setPrefillSynced({ createPrefill, editingId });
-    if (!editingId && createPrefill) {
-      setName(createPrefill);
-      setMode("form");
-    }
-  }
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return items;
@@ -83,7 +73,7 @@ export function usePeopleAdmin() {
 
   function resetForm() {
     setEditingId("");
-    setName(createPrefill);
+    setName("");
     setSlug("");
     setBio("");
     setAvatarUrl("");

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { revalidatePublicPattern } from "@/app/api/_lib/revalidate";
 import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { ALL_PAGE_SECTIONS_SLUGS, type PageSectionsSlug } from "@/lib/server/page-sections";
@@ -66,7 +67,7 @@ export async function PATCH(
 
   const path = SLUG_TO_PATH[slug as PageSectionsSlug];
   if (path === "/people/[slug]") {
-    revalidatePath(path, "page");
+    revalidatePublicPattern(path);
   } else if (path) {
     revalidatePath(path);
   }

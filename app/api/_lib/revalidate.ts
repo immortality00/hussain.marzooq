@@ -1,6 +1,19 @@
 import { revalidatePath } from "next/cache";
 
 const MEDIA_BASE_PATHS = ["/", "/photography", "/videography", "/nft"];
+const PUBLIC_ROUTE_GROUP = "/(site)";
+
+function publicRoutePath(path: string) {
+  return path === "/" ? "/" : `${PUBLIC_ROUTE_GROUP}${path}`;
+}
+
+export function revalidatePublicTree(path: string) {
+  revalidatePath(publicRoutePath(path), "layout");
+}
+
+export function revalidatePublicPattern(pattern: string) {
+  revalidatePath(publicRoutePath(pattern), "page");
+}
 
 // Revalidates every surface a media change can affect. Tag subpages are derived
 // from the document's own tag slugs (pass old + new on an edit) so a saved doc
@@ -8,7 +21,7 @@ const MEDIA_BASE_PATHS = ["/", "/photography", "/videography", "/nft"];
 // bug §S9 warns about when the path list is hardcoded.
 export function revalidateMediaSurfaces(tagSlugs: Iterable<string> = []) {
   for (const path of MEDIA_BASE_PATHS) revalidatePath(path);
-  revalidatePath("/people", "layout");
+  revalidatePublicTree("/people");
 
   const unique = new Set<string>();
   for (const slug of tagSlugs) {

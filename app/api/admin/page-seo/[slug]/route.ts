@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
+import { revalidatePublicPattern } from "@/app/api/_lib/revalidate";
 import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { ALL_SEO_SLUGS } from "@/lib/server/page-seo";
@@ -18,6 +19,9 @@ const SLUG_TO_PATH: Record<string, string> = {
   services: "/services",
   people: "/people",
   "people-detail": "/people/[slug]",
+  "services-detail": "/services/[slug]",
+  "blog-detail": "/blog/[slug]",
+  privacy: "/privacy",
   "photography-tag": "/photography/[tag]",
   "videography-tag": "/videography/[tag]",
   blog: "/blog",
@@ -58,7 +62,7 @@ export async function PATCH(
 
   const path = SLUG_TO_PATH[slug];
   if (path?.includes("[")) {
-    revalidatePath(path, "page");
+    revalidatePublicPattern(path);
   } else if (path) {
     revalidatePath(path);
   }

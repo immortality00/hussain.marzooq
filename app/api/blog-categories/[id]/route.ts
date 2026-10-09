@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePublicTree } from "@/app/api/_lib/revalidate";
 import { getDb } from "@/lib/server/db";
 import {
   findByIdOr404,
@@ -62,7 +62,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
       .updateMany({ categoryId: id }, { $set: { category: newSlug, updatedAt: new Date() } });
   }
 
-  revalidatePath("/blog", "layout");
+  revalidatePublicTree("/blog");
 
   return noStoreJson({ ok: true });
 }
@@ -91,7 +91,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
 
   await db.collection("blog_categories").deleteOne({ _id: oid });
 
-  revalidatePath("/blog", "layout");
+  revalidatePublicTree("/blog");
 
   return noStoreJson({ ok: true });
 }

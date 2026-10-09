@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePublicTree } from "@/app/api/_lib/revalidate";
 import { getDb } from "@/lib/server/db";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import { asFiniteNumber, isRecord, noStoreJson } from "@/app/api/_lib/common";
@@ -11,8 +11,8 @@ import {
 export const dynamic = "force-dynamic";
 
 function revalidateTagSurfaces() {
-  revalidatePath("/photography", "layout");
-  revalidatePath("/videography", "layout");
+  revalidatePublicTree("/photography");
+  revalidatePublicTree("/videography");
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {

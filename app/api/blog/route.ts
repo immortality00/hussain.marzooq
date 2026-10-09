@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import { revalidatePath } from "next/cache";
+import { revalidatePublicTree } from "@/app/api/_lib/revalidate";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
@@ -104,8 +104,7 @@ export async function POST(req: Request) {
   };
   const r = await db.collection("blog_posts").insertOne(doc);
 
-  revalidatePath("/blog", "layout");
-  revalidatePath(`/blog/${slug}`);
+  revalidatePublicTree("/blog");
 
   return noStoreJson({ ok: true, id: r.insertedId.toString(), ...(await savedBlogPost({ ...doc, _id: r.insertedId })) });
 }

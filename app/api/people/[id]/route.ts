@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
+import { revalidatePublicTree } from "@/app/api/_lib/revalidate";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import {
   asBooleanOrNull,
@@ -238,13 +239,12 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
 
   const db = await getDb();
   const found = await findByIdOr404(db, "people_profiles", oid, {
-    projection: { name: 1, slug: 1, avatarUrl: 1 },
+    projection: { name: 1, avatarUrl: 1 },
   });
   if (found instanceof Response) return found;
   const person = found.doc;
 
   const personName = typeof person.name === "string" ? person.name : "";
-  const personSlug = typeof person.slug === "string" ? person.slug : null;
 
   const linkedMedia = await db.collection("media").findOne({
     $or: [{ peopleIds: id }, ...(personName ? [{ people: personName }] : [])],
@@ -269,8 +269,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
     await deleteManagedCloudinaryAsset({ url: avatarUrl }, [CLOUDINARY_PEOPLE_FOLDER]);
   }
 
-  revalidatePath("/people", "layout");
-  if (personSlug) revalidatePath(`/people/${personSlug}`);
+  revalidatePublicTree("/people");
 
   return noStoreJson({ ok: true });
 }

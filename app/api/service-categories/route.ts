@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { revalidatePublicTree } from "@/app/api/_lib/revalidate";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import {
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
   const doc = { name, slug, isActive: true, order: nextOrder, isSystem: false, createdAt: now, updatedAt: now };
   const r = await db.collection("service_categories").insertOne(doc);
 
-  revalidatePath("/services", "layout");
+  revalidatePublicTree("/services");
   revalidatePath("/contact");
 
   return noStoreJson(

@@ -1,5 +1,5 @@
 import { ObjectId } from "mongodb";
-import { revalidatePath } from "next/cache";
+import { revalidatePublicTree } from "@/app/api/_lib/revalidate";
 import { getDb } from "@/lib/server/db";
 import {
   findByIdOr404,
@@ -121,12 +121,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     await deleteManagedCloudinaryAsset({ url: previousImageUrl }, [CLOUDINARY_BLOG_FOLDER]);
   }
 
-  const oldSlug = typeof existing.slug === "string" ? existing.slug : null;
-  const newSlug = typeof patch.slug === "string" ? patch.slug : oldSlug;
-
-  revalidatePath("/blog", "layout");
-  if (oldSlug) revalidatePath(`/blog/${oldSlug}`);
-  if (newSlug && newSlug !== oldSlug) revalidatePath(`/blog/${newSlug}`);
+  revalidatePublicTree("/blog");
 
   const saved = await db.collection("blog_posts").findOne({ _id: oid });
   return noStoreJson({ ok: true, ...(saved ? await savedBlogPost(saved) : {}) });
@@ -142,7 +137,6 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   if (found instanceof Response) return found;
   const post = found.doc;
 
-  const slug = typeof post.slug === "string" ? post.slug : null;
   const imageUrl = typeof post.coverImageUrl === "string" ? post.coverImageUrl : "";
 
   await db.collection("blog_posts").deleteOne({ _id: oid });
@@ -151,8 +145,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
     await deleteManagedCloudinaryAsset({ url: imageUrl }, [CLOUDINARY_BLOG_FOLDER]);
   }
 
-  revalidatePath("/blog", "layout");
-  if (slug) revalidatePath(`/blog/${slug}`);
+  revalidatePublicTree("/blog");
 
   return noStoreJson({ ok: true });
 }

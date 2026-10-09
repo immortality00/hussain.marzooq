@@ -1,5 +1,6 @@
 import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
+import { revalidatePublicTree } from "@/app/api/_lib/revalidate";
 import { ensureOthersCategory } from "@/lib/db/ensureSystemCategories";
 import { adminServiceOf } from "@/lib/server/admin-catalog";
 import { requireAdminOr401 } from "@/lib/auth/admin";
@@ -109,7 +110,7 @@ export async function POST(req: Request) {
   };
   const r = await db.collection("services").insertOne(doc);
 
-  revalidatePath("/services", "layout");
+  revalidatePublicTree("/services");
   revalidatePath("/contact");
   revalidatePath("/");
 

@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePublicTree } from "@/app/api/_lib/revalidate";
 import { listAdminPeople, toAdminPersonItem } from "@/lib/server/admin-lists";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
@@ -101,7 +101,7 @@ export async function POST(req: Request) {
 
   const result = await db.collection("people_profiles").insertOne(doc);
 
-  revalidatePath("/people", "layout");
+  revalidatePublicTree("/people");
 
   return noStoreJson({
     ok: true,

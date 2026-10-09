@@ -1,4 +1,4 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePublicTree } from "@/app/api/_lib/revalidate";
 import { adminMediaTagOf, listAdminMediaTags } from "@/lib/server/admin-catalog";
 import { listActiveMediaTags } from "@/lib/server/admin-lists";
 import { requireAdminOr401, isAdminAuthedServer } from "@/lib/auth/admin";
@@ -85,8 +85,8 @@ export async function POST(req: Request) {
   const doc = { label, slug, description, isActive: true, order: nextOrder, createdAt: now, updatedAt: now };
   const r = await db.collection("media_tags").insertOne(doc);
 
-  revalidatePath("/photography", "layout");
-  revalidatePath("/videography", "layout");
+  revalidatePublicTree("/photography");
+  revalidatePublicTree("/videography");
 
   return noStoreJson(
     { ok: true, id: r.insertedId.toString(), slug, label, item: adminMediaTagOf({ ...doc, _id: r.insertedId }, 0) },
