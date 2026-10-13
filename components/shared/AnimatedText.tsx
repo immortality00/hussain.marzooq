@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, type CSSProperties } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -15,6 +15,7 @@ interface AnimatedTextProps {
   tag?: Tag;
   className?: string;
   delay?: number;
+  revealOnLoad?: boolean;
 }
 
 export function AnimatedText({
@@ -22,6 +23,7 @@ export function AnimatedText({
   tag: Tag = "span",
   className,
   delay = 0,
+  revealOnLoad = false,
 }: AnimatedTextProps) {
   const containerRef = useRef<HTMLElement>(null);
 
@@ -29,6 +31,8 @@ export function AnimatedText({
 
   useGSAP(
     () => {
+      if (revealOnLoad) return;
+
       const wordEls = containerRef.current?.querySelectorAll<HTMLElement>(
         ".animated-word-inner"
       );
@@ -71,12 +75,16 @@ export function AnimatedText({
           style={{ verticalAlign: "bottom" }}
         >
           <span
-            className="animated-word-inner inline-block"
-            style={{ willChange: "transform, opacity" }}
+            className={revealOnLoad ? "hm-word-in inline-block" : "animated-word-inner inline-block"}
+            style={
+              revealOnLoad
+                ? ({ "--word-index": i } as CSSProperties)
+                : { willChange: "transform, opacity" }
+            }
           >
             {word}
           </span>
-          {i < words.length - 1 && " "}
+          {i < words.length - 1 && " "}
         </span>
       ))}
     </Tag>

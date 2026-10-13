@@ -49,7 +49,7 @@ export default async function TestimonialsPage() {
 
               <div className="max-w-3xl">
                 <h1 className="text-balance text-3xl font-semibold leading-[1.02] tracking-[-0.055em] wrap-anywhere sm:text-4xl lg:text-5xl">
-                  <AnimatedText>{seo.headerTitle}</AnimatedText>
+                  <AnimatedText revealOnLoad>{seo.headerTitle}</AnimatedText>
                 </h1>
 
                 <p className="mt-5 max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">

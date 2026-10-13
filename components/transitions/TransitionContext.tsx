@@ -9,6 +9,7 @@ import {
   CONTACT_SHEET_IN_MS,
   CONTACT_SHEET_MAX_WAIT_MS,
   CONTACT_SHEET_OUT_MS,
+  CONTACT_SHEET_REVEAL_MS,
 } from "./contactSheet";
 import { prefersReducedMotion } from "@/lib/reduced-motion";
 
@@ -23,6 +24,10 @@ const TransitionCtx = createContext<PageTransition | null>(null);
 function hrefToPath(href: string): string {
   const q = href.search(/[?#]/);
   return q === -1 ? href : href.slice(0, q);
+}
+
+function holdPageReveals(on: boolean) {
+  document.documentElement.toggleAttribute("data-page-transition", on);
 }
 
 export function TransitionProvider({
@@ -54,11 +59,14 @@ export function TransitionProvider({
     if (!inDone.current || !committed.current) return;
     outStarted.current = true;
     setPhase("out");
+    window.setTimeout(() => holdPageReveals(false), CONTACT_SHEET_REVEAL_MS);
     window.setTimeout(() => {
       setState(null);
       playing.current = false;
     }, CONTACT_SHEET_OUT_MS);
   }, []);
+
+  useEffect(() => () => holdPageReveals(false), []);
 
   useEffect(() => {
     if (!playing.current || !pendingPath.current || pathname !== pendingPath.current) return;
@@ -84,12 +92,14 @@ export function TransitionProvider({
       }
 
       playing.current = true;
+      holdPageReveals(true);
 
       if (prefersReducedMotion() || pool.length < 2) {
         setReduced(true);
         window.setTimeout(() => router.push(href), REDUCED_MS / 2);
         window.setTimeout(() => {
           setReduced(false);
+          holdPageReveals(false);
           playing.current = false;
         }, REDUCED_MS);
         return;

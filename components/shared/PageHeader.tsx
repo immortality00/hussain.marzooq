@@ -13,7 +13,7 @@ export function PageHeader({ title, description, className, titleClassName }: Pa
       <h1
         className={`text-4xl font-semibold tracking-tight wrap-anywhere sm:text-5xl${titleClassName ? ` ${titleClassName}` : ""}`}
       >
-        <AnimatedText>{title}</AnimatedText>
+        <AnimatedText revealOnLoad>{title}</AnimatedText>
       </h1>
       {description && (
         <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">

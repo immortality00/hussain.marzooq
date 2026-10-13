@@ -121,7 +121,7 @@ export default async function PersonDetailPage({
           </div>
 
           <h1 className="mt-6 text-4xl font-semibold tracking-tight wrap-anywhere sm:text-5xl">
-            <AnimatedText>{person.name}</AnimatedText>
+            <AnimatedText revealOnLoad>{person.name}</AnimatedText>
           </h1>
 
           {person.bio ? (

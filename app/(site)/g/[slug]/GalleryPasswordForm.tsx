@@ -45,7 +45,7 @@ export default function GalleryPasswordForm({ slug }: { slug: string }) {
     <main className="mx-auto max-w-xl px-4 py-16">
       <section className="rounded-[2rem] border p-6 text-center">
         <h1 className="text-3xl font-semibold tracking-tight">
-          <AnimatedText>Private gallery</AnimatedText>
+          <AnimatedText revealOnLoad>Private gallery</AnimatedText>
         </h1>
 
         <div className="mt-6 space-y-3">

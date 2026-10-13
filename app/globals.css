@@ -419,6 +419,14 @@
     animation: hm-line-in 320ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
   }
 
+  .hm-word-in {
+    animation: hm-word-in 700ms cubic-bezier(0.3333, 1, 0.6667, 1) calc(var(--word-index, 0) * 60ms) both;
+  }
+
+  [data-page-transition] .hm-word-in {
+    animation-play-state: paused;
+  }
+
   .grain-overlay {
     position: fixed;
     inset: 0;
@@ -441,6 +449,13 @@
   from {
     opacity: 0;
     transform: translateY(4px);
+  }
+}
+
+@keyframes hm-word-in {
+  from {
+    opacity: 0;
+    transform: translateY(110%);
   }
 }
 
@@ -536,6 +551,10 @@
   .hm-cell-in,
   .hm-cell-out {
     animation-duration: 1ms;
+  }
+
+  .hm-word-in {
+    animation: none;
   }
 
   .hm-globe-ping {

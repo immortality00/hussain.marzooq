@@ -7,6 +7,7 @@ export const CONTACT_SHEET_STAGGER_MS = 440;
 export const CONTACT_SHEET_IN_MS = CONTACT_SHEET_CELL_MS + CONTACT_SHEET_STAGGER_MS;
 export const CONTACT_SHEET_OUT_MS = CONTACT_SHEET_CELL_MS + CONTACT_SHEET_STAGGER_MS;
 export const CONTACT_SHEET_MAX_WAIT_MS = 2500;
+export const CONTACT_SHEET_REVEAL_MS = 300;
 
 export interface ContactSheetCell {
   index: number;
