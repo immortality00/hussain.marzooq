@@ -31,7 +31,7 @@ export function HomeHero({
           src={heroImageUrl}
           alt="Hussain.Art"
           fill
-          priority
+          preload
           sizes="100vw"
           className="object-cover object-center z-0"
         />

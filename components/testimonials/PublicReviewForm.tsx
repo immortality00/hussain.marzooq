@@ -16,7 +16,7 @@ import { discardUpload } from "./review-form/discardUpload";
 import { MAX_REVIEW_PHOTOS, isValidEmail } from "./review-form/utils";
 import { useModalVisibilityEvents } from "./review-form/useModalVisibilityEvents";
 
-export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?: boolean }) {
+export default function PublicReviewForm() {
   const nameId = useId();
   const emailId = useId();
   const aboutId = useId();
@@ -269,7 +269,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
       <Button
         variant="solid"
         onClick={() => setOpen(true)}
-        className={triggerOnly ? "w-full justify-center" : undefined}
+        className="w-full justify-center"
       >
         Leave a review
       </Button>

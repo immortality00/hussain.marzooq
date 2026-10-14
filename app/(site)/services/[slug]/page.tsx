@@ -149,7 +149,7 @@ export default async function ServiceDetailPage({
                 width={1600}
                 height={1100}
                 className="h-auto w-full object-cover"
-                priority
+                preload
               />
             ) : (
               <div className="min-h-[420px] bg-muted" />

@@ -58,7 +58,7 @@ export function MediaListItem({
                 fill
                 className="object-cover"
                 sizes="240px"
-                priority={index === 0}
+                preload={index === 0}
                 loading={index === 0 ? "eager" : "lazy"}
               />
             </div>

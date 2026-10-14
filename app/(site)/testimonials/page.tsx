@@ -97,7 +97,7 @@ export default async function TestimonialsPage() {
                 </div>
 
                 <div className="mt-4">
-                  <PublicReviewForm triggerOnly />
+                  <PublicReviewForm />
                 </div>
               </div>
             </aside>

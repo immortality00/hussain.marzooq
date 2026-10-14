@@ -51,7 +51,7 @@ export default function SortableServiceItem({
             height={224}
             className="h-full w-full object-cover"
             sizes="80px"
-            priority={index === 0}
+            preload={index === 0}
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-[10px] text-muted-foreground">

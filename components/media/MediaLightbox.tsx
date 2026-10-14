@@ -50,7 +50,7 @@ function MediaSurface({ active }: { active: MediaItem }) {
               fill
               className="object-contain"
               sizes="(min-width: 1024px) 62vw, 100vw"
-              priority
+              preload
             />
           </div>
         </div>

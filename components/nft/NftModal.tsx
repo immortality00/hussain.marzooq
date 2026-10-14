@@ -69,7 +69,7 @@ export default function NftModal({
                       fill
                       className="object-contain"
                       sizes="(min-width: 1024px) 58vw, 100vw"
-                      priority
+                      preload
                     />
                   </div>
                 )

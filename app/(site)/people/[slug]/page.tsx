@@ -112,7 +112,7 @@ export default async function PersonDetailPage({
                   fill
                   className="object-cover"
                   sizes="144px"
-                  priority
+                  preload
                 />
               ) : (
                 <div className="h-full w-full bg-muted" />

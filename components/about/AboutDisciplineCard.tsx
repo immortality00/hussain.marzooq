@@ -26,7 +26,7 @@ export function AboutDisciplineCard({
             alt={card.title}
             fill
             sizes="(max-width: 1024px) 100vw, 50vw"
-            priority={priority}
+            preload={priority}
             className="object-cover transition-transform duration-700 group-hover:scale-[1.04]"
           />
           <div className="absolute inset-0 bg-linear-to-t from-black/82 via-black/24 to-transparent" />
