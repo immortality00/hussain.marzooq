@@ -4,24 +4,23 @@ import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/shared/Button";
 import { useMagneticHover } from "@/hooks/useMagneticHover";
+import { useRevealOnScroll } from "@/hooks/useRevealOnScroll";
 
 export function StickyCta({
   title = "Ready to book?",
   description = "Tell me what you need and I’ll reply with the best next step.",
   buttonLabel = "Book",
   href = "/contact",
-  revealOnScroll = false,
 }: {
   title?: string;
   description?: string;
   buttonLabel?: string;
   href?: string;
-  revealOnScroll?: boolean;
 }) {
   const [hiddenByModal, setHiddenByModal] = useState(false);
-  const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const magneticRef = useMagneticHover<HTMLAnchorElement & HTMLButtonElement>();
+  const shown = useRevealOnScroll();
 
   useEffect(() => {
     function onOpen() {
@@ -40,24 +39,15 @@ export function StickyCta({
     };
   }, []);
 
-  useEffect(() => {
-    if (!revealOnScroll) return;
-    const onScroll = () => setScrolled(window.scrollY > 40);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, [revealOnScroll]);
-
   const isMounted = useMemo(() => {
     return !hiddenByModal || pathname === "/contact";
   }, [hiddenByModal, pathname]);
 
-  if (!isMounted) return null;
-
-  const shown = !revealOnScroll || scrolled;
+  if (!isMounted) return <div data-sticky-cta hidden />;
 
   return (
     <div
+      data-sticky-cta
       className={[
         "fixed bottom-4 left-4 right-4 z-40 mx-auto max-w-4xl",
         "transition-[translate,opacity] duration-500 ease-[cubic-bezier(0.2,0.7,0.2,1)] will-change-[translate] motion-reduce:transition-none",

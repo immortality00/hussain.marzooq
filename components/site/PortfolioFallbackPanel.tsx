@@ -1,4 +1,8 @@
-import Link from "next/link";
+import { Button } from "@/components/shared/Button";
+
+const INVERSE_SOLID = "bg-background text-foreground hover:bg-background/90";
+const INVERSE_GHOST =
+  "border-background/30 text-background hover:border-background hover:bg-background hover:text-foreground";
 
 type PortfolioFallbackPanelLink = {
   href: string;
@@ -35,17 +39,14 @@ export function PortfolioFallbackPanel({
             {links?.length ? (
               <div className="mt-7 flex flex-wrap gap-3">
                 {links.map((link) => (
-                  <Link
+                  <Button
                     key={link.href}
                     href={link.href}
-                    className={
-                      link.primary
-                        ? "rounded-full bg-background px-5 py-3 text-sm text-foreground transition-opacity hover:opacity-90"
-                        : "rounded-full border border-background/30 px-5 py-3 text-sm transition-colors hover:bg-background/10"
-                    }
+                    variant={link.primary ? "solid" : "ghost"}
+                    className={link.primary ? INVERSE_SOLID : INVERSE_GHOST}
                   >
                     {link.label}
-                  </Link>
+                  </Button>
                 ))}
               </div>
             ) : null}

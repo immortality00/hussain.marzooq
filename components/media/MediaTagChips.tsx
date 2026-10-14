@@ -1,5 +1,7 @@
 "use client";
 
+import { chipClasses } from "@/components/shared/chip-classes";
+
 export default function MediaTagChips({
   activeTag,
   setActiveTag,
@@ -16,9 +18,7 @@ export default function MediaTagChips({
       <button
         type="button"
         onClick={() => setActiveTag("")}
-        className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-          activeTag === "" ? "bg-accent" : "hover:bg-accent/40"
-        }`}
+        className={chipClasses(activeTag === "")}
       >
         All
       </button>
@@ -28,9 +28,7 @@ export default function MediaTagChips({
           key={t}
           type="button"
           onClick={() => setActiveTag(t === activeTag ? "" : t)}
-          className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-            t === activeTag ? "bg-accent" : "hover:bg-accent/40"
-          }`}
+          className={chipClasses(t === activeTag)}
         >
           {t}
         </button>

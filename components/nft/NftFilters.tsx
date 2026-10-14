@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Search, X } from "lucide-react";
 import { SearchInput } from "@/components/search/SearchInput";
+import { chipClasses } from "@/components/shared/chip-classes";
 
 type StatusFilter = "" | "available" | "sold" | "coming-soon";
 
@@ -43,11 +44,7 @@ export default function NftFilters({
               role="tab"
               aria-selected={active}
               onClick={() => setStatusFilter(tab.value)}
-              className={`hm-chip ${
-                active
-                  ? "border-foreground bg-foreground text-background"
-                  : "border-border text-muted-foreground hover:text-foreground"
-              }`}
+              className={chipClasses(active)}
             >
               {tab.label}
             </button>
@@ -71,7 +68,7 @@ export default function NftFilters({
               setQuery("");
               setSearchOpen(false);
             }}
-            className="hm-chip border-border text-muted-foreground hover:text-foreground"
+            className={chipClasses()}
           >
             <X className="h-4 w-4" />
           </button>
@@ -81,7 +78,7 @@ export default function NftFilters({
           type="button"
           aria-label="Search NFTs"
           onClick={() => setSearchOpen(true)}
-          className="hm-chip gap-2 border-border text-muted-foreground hover:text-foreground"
+          className={chipClasses(false, "gap-2")}
         >
           <Search className="h-4 w-4" />
           Search

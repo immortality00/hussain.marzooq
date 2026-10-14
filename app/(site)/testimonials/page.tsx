@@ -76,7 +76,7 @@ export default async function TestimonialsPage() {
                   <div className="font-mono text-3xl font-semibold tabular-nums tracking-tight">
                     {data.averageRating.toFixed(1)}
                   </div>
-                  <div className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  <div className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
                     Average
                   </div>
                 </div>
@@ -85,7 +85,7 @@ export default async function TestimonialsPage() {
                   <div className="font-mono text-3xl font-semibold tabular-nums tracking-tight">
                     {data.totalReviews}
                   </div>
-                  <div className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+                  <div className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
                     Reviews
                   </div>
                 </div>

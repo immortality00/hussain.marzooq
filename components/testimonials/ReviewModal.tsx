@@ -1,4 +1,5 @@
 import type { PublicTestimonial } from "@/lib/server/testimonials";
+import { Button } from "@/components/shared/Button";
 import { ModalPortal } from "@/components/shared/ModalPortal";
 import { Avatar } from "./Avatar";
 import { SafeImage } from "./SafeImage";
@@ -43,13 +44,7 @@ export function ReviewModal({
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-full border border-border/70 px-4 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            Close
-          </button>
+          <Button onClick={onClose}>Close</Button>
         </div>
 
         <div className="max-h-[82vh] overflow-y-auto p-5 sm:p-7" data-lenis-prevent>

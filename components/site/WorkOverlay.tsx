@@ -249,7 +249,7 @@ export function WorkOverlay({ open, onClose }: Props) {
                       className="object-cover opacity-70 transition-opacity duration-500 group-hover:opacity-90"
                     />
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/20 to-transparent" />
                   <div className="relative z-10 p-5">
                     <h2 className="text-[15px] font-semibold leading-snug text-white">{card.label}</h2>
                   </div>

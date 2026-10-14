@@ -30,7 +30,7 @@ export function ExhibitionCityModal({
         <div className="flex items-center justify-between gap-3 border-b bg-background/80 p-4 backdrop-blur">
           <div className="min-w-0">
             <div className="text-lg font-semibold wrap-anywhere">{place}</div>
-            <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.16em] text-muted-foreground tabular-nums">
+            <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground tabular-nums">
               {city.works.length} exhibited {city.works.length === 1 ? "work" : "works"}
             </div>
           </div>

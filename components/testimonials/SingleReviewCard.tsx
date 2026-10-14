@@ -80,7 +80,7 @@ export function SingleReviewCard({
 
         <ReviewPhotoStrip item={item} />
 
-        <div className="mt-5 flex items-center justify-between gap-4 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+        <div className="mt-5 flex items-center justify-between gap-4 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
           <span>Read review</span>
           <span>
             {activeIndex + 1} / {total}

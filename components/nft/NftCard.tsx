@@ -15,7 +15,7 @@ function FrontBadge({ status }: { status: ReturnType<typeof displayStatus> }) {
   if (status === "sold") return null;
 
   return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/50 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white backdrop-blur-[6px]">
+    <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/50 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.2em] text-white backdrop-blur-[6px]">
       {status === "available" ? (
         <span className="hm-nft-pulse relative inline-block h-1.5 w-1.5 rounded-full bg-white text-white" />
       ) : null}
@@ -102,18 +102,18 @@ export default function NftCard({
               </div>
               <h2 className="mt-2 truncate text-xl font-semibold tracking-tight">{item.title}</h2>
             </div>
-            <span className="shrink-0 rounded-full border border-white/25 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.18em] text-white/80">
+            <span className="shrink-0 rounded-full border border-white/25 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.2em] text-white/80">
               {statusLabel(shownStatus)}
             </span>
           </div>
 
           <dl className="mt-6 space-y-3.5 text-sm">
             <div className="flex items-baseline justify-between gap-4 border-t border-white/10 pt-3.5">
-              <dt className="font-mono text-[11px] uppercase tracking-[0.16em] text-white/50">Price</dt>
+              <dt className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">Price</dt>
               <dd className="font-semibold">{priceText}</dd>
             </div>
             <div className="flex items-baseline justify-between gap-4 border-t border-white/10 pt-3.5">
-              <dt className="font-mono text-[11px] uppercase tracking-[0.16em] text-white/50">Edition</dt>
+              <dt className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">Edition</dt>
               <dd className="text-right text-white/85">{editionSubline(item)}</dd>
             </div>
           </dl>

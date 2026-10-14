@@ -23,6 +23,8 @@
   }
 }
 
+@custom-variant with-sticky-cta (:root:has([data-sticky-cta]) &);
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

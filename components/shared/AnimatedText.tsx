@@ -84,7 +84,7 @@ export function AnimatedText({
           >
             {word}
           </span>
-          {i < words.length - 1 && " "}
+          {i < words.length - 1 && " "}
         </span>
       ))}
     </Tag>

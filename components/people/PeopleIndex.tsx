@@ -59,14 +59,14 @@ export default function PeopleIndex({ items }: { items: PublicPersonIndexItem[] 
                 <div className="mt-4 flex w-full gap-2">
                   <div className="min-w-0 flex-1 rounded-2xl border px-3 py-2 text-center">
                     <div className="text-base font-semibold">{item.photoCount}</div>
-                    <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                    <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
                       photos
                     </div>
                   </div>
 
                   <div className="min-w-0 flex-1 rounded-2xl border px-3 py-2 text-center">
                     <div className="text-base font-semibold">{item.videoCount}</div>
-                    <div className="mt-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                    <div className="mt-1 font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
                       videos
                     </div>
                   </div>

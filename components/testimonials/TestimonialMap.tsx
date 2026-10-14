@@ -45,7 +45,7 @@ export function TestimonialMap({ activePoint }: { activePoint: GeoPoint | null }
             scrolls the page instead of being captured (pan/zoom) by the embed. */}
         <div className="absolute inset-0" aria-hidden />
 
-        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-background via-background/95 to-transparent" />
+        <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-12 bg-linear-to-t from-background via-background/95 to-transparent" />
 
         <div className="pointer-events-none absolute left-3 top-3 rounded-full bg-background/90 px-3 py-1.5 text-xs font-medium shadow-sm ring-1 ring-border/60 backdrop-blur">
           {activePoint.label}

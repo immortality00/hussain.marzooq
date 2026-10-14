@@ -18,10 +18,12 @@ export function SiteFrame({
 
   return (
     <TransitionProvider images={transitionImages} fullPageLoads={fullPageLoads}>
-      <div id="main-content" tabIndex={-1} className="relative z-10">
-        {children}
+      <div className="relative z-10">
+        <div id="main-content" tabIndex={-1} className="relative">
+          {children}
+        </div>
+        {footer}
       </div>
-      <div className="relative z-10">{footer}</div>
     </TransitionProvider>
   );
 }

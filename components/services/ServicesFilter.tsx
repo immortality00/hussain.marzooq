@@ -3,6 +3,7 @@
 import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { chipClasses } from "@/components/shared/chip-classes";
 
 export type ServiceTab = { slug: string; name: string };
 export type ServiceCardNode = { id: string; category: string; node: ReactNode };
@@ -24,10 +25,7 @@ export function ServicesView({ category, tabs, cards, empty }: ServicesViewProps
           <Link
             key={t.slug}
             href={t.slug === "all" ? "/services" : `/services?category=${encodeURIComponent(t.slug)}`}
-            className={[
-              "rounded-full border px-4 py-2 text-xs transition-colors",
-              t.slug === category ? "bg-foreground text-background" : "hover:bg-accent",
-            ].join(" ")}
+            className={chipClasses(t.slug === category)}
           >
             {t.name}
           </Link>

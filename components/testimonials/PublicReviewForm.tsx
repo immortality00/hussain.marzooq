@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Button } from "@/components/shared/Button";
 import { ModalPortal } from "@/components/shared/ModalPortal";
 import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
 import { LocationSearch } from "./review-form/LocationSearch";
@@ -263,15 +264,15 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
     }
   }
 
-  const triggerClassName = triggerOnly
-    ? "inline-flex w-full justify-center rounded-full bg-foreground px-5 py-3 text-sm font-medium text-background transition-opacity hover:opacity-90"
-    : "inline-flex rounded-xl bg-foreground px-5 py-2.5 text-sm text-background transition-opacity hover:opacity-90";
-
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={triggerClassName}>
+      <Button
+        variant="solid"
+        onClick={() => setOpen(true)}
+        className={triggerOnly ? "w-full justify-center" : undefined}
+      >
         Leave a review
-      </button>
+      </Button>
 
       {open ? (
         <ModalPortal
@@ -292,13 +293,7 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => void handleClose()}
-                className="rounded-full border border-border/70 px-4 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-              >
-                Close
-              </button>
+              <Button onClick={() => void handleClose()}>Close</Button>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6" data-lenis-prevent>
@@ -438,14 +433,14 @@ export default function PublicReviewForm({ triggerOnly = false }: { triggerOnly?
                       </span>
                     </label>
 
-                    <button
-                      type="button"
+                    <Button
+                      variant="solid"
                       disabled={submitting || !consent}
                       onClick={() => void submit()}
-                      className="w-full rounded-full bg-foreground px-5 py-3 text-sm font-medium text-background hover:opacity-90 disabled:opacity-60"
+                      className="w-full justify-center disabled:opacity-60"
                     >
                       {submitting ? "Submitting..." : "Submit review"}
-                    </button>
+                    </Button>
                   </div>
                 </div>
               </div>
