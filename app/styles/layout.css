@@ -1,0 +1,15 @@
+@layer utilities {
+  .section-shell {
+    @apply mx-auto max-w-6xl px-4;
+  }
+
+  .page-shell {
+    @apply relative overflow-x-clip;
+  }
+
+  .premium-panel {
+    @apply rounded-[2rem] border;
+    background: var(--surface-1);
+    box-shadow: var(--shadow-soft);
+  }
+}

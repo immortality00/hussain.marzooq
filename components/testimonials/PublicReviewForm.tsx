@@ -1,268 +1,18 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/shared/Button";
 import { ModalPortal } from "@/components/shared/ModalPortal";
-import { CLOUDINARY_TESTIMONIALS_FOLDER } from "@/lib/cloudinary-folders";
-import { LocationSearch } from "./review-form/LocationSearch";
-import { ProfilePhotoField } from "./review-form/ProfilePhotoField";
-import { ReviewPhotosField } from "./review-form/ReviewPhotosField";
-import { StarPicker } from "./review-form/StarPicker";
-import type { LocationOption } from "./review-form/types";
-import { FormStatus, type FormStatusState } from "@/components/shared/FormStatus";
-import { tokenWaitMs } from "@/hooks/useFormToken";
-import { discardUpload } from "./review-form/discardUpload";
-import { MAX_REVIEW_PHOTOS, isValidEmail } from "./review-form/utils";
+import { ReviewFormFields } from "./review-form/ReviewFormFields";
+import { ReviewSubmitPanel } from "./review-form/ReviewSubmitPanel";
 import { useModalVisibilityEvents } from "./review-form/useModalVisibilityEvents";
+import { useReviewForm } from "./review-form/useReviewForm";
 
 export default function PublicReviewForm() {
-  const nameId = useId();
-  const emailId = useId();
-  const aboutId = useId();
-  const starsId = useId();
-  const reviewId = useId();
   const [open, setOpen] = useState(false);
-
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [about, setAbout] = useState("");
-  const [selectedLocation, setSelectedLocation] = useState<LocationOption | null>(null);
-  const [review, setReview] = useState("");
-  const [rating, setRating] = useState(0);
-  const [profilePhotoUrl, setProfilePhotoUrl] = useState("");
-  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
-  const [hasPendingUploads, setHasPendingUploads] = useState(false);
-  const [consent, setConsent] = useState(false);
-  const [website, setWebsite] = useState("");
-  const [submitting, setSubmitting] = useState(false);
-  const [banner, setBanner] = useState<FormStatusState>(null);
-  const [formToken, setFormToken] = useState<{ token: string; receivedAt: number } | null>(null);
-  const [uploadSessionId, setUploadSessionId] = useState<string | null>(null);
-  const uploadSessionIdRef = useRef<string | null>(uploadSessionId);
-  const committedRef = useRef(false);
+  const form = useReviewForm(open, setOpen);
 
   useModalVisibilityEvents(open);
-
-  useEffect(() => {
-    if (!open || uploadSessionIdRef.current) return;
-
-    let cancelled = false;
-
-    void (async () => {
-      try {
-        const res = await fetch("/api/testimonials/upload-session", { method: "POST" });
-        const data = (await res.json().catch(() => null)) as {
-          sessionId?: string;
-          formToken?: string | null;
-          error?: string;
-        } | null;
-        if (cancelled) return;
-        if (res.ok && data?.sessionId) {
-          setUploadSessionId(data.sessionId);
-          setFormToken(data.formToken ? { token: data.formToken, receivedAt: Date.now() } : null);
-        } else {
-          setBanner({ type: "err", text: `The review form could not open: ${data?.error ?? `error ${res.status}`}` });
-        }
-      } catch {
-        if (!cancelled) setBanner({ type: "err", text: "The review form could not open: no connection." });
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open]);
-
-  const selectedLocationPayload = useMemo(
-    () =>
-      selectedLocation
-        ? {
-            locationId: selectedLocation.id,
-            locationLabel: selectedLocation.label,
-          }
-        : {
-            locationId: null,
-            locationLabel: null,
-          },
-    [selectedLocation]
-  );
-
-  const profilePhotoFolder = useMemo(
-    () => (uploadSessionId ? `${CLOUDINARY_TESTIMONIALS_FOLDER}/${uploadSessionId}/pfp` : ""),
-    [uploadSessionId]
-  );
-
-  const photosFolder = useMemo(
-    () => (uploadSessionId ? `${CLOUDINARY_TESTIMONIALS_FOLDER}/${uploadSessionId}/photos` : ""),
-    [uploadSessionId]
-  );
-
-  useEffect(() => {
-    uploadSessionIdRef.current = uploadSessionId;
-  }, [uploadSessionId]);
-
-  const hasUploadedFiles = Boolean(profilePhotoUrl || photoUrls.length > 0 || hasPendingUploads);
-
-  async function cleanupUploadSession() {
-    if (committedRef.current || !hasUploadedFiles) return;
-
-    try {
-      await fetch("/api/testimonials/upload-session/cleanup", { method: "POST" });
-    } catch {
-      // Best-effort cleanup only.
-    }
-  }
-
-  async function handleClose() {
-    await cleanupUploadSession();
-    resetForm();
-    setOpen(false);
-  }
-
-  useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (!hasUploadedFiles || committedRef.current) return;
-
-      try {
-        navigator.sendBeacon("/api/testimonials/upload-session/cleanup");
-      } catch {
-        // Best-effort cleanup only.
-      }
-    };
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [hasUploadedFiles]);
-
-  function resetForm() {
-    setName("");
-    setEmail("");
-    setAbout("");
-    setSelectedLocation(null);
-    setReview("");
-    setRating(0);
-    setProfilePhotoUrl("");
-    setPhotoUrls([]);
-    setHasPendingUploads(false);
-    setConsent(false);
-    setWebsite("");
-    setSubmitting(false);
-    setBanner(null);
-    setFormToken(null);
-    setUploadSessionId(null);
-    committedRef.current = false;
-  }
-
-  function handleProfilePhotoUploaded(url: string) {
-    if (profilePhotoUrl && profilePhotoUrl !== url) discardUpload(profilePhotoUrl);
-    setProfilePhotoUrl(url);
-    setHasPendingUploads(true);
-  }
-
-  function addPhoto(url: string) {
-    setPhotoUrls((prev) => {
-      if (prev.includes(url)) return prev;
-      return [...prev, url].slice(0, MAX_REVIEW_PHOTOS);
-    });
-    setHasPendingUploads(true);
-  }
-
-  function showUploadError(text: string) {
-    setBanner({ type: "err", text });
-  }
-
-  function removePhoto(url: string) {
-    discardUpload(url);
-    setPhotoUrls((prev) => prev.filter((item) => item !== url));
-  }
-
-  async function submit() {
-    setBanner(null);
-
-    const trimmedName = name.trim();
-    const trimmedEmail = email.trim();
-    const trimmedReview = review.trim();
-
-    if (!trimmedName) {
-      setBanner({ type: "err", text: "Name is required." });
-      return;
-    }
-
-    if (!trimmedEmail) {
-      setBanner({ type: "err", text: "Email is required." });
-      return;
-    }
-
-    if (!isValidEmail(trimmedEmail)) {
-      setBanner({ type: "err", text: "Use a valid email address." });
-      return;
-    }
-
-    if (!trimmedReview) {
-      setBanner({ type: "err", text: "Review is required." });
-      return;
-    }
-
-    if (rating < 1 || rating > 5) {
-      setBanner({ type: "err", text: "Stars are required." });
-      return;
-    }
-
-    if (!consent) {
-      setBanner({ type: "err", text: "Publication consent is required." });
-      return;
-    }
-
-    setSubmitting(true);
-
-    const wait = formToken ? tokenWaitMs(formToken.receivedAt) : 0;
-    if (wait) await new Promise((resolve) => setTimeout(resolve, wait));
-
-    try {
-      const res = await fetch("/api/testimonials/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: trimmedName,
-          email: trimmedEmail,
-          about,
-          ...selectedLocationPayload,
-          review: trimmedReview,
-          rating,
-          profilePhotoUrl,
-          photoUrls,
-          consent,
-          website,
-          formToken: formToken?.token ?? null,
-        }),
-      });
-
-      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string };
-
-      if (!res.ok || !data?.ok) {
-        setBanner({ type: "err", text: data?.error ?? "Submission failed." });
-        setSubmitting(false);
-        return;
-      }
-
-      committedRef.current = true;
-
-      setBanner({
-        type: "ok",
-        text: "Thank you. Your review was submitted and is waiting for approval.",
-      });
-
-      setTimeout(() => {
-        resetForm();
-        setOpen(false);
-      }, 1200);
-    } catch {
-      setBanner({ type: "err", text: "Submission failed." });
-    } finally {
-      setSubmitting(false);
-    }
-  }
 
   return (
     <>
@@ -276,7 +26,7 @@ export default function PublicReviewForm() {
 
       {open ? (
         <ModalPortal
-          onClose={() => void handleClose()}
+          onClose={() => void form.close()}
           label="Leave a review"
           closeOnEscape={false}
           className="fixed inset-0 z-[150] flex items-center justify-center bg-black/70 p-3 backdrop-blur-sm sm:p-5"
@@ -293,156 +43,23 @@ export default function PublicReviewForm() {
                 </p>
               </div>
 
-              <Button onClick={() => void handleClose()}>Close</Button>
+              <Button onClick={() => void form.close()}>Close</Button>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto p-5 sm:p-6" data-lenis-prevent>
               <input
                 tabIndex={-1}
                 autoComplete="off"
-                value={website}
-                onChange={(event) => setWebsite(event.target.value)}
+                value={form.values.website}
+                onChange={(event) => form.set.setWebsite(event.target.value)}
                 className="sr-only"
                 name="website"
                 aria-hidden="true"
               />
 
               <div className="grid gap-6 lg:grid-cols-[1fr_0.95fr]">
-                <div className="space-y-5">
-                  <div className="rounded-[2rem] border border-border/60 bg-muted/20 p-4">
-                    <div className="flex items-start gap-4">
-                      <ProfilePhotoField
-                        folder={profilePhotoFolder}
-                        profilePhotoUrl={profilePhotoUrl}
-                        onUploaded={handleProfilePhotoUploaded}
-                        onError={showUploadError}
-                      />
-
-                      <div className="min-w-0 flex-1 space-y-4">
-                        <div className="space-y-2">
-                          <label htmlFor={nameId} className="text-sm font-medium">
-                            Name *
-                          </label>
-                          <input
-                            id={nameId}
-                            value={name}
-                            onChange={(event) => setName(event.target.value)}
-                            className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                            placeholder="Your name"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <label htmlFor={emailId} className="text-sm font-medium">
-                            Email *
-                          </label>
-                          <input
-                            id={emailId}
-                            value={email}
-                            onChange={(event) => setEmail(event.target.value)}
-                            className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                            placeholder="your@email.com"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <label htmlFor={aboutId} className="text-sm font-medium">
-                        About you
-                      </label>
-                      <input
-                        id={aboutId}
-                        value={about}
-                        onChange={(event) => setAbout(event.target.value)}
-                        className="w-full rounded-xl border border-border/70 bg-background px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-ring"
-                        placeholder="Bride, model, brand..."
-                      />
-                    </div>
-
-                    <LocationSearch
-                      selectedLocation={selectedLocation}
-                      onSelect={setSelectedLocation}
-                      onClear={() => setSelectedLocation(null)}
-                    />
-                  </div>
-
-                  <div className="rounded-[2rem] border border-border/60 bg-muted/20 p-4">
-                    <div id={starsId} className="text-sm font-medium">
-                      Stars *
-                    </div>
-                    <div className="mt-3" role="group" aria-labelledby={starsId}>
-                      <StarPicker rating={rating} setRating={setRating} />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label htmlFor={reviewId} className="text-sm font-medium">
-                      Review *
-                    </label>
-                    <textarea
-                      id={reviewId}
-                      value={review}
-                      onChange={(event) => setReview(event.target.value)}
-                      className="min-h-44 w-full rounded-2xl border border-border/70 bg-background px-4 py-3 text-sm leading-6 outline-none focus:ring-2 focus:ring-ring"
-                      placeholder="Write your review here..."
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-5">
-                  <ReviewPhotosField
-                    folder={photosFolder}
-                    photoUrls={photoUrls}
-                    onUploaded={addPhoto}
-                    onClear={() => {
-                      photoUrls.forEach(discardUpload);
-                      setPhotoUrls([]);
-                    }}
-                    onRemove={removePhoto}
-                    onError={showUploadError}
-                  />
-
-                  <FormStatus status={banner} />
-
-                  <div className="space-y-4 rounded-[2rem] border border-border/60 bg-muted/20 p-4">
-                    <label
-                      htmlFor="review-consent"
-                      className="flex items-start gap-3 text-sm leading-6 text-muted-foreground"
-                    >
-                      <input
-                        id="review-consent"
-                        type="checkbox"
-                        checked={consent}
-                        onChange={(event) => setConsent(event.target.checked)}
-                        className="mt-1 size-4 shrink-0 accent-foreground"
-                      />
-                      <span>
-                        I agree to my name, review, photos and location being published on this
-                        site. See the{" "}
-                        <Link
-                          href="/privacy"
-                          target="_blank"
-                          className="underline underline-offset-4 hover:text-foreground"
-                        >
-                          privacy page
-                        </Link>
-                        .
-                      </span>
-                    </label>
-
-                    <Button
-                      variant="solid"
-                      disabled={submitting || !consent}
-                      onClick={() => void submit()}
-                      className="w-full justify-center disabled:opacity-60"
-                    >
-                      {submitting ? "Submitting..." : "Submit review"}
-                    </Button>
-                  </div>
-                </div>
+                <ReviewFormFields form={form} />
+                <ReviewSubmitPanel form={form} />
               </div>
             </div>
           </div>

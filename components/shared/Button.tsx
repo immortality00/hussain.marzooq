@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 // page surface stays legible in light mode as well as dark. `onImage` pins the
 // pair to white/black for the buttons that sit on a dark photo scrim, which is
 // dark in both themes.
-// Geometry + motion live in globals.css (.hm-btn). The hero keeps its own px-6
+// Geometry + motion live in app/styles/controls.css (.hm-btn). The hero keeps its own px-6
 // pills inline and is the one deliberate exception.
 export type ButtonVariant = "ghost" | "solid";
 
