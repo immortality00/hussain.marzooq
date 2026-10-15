@@ -3,76 +3,23 @@ import { savedAdminMedia, serializeAdminMediaItem } from "@/lib/server/admin-med
 import { mediaInUseResponse, usageUpdateFailedResponse } from "@/app/api/_lib/media-usage";
 import { getDb } from "@/lib/server/db";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
-import {
-  asBooleanOrNull,
-  asNullableString,
-  asNumberOrNull,
-  asStringArray,
-  isRecord,
-  noStoreJson,
-} from "@/app/api/_lib/common";
-import {
-  duplicateVideoMessage,
-  findMediaWithVideo,
-  getMediaLists,
-  parseMediaLocation,
-  parseNftMeta,
-  resolvePeopleSelection,
-  sanitizeAppearances,
-} from "@/app/api/_lib/media";
-import {
-  deleteVideoPoster,
-  discardUnsavedPoster,
-  storeVideoPoster,
-  type VideoPoster,
-} from "@/lib/server/video-posters";
-import { parseVideoLink, videoEmbedSrc } from "@/lib/video-embed";
-import {
-  assetIsInsideFolder,
-  assetsPointToSameCloudinaryFile,
-  deleteStoredMediaAsset,
-  folderOfPublicId,
-  getPrimaryMediaFolder,
-  getStoredMediaAsset,
-  moveStoredMediaAssetToFolder,
-  normalizeUploadedMediaAsset,
-  type StoredMediaAsset,
-} from "@/lib/server/media-asset-management";
+import { asStringArray, noStoreJson } from "@/app/api/_lib/common";
+import { duplicateVideoMessage, findMediaWithVideo } from "@/app/api/_lib/media";
+import { deleteVideoPoster } from "@/lib/server/video-posters";
+import { deleteStoredMediaAsset, getStoredMediaAsset } from "@/lib/server/media-asset-management";
 import {
   findPrivateGalleriesUsingMedia,
   formatPrivateGalleryMediaDeleteBlocker,
-  getPrivateGalleryTitlesForMedia,
 } from "@/lib/server/private-gallery-admin";
-import { isMediaAssetPath } from "@/lib/media-asset-path";
-import { cloudinaryErrorMessage } from "@/lib/server/cloudinary-assets";
 import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
-import { findAssetUsages } from "@/lib/server/asset-references";
-import {
-  applyUsageEdit,
-  findMediaUsageConflicts,
-  removeMediaUsages,
-} from "@/lib/server/media-usage";
-import { parseMediaUsageChoice } from "@/lib/media-in-use";
-import type { UsageEdit } from "@/lib/asset-usage-edits";
+import { findMediaUsageConflicts, removeMediaUsages } from "@/lib/server/media-usage";
+import { parseMediaPatch } from "./_lib/parse-media-patch";
+import { buildMediaSet } from "./_lib/media-set";
+import { checkPageUsage, finishFileChange } from "./_lib/media-page-usage";
+import { applyAssetChange } from "./_lib/media-asset-change";
+import { writeMediaChange } from "./_lib/media-write";
 
 export const dynamic = "force-dynamic";
-
-async function moveToCategoryFolder(asset: StoredMediaAsset, folder: string) {
-  const failure = "Could not move the media file to the selected category folder";
-  try {
-    const moved = await moveStoredMediaAssetToFolder(asset, folder);
-    return moved ? { moved } : { failed: noStoreJson({ ok: false, error: `${failure}.` }, { status: 502 }) };
-  } catch (error) {
-    console.error("[media] move failed", error);
-    const reason = cloudinaryErrorMessage(error);
-    return { failed: noStoreJson({ ok: false, error: `${failure}: ${reason}` }, { status: 502 }) };
-  }
-}
-
-async function restoreMovedAsset(moved: StoredMediaAsset | null, original: StoredMediaAsset) {
-  if (!moved || !original.publicId) return;
-  await moveStoredMediaAssetToFolder(moved, folderOfPublicId(original.publicId));
-}
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const gate = await requireAdminObjectId(ctx);
@@ -94,81 +41,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (gate instanceof Response) return gate;
   const { oid } = gate;
 
-  const bodyUnknown = (await req.json().catch(() => null)) as unknown;
-  if (!isRecord(bodyUnknown)) {
-    return noStoreJson({ ok: false, error: "Invalid body" }, { status: 400 });
-  }
-
-  const title = (asNullableString(bodyUnknown.title) ?? "").trim().slice(0, 160);
-  if (!title) return noStoreJson({ ok: false, error: "Title required" }, { status: 400 });
-
-  const description = (asNullableString(bodyUnknown.description) ?? "").trim().slice(0, 2000);
-  const mediaLocation = parseMediaLocation(bodyUnknown);
-  const event = (asNullableString(bodyUnknown.event) ?? "").trim().slice(0, 120);
-
-  const yearNum = asNumberOrNull(bodyUnknown.year);
-  const year = yearNum !== null && yearNum > 1900 && yearNum < 2100 ? yearNum : null;
-
-  const { tags, categories, peopleIds } = getMediaLists(bodyUnknown);
-  const isPublic = asBooleanOrNull(bodyUnknown.isPublic);
-  const appearances = sanitizeAppearances(bodyUnknown.appearances);
-
-  if (categories.length === 0) {
-    return noStoreJson({ ok: false, error: "Choose at least one category." }, { status: 400 });
-  }
-
-  const targetFolder = getPrimaryMediaFolder(categories);
-  const incomingType = asNullableString(bodyUnknown.type);
-  const incomingEmbedUrl = asNullableString(bodyUnknown.embedUrl);
-  const incomingSecureUrl = asNullableString(bodyUnknown.secureUrl);
-  const incomingPublicId = asNullableString(bodyUnknown.publicId);
-  const incomingResourceType = asNullableString(bodyUnknown.resourceType);
-  const usageChoice = parseMediaUsageChoice(bodyUnknown.usages);
-
-  const hasIncomingAsset =
-    typeof incomingSecureUrl === "string" &&
-    incomingSecureUrl.length > 0 &&
-    !isMediaAssetPath(incomingSecureUrl) &&
-    typeof incomingPublicId === "string" &&
-    incomingPublicId.length > 0 &&
-    typeof incomingResourceType === "string" &&
-    incomingResourceType.length > 0;
-
-  const isShowreel = categories.includes("showreel");
-  const isVideoPlacement = categories.includes("videography") || isShowreel;
-
-  const allowEmbed =
-    isVideoPlacement && !categories.includes("photography") && !categories.includes("nft");
-
-  if (incomingType === "embed" && !allowEmbed) {
-    return noStoreJson(
-      {
-        ok: false,
-        error: "Embed links are allowed only for videography or showreel.",
-      },
-      { status: 400 }
-    );
-  }
-
-  if (categories.includes("nft") && incomingType === "embed") {
-    return noStoreJson(
-      { ok: false, error: "NFT items must use an uploaded image or video." },
-      { status: 400 }
-    );
-  }
-
-  const video = incomingType === "embed" ? parseVideoLink(incomingEmbedUrl ?? "") : null;
-  if (incomingType === "embed" && !video) {
-    return noStoreJson(
-      { ok: false, error: "Use a valid YouTube or Vimeo video URL." },
-      { status: 400 }
-    );
-  }
-
-  const nftParsed = parseNftMeta(bodyUnknown, categories.includes("nft"));
-  if (!nftParsed.ok) {
-    return noStoreJson({ ok: false, error: nftParsed.error }, { status: 400 });
-  }
+  const parsed = parseMediaPatch(await req.json().catch(() => null));
+  if (!parsed.ok) return parsed.response;
+  const { input } = parsed;
 
   const db = await getDb();
   const existingFound = await findByIdOr404(db, "media", oid);
@@ -177,241 +52,27 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (changedSinceOpened(req, existingMedia)) return recordChangedResponse(await savedAdminMedia(db, existingMedia));
 
   const oldAsset = getStoredMediaAsset(existingMedia);
-  const oldPosterId = existingMedia.posterPublicId;
-  const resolvedPeople = await resolvePeopleSelection(db, { peopleIds });
-  const galleryTitles = await getPrivateGalleryTitlesForMedia(db, String(oid));
+  const set = await buildMediaSet(db, oid, input);
 
-  const set: Record<string, unknown> = {
-    title,
-    description: description || null,
-    location: mediaLocation.location,
-    locationId: mediaLocation.locationId,
-    locationLat: mediaLocation.locationLat,
-    locationLon: mediaLocation.locationLon,
-    locationCountryCode: mediaLocation.locationCountryCode,
-    event: event || null,
-    year,
-    tags,
-    categories,
-    peopleIds: resolvedPeople.peopleIds,
-    people: resolvedPeople.people,
-    appearances,
-    nft: nftParsed.value,
-    updatedAt: new Date(),
-  };
-
-  if (resolvedPeople.gatedPersonName || galleryTitles.length > 0) {
-    set.isPublic = false;
-  } else if (typeof isPublic === "boolean") {
-    set.isPublic = isPublic;
-  }
-
-  let replacementAsset: StoredMediaAsset | null = null;
-  let movedAssetOnCloudinary: StoredMediaAsset | null = null;
-  let newPoster: VideoPoster | null = null;
-  let posterMissing = false;
-
-  if (video) {
-    const duplicate = await findMediaWithVideo(db, video, oid);
+  if (input.video) {
+    const duplicate = await findMediaWithVideo(db, input.video, oid);
     if (duplicate) {
       return noStoreJson({ ok: false, error: duplicateVideoMessage(duplicate) }, { status: 409 });
     }
   }
 
-  const replacesFile =
-    Boolean(oldAsset.publicId) &&
-    (video !== null ||
-      (hasIncomingAsset && incomingPublicId!.trim().replace(/^\/+/, "") !== oldAsset.publicId));
-  const mayMoveFile =
-    Boolean(oldAsset.publicId) && !assetIsInsideFolder(oldAsset.publicId, targetFolder);
-  const [oldFileInUse] =
-    replacesFile || mayMoveFile ? await findMediaUsageConflicts(db, [existingMedia]) : [];
+  const usage = await checkPageUsage(db, existingMedia, oldAsset, input);
+  if (usage instanceof Response) return usage;
 
-  if (replacesFile && oldFileInUse) {
-    const newFileIsImage = !video && incomingResourceType === "image";
-    if (!usageChoice) return mediaInUseResponse([oldFileInUse], { canReplace: newFileIsImage });
-    if (usageChoice === "replace" && !newFileIsImage) {
-      return noStoreJson({ ok: false, error: "Only a photo can take its place there." }, { status: 400 });
-    }
-  }
+  const change = await applyAssetChange(db, set, existingMedia, oldAsset, input);
+  if (change instanceof Response) return change;
 
-  if (video) {
-    const embedSrc = videoEmbedSrc(video);
-    set.type = "embed";
-    set.embedUrl = embedSrc;
-    set.secureUrl = null;
-    set.publicId = null;
-    set.resourceType = null;
+  const notWritten = await writeMediaChange(db, oid, set, change, oldAsset, existingMedia.posterPublicId);
+  if (notWritten) return notWritten;
 
-    const keepsPoster =
-      existingMedia.embedUrl === embedSrc &&
-      typeof existingMedia.posterUrl === "string" &&
-      typeof existingMedia.posterPublicId === "string";
+  const { pageEdit, pagesNotUpdated } = await finishFileChange(db, usage, input, set, oldAsset, change);
 
-    if (!keepsPoster) {
-      newPoster = await storeVideoPoster(db, video);
-      posterMissing = !newPoster;
-      set.posterUrl = newPoster?.url ?? null;
-      set.posterPublicId = newPoster?.publicId ?? null;
-    }
-  }
-
-  if (
-    isShowreel &&
-    incomingType !== "embed" &&
-    !hasIncomingAsset &&
-    oldAsset.publicId &&
-    oldAsset.resourceType !== "video"
-  ) {
-    return noStoreJson(
-      { ok: false, error: "Showreel uploads must be video files." },
-      { status: 400 }
-    );
-  }
-
-  if (hasIncomingAsset) {
-    const normalizedAsset = normalizeUploadedMediaAsset({
-      secureUrl: incomingSecureUrl,
-      publicId: incomingPublicId,
-      resourceType: incomingResourceType,
-      targetFolder,
-      allowExistingManagedMediaAsset: true,
-    });
-
-    if (!normalizedAsset.ok) {
-      return noStoreJson({ ok: false, error: normalizedAsset.error }, { status: 400 });
-    }
-
-    if (isShowreel && normalizedAsset.asset.type !== "video") {
-      return noStoreJson(
-        { ok: false, error: "Showreel uploads must be video files." },
-        { status: 400 }
-      );
-    }
-
-    const incomingAsset: StoredMediaAsset = {
-      secureUrl: normalizedAsset.asset.secureUrl,
-      publicId: normalizedAsset.asset.publicId,
-      resourceType: normalizedAsset.asset.resourceType,
-    };
-
-    const isExistingAsset = Boolean(
-      oldAsset.publicId && normalizedAsset.asset.publicId === oldAsset.publicId
-    );
-
-    if (isExistingAsset && !normalizedAsset.asset.isAlreadyInTargetFolder) {
-      const move = await moveToCategoryFolder(oldAsset, targetFolder);
-      if (move.failed) return move.failed;
-      const movedAsset = move.moved;
-
-      set.secureUrl = movedAsset.secureUrl;
-      set.publicId = movedAsset.publicId;
-      set.resourceType = movedAsset.resourceType;
-      set.type = movedAsset.resourceType;
-      set.embedUrl = null;
-
-      replacementAsset = {
-        secureUrl: movedAsset.secureUrl,
-        publicId: movedAsset.publicId,
-        resourceType: movedAsset.resourceType,
-        deliveryType: oldAsset.deliveryType,
-      };
-      movedAssetOnCloudinary = replacementAsset;
-    } else {
-      if (!normalizedAsset.asset.isAlreadyInTargetFolder) {
-        return noStoreJson(
-          { ok: false, error: "Uploaded media URL is outside the selected media category folder." },
-          { status: 400 }
-        );
-      }
-
-      set.secureUrl = normalizedAsset.asset.secureUrl;
-      set.publicId = normalizedAsset.asset.publicId;
-      set.resourceType = normalizedAsset.asset.resourceType;
-      set.type = normalizedAsset.asset.type;
-      set.embedUrl = null;
-
-      replacementAsset = incomingAsset;
-    }
-  } else if (
-    incomingType !== "embed" &&
-    oldAsset.publicId &&
-    !assetIsInsideFolder(oldAsset.publicId, targetFolder)
-  ) {
-    const move = await moveToCategoryFolder(oldAsset, targetFolder);
-    if (move.failed) return move.failed;
-    const movedAsset = move.moved;
-
-    set.secureUrl = movedAsset.secureUrl;
-    set.publicId = movedAsset.publicId;
-    set.resourceType = movedAsset.resourceType;
-    set.type = movedAsset.resourceType;
-    set.embedUrl = null;
-
-    replacementAsset = {
-      secureUrl: movedAsset.secureUrl,
-      publicId: movedAsset.publicId,
-      resourceType: movedAsset.resourceType,
-      deliveryType: oldAsset.deliveryType,
-    };
-    movedAssetOnCloudinary = replacementAsset;
-  }
-
-  if (set.embedUrl === null) {
-    set.posterUrl = null;
-    set.posterPublicId = null;
-  }
-
-  let matchedCount = 0;
-  try {
-    const result = await db.collection("media").updateOne({ _id: oid }, { $set: set });
-    matchedCount = result.matchedCount;
-  } catch (error) {
-    await restoreMovedAsset(movedAssetOnCloudinary, oldAsset);
-    await discardUnsavedPoster(db, newPoster?.publicId);
-    throw error;
-  }
-
-  if (!matchedCount) {
-    await restoreMovedAsset(movedAssetOnCloudinary, oldAsset);
-    await discardUnsavedPoster(db, newPoster?.publicId);
-    return noStoreJson({ ok: false, error: "Not found" }, { status: 404 });
-  }
-
-  if ("posterPublicId" in set && set.posterPublicId !== oldPosterId) {
-    await deleteVideoPoster(oldPosterId);
-  }
-
-  const movedFile =
-    movedAssetOnCloudinary && movedAssetOnCloudinary.publicId !== oldAsset.publicId
-      ? movedAssetOnCloudinary
-      : null;
-  const pageEdit: UsageEdit | null = !oldFileInUse
-    ? null
-    : replacesFile
-      ? usageChoice === "replace"
-        ? { type: "replace", url: String(set.secureUrl) }
-        : { type: "remove" }
-      : movedFile?.secureUrl
-        ? { type: "replace", url: movedFile.secureUrl }
-        : null;
-  const pagesNotUpdated =
-    oldFileInUse && pageEdit
-      ? await applyUsageEdit(db, oldFileInUse.publicId, oldFileInUse.usages, pageEdit)
-      : [];
-
-  if (oldAsset.publicId) {
-    const switchedToEmbed = incomingType === "embed";
-    const replacedWithDifferentAsset =
-      replacementAsset !== null && !assetsPointToSameCloudinaryFile(oldAsset, replacementAsset);
-    const stillUsed = pageEdit ? await findAssetUsages(db, oldAsset.publicId) : [];
-
-    if ((switchedToEmbed || replacedWithDifferentAsset) && stillUsed.length === 0) {
-      await deleteStoredMediaAsset(oldAsset);
-    }
-  }
-
-  revalidateMediaSurfaces([...tags, ...asStringArray(existingMedia.tags)]);
+  revalidateMediaSurfaces([...input.tags, ...asStringArray(existingMedia.tags)]);
   if (pageEdit) revalidateSitePages();
 
   const saved = await db.collection("media").findOne({ _id: oid });
@@ -419,7 +80,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   return noStoreJson({
     ok: true,
     ...(saved ? await savedAdminMedia(db, saved) : {}),
-    ...(posterMissing ? { posterMissing: true } : {}),
+    ...(change.posterMissing ? { posterMissing: true } : {}),
     ...(pagesNotUpdated.length ? { pagesNotUpdated } : {}),
   });
 }
