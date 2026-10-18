@@ -26,6 +26,7 @@ import {
 } from "@/lib/server/media-asset-management";
 import { storeVideoPoster } from "@/lib/server/video-posters";
 import { parseVideoLink, videoEmbedSrc } from "@/lib/video-embed";
+import { parsePublishAt, scheduleOnCreate } from "@/lib/media-schedule";
 
 export const dynamic = "force-dynamic";
 
@@ -59,6 +60,11 @@ export async function POST(req: Request) {
   const embedUrl = (asNullableString(bodyUnknown.embedUrl) ?? "").trim();
 
   if (!title) return noStoreJson({ ok: false, error: "Title required" }, { status: 400 });
+
+  const publishAt = parsePublishAt(bodyUnknown.publishAt);
+  if (!publishAt.ok) return noStoreJson({ ok: false, error: publishAt.error }, { status: 400 });
+  const schedule = scheduleOnCreate(publishAt.value, new Date());
+  if (!schedule.ok) return noStoreJson({ ok: false, error: schedule.error }, { status: 400 });
 
   if (categories.length === 0) {
     return noStoreJson({ ok: false, error: "Choose at least one category." }, { status: 400 });
@@ -174,6 +180,7 @@ export async function POST(req: Request) {
     embedUrl: normalizedEmbedUrl,
     posterUrl: poster?.url ?? null,
     posterPublicId: poster?.publicId ?? null,
+    ...schedule.set,
     order:
       typeof bodyUnknown.order === "number" && Number.isFinite(bodyUnknown.order)
         ? bodyUnknown.order
@@ -189,7 +196,7 @@ export async function POST(req: Request) {
 
   await col.updateOne(
     keyFilter,
-    { $set: doc, $setOnInsert: { createdAt: now } },
+    { $set: doc, ...(schedule.set.createdAt ? {} : { $setOnInsert: { createdAt: now } }) },
     { upsert: true }
   );
 

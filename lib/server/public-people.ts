@@ -9,6 +9,7 @@ import {
   verifyPersonGateCookieValue,
 } from "@/lib/password-gate";
 import { buildFallback } from "@/lib/server/public-read";
+import { PUBLIC_MEDIA_VISIBILITY, publicMediaFilter, releasedMediaFilter } from "@/lib/media-schedule";
 
 export type PublicPersonIndexItem = {
   id: string;
@@ -75,9 +76,9 @@ function buildPersonMediaQuery(personId: string, personName: string, includeHidd
     personMatch.push({ people: personName });
   }
 
-  const clauses: Record<string, unknown>[] = [{ $or: personMatch }];
+  const clauses: Record<string, unknown>[] = [{ $or: personMatch }, releasedMediaFilter()];
   if (!includeHidden) {
-    clauses.push({ $or: [{ isPublic: true }, { isPublic: { $exists: false } }] });
+    clauses.push(PUBLIC_MEDIA_VISIBILITY);
   } else {
     // Private-gallery media must never surface through a person's password
     // gate, no matter why the rest of the gate is unlocked.
@@ -207,7 +208,7 @@ async function getPublicPeopleImpl(): Promise<PublicPersonIndexItem[]> {
             ...(names.length ? [{ people: { $in: names } }] : []),
           ],
         },
-        { $or: [{ isPublic: true }, { isPublic: { $exists: false } }] },
+        publicMediaFilter(),
       ],
     })
     .project({ _id: 1, type: 1, secureUrl: 1, createdAt: 1, peopleIds: 1, people: 1 })

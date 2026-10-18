@@ -1,6 +1,7 @@
 import { asNullableString, asNumberOrNull, asStringArray, isRecord } from "@/app/api/_lib/common";
 import { sanitizeAppearances, type Appearance, type NftMeta } from "@/app/api/_lib/media";
 import { mediaAssetPath } from "@/lib/media-asset-path";
+import { publicMediaFilter } from "@/lib/media-schedule";
 
 export type PublicMediaItem = {
   id: string;
@@ -38,6 +39,7 @@ export type AdminMediaListItem = {
   year: number | null;
   nft: NftMeta | null;
   isPublic: boolean;
+  publishAt: string | null;
   createdAt: string | null;
 };
 
@@ -48,9 +50,7 @@ export function buildPublicMediaQuery({
   type?: "all" | "image" | "video" | "embed" | string | null;
   category?: string | null;
 }) {
-  const query: Record<string, unknown> = {
-    $or: [{ isPublic: true }, { isPublic: { $exists: false } }],
-  };
+  const query: Record<string, unknown> = { ...publicMediaFilter() };
 
   if (type && type !== "all") {
     query.type = type;
@@ -161,6 +161,7 @@ export function toAdminMediaListItem(doc: Record<string, unknown>): AdminMediaLi
     year: typeof doc.year === "number" ? doc.year : null,
     nft: getNftMeta(doc),
     isPublic: doc.isPublic !== false,
+    publishAt: serializeDate(doc.publishAt),
     createdAt: serializeDate(doc.createdAt),
   };
 }

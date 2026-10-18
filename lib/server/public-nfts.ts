@@ -1,6 +1,7 @@
 import { getDb } from "@/lib/server/db";
 import { sanitizeAppearances, type Appearance } from "@/app/api/_lib/media";
 import { buildFallback } from "@/lib/server/public-read";
+import { publicMediaFilter } from "@/lib/media-schedule";
 
 export type PublicNftItem = {
   id: string;
@@ -38,7 +39,7 @@ async function getPublicNftsImpl(): Promise<PublicNftItem[]> {
     .collection("media")
     .find({
       categories: "nft",
-      $or: [{ isPublic: true }, { isPublic: { $exists: false } }],
+      ...publicMediaFilter(),
       nft: { $type: "object" },
     })
     .sort({ createdAt: -1 })

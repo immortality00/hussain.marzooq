@@ -20,8 +20,10 @@ function toComparable(value: unknown) {
 }
 
 function matchesField(value: unknown, cond: unknown): boolean {
-  if (cond !== null && typeof cond === "object" && !Array.isArray(cond)) {
+  if (cond === null) return value === null || value === undefined;
+  if (cond !== null && typeof cond === "object" && !Array.isArray(cond) && !(cond instanceof Date)) {
     const ops = cond as Record<string, unknown>;
+    if ("$lte" in ops) return value instanceof Date && value.getTime() <= (ops.$lte as Date).getTime();
     if ("$ne" in ops) return toComparable(value) !== toComparable(ops.$ne);
     if ("$exists" in ops) return (value !== undefined) === ops.$exists;
     if ("$in" in ops) {
@@ -90,6 +92,19 @@ beforeEach(() => {
 describe("an unlocked private person page", () => {
   test("shows the person's own hidden media", async () => {
     mediaDocs = [{ _id: new ObjectId(), peopleIds: [PERSON_ID], isPublic: false }];
+
+    const { getPersonPageBySlug } = await import("@/lib/server/public-people");
+    const result = await getPersonPageBySlug("subject");
+
+    expect(result.state).toBe("open");
+    if (result.state === "open") expect(result.person.mediaItems).toHaveLength(1);
+  });
+
+  test("never reveals media scheduled for later", async () => {
+    mediaDocs = [
+      { _id: new ObjectId(), peopleIds: [PERSON_ID], isPublic: false },
+      { _id: new ObjectId(), peopleIds: [PERSON_ID], isPublic: true, publishAt: new Date(Date.now() + 86_400_000) },
+    ];
 
     const { getPersonPageBySlug } = await import("@/lib/server/public-people");
     const result = await getPersonPageBySlug("subject");

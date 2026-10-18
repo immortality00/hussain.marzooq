@@ -78,9 +78,14 @@ export default function DashboardClient() {
                 <div>
                   <span className="tabular-nums text-foreground">{stats.media.public}</span> public
                 </div>
+                {stats.media.scheduled ? (
+                  <div className="mt-1">
+                    <span className="tabular-nums text-foreground">{stats.media.scheduled}</span> scheduled
+                  </div>
+                ) : null}
                 <div className="mt-1">
                   <span className="tabular-nums text-foreground">
-                    {stats.media.total - stats.media.public}
+                    {stats.media.total - stats.media.public - (stats.media.scheduled ?? 0)}
                   </span>{" "}
                   hidden
                 </div>

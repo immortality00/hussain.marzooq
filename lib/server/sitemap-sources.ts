@@ -2,6 +2,7 @@ import type { Db } from "mongodb";
 import { getDb } from "@/lib/server/db";
 import { buildFallback } from "@/lib/server/public-read";
 import { buildPublicMediaQuery } from "@/lib/server/media-serializers";
+import { publicMediaFilter } from "@/lib/media-schedule";
 import { disciplineMatch } from "@/lib/server/public-media-tags";
 import { mergeNewest, newestBy, newestOf } from "@/lib/server/newest-dates";
 import {
@@ -23,8 +24,8 @@ async function loadPeople(db: Db): Promise<DateMap> {
         { projection: { slug: 1, name: 1, updatedAt: 1, createdAt: 1 } }
       )
       .toArray(),
-    newestBy(db, "media", PUBLIC_VISIBILITY, "peopleIds", { unwind: true }),
-    newestBy(db, "media", PUBLIC_VISIBILITY, "people", { unwind: true }),
+    newestBy(db, "media", publicMediaFilter(), "peopleIds", { unwind: true }),
+    newestBy(db, "media", publicMediaFilter(), "people", { unwind: true }),
   ]);
 
   const people: DateMap = new Map();

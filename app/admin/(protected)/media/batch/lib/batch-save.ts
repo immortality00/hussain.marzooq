@@ -1,6 +1,7 @@
 import { adminWrite } from "@/lib/client/admin-store";
 import type { SavedMedia } from "../../lib/media-store";
 import type { BatchItem } from "./useBatchMediaState";
+import { publishAtPayload } from "@/lib/media-schedule";
 
 export type BatchCreateResult =
   | { ok: true; posterMissing: boolean; saved: SavedMedia | null }
@@ -11,6 +12,7 @@ export function buildBatchPayload(item: BatchItem, shared: Record<string, unknow
     ...shared,
     title: item.title.trim(),
     description: item.description.trim() || null,
+    ...(shared.isPublic === false ? {} : { publishAt: publishAtPayload(item.schedule) }),
   };
 
   if (item.kind === "link") return { ...base, type: "embed", embedUrl: item.embedUrl };

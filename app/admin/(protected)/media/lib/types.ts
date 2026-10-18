@@ -50,6 +50,7 @@ export type MediaItem = {
   appearances: Appearance[];
   nft: NftMeta | null;
   isPublic: boolean;
+  publishAt?: string | null;
   privateGalleryTitles?: string[];
   secureUrl: string | null;
   publicId: string | null;

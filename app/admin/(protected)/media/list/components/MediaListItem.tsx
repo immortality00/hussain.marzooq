@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { AdminMediaListItem } from "@/lib/server/media-serializers";
 import { AdminLink } from "@/components/admin/AdminLink";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { formatPublishAt, isScheduled } from "@/lib/media-schedule";
 
 type NftData = {
   price: number | null;
@@ -77,6 +78,11 @@ export function MediaListItem({
                 {deleting ? (
                   <span className="inline-flex rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[11px] uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
                     Processing
+                  </span>
+                ) : null}
+                {isScheduled(item.publishAt) ? (
+                  <span className="inline-flex rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-[11px] uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
+                    Scheduled · {formatPublishAt(item.publishAt)}
                   </span>
                 ) : null}
               </div>

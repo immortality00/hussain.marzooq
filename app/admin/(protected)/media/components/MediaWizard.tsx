@@ -13,6 +13,7 @@ import MediaDetailsSection from "./MediaDetailsSection";
 import MediaNftSection from "./MediaNftSection";
 import MediaPlacementSection from "./MediaPlacementSection";
 import { MediaWizardPreview } from "./MediaWizardPreview";
+import { PublishScheduleField } from "./PublishScheduleField";
 
 type Editor = ReturnType<typeof useMediaEditorController>["editor"];
 type BusyAction = ReturnType<typeof useMediaEditorController>["busyAction"];
@@ -174,6 +175,11 @@ export default function MediaWizard({
               <WizardSummaryRow label="Tags" value={String(editor.selectedTagSlugs.length)} />
               <WizardSummaryRow label="Appearances" value={String(editor.appearances.length)} />
             </dl>
+            {editor.isPublic && editor.privateGalleryTitles.length === 0 ? (
+              <div className="mt-5 border-t pt-5">
+                <PublishScheduleField value={editor.schedule} onChange={editor.setSchedule} />
+              </div>
+            ) : null}
           </section>
         ) : null}
       </div>

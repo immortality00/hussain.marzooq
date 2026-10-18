@@ -6,6 +6,7 @@ import type { CloudinaryUploadedFile } from "@/components/shared/upload/Cloudina
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 import { useMediaAppearancesState } from "../../lib/useMediaAppearancesState";
 import type { MediaCategory } from "../../lib/types";
+import { PUBLISH_NOW, type PublishSchedule } from "@/lib/media-schedule";
 
 export type BatchFile = {
   kind: "file";
@@ -16,6 +17,7 @@ export type BatchFile = {
   originalFilename: string;
   title: string;
   description: string;
+  schedule: PublishSchedule;
 };
 
 export type BatchLink = {
@@ -26,9 +28,12 @@ export type BatchLink = {
   preview: string | null;
   title: string;
   description: string;
+  schedule: PublishSchedule;
 };
 
 export type BatchItem = BatchFile | BatchLink;
+
+export type BatchItemPatch = Partial<Pick<BatchItem, "title" | "description" | "schedule">>;
 
 export type ResolvedVideoLink = {
   embedUrl: string;
@@ -138,6 +143,7 @@ export function useBatchMediaState() {
           originalFilename: u.originalFilename,
           title: titleFromFilename(u.originalFilename),
           description: "",
+          schedule: PUBLISH_NOW,
         });
       }
       return next;
@@ -157,13 +163,14 @@ export function useBatchMediaState() {
           preview: link.preview,
           title: link.title ?? "",
           description: "",
+          schedule: PUBLISH_NOW,
         });
       }
       return next;
     });
   }
 
-  function updateItem(id: string, patch: Partial<Pick<BatchItem, "title" | "description">>) {
+  function updateItem(id: string, patch: BatchItemPatch) {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...patch } : item)));
   }
 

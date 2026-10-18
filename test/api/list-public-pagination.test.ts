@@ -197,7 +197,10 @@ describe("GET /api/media/list-public — filters", () => {
 
     const query = lastFindQuery();
     expect(query).toMatchObject({ categories: "photography", type: "image" });
-    expect(query.$or).toEqual([{ isPublic: true }, { isPublic: { $exists: false } }]);
+    expect(query.$and).toEqual([
+      { $or: [{ isPublic: true }, { isPublic: { $exists: false } }] },
+      { $or: [{ publishAt: null }, { publishAt: { $lte: expect.any(Date) } }] },
+    ]);
   });
 
   test("video mode includes embeds", async () => {

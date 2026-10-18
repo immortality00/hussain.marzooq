@@ -5,6 +5,7 @@ import { adminWrite } from "@/lib/client/admin-store";
 import { expectVersion, throwIfRecordChanged } from "@/lib/record-changed";
 import type { MediaItem } from "./types";
 import type { SavedMedia } from "./media-store";
+import { publishAtPayload, publishScheduleError, type PublishSchedule } from "@/lib/media-schedule";
 
 function savedFrom(data: Partial<SavedMedia> | null): SavedMedia | null {
   return data?.item && data.listItem ? { item: data.item, listItem: data.listItem } : null;
@@ -41,6 +42,7 @@ export function buildMediaPayload(args: {
   categories: string[];
   peopleIds: string[];
   isPublic: boolean;
+  schedule: PublishSchedule;
   appearances: unknown[];
   embedUrl: string;
   uploaded: { secureUrl: string; publicId: string; resourceType: string } | null;
@@ -72,6 +74,9 @@ export function buildMediaPayload(args: {
     throw new Error("Showreel uploads must be video files.");
   }
 
+  const scheduleError = args.isPublic ? publishScheduleError(args.schedule) : null;
+  if (scheduleError) throw new Error(scheduleError);
+
   const yearNum = args.year.trim() ? Number(args.year.trim()) : null;
   const yearValue = yearNum !== null && Number.isFinite(yearNum) ? yearNum : null;
 
@@ -89,6 +94,7 @@ export function buildMediaPayload(args: {
     categories: args.categories,
     peopleIds: args.peopleIds,
     isPublic: args.isPublic,
+    ...(args.isPublic ? { publishAt: publishAtPayload(args.schedule) } : {}),
     appearances: args.appearances,
     nft: isNft
       ? {

@@ -1,5 +1,6 @@
 import type { Collection, Document, Filter } from "mongodb";
 import { getDb } from "./db";
+import { releasedMediaFilter } from "@/lib/media-schedule";
 
 const MEDIA_CATEGORY_LABELS: { key: string; label: string }[] = [
   { key: "photography", label: "Photography" },
@@ -13,6 +14,7 @@ export type AdminDashboardStats = {
   media: {
     total: number;
     public: number;
+    scheduled: number;
     byCategory: { key: string; label: string; count: number }[];
   };
   testimonials: { total: number; pending: number };
@@ -40,17 +42,20 @@ async function facetCounts<K extends string>(
 
 async function getMediaCounts() {
   const db = await getDb();
+  const now = new Date();
   const [row] = await db
     .collection("media")
     .aggregate<{
       total: { n: number }[];
       public: { n: number }[];
+      scheduled?: { n: number }[];
       byCategory: { _id: unknown; count: number }[];
     }>([
       {
         $facet: {
           total: [{ $count: "n" }],
-          public: [{ $match: { isPublic: true } }, { $count: "n" }],
+          public: [{ $match: { isPublic: true, ...releasedMediaFilter(now) } }, { $count: "n" }],
+          scheduled: [{ $match: { isPublic: true, publishAt: { $gt: now } } }, { $count: "n" }],
           byCategory: [{ $unwind: "$categories" }, { $group: { _id: "$categories", count: { $sum: 1 } } }],
         },
       },
@@ -61,6 +66,7 @@ async function getMediaCounts() {
   return {
     total: row?.total[0]?.n ?? 0,
     public: row?.public[0]?.n ?? 0,
+    scheduled: row?.scheduled?.[0]?.n ?? 0,
     byCategory: MEDIA_CATEGORY_LABELS.map((category) => ({
       ...category,
       count: counts.get(category.key) ?? 0,

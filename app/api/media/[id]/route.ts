@@ -18,6 +18,7 @@ import { buildMediaSet } from "./_lib/media-set";
 import { checkPageUsage, finishFileChange } from "./_lib/media-page-usage";
 import { applyAssetChange } from "./_lib/media-asset-change";
 import { writeMediaChange } from "./_lib/media-write";
+import { scheduleOnUpdate } from "@/lib/media-schedule";
 
 export const dynamic = "force-dynamic";
 
@@ -51,8 +52,11 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   const existingMedia = existingFound.doc;
   if (changedSinceOpened(req, existingMedia)) return recordChangedResponse(await savedAdminMedia(db, existingMedia));
 
+  const schedule = scheduleOnUpdate(input.publishAt, existingMedia.publishAt, new Date());
+  if (!schedule.ok) return noStoreJson({ ok: false, error: schedule.error }, { status: 400 });
+
   const oldAsset = getStoredMediaAsset(existingMedia);
-  const set = await buildMediaSet(db, oid, input);
+  const set = { ...(await buildMediaSet(db, oid, input)), ...schedule.set };
 
   if (input.video) {
     const duplicate = await findMediaWithVideo(db, input.video, oid);

@@ -22,6 +22,7 @@ import { buildBatchPayload, createBatchItem } from "./lib/batch-save";
 import { batchItemLabel, useBatchMediaState } from "./lib/useBatchMediaState";
 import { adminInputClasses } from "@/components/admin/admin-input";
 import { ADMIN_REQUEST_LIMIT, settleLimited } from "@/lib/settle-limited";
+import { publishScheduleError } from "@/lib/media-schedule";
 
 const STEPS = ["Category", "Media", "Details", "Appearances", "Review"] as const;
 
@@ -83,6 +84,11 @@ export default function BatchMediaClient() {
     const untitled = s.items.find((item) => !item.title.trim());
     if (untitled) {
       notify("err", `Every item needs a title (“${batchItemLabel(untitled)}” is blank).`);
+      return;
+    }
+    const unscheduled = s.isPublic ? s.items.find((item) => publishScheduleError(item.schedule)) : undefined;
+    if (unscheduled) {
+      notify("err", `“${unscheduled.title.trim() || batchItemLabel(unscheduled)}”: ${publishScheduleError(unscheduled.schedule)}`);
       return;
     }
     const appearanceError = findFirstAppearanceError(s.appearances);
@@ -277,7 +283,12 @@ export default function BatchMediaClient() {
                 Nothing to save — add files or links on the Media step.
               </div>
             ) : (
-              <BatchReviewList items={s.items} updateItem={s.updateItem} removeItem={s.removeItem} />
+              <BatchReviewList
+                items={s.items}
+                showSchedule={s.isPublic}
+                updateItem={s.updateItem}
+                removeItem={s.removeItem}
+              />
             )}
           </section>
         ) : null}

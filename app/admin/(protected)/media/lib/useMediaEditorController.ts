@@ -125,6 +125,7 @@ export function useMediaEditorController({
         categories: editor.categories,
         peopleIds: editor.peopleIds,
         isPublic: editor.isPublic,
+        schedule: editor.schedule,
         appearances: editor.appearances,
         embedUrl: editor.embedUrl,
         uploaded: editor.uploaded,

@@ -134,3 +134,42 @@ describe("PATCH /api/media/[id] when the save fails", () => {
     expect(discardUnsavedPoster).toHaveBeenCalledWith(expect.anything(), "hm_visuals/media/posters/p1");
   });
 });
+
+describe("PATCH /api/media/[id] publish schedule", () => {
+  const future = () => new Date(Date.now() + 86_400_000);
+
+  test("scheduling a live item hides it until then and dates it at that time", async () => {
+    const at = future();
+    const res = await edit({ ...photo, publishAt: at.toISOString() });
+    expect(res.status).toBe(200);
+    const stored = memory.collections.media![0]!;
+    expect(stored.publishAt).toEqual(at);
+    expect(stored.createdAt).toEqual(at);
+  });
+
+  test("refuses a publish time that has passed", async () => {
+    const res = await edit({ ...photo, publishAt: "2020-01-01T00:00:00.000Z" });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe("Pick a publish time in the future.");
+  });
+
+  test("refuses a publish time that is not a date", async () => {
+    expect(await errorOf({ ...photo, publishAt: "soon" })).toBe("Use a valid publish date and time.");
+  });
+
+  test("Now on a scheduled item publishes it at once", async () => {
+    media.publishAt = future();
+    const res = await edit({ ...photo, publishAt: null });
+    expect(res.status).toBe(200);
+    const stored = memory.collections.media![0]!;
+    expect(stored.publishAt).toBeNull();
+    expect((stored.createdAt as Date).getTime()).toBeLessThanOrEqual(Date.now());
+  });
+
+  test("a save that does not mention it leaves the schedule alone", async () => {
+    const at = future();
+    media.publishAt = at;
+    await edit(photo);
+    expect(memory.collections.media![0]!.publishAt).toEqual(at);
+  });
+});

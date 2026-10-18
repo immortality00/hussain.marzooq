@@ -1,4 +1,5 @@
 import { toVideoWatchUrl } from "@/lib/video-embed";
+import { PUBLISH_NOW, publishScheduleFrom, type PublishSchedule } from "@/lib/media-schedule";
 import type {
   Appearance,
   CryptoCurrency,
@@ -30,6 +31,7 @@ export type BaseFields = {
   peopleNames: string[];
   categories: MediaCategory[];
   isPublic: boolean;
+  schedule: PublishSchedule;
   privateGalleryTitles: string[];
 };
 
@@ -71,6 +73,7 @@ export function baseFieldsFrom(m: MediaItem | null): BaseFields {
       peopleNames: [],
       categories: [],
       isPublic: true,
+      schedule: PUBLISH_NOW,
       privateGalleryTitles: [],
     };
   }
@@ -96,6 +99,7 @@ export function baseFieldsFrom(m: MediaItem | null): BaseFields {
     peopleNames: m.people ?? [],
     categories: (m.categories ?? []) as MediaCategory[],
     isPublic: Boolean(m.isPublic),
+    schedule: publishScheduleFrom(m.publishAt),
     privateGalleryTitles: m.privateGalleryTitles ?? [],
   };
 }

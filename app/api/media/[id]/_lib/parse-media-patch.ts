@@ -15,6 +15,7 @@ import { getPrimaryMediaFolder } from "@/lib/server/media-asset-management";
 import { isMediaAssetPath } from "@/lib/media-asset-path";
 import { parseMediaUsageChoice } from "@/lib/media-in-use";
 import { parseVideoLink } from "@/lib/video-embed";
+import { parsePublishAt } from "@/lib/media-schedule";
 
 function badRequest(error: string) {
   return { ok: false as const, response: noStoreJson({ ok: false, error }, { status: 400 }) };
@@ -42,6 +43,9 @@ export function parseMediaPatch(body: unknown) {
   const appearances = sanitizeAppearances(body.appearances);
 
   if (categories.length === 0) return badRequest("Choose at least one category.");
+
+  const publishAt = parsePublishAt(body.publishAt);
+  if (!publishAt.ok) return badRequest(publishAt.error);
 
   const targetFolder = getPrimaryMediaFolder(categories);
   const incomingType = asNullableString(body.type);
@@ -87,6 +91,7 @@ export function parseMediaPatch(body: unknown) {
       categories,
       peopleIds,
       isPublic,
+      publishAt: publishAt.value,
       appearances,
       nft: nftParsed.value,
       targetFolder,

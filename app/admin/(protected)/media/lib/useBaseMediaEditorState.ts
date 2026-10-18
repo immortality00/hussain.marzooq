@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import type { LocationOption } from "@/components/testimonials/review-form/types";
 import { baseFieldsFrom, type BaseFields } from "./editor-fields";
 import type { MediaCategory, MediaItem, SavedPoster, Uploaded } from "./types";
+import type { PublishSchedule } from "@/lib/media-schedule";
 
 export function useBaseMediaEditorState(initial: MediaItem | null) {
   const [start] = useState(() => baseFieldsFrom(initial));
@@ -26,6 +27,7 @@ export function useBaseMediaEditorState(initial: MediaItem | null) {
   const [selectedPeopleNames, setSelectedPeopleNames] = useState<string[]>(start.peopleNames);
   const [categories, setCategories] = useState<MediaCategory[]>(start.categories);
   const [isPublic, setIsPublic] = useState(start.isPublic);
+  const [schedule, setSchedule] = useState<PublishSchedule>(start.schedule);
   const [privateGalleryTitles, setPrivateGalleryTitles] = useState<string[]>(start.privateGalleryTitles);
 
   const tags = useMemo(() => selectedTagSlugs.slice(0, 60), [selectedTagSlugs]);
@@ -110,6 +112,7 @@ export function useBaseMediaEditorState(initial: MediaItem | null) {
     setSelectedPeopleNames(fields.peopleNames);
     setCategories(fields.categories);
     setIsPublic(fields.isPublic);
+    setSchedule(fields.schedule);
     setPrivateGalleryTitles(fields.privateGalleryTitles);
   }
 
@@ -162,6 +165,8 @@ export function useBaseMediaEditorState(initial: MediaItem | null) {
     isNft,
     isPublic,
     setIsPublic,
+    schedule,
+    setSchedule,
     privateGalleryTitles,
     tags,
     peopleIds,

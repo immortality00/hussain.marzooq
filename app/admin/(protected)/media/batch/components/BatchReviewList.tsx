@@ -1,17 +1,20 @@
 "use client";
 
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-import type { BatchItem } from "../lib/useBatchMediaState";
+import type { BatchItem, BatchItemPatch } from "../lib/useBatchMediaState";
+import { PublishScheduleField } from "../../components/PublishScheduleField";
 import { BatchItemThumb } from "./BatchItemThumb";
 import { adminInputClasses } from "@/components/admin/admin-input";
 
 export function BatchReviewList({
   items,
+  showSchedule,
   updateItem,
   removeItem,
 }: {
   items: BatchItem[];
-  updateItem: (id: string, patch: Partial<Pick<BatchItem, "title" | "description">>) => void;
+  showSchedule: boolean;
+  updateItem: (id: string, patch: BatchItemPatch) => void;
   removeItem: (id: string) => void;
 }) {
   return (
@@ -19,7 +22,7 @@ export function BatchReviewList({
       {items.map((item) => (
         <div key={item.id} className="flex gap-3 rounded-2xl border p-3">
           <BatchItemThumb item={item} compact />
-          <div className="flex-1 space-y-2">
+          <div className="min-w-0 flex-1 space-y-2">
             <input
               value={item.title}
               onChange={(e) => updateItem(item.id, { title: e.target.value })}
@@ -33,6 +36,12 @@ export function BatchReviewList({
               placeholder="Description (optional)"
               className={adminInputClasses("md", "h-16")}
             />
+            {showSchedule ? (
+              <PublishScheduleField
+                value={item.schedule}
+                onChange={(schedule) => updateItem(item.id, { schedule })}
+              />
+            ) : null}
           </div>
           <button
             type="button"

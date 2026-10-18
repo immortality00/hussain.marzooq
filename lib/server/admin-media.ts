@@ -190,6 +190,7 @@ function toAdminMediaItem(doc: Document, lookups: MediaLookups) {
     appearances: sanitizeAppearances(doc.appearances),
     nft: doc.nft && typeof doc.nft === "object" ? (JSON.parse(JSON.stringify(doc.nft)) as Record<string, unknown>) : null,
     isPublic: typeof doc.isPublic === "boolean" ? doc.isPublic : true,
+    publishAt: doc.publishAt ? new Date(doc.publishAt).toISOString() : null,
     privateGalleryTitles: lookups.galleryTitles.get(String(doc._id)) ?? [],
     secureUrl: isPrivateDelivery
       ? mediaAssetPath(String(doc._id))
