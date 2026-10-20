@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { Navbar } from "@/components/site/Navbar";
 import { Preloader } from "@/components/site/Preloader";
 import { CustomCursor } from "@/components/site/CustomCursor";
 import { SiteAnalytics } from "@/components/site/Analytics";
@@ -53,7 +52,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <div className="grain-overlay" />
       <CustomCursor />
       <SiteAnalytics />
-      <Navbar />
       {children}
     </div>
   );

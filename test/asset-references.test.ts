@@ -55,11 +55,6 @@ describe("isCloudinaryAssetReferenced", () => {
     expect(await isCloudinaryAssetReferenced(db, ID)).toBe(true);
   });
 
-  test("true when page_settings card image carries it", async () => {
-    const db = fakeDb({ page_settings: [{ slug: "photography", cardImage: { publicId: ID } }] });
-    expect(await isCloudinaryAssetReferenced(db, ID)).toBe(true);
-  });
-
   test("an unrelated asset stays unreferenced", async () => {
     const db = fakeDb({ page_sections: [{ hero: { image: { publicId: "hm_visuals/sections/other" } } }] });
     expect(await isCloudinaryAssetReferenced(db, ID)).toBe(false);

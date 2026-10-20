@@ -4,9 +4,8 @@ export type PageRow = {
   key: string;
   label: string;
   settingsSlug?: string;
-  // A settingsSlug row that has a visibility toggle but no Work-overlay card
-  // image — a plain Main page (Blog), not one of the 5 disciplines. Keeps it in
-  // the Main group and out of the "needs card image" check.
+  // A settingsSlug row that is a plain Main page (Blog), not one of the 5
+  // disciplines: it has a visibility toggle but stays in the Main group.
   toggleOnly?: boolean;
   seoSlug?: string;
   seoDetailPage?: boolean;
@@ -93,29 +92,19 @@ export function pageGroup(row: PageRow): PageGroup {
   return "main";
 }
 
-type PageSettingsRecord = Record<string, { isActive?: boolean; cardImage?: { url?: string } } | undefined>;
+type PageSettingsRecord = Record<string, { isActive?: boolean } | undefined>;
 
 export function pageFlags(pages: { settings: PageSettingsRecord; sections: Record<string, unknown> }) {
   const missingImage = PAGE_ROWS.filter((row) =>
-    pageNeedsImage(row, {
-      isActive: row.settingsSlug ? (pages.settings[row.settingsSlug]?.isActive ?? true) : true,
-      cardImageUrl: row.settingsSlug ? pages.settings[row.settingsSlug]?.cardImage?.url : undefined,
-      homeSections: row.sectionsSlug === "home" ? (pages.sections.home as HomeSections | undefined) : undefined,
-    })
+    pageNeedsImage(row, row.sectionsSlug === "home" ? (pages.sections.home as HomeSections | undefined) : undefined)
   ).length;
   const hidden = PAGE_ROWS.filter((row) => row.settingsSlug && pages.settings[row.settingsSlug]?.isActive === false)
     .length;
   return { missingImage, hidden };
 }
 
-export function pageNeedsImage(
-  row: PageRow,
-  ctx: { isActive: boolean; cardImageUrl?: string; homeSections?: HomeSections },
-): boolean {
-  if (row.settingsSlug && !row.toggleOnly && ctx.isActive && !ctx.cardImageUrl) return true;
-  if (row.sectionsSlug === "home" && ctx.homeSections) {
-    if (!ctx.homeSections.hero?.image?.url) return true;
-    if (ctx.homeSections.featuredCards.some((card) => !card.image?.url)) return true;
-  }
-  return false;
+function pageNeedsImage(row: PageRow, homeSections: HomeSections | undefined): boolean {
+  if (row.sectionsSlug !== "home" || !homeSections) return false;
+  if (!homeSections.hero?.image?.url) return true;
+  return homeSections.featuredCards.some((card) => !card.image?.url);
 }

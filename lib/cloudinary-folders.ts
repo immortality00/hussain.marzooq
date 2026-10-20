@@ -6,8 +6,8 @@ export const CLOUDINARY_PEOPLE_FOLDER = `${CLOUDINARY_ROOT_FOLDER}/people`;
 export const CLOUDINARY_SERVICES_FOLDER = `${CLOUDINARY_ROOT_FOLDER}/services`;
 export const CLOUDINARY_TESTIMONIALS_FOLDER = `${CLOUDINARY_ROOT_FOLDER}/testimonials`;
 export const CLOUDINARY_BLOG_FOLDER = `${CLOUDINARY_ROOT_FOLDER}/blog`;
-// Images uploaded directly into page sections + the Work overlay ("work layout")
-// cards, kept in their own folder so they can be signed and cleaned up on replace.
+// Images uploaded directly into page sections, kept in their own folder so they
+// can be signed and cleaned up on replace.
 export const CLOUDINARY_SECTIONS_FOLDER = `${CLOUDINARY_ROOT_FOLDER}/sections`;
 
 export const CLOUDINARY_MEDIA_CATEGORY_FOLDER_MAP = {

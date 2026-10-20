@@ -8,15 +8,16 @@ export type DisciplineSlug =
 export type Discipline = {
   slug: DisciplineSlug;
   label: string;
+  navLabel: string;
   href: string;
 };
 
 export const DISCIPLINES: Discipline[] = [
-  { slug: "photography", label: "Photography", href: "/photography" },
-  { slug: "videography", label: "Videography", href: "/videography" },
-  { slug: "nft", label: "NFT", href: "/nft" },
-  { slug: "dancing", label: "Dancing", href: "/dancing" },
-  { slug: "web-development", label: "Web Development", href: "/web-development" },
+  { slug: "photography", label: "Photography", navLabel: "Photography", href: "/photography" },
+  { slug: "videography", label: "Videography", navLabel: "Videography", href: "/videography" },
+  { slug: "nft", label: "NFT", navLabel: "NFT", href: "/nft" },
+  { slug: "dancing", label: "Dancing", navLabel: "Dancing", href: "/dancing" },
+  { slug: "web-development", label: "Web Development", navLabel: "WebDev", href: "/web-development" },
 ];
 
 export const DISCIPLINE_HREF: Record<DisciplineSlug, string> = {

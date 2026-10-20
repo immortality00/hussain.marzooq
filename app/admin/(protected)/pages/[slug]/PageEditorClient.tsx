@@ -36,14 +36,12 @@ export function PageEditorClient({ slug }: { slug: string }) {
       <PageEditorBody
         row={row}
         isActive={admin.isActiveOf(row)}
-        cardImage={row.settingsSlug ? admin.cardImageOf(row) : undefined}
         seo={row.seoSlug ? admin.seoOf(row) : EMPTY_SEO_DRAFT}
         sectionsData={row.sectionsSlug ? admin.sectionsOf(row) : undefined}
         dirty={admin.isDirty(row)}
         isSaving={admin.saving === row.key}
         feedback={admin.feedback}
         onVisibilityChange={(next) => admin.setVisibilityDraft(row, next)}
-        onCardImageChange={(image) => admin.setCardImageDraft(row, image)}
         onSeoChange={(field, value) => admin.setSeoField(row, field, value)}
         onSectionsChange={(data) => admin.setSectionsDraft(row, data)}
         onSave={() => admin.save(row)}

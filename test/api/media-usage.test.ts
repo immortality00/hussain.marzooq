@@ -62,20 +62,19 @@ function seed(heroUrl = OLD_URL) {
   resetMemoryDb({
     media: [media],
     page_sections: [{ slug: "home", data: { hero: { image: { url: heroUrl, publicId: "" } }, featuredCards: [] } }],
-    page_settings: [{ slug: "nft", cardImage: { url: OLD_URL, publicId: "" } }],
-    page_seo: [],
+    page_seo: [{ slug: "nft", ogImageUrl: OLD_URL }],
     blog_posts: [],
   });
 }
 
 const heroUrl = () => (memory.collections.page_sections![0]!.data as { hero: { image: { url: string } } }).hero.image.url;
-const cardUrl = () => (memory.collections.page_settings![0]!.cardImage as { url: string }).url;
+const shareUrl = () => memory.collections.page_seo![0]!.ogImageUrl as string;
 const ctx = () => ({ params: Promise.resolve({ id: String(media._id) }) });
 const del = (query = "") => remove(new Request(`http://localhost/api/media/x${query}`, { method: "DELETE" }), ctx());
 const edit = (body: Record<string, unknown>) =>
   patch(new Request("http://localhost/api/media/x", { method: "PATCH", body: JSON.stringify(body) }), ctx());
 
-const IN_USE = { id: expect.any(String), title: "Dune", usedOn: ["Home — hero", "Work overlay — NFT"] };
+const IN_USE = { id: expect.any(String), title: "Dune", usedOn: ["Home — hero", "NFT — share image"] };
 
 beforeEach(() => {
   vi.stubEnv("CLOUDINARY_CLOUD_NAME", "demo");
@@ -104,7 +103,7 @@ describe("DELETE /api/media/[id]", () => {
 
     expect(res.status).toBe(200);
     expect(heroUrl()).toBe("");
-    expect(cardUrl()).toBe("");
+    expect(shareUrl()).toBe("");
     expect(memory.collections.media).toHaveLength(0);
     expect(deleteStoredMediaAsset).toHaveBeenCalledWith(expect.objectContaining({ publicId: OLD_ID }));
     expect(revalidateSitePages).toHaveBeenCalled();
@@ -112,7 +111,7 @@ describe("DELETE /api/media/[id]", () => {
 
   test("deletes straight away when nothing uses the file", async () => {
     seed(NEW_URL);
-    memory.collections.page_settings = [];
+    memory.collections.page_seo = [];
 
     expect((await del()).status).toBe(200);
     expect(deleteStoredMediaAsset).toHaveBeenCalledTimes(1);
@@ -120,13 +119,13 @@ describe("DELETE /api/media/[id]", () => {
   });
 
   test("keeps everything when a page could not be updated", async () => {
-    memory.failWritesTo.add("page_settings");
+    memory.failWritesTo.add("page_seo");
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     const res = await del("?detach=1");
 
     expect(res.status).toBe(500);
-    expect((await res.json()).error).toBe("Could not update: Work overlay — NFT. Nothing was deleted.");
+    expect((await res.json()).error).toBe("Could not update: NFT — share image. Nothing was deleted.");
     expect(memory.collections.media).toHaveLength(1);
     expect(deleteStoredMediaAsset).not.toHaveBeenCalled();
   });
@@ -148,7 +147,7 @@ describe("PATCH /api/media/[id] — replacing a file a page uses", () => {
     expect(res.status).toBe(200);
     expect(media.publicId).toBe(NEW_ID);
     expect(heroUrl()).toBe(NEW_URL);
-    expect(cardUrl()).toBe(NEW_URL);
+    expect(shareUrl()).toBe(NEW_URL);
     expect(deleteStoredMediaAsset).toHaveBeenCalledWith(expect.objectContaining({ publicId: OLD_ID }));
   });
 
@@ -157,7 +156,7 @@ describe("PATCH /api/media/[id] — replacing a file a page uses", () => {
 
     expect(res.status).toBe(200);
     expect(heroUrl()).toBe("");
-    expect(cardUrl()).toBe("");
+    expect(shareUrl()).toBe("");
     expect(deleteStoredMediaAsset).toHaveBeenCalledWith(expect.objectContaining({ publicId: OLD_ID }));
   });
 
@@ -175,19 +174,19 @@ describe("PATCH /api/media/[id] — replacing a file a page uses", () => {
   });
 
   test("the old file survives when a place could not be updated, and the response names it", async () => {
-    memory.failWritesTo.add("page_settings");
+    memory.failWritesTo.add("page_seo");
     vi.spyOn(console, "error").mockImplementation(() => {});
 
     const res = await edit({ ...withNewFile, usages: "replace" });
 
-    expect(await res.json()).toMatchObject({ ok: true, pagesNotUpdated: ["Work overlay — NFT"] });
+    expect(await res.json()).toMatchObject({ ok: true, pagesNotUpdated: ["NFT — share image"] });
     expect(heroUrl()).toBe(NEW_URL);
     expect(deleteStoredMediaAsset).not.toHaveBeenCalled();
   });
 
   test("an unused file is replaced with no question", async () => {
     seed(NEW_URL);
-    memory.collections.page_settings = [];
+    memory.collections.page_seo = [];
 
     expect((await edit(withNewFile)).status).toBe(200);
     expect(deleteStoredMediaAsset).toHaveBeenCalledTimes(1);
@@ -203,7 +202,7 @@ describe("PATCH /api/media/[id] — changing category", () => {
     expect(res.status).toBe(200);
     expect(media.publicId).toBe(MOVED_ID);
     expect(heroUrl()).toBe(MOVED_URL);
-    expect(cardUrl()).toBe(MOVED_URL);
+    expect(shareUrl()).toBe(MOVED_URL);
     expect(revalidateSitePages).toHaveBeenCalled();
   });
 });

@@ -3,6 +3,12 @@
     @apply mx-auto max-w-6xl px-4;
   }
 
+  /* For the first item in a full-width row with px-4: lines its start up with
+     the .section-shell content edge (a 72rem column with a 1rem gutter). */
+  .shell-inset-start {
+    margin-left: max(0px, calc((100% + 2rem - 72rem) / 2));
+  }
+
   .page-shell {
     @apply relative overflow-x-clip;
   }

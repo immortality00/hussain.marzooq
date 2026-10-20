@@ -5,7 +5,9 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { Sun, Moon } from "lucide-react";
-import { WorkOverlay } from "@/components/site/WorkOverlay";
+import { NavDrawer } from "@/components/site/NavDrawer";
+import { isActivePath, navItems } from "@/components/site/nav-items";
+import type { DisciplineSlug } from "@/lib/disciplines";
 import { useMagneticHover } from "@/hooks/useMagneticHover";
 import { hasAdminHint } from "@/lib/client/admin-hint";
 
@@ -16,10 +18,9 @@ const NAV_PILL =
 
 const noopSubscribe = () => () => {};
 
-export function Navbar() {
+export function Navbar({ activeDisciplines }: { activeDisciplines: DisciplineSlug[] }) {
   const [hiddenByModal, setHiddenByModal] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [workOpen, setWorkOpen] = useState(false);
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
   const bookRef = useMagneticHover<HTMLAnchorElement>();
@@ -56,11 +57,7 @@ export function Navbar() {
     () => !hiddenByModal || pathname === "/contact",
     [hiddenByModal, pathname],
   );
-
-  function openWork() {
-    setMobileOpen(false);
-    setWorkOpen(true);
-  }
+  const items = useMemo(() => navItems(activeDisciplines), [activeDisciplines]);
 
   return (
     <>
@@ -72,164 +69,75 @@ export function Navbar() {
             : "pointer-events-none -translate-y-full opacity-0",
         ].join(" ")}
       >
-        <div className="section-shell">
-          <div className="flex h-20 items-center justify-between gap-4">
+        <div className="flex h-12 items-center justify-between gap-4 px-4">
+          {/* Logo */}
+          <Link
+            href="/"
+            aria-label="Hussain.Art — home"
+            className="shell-inset-start flex shrink-0 items-center rounded-2xl text-foreground/80 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-foreground"
+          >
+            <span className="hm-wordmark h-9 sm:h-12" />
+          </Link>
 
-            {/* Logo */}
-            <Link
-              href="/"
-              aria-label="Hussain.Art — home"
-              className="flex shrink-0 items-center rounded-2xl text-foreground/80 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-foreground"
+          {/* Right side — nav + cta */}
+          <div className="flex items-center gap-1">
+            {/* Desktop nav items — right-aligned beside Book */}
+            <nav className="hidden items-center lg:flex">
+              {items.map((item) => (
+                <NavLink key={item.href} href={item.href}>
+                  {item.label}
+                </NavLink>
+              ))}
+              {isAdmin ? (
+                <NavLink href={ADMIN_HREF} prefetch={false}>
+                  Admin
+                </NavLink>
+              ) : null}
+            </nav>
+
+            {/* Theme toggle */}
+            <button
+              type="button"
+              aria-label="Toggle theme"
+              onClick={toggleTheme}
+              className="hidden h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground md:flex"
             >
-              <span className="hm-wordmark h-9 sm:h-12" />
+              {themeIcon}
+            </button>
+
+            {/* Book CTA */}
+            <Link
+              ref={bookRef}
+              href="/contact"
+              data-magnetic=""
+              className={`${NAV_PILL} hidden md:inline-flex ml-2`}
+            >
+              Book
             </Link>
 
-            {/* Right side — nav + cta */}
-            <div className="flex items-center gap-1">
-              {/* Desktop nav items — right-aligned beside Book */}
-              <nav className="hidden items-center md:flex">
-                <button
-                  type="button"
-                  onClick={openWork}
-                  className="group relative px-4 py-2 text-[13px] text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Work
-                  <span className="absolute inset-x-4 bottom-1 h-px scale-x-0 bg-foreground transition-transform duration-300 group-hover:scale-x-100" />
-                </button>
-                <NavLink href="/about">About</NavLink>
-                <NavLink href="/services">Services</NavLink>
-                <NavLink href="/people">People</NavLink>
-                <NavLink href="/testimonials">Testimonials</NavLink>
-                {isAdmin ? (
-                  <NavLink href={ADMIN_HREF} prefetch={false}>
-                    Admin
-                  </NavLink>
-                ) : null}
-              </nav>
-
-              {/* Theme toggle */}
-              <button
-                type="button"
-                aria-label="Toggle theme"
-                onClick={toggleTheme}
-                className="hidden h-8 w-8 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground md:flex"
-              >
-                {themeIcon}
-              </button>
-
-              {/* Book CTA */}
-              <Link
-                ref={bookRef}
-                href="/contact"
-                data-magnetic=""
-                className={`${NAV_PILL} hidden md:inline-flex ml-2`}
-              >
-                Book
+            {isAdmin ? (
+              <Link href={ADMIN_HREF} prefetch={false} className={`${NAV_PILL} mr-1 inline-flex lg:hidden`}>
+                Admin
               </Link>
+            ) : null}
 
-              {isAdmin ? (
-                <Link href={ADMIN_HREF} prefetch={false} className={`${NAV_PILL} mr-1 inline-flex md:hidden`}>
-                  Admin
-                </Link>
-              ) : null}
-
-              {/* Hamburger — mobile only */}
-              <button
-                type="button"
-                aria-label={mobileOpen ? "Close menu" : "Open menu"}
-                aria-expanded={mobileOpen}
-                onClick={() => setMobileOpen((p) => !p)}
-                className="flex h-9 w-9 flex-col items-center justify-center gap-[5px] md:hidden"
-              >
-                <span className={`block h-px w-5 bg-foreground transition-[translate,rotate,opacity] duration-300 ${mobileOpen ? "translate-y-[7px] rotate-45" : ""}`} />
-                <span className={`block h-px w-5 bg-foreground transition-[translate,rotate,opacity] duration-300 ${mobileOpen ? "opacity-0" : ""}`} />
-                <span className={`block h-px w-5 bg-foreground transition-[translate,rotate,opacity] duration-300 ${mobileOpen ? "-translate-y-[7px] -rotate-45" : ""}`} />
-              </button>
-            </div>
-
+            {/* Hamburger — below lg */}
+            <button
+              type="button"
+              aria-label={mobileOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileOpen}
+              onClick={() => setMobileOpen((p) => !p)}
+              className="flex h-9 w-9 flex-col items-center justify-center gap-[5px] lg:hidden"
+            >
+              <span className={`block h-px w-5 bg-foreground transition-[translate,rotate,opacity] duration-300 ${mobileOpen ? "translate-y-[7px] rotate-45" : ""}`} />
+              <span className={`block h-px w-5 bg-foreground transition-[translate,rotate,opacity] duration-300 ${mobileOpen ? "opacity-0" : ""}`} />
+              <span className={`block h-px w-5 bg-foreground transition-[translate,rotate,opacity] duration-300 ${mobileOpen ? "-translate-y-[7px] -rotate-45" : ""}`} />
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Mobile backdrop */}
-      {mobileOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 md:hidden"
-          onClick={() => setMobileOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Mobile drawer */}
-      <div
-        className={[
-          "fixed inset-y-0 right-0 z-50 flex w-60 flex-col border-l border-border/50 bg-background/95 backdrop-blur-xl transition-transform duration-300 md:hidden",
-          mobileOpen ? "translate-x-0" : "translate-x-full",
-        ].join(" ")}
-        aria-label="Mobile navigation"
-      >
-        <div className="flex h-20 items-center justify-between border-b border-border/50 px-5">
-          <span role="img" aria-label="Hussain.Art" className="hm-wordmark h-8 text-foreground/70" />
-          <button
-            type="button"
-            aria-label="Close menu"
-            onClick={() => setMobileOpen(false)}
-            className="text-[18px] leading-none text-muted-foreground hover:text-foreground"
-          >
-            ✕
-          </button>
-        </div>
-
-        <nav className="flex flex-1 flex-col gap-0.5 px-3 py-4">
-          <button
-            type="button"
-            onClick={openWork}
-            className="rounded-xl px-3 py-3 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-          >
-            Work
-          </button>
-          <Link
-            href="/about"
-            onClick={() => setMobileOpen(false)}
-            className="rounded-xl px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-          >
-            About
-          </Link>
-          <Link
-            href="/services"
-            onClick={() => setMobileOpen(false)}
-            className="rounded-xl px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-          >
-            Services
-          </Link>
-          <Link
-            href="/people"
-            onClick={() => setMobileOpen(false)}
-            className="rounded-xl px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-          >
-            People
-          </Link>
-          <Link
-            href="/testimonials"
-            onClick={() => setMobileOpen(false)}
-            className="rounded-xl px-3 py-3 text-sm text-muted-foreground transition-colors hover:bg-accent/50 hover:text-foreground"
-          >
-            Testimonials
-          </Link>
-        </nav>
-
-        <div className="border-t border-border/50 px-5 py-5">
-          <Link
-            href="/contact"
-            onClick={() => setMobileOpen(false)}
-            className="block rounded-full border border-border/60 px-4 py-2.5 text-center text-sm transition-colors hover:bg-accent"
-          >
-            Book a Session
-          </Link>
-        </div>
-      </div>
-
-      <WorkOverlay open={workOpen} onClose={() => setWorkOpen(false)} />
+      <NavDrawer open={mobileOpen} items={items} onClose={() => setMobileOpen(false)} />
     </>
   );
 }
@@ -243,21 +151,20 @@ function NavLink({
   prefetch?: boolean;
   children: React.ReactNode;
 }) {
-  const pathname = usePathname();
-  const isActive = pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = isActivePath(usePathname(), href);
   return (
     <Link
       href={href}
       prefetch={prefetch}
       className={[
-        "group relative px-4 py-2 text-[13px] transition-colors",
+        "group relative whitespace-nowrap px-2.5 py-2 text-[13px] transition-colors xl:px-4",
         isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground",
       ].join(" ")}
     >
       {children}
       <span
         className={[
-          "absolute inset-x-4 bottom-1 h-px bg-foreground transition-transform duration-300",
+          "absolute inset-x-2.5 bottom-1 h-px bg-foreground transition-transform duration-300 xl:inset-x-4",
           isActive ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100",
         ].join(" ")}
       />

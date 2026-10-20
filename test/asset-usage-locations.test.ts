@@ -8,7 +8,7 @@ const URL = `https://res.cloudinary.com/demo/image/upload/v17/${ID}.jpg`;
 const OTHER = "https://res.cloudinary.com/demo/image/upload/v17/hm_visuals/media/photography/zzz.jpg";
 
 function docs(partial: Partial<UsageSourceDocs>): UsageSourceDocs {
-  return { sections: [], settings: [], seo: [], posts: [], ...partial };
+  return { sections: [], seo: [], posts: [], ...partial };
 }
 
 const image = (url: string) => ({ url, publicId: "" });
@@ -72,13 +72,6 @@ describe("usagesInDocs — labels and locations", () => {
     expect(usagesInDocs(docs({ sections: [home, about] }), ID)).toEqual([]);
   });
 
-  test("Work overlay card images use the discipline label", () => {
-    const found = usagesInDocs(docs({ settings: [{ slug: "nft", cardImage: image(URL) }] }), ID);
-    expect(found).toEqual([
-      { label: "Work overlay — NFT", collection: "page_settings", key: { slug: "nft" }, path: "cardImage", kind: "image" },
-    ]);
-  });
-
   test("share images use the SEO row label", () => {
     const found = usagesInDocs(docs({ seo: [{ slug: "about", ogImageUrl: URL }] }), ID);
     expect(found.map((u) => [u.label, u.kind])).toEqual([["About — share image", "url"]]);
@@ -127,8 +120,8 @@ describe("media-in-use payload", () => {
   });
 
   test("error text names every place", () => {
-    expect(formatMediaInUseError([{ id: "1", title: "A", usedOn: ["Home — hero", "Work overlay — NFT"] }])).toBe(
-      "“A” is used in: Home — hero, Work overlay — NFT."
+    expect(formatMediaInUseError([{ id: "1", title: "A", usedOn: ["Home — hero", "NFT — share image"] }])).toBe(
+      "“A” is used in: Home — hero, NFT — share image."
     );
   });
 

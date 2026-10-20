@@ -5,6 +5,7 @@ import type { Db } from "mongodb";
 import { ASSET_HOLDING_COLLECTIONS, isCloudinaryAssetReferenced } from "@/lib/server/asset-references";
 
 const COLLECTIONS_WITHOUT_ASSETS = [
+  "page_settings",
   "service_categories",
   "private_galleries",
   "blog_categories",

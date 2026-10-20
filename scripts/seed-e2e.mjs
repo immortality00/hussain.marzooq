@@ -214,7 +214,6 @@ async function main() {
     ["photography", "videography", "nft", "dancing", "web-development", "blog"].map((slug) => ({
       slug,
       isActive: true,
-      cardImage: null,
       updatedAt: new Date(),
     }))
   );

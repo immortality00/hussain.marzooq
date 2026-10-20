@@ -2,17 +2,16 @@
 
 import { useState } from "react";
 import { useAdminSlice } from "@/hooks/useAdminData";
-import type { PageSectionsSlug, PageSectionsMap, HomeSections } from "@/lib/server/page-sections";
+import type { PageSectionsSlug, PageSectionsMap } from "@/lib/server/page-sections";
 import type { AdminPageSections, AdminPageSeo, AdminPageSettings } from "@/lib/server/admin-pages";
-import type { SectionImage } from "@/lib/page-sections-shared";
 import { adminWrite } from "@/lib/client/admin-store";
 import { useAdminAction } from "@/hooks/useAdminAction";
 import { useRecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 import type { SeoDraft } from "./components/SeoPageForm";
-import { pageNeedsImage, type PageRow } from "./lib/rows";
+import type { PageRow } from "./lib/rows";
 import { savePageParts, saveSummary, type SavePart } from "./lib/page-save";
 
-type SettingsDraft = { isActive: boolean; cardImage: SectionImage };
+type SettingsDraft = { isActive: boolean };
 
 function without<T>(record: Partial<Record<string, T>>, key: string) {
   const next = { ...record };
@@ -64,29 +63,12 @@ export function usePagesAdmin() {
   function settingsOf(row: PageRow): SettingsDraft {
     if (!row.settingsSlug) throw new Error(`Row ${row.key} has no settings slug`);
     const current = settings[row.settingsSlug]!;
-    return (
-      settingsDrafts[row.settingsSlug] ?? {
-        isActive: current.isActive,
-        cardImage: current.cardImage,
-      }
-    );
+    return settingsDrafts[row.settingsSlug] ?? { isActive: current.isActive };
   }
 
   function isActiveOf(row: PageRow): boolean {
     if (!row.settingsSlug) return true;
     return settingsOf(row).isActive;
-  }
-
-  function cardImageOf(row: PageRow): SectionImage {
-    return settingsOf(row).cardImage;
-  }
-
-  function needsImage(row: PageRow): boolean {
-    return pageNeedsImage(row, {
-      isActive: isActiveOf(row),
-      cardImageUrl: row.settingsSlug ? cardImageOf(row).url : undefined,
-      homeSections: row.sectionsSlug === "home" ? (sectionsOf(row) as HomeSections) : undefined,
-    });
   }
 
   function seoOf(row: PageRow): SeoDraft {
@@ -116,7 +98,7 @@ export function usePagesAdmin() {
     rememberBase(`settings:${row.settingsSlug}`, settings[row.settingsSlug]!.updatedAt);
     setSettingsDrafts((prev) => ({
       ...prev,
-      [row.settingsSlug!]: { ...settingsOf(row), isActive: next },
+      [row.settingsSlug!]: { isActive: next },
     }));
   }
 
@@ -147,15 +129,6 @@ export function usePagesAdmin() {
     } finally {
       setTogglingSlug(null);
     }
-  }
-
-  function setCardImageDraft(row: PageRow, image: SectionImage) {
-    if (!row.settingsSlug) return;
-    rememberBase(`settings:${row.settingsSlug}`, settings[row.settingsSlug]!.updatedAt);
-    setSettingsDrafts((prev) => ({
-      ...prev,
-      [row.settingsSlug!]: { ...settingsOf(row), cardImage: image },
-    }));
   }
 
   function setSeoField(row: PageRow, field: keyof SeoDraft, value: string) {
@@ -198,9 +171,9 @@ export function usePagesAdmin() {
     if (settingsSlug && settingsDrafts[settingsSlug] !== undefined) {
       const draft = settingsDrafts[settingsSlug]!;
       parts.push({
-        label: "Visibility & image",
+        label: "Visibility",
         url: `/api/admin/page-settings/${settingsSlug}`,
-        body: { isActive: draft.isActive, cardImage: draft.cardImage },
+        body: { isActive: draft.isActive },
         version: baseOf(`settings:${settingsSlug}`, settings[settingsSlug]!.updatedAt),
         apply: (item: AdminPageSettings) => {
           setSettings(settingsSlug, item);
@@ -252,13 +225,10 @@ export function usePagesAdmin() {
     feedback,
     hasUnsavedChanges,
     isActiveOf,
-    cardImageOf,
-    needsImage,
     seoOf,
     sectionsOf,
     isDirty,
     setVisibilityDraft,
-    setCardImageDraft,
     setSeoField,
     setSectionsDraft,
     discard,

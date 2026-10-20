@@ -97,9 +97,7 @@ test.describe("nft", () => {
 
     await page.getByRole("button", { name: "View Seed Collectible" }).click();
 
-    // The closed WorkOverlay also carries an aria-label="Close" button, so match
-    // the modal's own text-labelled one (see the WorkOverlay a11y defect, §L9).
-    const close = page.getByText("Close", { exact: true });
+    const close = page.getByRole("button", { name: "Close", exact: true });
     await expect(close).toBeVisible();
     await expect(page.getByText("Seed Collectible").first()).toBeVisible();
 

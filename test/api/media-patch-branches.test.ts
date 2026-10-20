@@ -60,7 +60,7 @@ beforeEach(() => {
     publicId: OLD_ID,
     resourceType: "image",
   };
-  resetMemoryDb({ media: [media], page_sections: [], page_settings: [], page_seo: [], blog_posts: [] });
+  resetMemoryDb({ media: [media], page_sections: [], page_seo: [], blog_posts: [] });
 });
 
 describe("parseMediaPatch", () => {

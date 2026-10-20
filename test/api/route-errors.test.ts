@@ -39,7 +39,6 @@ const routes: [string, () => Promise<Response>][] = [
   ["review upload session", async () => (await import("@/app/api/testimonials/upload-session/route")).POST(new Request("http://l/x", { method: "POST" }))],
   ["review upload discard", async () => (await import("@/app/api/testimonials/upload-session/discard/route")).POST(new Request("http://l/x", json({ publicId: "x" })))],
   ["review upload cleanup", async () => (await import("@/app/api/testimonials/upload-session/cleanup/route")).POST(new Request("http://l/x", { method: "POST" }))],
-  ["work overlay", async () => (await import("@/app/api/work-overlay/route")).GET(new Request("http://l/x"))],
   ["web project preview", async () => (await import("@/app/api/web-projects/preview/route")).GET(new Request("http://l/x?url=example.com"))],
   ["person access", async () => (await import("@/app/api/people/access/route")).POST(new Request("http://l/x", json({ slug: "p", password: "p" })))],
   ["removal request", async () => (await import("@/app/api/people/removal-request/route")).POST(new Request("http://l/x", json({ slug: "p", email: "a@b.co", reason: "please remove", formToken: oldToken("removal") })))],

@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
-import { resolveOptionalCardImage } from "@/lib/page-sections-shared";
-import { deleteReplacedSectionImages } from "@/lib/server/section-images";
 import { storedPageSettings } from "@/lib/server/admin-pages";
 import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 
@@ -30,34 +28,18 @@ export async function PATCH(
     return NextResponse.json({ error: "Unknown page slug" }, { status: 400 });
   }
 
-  const body = (await req.json().catch(() => null)) as { isActive?: unknown; cardImage?: unknown } | null;
+  const body = (await req.json().catch(() => null)) as { isActive?: unknown } | null;
   if (typeof body?.isActive !== "boolean") {
     return NextResponse.json({ error: "isActive must be a boolean" }, { status: 400 });
   }
-
-  // Only touch cardImage when the key is present. An omitted cardImage means
-  // "leave it unchanged" — never blank it (and never delete its Cloudinary
-  // asset) just because a partial PATCH didn't mention it.
-  const cardImage = resolveOptionalCardImage(body);
 
   const db = await getDb();
   const existing = await db.collection("page_settings").findOne({ slug });
   if (changedSinceOpened(req, existing)) return recordChangedResponse(await storedPageSettings(db, slug));
 
-  const set: Record<string, unknown> = {
-    slug,
-    isActive: body.isActive,
-    updatedAt: new Date(),
-  };
-
-  if (cardImage !== undefined) {
-    // Delete a previously uploaded card image if it was replaced or removed.
-    // Library-picked images have an empty publicId and are never deleted here.
-    await deleteReplacedSectionImages({ cardImage: existing?.cardImage }, { cardImage });
-    set.cardImage = cardImage;
-  }
-
-  await db.collection("page_settings").updateOne({ slug }, { $set: set }, { upsert: true });
+  await db
+    .collection("page_settings")
+    .updateOne({ slug }, { $set: { slug, isActive: body.isActive, updatedAt: new Date() } }, { upsert: true });
 
   revalidatePath("/", "layout");
 

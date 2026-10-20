@@ -1,11 +1,10 @@
 import { PAGE_ROWS } from "@/app/admin/(protected)/pages/lib/rows";
-import { DISCIPLINES } from "@/lib/disciplines";
 
 export type AssetUsageKind = "image" | "url" | "markdown";
 
 export type AssetUsage = {
   label: string;
-  collection: "page_sections" | "page_settings" | "page_seo" | "blog_posts";
+  collection: "page_sections" | "page_seo" | "blog_posts";
   key: { slug: string } | { id: string };
   path: string;
   kind: AssetUsageKind;
@@ -13,7 +12,6 @@ export type AssetUsage = {
 
 export type UsageSourceDocs = {
   sections: Record<string, unknown>[];
-  settings: Record<string, unknown>[];
   seo: Record<string, unknown>[];
   posts: Record<string, unknown>[];
 };
@@ -76,20 +74,6 @@ function sectionUsages(doc: Record<string, unknown>, publicId: string): AssetUsa
   });
 }
 
-function settingsUsages(doc: Record<string, unknown>, publicId: string): AssetUsage[] {
-  const discipline = DISCIPLINES.find((entry) => entry.slug === doc.slug);
-  if (!discipline || !mentionsPublicId(record(doc.cardImage).url, publicId)) return [];
-  return [
-    {
-      label: `Work overlay — ${discipline.label}`,
-      collection: "page_settings",
-      key: { slug: discipline.slug },
-      path: "cardImage",
-      kind: "image",
-    },
-  ];
-}
-
 function seoUsages(doc: Record<string, unknown>, publicId: string): AssetUsage[] {
   const slug = text(doc.slug);
   if (!slug || !mentionsPublicId(doc.ogImageUrl, publicId)) return [];
@@ -128,7 +112,6 @@ export function usagesInDocs(docs: UsageSourceDocs, publicId: string): AssetUsag
   if (!id) return [];
   return [
     ...docs.sections.flatMap((doc) => sectionUsages(doc, id)),
-    ...docs.settings.flatMap((doc) => settingsUsages(doc, id)),
     ...docs.seo.flatMap((doc) => seoUsages(doc, id)),
     ...docs.posts.flatMap((doc) => postUsages(doc, id)),
   ];

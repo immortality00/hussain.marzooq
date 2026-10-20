@@ -15,7 +15,7 @@ export function VisibilityGroup({
     <GroupCard icon={Eye} label="Visibility" tint="visibility">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          Inactive pages redirect visitors to the homepage and are hidden from the Work overlay.
+          Inactive pages redirect visitors to the homepage.
         </p>
         <AdminToggle checked={isActive} onChange={onToggle} label="Toggle page visibility" />
       </div>

@@ -13,7 +13,6 @@ export const ASSET_HOLDING_COLLECTIONS = [
   "blog_posts",
   "testimonials",
   "page_sections",
-  "page_settings",
   "page_seo",
 ] as const;
 
@@ -46,7 +45,7 @@ export async function isCloudinaryAssetReferenced(db: Db, publicId: string): Pro
   ]);
   if (media || person || service || post || review) return true;
 
-  for (const collection of ["page_sections", "page_settings", "page_seo"]) {
+  for (const collection of ["page_sections", "page_seo"]) {
     if (await anyDocMentions(db, collection, id)) return true;
   }
 
@@ -62,9 +61,8 @@ export async function findAssetUsagesByPublicId(
   if (ids.length === 0) return found;
 
   const pattern = new RegExp(ids.map(escapeRegex).join("|"));
-  const [sections, settings, seo, posts] = await Promise.all([
+  const [sections, seo, posts] = await Promise.all([
     db.collection("page_sections").find({ slug: { $in: SECTION_IMAGE_SLUGS } }).toArray(),
-    db.collection("page_settings").find({ "cardImage.url": pattern }).toArray(),
     db.collection("page_seo").find({ ogImageUrl: pattern }).toArray(),
     db
       .collection("blog_posts")
@@ -76,7 +74,7 @@ export async function findAssetUsagesByPublicId(
   ]);
 
   for (const id of ids) {
-    const usages = usagesInDocs({ sections, settings, seo, posts }, id);
+    const usages = usagesInDocs({ sections, seo, posts }, id);
     if (usages.length) found.set(id, usages);
   }
   return found;

@@ -1,7 +1,6 @@
 "use client";
 
 import type { PageSectionsMap, PageSectionsSlug } from "@/lib/server/page-sections";
-import type { SectionImage } from "@/lib/page-sections-shared";
 import {
   AdminActionFeedback,
   type AdminActionFeedbackState,
@@ -9,7 +8,6 @@ import {
 import type { PageRow } from "../lib/rows";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { VisibilityGroup } from "./VisibilityGroup";
-import { CardImageGroup } from "./CardImageGroup";
 import { SeoPageForm, type SeoDraft } from "./SeoPageForm";
 import { SectionsGroup } from "./SectionsGroup";
 import { SearchProfileGroup } from "./SearchProfileGroup";
@@ -20,14 +18,12 @@ type SectionsData = PageSectionsMap[PageSectionsSlug];
 export function PageEditorBody({
   row,
   isActive,
-  cardImage,
   seo,
   sectionsData,
   dirty,
   isSaving,
   feedback,
   onVisibilityChange,
-  onCardImageChange,
   onSeoChange,
   onSectionsChange,
   onSave,
@@ -35,14 +31,12 @@ export function PageEditorBody({
 }: {
   row: PageRow;
   isActive: boolean;
-  cardImage: SectionImage | undefined;
   seo: SeoDraft;
   sectionsData: SectionsData | undefined;
   dirty: boolean;
   isSaving: boolean;
   feedback: AdminActionFeedbackState;
   onVisibilityChange: (next: boolean) => void;
-  onCardImageChange: (image: SectionImage) => void;
   onSeoChange: (field: keyof SeoDraft, value: string) => void;
   onSectionsChange: (data: SectionsData) => void;
   onSave: () => void;
@@ -52,10 +46,6 @@ export function PageEditorBody({
     <div>
       <div className="space-y-3">
         {row.settingsSlug && <VisibilityGroup isActive={isActive} onToggle={onVisibilityChange} />}
-
-        {row.settingsSlug && !row.toggleOnly && cardImage && (
-          <CardImageGroup value={cardImage} onChange={onCardImageChange} isActive={isActive} />
-        )}
 
         {row.seoSlug && (
           <SeoPageForm
