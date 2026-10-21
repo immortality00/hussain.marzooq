@@ -1,8 +1,9 @@
 import { AnimatedText } from "@/components/shared/AnimatedText";
 import { HeroBokeh } from "@/components/home/HeroBokeh";
 import { HeroStage } from "@/components/home/HeroStage";
+import { heroSerif } from "@/components/home/hero-font";
 import Link from "next/link";
-import type { SectionImage } from "@/lib/server/page-sections";
+import type { HeroPhoto } from "@/lib/hero-photos";
 
 const DISCIPLINE_ORDER = ["photography", "videography", "nft", "dancing", "web-development"];
 
@@ -13,7 +14,7 @@ export function HomeHero({
   headerDescription,
 }: {
   activeSet: Set<string>;
-  photos: SectionImage[];
+  photos: HeroPhoto[];
   headerTitle: string;
   headerDescription: string;
 }) {
@@ -39,7 +40,9 @@ export function HomeHero({
       {/* Content — lower-third cinematic placement. Pointers pass through to the
           photo strips everywhere except the two buttons. */}
       <div className="pointer-events-none absolute inset-0 z-30 flex flex-col justify-end px-8 pb-16 sm:px-14 sm:pb-20 lg:px-20 lg:pb-24">
-        <h1 className="hm-hero-dim max-w-5xl text-5xl font-semibold leading-[0.9] tracking-[-0.07em] text-white sm:text-6xl lg:text-[5.5rem]">
+        <h1
+          className={`${heroSerif.className} hm-hero-dim max-w-5xl text-[3.4rem] font-normal leading-[0.92] tracking-[-0.02em] text-white sm:text-[4.25rem] lg:text-[6.25rem]`}
+        >
           <AnimatedText delay={0.15}>{headerTitle}</AnimatedText>
         </h1>
 

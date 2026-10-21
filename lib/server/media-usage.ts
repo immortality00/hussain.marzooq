@@ -52,9 +52,15 @@ async function editOne(db: Db, publicId: string, usage: AssetUsage, edit: UsageE
     guard[usage.path] = current;
   }
 
-  await collection.updateOne(guard, {
-    $set: { [usage.path]: editedValue(usage.kind, current, publicId, edit), updatedAt: new Date() },
-  });
+  const value = editedValue(usage.kind, current, publicId, edit);
+  // An image slot keeps its other fields (a hero photo's framing), so a photo that
+  // moved category stays framed the same way.
+  const set =
+    usage.kind === "image" && value && typeof value === "object"
+      ? Object.fromEntries(Object.entries(value).map(([key, field]) => [`${usage.path}.${key}`, field]))
+      : { [usage.path]: value };
+
+  await collection.updateOne(guard, { $set: { ...set, updatedAt: new Date() } });
 }
 
 export async function applyUsageEdit(

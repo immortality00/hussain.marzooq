@@ -8,6 +8,7 @@ import { TextField, TextAreaField } from "@/components/admin/page-sections/field
 import { RepeatingListEditor } from "@/components/admin/page-sections/RepeatingListEditor";
 import { ImageField } from "@/components/admin/media-picker/ImageField";
 import { CardImageWarning } from "./CardImageWarning";
+import { HeroPhotoField } from "./HeroPhotoField";
 import { adminInputClasses } from "@/components/admin/admin-input";
 import { HERO_MAX_PHOTOS, heroPhotosOf } from "@/lib/hero-photos";
 
@@ -80,7 +81,7 @@ export function HomeSectionsForm({
           max={HERO_MAX_PHOTOS}
           addLabel="+ Add photo"
           renderFields={(photo, onItemChange) => (
-            <ImageField value={photo} onChange={onItemChange} clearable={false} />
+            <HeroPhotoField photo={photo} count={heroPhotosOf(data.hero).length} onChange={onItemChange} />
           )}
         />
       </div>

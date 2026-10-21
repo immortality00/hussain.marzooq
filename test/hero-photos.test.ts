@@ -8,6 +8,7 @@ import {
   heroPhotoSizes,
   heroPhotosOf,
 } from "@/lib/hero-photos";
+import { heroPreviewShapes } from "@/lib/hero-preview";
 import { pageSectionsOf, type HomeSections } from "@/lib/server/page-sections";
 
 const photo = (n: number) => ({ url: `https://res.cloudinary.com/demo/image/upload/v1/p${n}.jpg`, publicId: "" });
@@ -26,6 +27,13 @@ describe("heroPhotosOf", () => {
   test("the list wins over a leftover single image", () => {
     expect(heroPhotosOf({ images: [photo(2)], image: photo(1) })).toEqual([photo(2)]);
     expect(heroPhotosOf({ images: [], image: photo(1) })).toEqual([]);
+  });
+
+  test("keeps each photo's framing and drops a broken one (that photo is centred)", () => {
+    expect(heroPhotosOf({ images: [{ ...photo(1), focus: { x: 20, y: 30 } }] })).toEqual([
+      { ...photo(1), focus: { x: 20, y: 30 } },
+    ]);
+    expect(heroPhotosOf({ images: [{ ...photo(1), focus: { x: 20 } }] })).toEqual([photo(1)]);
   });
 
   test("empty slots and anything that is not an image are dropped", () => {
@@ -48,6 +56,15 @@ describe("heroForSave", () => {
     const max = Array.from({ length: HERO_MAX_PHOTOS }, (_, i) => photo(i));
     expect(heroForSave({ images: max })).toEqual({ images: max });
     expect(heroForSave({ images: [...max, photo(99)] })).toEqual({ error: "The hero takes up to 10 photos." });
+  });
+
+  test("saves framing, and refuses a framing that is not two numbers from 0 to 100", () => {
+    expect(heroForSave({ images: [{ ...photo(1), focus: { x: 12.34, y: 80 } }] })).toEqual({
+      images: [{ ...photo(1), focus: { x: 12.3, y: 80 } }],
+    });
+    expect(heroForSave({ images: [{ ...photo(1), focus: { x: 12, y: 180 } }] })).toEqual({
+      error: "A hero photo's framing must be two numbers from 0 to 100.",
+    });
   });
 
   test("refuses anything that is not a list of images", () => {
@@ -78,6 +95,24 @@ describe("layout", () => {
   test("with two or three photos the open one is still twice a closed one", () => {
     expect(heroLayout(2).wide.open).toBe(2);
     expect(heroLayout(3).wide.open).toBe(2);
+  });
+});
+
+describe("heroPreviewShapes", () => {
+  test("ten photos: open on desktop, one strip at rest, open on a phone", () => {
+    const shapes = heroPreviewShapes(10);
+    expect(shapes.map((s) => s.key)).toEqual(["desktop", "rest", "phone"]);
+    expect(shapes[0]).toMatchObject({ strip: 576, photo: 576, height: 851 });
+    expect(shapes[1]).toMatchObject({ strip: 144, photo: 576 });
+    expect(shapes[2]!.strip).toBeCloseTo(225);
+  });
+
+  test("one photo has no rest state and fills the width", () => {
+    const shapes = heroPreviewShapes(1);
+    expect(shapes.map((s) => [s.key, s.strip])).toEqual([
+      ["desktop", 1440],
+      ["phone", 375],
+    ]);
   });
 });
 

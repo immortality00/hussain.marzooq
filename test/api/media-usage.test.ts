@@ -45,6 +45,7 @@ const MOVED_ID = "hm_visuals/media/art/old";
 const MOVED_URL = `${CLOUD}/${MOVED_ID}.jpg`;
 const YT = "Or18TXg2bnY";
 const FIRST_HERO_URL = `${CLOUD}/hm_visuals/media/photography/first.jpg`;
+const FOCUS = { x: 20, y: 30 };
 
 const photo = { title: "Dune", categories: ["photography"], tags: [], peopleIds: [], appearances: [], type: "image" };
 const withNewFile = { ...photo, secureUrl: NEW_URL, publicId: NEW_ID, resourceType: "image" };
@@ -67,7 +68,7 @@ function seed(heroUrl = OLD_URL) {
       {
         slug: "home",
         data: {
-          hero: { images: [{ url: FIRST_HERO_URL, publicId: "" }, { url: heroUrl, publicId: "" }] },
+          hero: { images: [{ url: FIRST_HERO_URL, publicId: "" }, { url: heroUrl, publicId: "", focus: FOCUS }] },
           featuredCards: [],
         },
       },
@@ -214,7 +215,7 @@ describe("PATCH /api/media/[id] — changing category", () => {
 
     expect(res.status).toBe(200);
     expect(media.publicId).toBe(MOVED_ID);
-    expect(heroUrl()).toBe(MOVED_URL);
+    expect(homeData().hero.images[1]).toEqual({ url: MOVED_URL, publicId: "", focus: FOCUS });
     expect(shareUrl()).toBe(MOVED_URL);
     expect(revalidateSitePages).toHaveBeenCalled();
   });

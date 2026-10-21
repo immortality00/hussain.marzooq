@@ -1,7 +1,10 @@
 import { isSectionImage, type SectionImage } from "@/lib/page-sections-shared";
+import { heroFocusOf, isBadHeroFocus, type HeroFocus } from "@/lib/hero-focus";
 
 // The homepage hero's photo strips. Runtime-agnostic: the public hero, the admin
 // form, the page-sections save route and the stored-data reader all use it.
+
+export type HeroPhoto = SectionImage & { focus?: HeroFocus };
 
 export const HERO_MAX_PHOTOS = 10;
 // Phones show only the first five, so a closed strip stays wide enough to tap.
@@ -24,14 +27,19 @@ function record(value: unknown): Record<string, unknown> {
 }
 
 // Reads `hero.images`, or the single `hero.image` saved before the list existed.
-// Empty slots are dropped: that is how a removed photo leaves the list.
-export function heroPhotosOf(hero: unknown): SectionImage[] {
+// Empty slots are dropped: that is how a removed photo leaves the list. A broken
+// focus is dropped too, so that photo is centred.
+export function heroPhotosOf(hero: unknown): HeroPhoto[] {
   const value = record(hero);
   const list: unknown[] = Array.isArray(value.images) ? value.images : [value.image];
-  return list.filter((photo): photo is SectionImage => isSectionImage(photo) && photo.url.trim() !== "");
+  return list.flatMap((photo) => {
+    if (!isSectionImage(photo) || photo.url.trim() === "") return [];
+    const focus = heroFocusOf(record(photo).focus);
+    return [{ url: photo.url, publicId: photo.publicId, ...(focus ? { focus } : {}) }];
+  });
 }
 
-export function heroForSave(hero: unknown): { images: SectionImage[] } | { error: string } {
+export function heroForSave(hero: unknown): { images: HeroPhoto[] } | { error: string } {
   if (!hero || typeof hero !== "object" || Array.isArray(hero)) {
     return { error: "Hero photos must be a list of images." };
   }
@@ -42,6 +50,9 @@ export function heroForSave(hero: unknown): { images: SectionImage[] } | { error
     }
     if (value.images.length > HERO_MAX_PHOTOS) {
       return { error: `The hero takes up to ${HERO_MAX_PHOTOS} photos.` };
+    }
+    if (value.images.some((photo) => isBadHeroFocus(record(photo).focus))) {
+      return { error: "A hero photo's framing must be two numbers from 0 to 100." };
     }
   }
   return { images: heroPhotosOf(value) };
@@ -55,6 +66,11 @@ export function heroOpenGrow(count: number, share: number): number {
 function openShare(count: number, share: number): number {
   const grow = heroOpenGrow(count, share);
   return grow / (grow + count - 1);
+}
+
+// The open strip’s share of the hero’s width for this many strips; one photo fills it.
+export function heroOpenShare(count: number, phone = false): number {
+  return count > 1 ? openShare(count, phone ? PHONE_OPEN_SHARE : OPEN_SHARE) : 1;
 }
 
 export function heroLayout(total: number) {

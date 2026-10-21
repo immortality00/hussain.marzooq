@@ -41,6 +41,12 @@ describe("saving the homepage hero photos", () => {
     expect((await res.json()).item.data.hero).toEqual({ images: [uploaded, picked(1)] });
   });
 
+  test("stores each photo's framing", async () => {
+    const framed = { ...picked(1), focus: { x: 30, y: 70 } };
+    expect((await save({ hero: { images: [framed] } })).status).toBe(200);
+    expect(storedHero()).toEqual({ images: [framed] });
+  });
+
   test("an uploaded photo carried from the old single image into the list is kept", async () => {
     await save({ hero: { images: [picked(1), uploaded] } });
     expect(deleteManagedCloudinaryAsset).not.toHaveBeenCalled();
@@ -60,6 +66,11 @@ describe("saving the homepage hero photos", () => {
     ["eleven photos", { images: Array.from({ length: 11 }, (_, i) => picked(i)) }, "The hero takes up to 10 photos."],
     ["something that is not an image", { images: [picked(1), "x"] }, "Hero photos must be a list of images."],
     ["a hero that is not an object", "x", "Hero photos must be a list of images."],
+    [
+      "a framing outside 0–100",
+      { images: [{ ...picked(1), focus: { x: 50, y: 150 } }] },
+      "A hero photo's framing must be two numbers from 0 to 100.",
+    ],
   ])("refuses %s and changes nothing", async (_, hero, error) => {
     const res = await save({ hero });
 

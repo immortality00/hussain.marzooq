@@ -12,7 +12,7 @@ import {
   type SearchProfile,
 } from "@/lib/seo/search-profile";
 import { buildFallback } from "@/lib/server/public-read";
-import { heroPhotosOf } from "@/lib/hero-photos";
+import { heroPhotosOf, type HeroPhoto } from "@/lib/hero-photos";
 
 export type {
   FeaturedCard,
@@ -24,7 +24,7 @@ export type {
 } from "@/lib/page-sections-shared";
 
 export type HomeSections = {
-  hero: { images: SectionImage[] };
+  hero: { images: HeroPhoto[] };
   // Named featuredCards (not featuredWork) on purpose: mergeWithDefaults is a
   // shallow spread, so reusing the old key would let a stale fixed-key object
   // from an existing Mongo doc override the array shape and break rendering.

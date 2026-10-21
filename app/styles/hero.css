@@ -44,9 +44,20 @@
 .hm-hero-photo {
   position: absolute;
   inset-block: 0;
-  left: 50%;
-  translate: -50% 0;
   width: calc(100cqw * var(--hero-open) / (var(--hero-open) + var(--hero-count) - 1));
+}
+
+/* The marked part of a photo (--focus-x / --focus-y, centred when unset) sits at
+   the same place in the photo, in its frame and in the strip, so it stays in
+   view whether the strip is open or closed. The admin framing previews use this
+   same rule. */
+.hm-focus-frame {
+  left: var(--focus-x, 50%);
+  translate: calc(var(--focus-x, 50%) * -1) 0;
+}
+
+.hm-focus-frame img {
+  object-position: var(--focus-x, 50%) var(--focus-y, 50%);
 }
 
 /* The words step back while a strip is open, by the same rule that opens it;
