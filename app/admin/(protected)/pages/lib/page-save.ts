@@ -9,9 +9,17 @@ export type SavePart<T> = {
   apply: (saved: T) => void;
 };
 
-export type PartOutcome = { label: string; kind: "saved" | "failed" | "reloaded" | "kept"; reason?: string };
+export type PartOutcome = {
+  label: string;
+  kind: "saved" | "failed" | "reloaded" | "kept";
+  reason?: string;
+  // Profile-link sites the server found no icon for (About sections only).
+  logosMissing?: string[];
+};
 
-async function send<T>(part: SavePart<T>, version: string | null): Promise<T> {
+type Sent<T> = { item: T; logosMissing: string[] };
+
+async function send<T>(part: SavePart<T>, version: string | null): Promise<Sent<T>> {
   const res = await adminWrite(
     part.url,
     {
@@ -21,13 +29,16 @@ async function send<T>(part: SavePart<T>, version: string | null): Promise<T> {
     },
     ["pages"]
   );
-  const data = (await res.json().catch(() => null)) as { item?: T; error?: unknown } | null;
+  const data = (await res.json().catch(() => null)) as { item?: T; error?: unknown; logosMissing?: unknown } | null;
   if (!res.ok) {
     throwIfRecordChanged(data);
     throw new Error(typeof data?.error === "string" ? data.error : "");
   }
   if (!data?.item) throw new Error("The server did not return the saved page.");
-  return data.item;
+  const logosMissing = Array.isArray(data.logosMissing)
+    ? data.logosMissing.filter((host): host is string => typeof host === "string")
+    : [];
+  return { item: data.item, logosMissing };
 }
 
 const versionOfItem = (item: unknown) => (item as { updatedAt?: string | null } | null)?.updatedAt ?? null;
@@ -45,8 +56,8 @@ export async function savePageParts(
     results.forEach((result, index) => {
       const { part } = pending[index]!;
       if (result.status === "fulfilled") {
-        part.apply(result.value);
-        outcomes.set(part.label, { label: part.label, kind: "saved" });
+        part.apply(result.value.item);
+        outcomes.set(part.label, { label: part.label, kind: "saved", logosMissing: result.value.logosMissing });
       } else if (result.reason instanceof RecordChangedError) {
         conflicts.push({ part, current: result.reason.current });
       } else {
@@ -72,12 +83,14 @@ export async function savePageParts(
 export function saveSummary(rowLabel: string, outcomes: PartOutcome[]) {
   const labels = (kind: PartOutcome["kind"]) => outcomes.filter((o) => o.kind === kind).map((o) => o.label);
   const saved = labels("saved");
+  const logosMissing = outcomes.flatMap((o) => o.logosMissing ?? []);
   const failed = outcomes
     .filter((o) => o.kind === "failed")
     .map((o) => (o.reason ? `${o.label} (${o.reason})` : o.label));
   const notes = [
     labels("reloaded").length ? `Loaded the newer version of ${labels("reloaded").join(", ")}.` : "",
     labels("kept").length ? `${labels("kept").join(", ")} not saved — changed on another device.` : "",
+    logosMissing.length ? `No icon found for ${logosMissing.join(", ")}.` : "",
   ].filter(Boolean);
 
   if (failed.length) {

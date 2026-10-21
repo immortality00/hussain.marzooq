@@ -28,7 +28,7 @@ export function NavDrawer({
         ].join(" ")}
         aria-label="Mobile navigation"
       >
-        <div className="flex h-12 shrink-0 items-center justify-between border-b border-border/50 px-5">
+        <div className="flex h-14 shrink-0 items-center justify-between border-b border-border/50 px-5">
           <span role="img" aria-label="Hussain.Art" className="hm-wordmark h-8 text-foreground/70" />
           <button
             type="button"

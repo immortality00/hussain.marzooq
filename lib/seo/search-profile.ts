@@ -6,6 +6,9 @@ export type SearchProfile = {
   name: string;
   jobTitle: string;
   links: string[];
+  // The links also shown as icons on the site. Every link is given to search
+  // engines; a new one stays off the site until it is switched on.
+  shownLinks: string[];
   city: string;
   country: string;
   email: string;
@@ -14,7 +17,7 @@ export type SearchProfile = {
   image: SectionImage;
 };
 
-export type SearchProfileTextField = Exclude<keyof SearchProfile, "links" | "image">;
+export type SearchProfileTextField = Exclude<keyof SearchProfile, "links" | "shownLinks" | "image">;
 
 export const SEARCH_PROFILE_LABELS: Record<SearchProfileTextField, string> = {
   name: "Name",
@@ -32,6 +35,7 @@ export const DEFAULT_SEARCH_PROFILE: SearchProfile = {
   name: "Hussain Marzooq",
   jobTitle: "",
   links: [],
+  shownLinks: [],
   city: "Dubai",
   country: "United Arab Emirates",
   email: "",
@@ -68,6 +72,12 @@ export function normalizeSearchProfile(value: unknown): SearchProfile {
   if (Array.isArray(source.links)) {
     profile.links = source.links.filter((link): link is string => typeof link === "string");
   }
+  if (Array.isArray(source.shownLinks)) {
+    const listed = new Set(profile.links);
+    profile.shownLinks = Array.from(
+      new Set(source.shownLinks.filter((link): link is string => typeof link === "string" && listed.has(link)))
+    );
+  }
   if (isSectionImage(source.image)) profile.image = source.image;
   return profile;
 }
@@ -84,7 +94,13 @@ export function searchProfileError(profile: SearchProfile): string | null {
   return null;
 }
 
-export type PublishedProfile = Omit<SearchProfile, "image"> & { image: string };
+// The profile links shown as icons on the site, in the profile's order.
+export function shownProfileLinks(profile: SearchProfile): string[] {
+  const shown = new Set(profile.shownLinks);
+  return profile.links.filter((link) => shown.has(link));
+}
+
+export type PublishedProfile = Omit<SearchProfile, "image" | "shownLinks"> & { image: string };
 
 export function publishedProfile(profile: SearchProfile): PublishedProfile {
   const clean = (value: string, valid = true) => (valid ? value.trim() : "");

@@ -1,0 +1,40 @@
+/* Social links column (components/site/SocialDock.tsx). Hidden at the top of the
+   page and revealed with the booking bar, at the same moment and on the same
+   500ms house curve: each icon slides 12px in from the left, 40ms after the one
+   above it, and leaves all at once. A focused icon shows the column, so the
+   keyboard never lands on an invisible link. Colour stays with the Tailwind
+   classes on the link, so this file never sets it. */
+.hm-social-link {
+  opacity: 0;
+  translate: -12px 0;
+  pointer-events: none;
+  transition:
+    color 150ms ease,
+    opacity 500ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    translate 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.hm-social-dock[data-shown] .hm-social-link,
+.hm-social-dock:focus-within .hm-social-link {
+  opacity: 1;
+  translate: 0 0;
+  pointer-events: auto;
+  transition-delay: 0ms, calc(var(--float-index, 0) * 40ms), calc(var(--float-index, 0) * 40ms);
+}
+
+.hm-social-link:focus-visible {
+  outline: 2px solid var(--foreground);
+  outline-offset: 2px;
+}
+
+/* Reduced motion: a plain fade, no slide and no stagger. */
+@media (prefers-reduced-motion: reduce) {
+  .hm-social-link,
+  .hm-social-dock[data-shown] .hm-social-link,
+  .hm-social-dock:focus-within .hm-social-link {
+    translate: none;
+    transition:
+      color 150ms ease,
+      opacity 200ms ease;
+  }
+}

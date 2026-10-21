@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { revalidatePublicPattern, revalidatePublicTree } from "@/app/api/_lib/revalidate";
+import { revalidatePublicPattern, revalidatePublicTree, revalidateSitePages } from "@/app/api/_lib/revalidate";
 import { isAdminAuthedServer } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
 import { ALL_PAGE_SECTIONS_SLUGS, type PageSectionsSlug } from "@/lib/server/page-sections";
@@ -8,8 +8,9 @@ import { deleteReplacedSectionImages } from "@/lib/server/section-images";
 import { storedPageSections } from "@/lib/server/admin-pages";
 import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 import { isRecord } from "@/app/api/_lib/common";
-import { normalizeSearchProfile, searchProfileError } from "@/lib/seo/search-profile";
+import { normalizeSearchProfile, searchProfileError, shownProfileLinks } from "@/lib/seo/search-profile";
 import { heroForSave } from "@/lib/hero-photos";
+import { resolveLinkLogos } from "@/lib/server/link-logos";
 
 const SLUG_TO_PATH: Record<PageSectionsSlug, string> = {
   home: "/",
@@ -66,6 +67,18 @@ export async function PATCH(
   if (changedSinceOpened(req, existing)) {
     return recordChangedResponse(await storedPageSections(db, slug as PageSectionsSlug));
   }
+
+  // The logos come from the links shown on the site and what is already stored,
+  // never from the request; a logo whose link was removed or switched off is
+  // deleted by the diff below.
+  let logosMissing: string[] = [];
+  if (slug === "about") {
+    const shown = shownProfileLinks(normalizeSearchProfile(data.profile));
+    const resolved = await resolveLinkLogos(db, shown, existing?.data?.linkLogos);
+    data.linkLogos = resolved.logos;
+    logosMissing = resolved.missing;
+  }
+
   await deleteReplacedSectionImages(existing?.data, data);
 
   await db
@@ -73,17 +86,20 @@ export async function PATCH(
     .updateOne({ slug }, { $set: { data, updatedAt: new Date() } }, { upsert: true });
 
   const path = SLUG_TO_PATH[slug as PageSectionsSlug];
-  if (path === "/people/[slug]") {
+  if (slug === "about") {
+    // Every public page shows the profile's social links.
+    revalidateSitePages();
+  } else if (path === "/people/[slug]") {
     revalidatePublicPattern(path);
   } else if (path === "/") {
     revalidatePath(path);
   } else if (path) {
     revalidatePublicTree(path);
   }
-  if (slug === "about") {
-    revalidatePath("/");
-    revalidatePublicPattern("/services/[slug]");
-  }
 
-  return NextResponse.json({ ok: true, item: await storedPageSections(db, slug as PageSectionsSlug) });
+  return NextResponse.json({
+    ok: true,
+    item: await storedPageSections(db, slug as PageSectionsSlug),
+    ...(logosMissing.length ? { logosMissing } : {}),
+  });
 }

@@ -9,6 +9,9 @@ export const CLOUDINARY_BLOG_FOLDER = `${CLOUDINARY_ROOT_FOLDER}/blog`;
 // Images uploaded directly into page sections, kept in their own folder so they
 // can be signed and cleaned up on replace.
 export const CLOUDINARY_SECTIONS_FOLDER = `${CLOUDINARY_ROOT_FOLDER}/sections`;
+// Logos of profile-link sites with no built-in icon, fetched when the About page is saved.
+// Inside the sections folder, so the save route's replace-diff deletes a dropped one.
+export const CLOUDINARY_LINK_LOGOS_FOLDER = `${CLOUDINARY_SECTIONS_FOLDER}/logos`;
 
 export const CLOUDINARY_MEDIA_CATEGORY_FOLDER_MAP = {
   photography: `${CLOUDINARY_MEDIA_FOLDER}/photography`,

@@ -4,6 +4,7 @@ import {
   normalizeSearchProfile,
   publishedProfile,
   searchProfileError,
+  shownProfileLinks,
 } from "@/lib/seo/search-profile";
 
 const { getDb, revalidatePath } = vi.hoisted(() => ({ getDb: vi.fn(), revalidatePath: vi.fn() }));
@@ -11,6 +12,7 @@ const { getDb, revalidatePath } = vi.hoisted(() => ({ getDb: vi.fn(), revalidate
 vi.mock("@/lib/auth/admin", () => ({ isAdminAuthedServer: async () => true }));
 vi.mock("@/lib/server/db", () => ({ getDb }));
 vi.mock("next/cache", () => ({ revalidatePath }));
+vi.mock("@/lib/server/link-logos", () => ({ resolveLinkLogos: async () => ({ logos: [], missing: [] }) }));
 
 import { PATCH } from "@/app/api/admin/page-sections/[slug]/route";
 
@@ -22,6 +24,16 @@ describe("normalizeSearchProfile", () => {
       city: "",
       links: ["a"],
     });
+  });
+
+  test("shown links are kept only when they are in the list, once each", () => {
+    expect(
+      normalizeSearchProfile({
+        links: ["https://a.test", "https://b.test"],
+        shownLinks: ["https://b.test", "https://b.test", "https://gone.test", 7],
+      }).shownLinks
+    ).toEqual(["https://b.test"]);
+    expect(normalizeSearchProfile({ links: ["https://a.test"] }).shownLinks).toEqual([]);
   });
 
   test("garbage falls back to defaults field by field", () => {
@@ -51,6 +63,18 @@ describe("searchProfileError", () => {
     expect(with_({ phone: "call me" })).toBe("Phone is not a valid number");
     expect(with_({ links: Array(21).fill("") })).toBe("Keep profile links to 20 or fewer");
     expect(with_({ jobTitle: "x".repeat(201) })).toBe("Job title is too long");
+  });
+});
+
+describe("shownProfileLinks", () => {
+  test("lists the shown links in the profile's order", () => {
+    expect(
+      shownProfileLinks({
+        ...DEFAULT_SEARCH_PROFILE,
+        links: ["https://a.test", "https://b.test", "https://c.test"],
+        shownLinks: ["https://c.test", "https://a.test"],
+      })
+    ).toEqual(["https://a.test", "https://c.test"]);
   });
 });
 
@@ -95,12 +119,10 @@ describe("PATCH /api/admin/page-sections/about", () => {
     expect(getDb).not.toHaveBeenCalled();
   });
 
-  test("a valid save refreshes /about, the homepage and every service page", async () => {
+  test("a valid save refreshes every public page, since each shows the profile's social links", async () => {
     const res = await save({ profile: { ...DEFAULT_SEARCH_PROFILE, links: ["https://a.test"] } });
     expect(res.status).toBe(200);
     expect(updateOne).toHaveBeenCalledOnce();
-    expect(revalidatePath).toHaveBeenCalledWith("/(site)/about", "layout");
-    expect(revalidatePath).toHaveBeenCalledWith("/");
-    expect(revalidatePath).toHaveBeenCalledWith("/(site)/services/[slug]", "page");
+    expect(revalidatePath).toHaveBeenCalledExactlyOnceWith("/", "layout");
   });
 });

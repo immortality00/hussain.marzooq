@@ -10,6 +10,7 @@ import { isActivePath, navItems } from "@/components/site/nav-items";
 import type { DisciplineSlug } from "@/lib/disciplines";
 import { useMagneticHover } from "@/hooks/useMagneticHover";
 import { hasAdminHint } from "@/lib/client/admin-hint";
+import { useHiddenByModal } from "@/hooks/useHiddenByModal";
 
 const ADMIN_HREF = "/admin/dashboard";
 
@@ -19,7 +20,7 @@ const NAV_PILL =
 const noopSubscribe = () => () => {};
 
 export function Navbar({ activeDisciplines }: { activeDisciplines: DisciplineSlug[] }) {
-  const [hiddenByModal, setHiddenByModal] = useState(false);
+  const hiddenByModal = useHiddenByModal();
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   const { resolvedTheme, setTheme } = useTheme();
@@ -42,17 +43,6 @@ export function Navbar({ activeDisciplines }: { activeDisciplines: DisciplineSlu
     <span className="inline-block h-[14px] w-[14px]" />
   );
 
-  useEffect(() => {
-    function onOpen() { setHiddenByModal(true); }
-    function onClose() { setHiddenByModal(false); }
-    window.addEventListener("hm_modal_open", onOpen);
-    window.addEventListener("hm_modal_close", onClose);
-    return () => {
-      window.removeEventListener("hm_modal_open", onOpen);
-      window.removeEventListener("hm_modal_close", onClose);
-    };
-  }, []);
-
   const isVisible = useMemo(
     () => !hiddenByModal || pathname === "/contact",
     [hiddenByModal, pathname],
@@ -69,7 +59,7 @@ export function Navbar({ activeDisciplines }: { activeDisciplines: DisciplineSlu
             : "pointer-events-none -translate-y-full opacity-0",
         ].join(" ")}
       >
-        <div className="flex h-12 items-center justify-between gap-4 px-4">
+        <div className="flex h-14 items-center justify-between gap-4 px-4">
           {/* Logo */}
           <Link
             href="/"

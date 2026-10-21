@@ -106,6 +106,34 @@
   animation: hm-transition-fade 300ms linear both;
 }
 
+/* Social links column (components/site/SocialLinks.tsx): each icon rises 6px and
+   settles every 3.2s on a sine curve, 0.4s behind the one above it, and holds
+   still while the pointer or keyboard focus is on it. */
+@keyframes hm-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.hm-float {
+  animation: hm-float 3.2s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  animation-delay: calc(var(--float-index, 0) * -0.4s);
+}
+
+.hm-float:has(:focus-visible) {
+  animation-play-state: paused;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hm-float:hover {
+    animation-play-state: paused;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hm-cell-in,
   .hm-cell-out {
@@ -116,7 +144,8 @@
     animation: none;
   }
 
-  .hm-globe-ping {
+  .hm-globe-ping,
+  .hm-float {
     animation: none;
   }
 

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { getDb } from "@/lib/server/db";
 import { EMPTY_SECTION_IMAGE } from "@/lib/page-sections-shared";
 import type {
@@ -13,6 +14,7 @@ import {
 } from "@/lib/seo/search-profile";
 import { buildFallback } from "@/lib/server/public-read";
 import { heroPhotosOf, type HeroPhoto } from "@/lib/hero-photos";
+import type { LinkLogo } from "@/lib/social-links";
 
 export type {
   FeaturedCard,
@@ -42,6 +44,8 @@ export type AboutSections = {
   disciplines: DisciplineCard[];
   profile: SearchProfile;
   stickyCta: CtaCopy;
+  // Written by the save route only, never by the editor.
+  linkLogos?: LinkLogo[];
 };
 
 export type DancingSections = {
@@ -247,6 +251,9 @@ export async function readAllPageSections(): Promise<StoredPageSections[]> {
   return ALL_PAGE_SECTIONS_SLUGS.map((slug) => pageSectionsOf(slug, map.get(slug)));
 }
 
+// One read per render: the layout's social links and a page's Person data share it.
+export const getAboutSections = cache(() => getPageSections("about"));
+
 export async function getSearchProfile(): Promise<SearchProfile> {
-  return normalizeSearchProfile((await getPageSections("about")).profile);
+  return normalizeSearchProfile((await getAboutSections()).profile);
 }

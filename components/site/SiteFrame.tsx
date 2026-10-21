@@ -8,12 +8,14 @@ import type { DisciplineSlug } from "@/lib/disciplines";
 export function SiteFrame({
   children,
   footer,
+  social,
   transitionImages,
   activeDisciplines,
   fullPageLoads,
 }: {
   children: React.ReactNode;
   footer: React.ReactNode;
+  social: React.ReactNode;
   transitionImages: string[];
   activeDisciplines: DisciplineSlug[];
   fullPageLoads?: boolean;
@@ -29,6 +31,7 @@ export function SiteFrame({
         </div>
         {footer}
       </div>
+      {social}
     </TransitionProvider>
   );
 }

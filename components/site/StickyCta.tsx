@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/shared/Button";
 import { useMagneticHover } from "@/hooks/useMagneticHover";
 import { useRevealOnScroll } from "@/hooks/useRevealOnScroll";
+import { useHiddenByModal } from "@/hooks/useHiddenByModal";
 
 export function StickyCta({
   title = "Ready to book?",
@@ -17,27 +18,10 @@ export function StickyCta({
   buttonLabel?: string;
   href?: string;
 }) {
-  const [hiddenByModal, setHiddenByModal] = useState(false);
+  const hiddenByModal = useHiddenByModal();
   const pathname = usePathname();
   const magneticRef = useMagneticHover<HTMLAnchorElement & HTMLButtonElement>();
   const shown = useRevealOnScroll();
-
-  useEffect(() => {
-    function onOpen() {
-      setHiddenByModal(true);
-    }
-    function onClose() {
-      setHiddenByModal(false);
-    }
-
-    window.addEventListener("hm_modal_open", onOpen);
-    window.addEventListener("hm_modal_close", onClose);
-
-    return () => {
-      window.removeEventListener("hm_modal_open", onOpen);
-      window.removeEventListener("hm_modal_close", onClose);
-    };
-  }, []);
 
   const isMounted = useMemo(() => {
     return !hiddenByModal || pathname === "/contact";
