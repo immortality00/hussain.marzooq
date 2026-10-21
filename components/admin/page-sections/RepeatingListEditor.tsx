@@ -51,12 +51,14 @@ export function RepeatingListEditor<T>({
   makeNew,
   renderFields,
   addLabel = "+ Add card",
+  max,
 }: {
   items: T[];
   onChange: (items: T[]) => void;
   makeNew: () => T;
   renderFields: (item: T, onItemChange: (item: T) => void) => ReactNode;
   addLabel?: string;
+  max?: number;
 }) {
   const ids = items.map((_, i) => String(i));
 
@@ -74,13 +76,15 @@ export function RepeatingListEditor<T>({
         ))}
       </SortableList>
 
-      <button
-        type="button"
-        onClick={() => onChange([...items, makeNew()])}
-        className={adminButtonClasses("default", "md")}
-      >
-        {addLabel}
-      </button>
+      {(max === undefined || items.length < max) && (
+        <button
+          type="button"
+          onClick={() => onChange([...items, makeNew()])}
+          className={adminButtonClasses("default", "md")}
+        >
+          {addLabel}
+        </button>
+      )}
     </div>
   );
 }

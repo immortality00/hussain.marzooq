@@ -34,6 +34,7 @@ vi.mock("@/lib/server/media-asset-management", async () => {
 
 import { DELETE as remove, PATCH as patch } from "@/app/api/media/[id]/route";
 import { POST as usages } from "@/app/api/media/usages/route";
+import { heroPhotosOf } from "@/lib/hero-photos";
 
 const CLOUD = "https://res.cloudinary.com/demo/image/upload/v1";
 const OLD_ID = "hm_visuals/media/photography/old";
@@ -43,6 +44,7 @@ const NEW_URL = `${CLOUD}/${NEW_ID}.jpg`;
 const MOVED_ID = "hm_visuals/media/art/old";
 const MOVED_URL = `${CLOUD}/${MOVED_ID}.jpg`;
 const YT = "Or18TXg2bnY";
+const FIRST_HERO_URL = `${CLOUD}/hm_visuals/media/photography/first.jpg`;
 
 const photo = { title: "Dune", categories: ["photography"], tags: [], peopleIds: [], appearances: [], type: "image" };
 const withNewFile = { ...photo, secureUrl: NEW_URL, publicId: NEW_ID, resourceType: "image" };
@@ -61,20 +63,30 @@ function seed(heroUrl = OLD_URL) {
   };
   resetMemoryDb({
     media: [media],
-    page_sections: [{ slug: "home", data: { hero: { image: { url: heroUrl, publicId: "" } }, featuredCards: [] } }],
+    page_sections: [
+      {
+        slug: "home",
+        data: {
+          hero: { images: [{ url: FIRST_HERO_URL, publicId: "" }, { url: heroUrl, publicId: "" }] },
+          featuredCards: [],
+        },
+      },
+    ],
     page_seo: [{ slug: "nft", ogImageUrl: OLD_URL }],
     blog_posts: [],
   });
 }
 
-const heroUrl = () => (memory.collections.page_sections![0]!.data as { hero: { image: { url: string } } }).hero.image.url;
+const homeData = () => memory.collections.page_sections![0]!.data as { hero: { images: { url: string }[] } };
+const heroUrl = () => homeData().hero.images[1]!.url;
+const heroPhotos = () => heroPhotosOf(homeData().hero).map((photo) => photo.url);
 const shareUrl = () => memory.collections.page_seo![0]!.ogImageUrl as string;
 const ctx = () => ({ params: Promise.resolve({ id: String(media._id) }) });
 const del = (query = "") => remove(new Request(`http://localhost/api/media/x${query}`, { method: "DELETE" }), ctx());
 const edit = (body: Record<string, unknown>) =>
   patch(new Request("http://localhost/api/media/x", { method: "PATCH", body: JSON.stringify(body) }), ctx());
 
-const IN_USE = { id: expect.any(String), title: "Dune", usedOn: ["Home — hero", "NFT — share image"] };
+const IN_USE = { id: expect.any(String), title: "Dune", usedOn: ["Home — hero photo 2", "NFT — share image"] };
 
 beforeEach(() => {
   vi.stubEnv("CLOUDINARY_CLOUD_NAME", "demo");
@@ -103,6 +115,7 @@ describe("DELETE /api/media/[id]", () => {
 
     expect(res.status).toBe(200);
     expect(heroUrl()).toBe("");
+    expect(heroPhotos()).toEqual([FIRST_HERO_URL]);
     expect(shareUrl()).toBe("");
     expect(memory.collections.media).toHaveLength(0);
     expect(deleteStoredMediaAsset).toHaveBeenCalledWith(expect.objectContaining({ publicId: OLD_ID }));
@@ -146,7 +159,7 @@ describe("PATCH /api/media/[id] — replacing a file a page uses", () => {
 
     expect(res.status).toBe(200);
     expect(media.publicId).toBe(NEW_ID);
-    expect(heroUrl()).toBe(NEW_URL);
+    expect(heroPhotos()).toEqual([FIRST_HERO_URL, NEW_URL]);
     expect(shareUrl()).toBe(NEW_URL);
     expect(deleteStoredMediaAsset).toHaveBeenCalledWith(expect.objectContaining({ publicId: OLD_ID }));
   });

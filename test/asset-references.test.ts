@@ -83,7 +83,7 @@ describe("findAssetUsages", () => {
 
   test("returns labelled places for one file", async () => {
     const found = await findAssetUsages(fakeDb(pages), ID);
-    expect(found.map((usage) => usage.label)).toEqual(["Home — hero"]);
+    expect(found.map((usage) => usage.label)).toEqual(["Home — hero photo 1"]);
   });
 
   test("answers for many files from one set of reads", async () => {

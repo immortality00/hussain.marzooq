@@ -9,6 +9,7 @@ import { storedPageSections } from "@/lib/server/admin-pages";
 import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 import { isRecord } from "@/app/api/_lib/common";
 import { normalizeSearchProfile, searchProfileError } from "@/lib/seo/search-profile";
+import { heroForSave } from "@/lib/hero-photos";
 
 const SLUG_TO_PATH: Record<PageSectionsSlug, string> = {
   home: "/",
@@ -50,6 +51,12 @@ export async function PATCH(
     const error = searchProfileError(profile);
     if (error) return NextResponse.json({ error }, { status: 400 });
     data.profile = profile;
+  }
+
+  if (slug === "home" && "hero" in data) {
+    const hero = heroForSave(data.hero);
+    if ("error" in hero) return NextResponse.json({ error: hero.error }, { status: 400 });
+    data.hero = hero;
   }
 
   const db = await getDb();

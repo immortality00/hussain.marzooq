@@ -12,6 +12,7 @@ import {
   type SearchProfile,
 } from "@/lib/seo/search-profile";
 import { buildFallback } from "@/lib/server/public-read";
+import { heroPhotosOf } from "@/lib/hero-photos";
 
 export type {
   FeaturedCard,
@@ -23,7 +24,7 @@ export type {
 } from "@/lib/page-sections-shared";
 
 export type HomeSections = {
-  hero: { image: SectionImage };
+  hero: { images: SectionImage[] };
   // Named featuredCards (not featuredWork) on purpose: mergeWithDefaults is a
   // shallow spread, so reusing the old key would let a stale fixed-key object
   // from an existing Mongo doc override the array shape and break rendering.
@@ -81,7 +82,7 @@ const BOOKING_CTA: CtaCopy = {
 
 const DEFAULTS: PageSectionsMap = {
   home: {
-    hero: { image: EMPTY_SECTION_IMAGE },
+    hero: { images: [] },
     featuredCards: [
       {
         slug: "photography",
@@ -203,7 +204,11 @@ function mergeWithDefaults<K extends PageSectionsSlug>(
 ): PageSectionsMap[K] {
   const defaults = DEFAULTS[slug];
   if (!doc) return defaults;
-  return { ...defaults, ...(doc.data as Partial<PageSectionsMap[K]>) };
+  const merged = { ...defaults, ...(doc.data as Partial<PageSectionsMap[K]>) };
+  if (slug !== "home") return merged;
+  const home = merged as HomeSections;
+  // A doc saved before the photo list holds `hero.image`; it reads as a one-photo list.
+  return { ...home, hero: { images: heroPhotosOf(home.hero) } } as PageSectionsMap[K];
 }
 
 export async function getPageSections<K extends PageSectionsSlug>(

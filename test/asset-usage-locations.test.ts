@@ -30,22 +30,49 @@ describe("mentionsPublicId", () => {
 });
 
 describe("usagesInDocs — labels and locations", () => {
-  test("home hero, a featured card and the creative panel, with page names from PAGE_ROWS", () => {
+  test("a hero photo, a featured card and the creative panel, with page names from PAGE_ROWS", () => {
     const home = {
       slug: "home",
       data: {
-        hero: { image: image(URL) },
+        hero: { images: [image(OTHER), image(URL)] },
         featuredCards: [{ image: image(OTHER) }, { image: image(URL) }],
         creativeSystem: { image: image(URL) },
       },
     };
     const found = usagesInDocs(docs({ sections: [home] }), ID);
     expect(found.map((u) => u.label)).toEqual([
-      "Home — hero",
+      "Home — hero photo 2",
       "Home — featured card 2",
       "Home — creative system panel",
     ]);
+    expect(found[0]).toMatchObject({ collection: "page_sections", key: { slug: "home" }, path: "data.hero.images.1", kind: "image" });
     expect(found[1]).toMatchObject({ collection: "page_sections", key: { slug: "home" }, path: "data.featuredCards.1.image", kind: "image" });
+  });
+
+  test("a hero saved before the photo list counts as its first photo", () => {
+    const home = { slug: "home", data: { hero: { image: image(URL) } } };
+    expect(usagesInDocs(docs({ sections: [home] }), ID)).toEqual([
+      {
+        label: "Home — hero photo 1",
+        collection: "page_sections",
+        key: { slug: "home" },
+        path: "data.hero.image",
+        kind: "image",
+      },
+    ]);
+  });
+
+  test("a leftover single hero image beside the photo list never counts — nothing renders it", () => {
+    const home = { slug: "home", data: { hero: { images: [image(OTHER)], image: image(URL) } } };
+    expect(usagesInDocs(docs({ sections: [home] }), ID)).toEqual([]);
+  });
+
+  test("every place a photo appears in the hero list is named", () => {
+    const home = { slug: "home", data: { hero: { images: [image(URL), image(OTHER), image(URL)] } } };
+    expect(usagesInDocs(docs({ sections: [home] }), ID).map((u) => u.path)).toEqual([
+      "data.hero.images.0",
+      "data.hero.images.2",
+    ]);
   });
 
   test("about discipline cards", () => {

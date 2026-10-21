@@ -9,6 +9,7 @@ import { RepeatingListEditor } from "@/components/admin/page-sections/RepeatingL
 import { ImageField } from "@/components/admin/media-picker/ImageField";
 import { CardImageWarning } from "./CardImageWarning";
 import { adminInputClasses } from "@/components/admin/admin-input";
+import { HERO_MAX_PHOTOS, heroPhotosOf } from "@/lib/hero-photos";
 
 function FeaturedCardFields({
   card,
@@ -67,14 +68,20 @@ export function HomeSectionsForm({
     <div className="space-y-6">
       <div className="space-y-3">
         <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
-          Hero background image
+          Hero photos
         </p>
-        {!data.hero?.image?.url && (
-          <CardImageWarning message="No image — the homepage hero renders without a background photo." />
+        {heroPhotosOf(data.hero).length === 0 && (
+          <CardImageWarning message="No photo — the homepage hero renders without a background photo." />
         )}
-        <ImageField
-          value={data.hero?.image}
-          onChange={(image) => onChange({ ...data, hero: { image } })}
+        <RepeatingListEditor
+          items={data.hero.images}
+          onChange={(images) => onChange({ ...data, hero: { images } })}
+          makeNew={() => EMPTY_SECTION_IMAGE}
+          max={HERO_MAX_PHOTOS}
+          addLabel="+ Add photo"
+          renderFields={(photo, onItemChange) => (
+            <ImageField value={photo} onChange={onItemChange} clearable={false} />
+          )}
         />
       </div>
 

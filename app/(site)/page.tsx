@@ -50,7 +50,7 @@ export default async function HomePage() {
       <main>
         <HomeHero
           activeSet={activeSet}
-          heroImage={sections.hero.image}
+          photos={sections.hero.images}
           headerTitle={seo.headerTitle}
           headerDescription={seo.headerDescription}
         />

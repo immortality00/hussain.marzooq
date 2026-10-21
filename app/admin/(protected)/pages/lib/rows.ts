@@ -1,4 +1,5 @@
 import type { PageSectionsSlug, HomeSections } from "@/lib/server/page-sections";
+import { heroPhotosOf } from "@/lib/hero-photos";
 
 export type PageRow = {
   key: string;
@@ -105,6 +106,6 @@ export function pageFlags(pages: { settings: PageSettingsRecord; sections: Recor
 
 function pageNeedsImage(row: PageRow, homeSections: HomeSections | undefined): boolean {
   if (row.sectionsSlug !== "home" || !homeSections) return false;
-  if (!homeSections.hero?.image?.url) return true;
+  if (heroPhotosOf(homeSections.hero).length === 0) return true;
   return homeSections.featuredCards.some((card) => !card.image?.url);
 }

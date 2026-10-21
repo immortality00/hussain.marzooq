@@ -67,7 +67,7 @@ describe("saving a private gallery with a photo a page uses", () => {
     expect(res.status).toBe(409);
     expect(await res.json()).toMatchObject({
       code: "MEDIA_IN_USE",
-      items: [{ id: String(onPage._id), title: "Dune", usedOn: ["Home — hero"] }],
+      items: [{ id: String(onPage._id), title: "Dune", usedOn: ["Home — hero photo 1"] }],
     });
     expect(makeMediaPrivateForGallery).not.toHaveBeenCalled();
     expect(memory.collections.private_galleries).toHaveLength(0);

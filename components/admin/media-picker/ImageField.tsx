@@ -19,11 +19,14 @@ export function ImageField({
   value,
   onChange,
   folder = CLOUDINARY_SECTIONS_FOLDER,
+  clearable = true,
 }: {
   label?: string;
   value: SectionImage | undefined;
   onChange: (image: SectionImage) => void;
   folder?: string;
+  // Off where the row holding the field has its own Remove (a list of photos).
+  clearable?: boolean;
 }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -72,7 +75,7 @@ export function ImageField({
             onError={setUploadError}
           />
 
-          {image.url ? (
+          {clearable && image.url ? (
             <button
               type="button"
               onClick={() => change(EMPTY_SECTION_IMAGE)}
