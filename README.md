@@ -6,7 +6,7 @@ Dubai. Public portfolio across five disciplines (photography, videography, NFT, 
 web development), an exhibition globe, a testimonials system, private client galleries,
 and a full admin CMS.
 
-Primary domain: **hussain-marzooq.com** (target: hussain.art when ready).
+Primary domain: **hussain.art** (hussain-marzooq.com redirects to it).
 
 ## Stack
 

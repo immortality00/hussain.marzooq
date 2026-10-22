@@ -1,4 +1,5 @@
 import type { PublicNftItem } from "@/lib/server/public-nfts";
+import { absoluteUrl } from "@/lib/seo/site-url";
 
 export const currencySymbol: Record<PublicNftItem["nft"]["currency"], string> = {
   ETH: "Ξ",
@@ -85,9 +86,7 @@ export function editionSubline(item: PublicNftItem) {
 }
 
 export function getNftPublicHref(item: PublicNftItem) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "";
-  const path = `/nft#nft-${item.id}`;
-  return siteUrl ? `${siteUrl}${path}` : path;
+  return absoluteUrl(`/nft#nft-${item.id}`);
 }
 
 export function buildInquiryContext(item: PublicNftItem) {

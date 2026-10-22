@@ -6,7 +6,7 @@ import { parseCloudinaryAssetFromUrl } from "@/lib/server/cloudinary-assets";
 process.loadEnvFile(".env.local");
 ensureCloudinaryConfigured();
 
-const origin = process.argv[2] ?? "https://hussain-marzooq.com";
+const origin = process.argv[2] ?? "https://hussain.art";
 const cloud = process.env.CLOUDINARY_CLOUD_NAME;
 const OUTSIDE_ROUTES: [string, string][] = [
   ["youtube", "dQw4w9WgXcQ.jpg"],

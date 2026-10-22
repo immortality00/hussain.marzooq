@@ -345,15 +345,15 @@ describe("loading and signing in", () => {
 
   it("sends a signed-out visitor with nothing on screen to sign in, remembering where they were", async () => {
     const assign = vi.fn();
-    vi.stubGlobal("location", { ...window.location, origin: "https://hussain-marzooq.com", pathname: "/admin/inquiries", search: "", assign });
+    vi.stubGlobal("location", { ...window.location, origin: "https://hussain.art", pathname: "/admin/inquiries", search: "", assign });
     fetchMock.mockImplementationOnce(() => reply({ ok: false, error: "Unauthorized" }, 401));
     await store.refreshAdminData();
-    expect(assign).toHaveBeenCalledWith("https://hussain-marzooq.com/admin/sign-in?next=%2Fadmin%2Finquiries");
+    expect(assign).toHaveBeenCalledWith("https://hussain.art/admin/sign-in?next=%2Fadmin%2Finquiries");
   });
 
   it("never bounces between a screen and sign-in: a second sign-out within a minute stays put", async () => {
     const assign = vi.fn();
-    vi.stubGlobal("location", { ...window.location, origin: "https://hussain-marzooq.com", pathname: "/admin/inquiries", search: "", assign });
+    vi.stubGlobal("location", { ...window.location, origin: "https://hussain.art", pathname: "/admin/inquiries", search: "", assign });
     fetchMock.mockImplementation(() => reply({ ok: false, error: "Unauthorized" }, 401));
     await store.refreshAdminData();
     await store.refreshAdminData();
@@ -363,7 +363,7 @@ describe("loading and signing in", () => {
 
   it("never navigates away from a screen with data: retries once, then shows it is signed out", async () => {
     const assign = vi.fn();
-    vi.stubGlobal("location", { ...window.location, origin: "https://hussain-marzooq.com", pathname: "/admin/inquiries", search: "", assign });
+    vi.stubGlobal("location", { ...window.location, origin: "https://hussain.art", pathname: "/admin/inquiries", search: "", assign });
     await loaded();
 
     fetchMock.mockImplementationOnce(() => reply({ ok: false, error: "Unauthorized" }, 401));

@@ -1,4 +1,4 @@
-const FALLBACK_SITE_URL = "https://hussain-marzooq.com";
+const FALLBACK_SITE_URL = "https://hussain.art";
 
 export function normalizeSiteUrl(value: string | undefined): string {
   const trimmed = value?.trim();

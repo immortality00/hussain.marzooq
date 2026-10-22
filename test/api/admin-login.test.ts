@@ -20,10 +20,10 @@ function login(fields: Record<string, string>, headers: Record<string, string> =
   const body = new FormData();
   for (const [key, value] of Object.entries(fields)) body.set(key, value);
   return POST(
-    new Request("https://hussain-marzooq.com/admin/login", {
+    new Request("https://hussain.art/admin/login", {
       method: "POST",
       body,
-      headers: { host: "hussain-marzooq.com", origin: "https://hussain-marzooq.com", ...headers },
+      headers: { host: "hussain.art", origin: "https://hussain.art", ...headers },
     })
   );
 }

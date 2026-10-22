@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { runInNewContext } from "node:vm";
 import { describe, expect, it, vi } from "vitest";
 
-const ORIGIN = "https://hussain-marzooq.com";
+const ORIGIN = "https://hussain.art";
 const SOURCE = readFileSync(join(process.cwd(), "public/admin-sw.js"), "utf8");
 
 type Listener = (event: Record<string, unknown>) => void;

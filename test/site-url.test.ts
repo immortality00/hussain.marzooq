@@ -3,8 +3,8 @@ import { absoluteUrl, normalizeSiteUrl, SITE_URL } from "@/lib/seo/site-url";
 
 describe("normalizeSiteUrl", () => {
   test("falls back when unset or blank", () => {
-    expect(normalizeSiteUrl(undefined)).toBe("https://hussain-marzooq.com");
-    expect(normalizeSiteUrl("   ")).toBe("https://hussain-marzooq.com");
+    expect(normalizeSiteUrl(undefined)).toBe("https://hussain.art");
+    expect(normalizeSiteUrl("   ")).toBe("https://hussain.art");
   });
 
   test("trims whitespace and trailing slashes", () => {

@@ -27,7 +27,7 @@ function request(
   if (cookie) headers.set("cookie", cookie);
   if (fetchMode) headers.set("sec-fetch-mode", fetchMode);
   if (fetchDest) headers.set("sec-fetch-dest", fetchDest);
-  return new NextRequest(`https://hussain-marzooq.com${path}`, { headers, method });
+  return new NextRequest(`https://hussain.art${path}`, { headers, method });
 }
 
 beforeEach(() => {
@@ -126,7 +126,7 @@ describe("proxy", () => {
 
     const outside = await proxy(request("/admin/sign-in?next=%2F%2Fevil.com", { cookie }));
     const location = new URL(outside.headers.get("location") ?? "");
-    expect(location.origin).toBe("https://hussain-marzooq.com");
+    expect(location.origin).toBe("https://hussain.art");
     expect(location.pathname).toBe("/admin/dashboard");
   });
 
