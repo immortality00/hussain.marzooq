@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:indexes": "node scripts/ensure-indexes.mjs",
+    "db:indexes": "vite-node -c vitest.config.mts scripts/ensure-indexes.ts",
     "galleries:convert": "node scripts/convert-gallery-assets.mjs",
     "db:seed-e2e": "node scripts/seed-e2e.mjs",
     "db:backup": "vite-node -c vitest.config.mts scripts/db-backup.ts",
