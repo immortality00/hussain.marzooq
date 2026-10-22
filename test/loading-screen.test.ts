@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { createElement } from "react";
 import { act, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -9,6 +9,13 @@ import { LAUNCH_SCREEN_PATH, SIGNATURE_MASK_PATH, launchScreenHtml } from "@/lib
 import { LoadingScreen } from "@/components/shared/LoadingScreen";
 import { ADMIN_LOGOUT_PATH, ADMIN_SIGN_IN_PATH } from "@/lib/auth/admin-next-path";
 import { HINT_NAME } from "@/lib/auth/session-token";
+import {
+  ADMIN_APP_TITLE,
+  ADMIN_MANIFEST_PATH,
+  ADMIN_STATUS_BAR_STYLE,
+  APPLE_TOUCH_ICON_PATH,
+} from "@/lib/admin-app";
+import { metadata as adminMetadata } from "@/app/admin/layout";
 
 describe("loadingLine", () => {
   it("cycles through every line and wraps in both directions", () => {
@@ -35,6 +42,18 @@ describe("launchScreenHtml", () => {
   it("goes straight to the sign-in page when the visitor is signed out", () => {
     expect(html).toContain(JSON.stringify(ADMIN_SIGN_IN_PATH));
     expect(html).toContain(JSON.stringify(`${HINT_NAME}=1`));
+  });
+
+  it("carries the admin app's Home Screen name, icon and manifest, like every admin page", () => {
+    expect(html).toContain(`<meta name="apple-mobile-web-app-title" content="${ADMIN_APP_TITLE}">`);
+    expect(html).toContain(`<meta name="apple-mobile-web-app-status-bar-style" content="${ADMIN_STATUS_BAR_STYLE}">`);
+    expect(html).toContain(`<link rel="manifest" href="${ADMIN_MANIFEST_PATH}">`);
+    expect(html).toContain(`<link rel="apple-touch-icon" href="${APPLE_TOUCH_ICON_PATH}"`);
+    expect(adminMetadata.manifest).toBe(ADMIN_MANIFEST_PATH);
+    expect(adminMetadata.appleWebApp).toMatchObject({ title: ADMIN_APP_TITLE, statusBarStyle: ADMIN_STATUS_BAR_STYLE });
+    const manifest = JSON.parse(readFileSync(`public${ADMIN_MANIFEST_PATH}`, "utf8"));
+    expect(manifest.name).toBe(ADMIN_APP_TITLE);
+    expect(existsSync(`app${APPLE_TOUCH_ICON_PATH}`)).toBe(true);
   });
 
   it("is what the admin service worker caches and serves, beside the sign-in page and logout", () => {

@@ -2,6 +2,12 @@ import { LOADING_LINES, LOADING_LINE_MS } from "@/lib/loading-lines";
 import { serializeJsonLd } from "@/lib/seo/structured-data";
 import { HINT_NAME } from "@/lib/auth/session-token";
 import { ADMIN_SIGN_IN_PATH } from "@/lib/auth/admin-next-path";
+import {
+  ADMIN_APP_TITLE,
+  ADMIN_MANIFEST_PATH,
+  ADMIN_STATUS_BAR_STYLE,
+  APPLE_TOUCH_ICON_PATH,
+} from "@/lib/admin-app";
 
 export const LAUNCH_SCREEN_PATH = "/launch-screen";
 export const SIGNATURE_MASK_PATH = "/brand/signature-mask.webp";
@@ -49,6 +55,11 @@ export function launchScreenHtml(): string {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="${ADMIN_APP_TITLE}">
+<meta name="apple-mobile-web-app-status-bar-style" content="${ADMIN_STATUS_BAR_STYLE}">
+<link rel="manifest" href="${ADMIN_MANIFEST_PATH}">
+<link rel="apple-touch-icon" href="${APPLE_TOUCH_ICON_PATH}" sizes="180x180" type="image/png">
 <title>Hussain.Art</title>
 <script>${THEME_SCRIPT}</script>
 <style>${STYLES}</style>
