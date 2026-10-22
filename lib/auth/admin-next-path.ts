@@ -2,6 +2,7 @@ export const ADMIN_HOME_PATH = "/admin/dashboard";
 export const ADMIN_SIGN_IN_PATH = "/admin/sign-in";
 export const ADMIN_LOGIN_PATH = "/admin/login";
 export const ADMIN_LOGOUT_PATH = "/admin/logout";
+export const ADMIN_APPROVE_SIGN_IN_PATH = "/admin/approve-sign-in";
 
 const ORIGIN = "https://admin.invalid";
 const NOT_A_DESTINATION = new Set(
@@ -19,7 +20,7 @@ export function safeAdminNextPath(nextPath: string | null | undefined) {
   }
 
   if (url.origin !== ORIGIN || !url.pathname.startsWith("/admin/")) return ADMIN_HOME_PATH;
-  if (NOT_A_DESTINATION.has(url.pathname)) return ADMIN_HOME_PATH;
+  if (NOT_A_DESTINATION.has(url.pathname) || url.pathname.startsWith(`${ADMIN_LOGIN_PATH}/`)) return ADMIN_HOME_PATH;
 
   return `${url.pathname}${url.search}`;
 }

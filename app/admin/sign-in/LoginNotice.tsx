@@ -10,6 +10,7 @@ const SIGNED_OUT_REASONS: Record<string, string> = {
   future: "session no longer valid",
   malformed: "session no longer valid",
   config: "admin is not configured",
+  revoked: "every device was signed out",
 };
 
 const subscribeNever = () => () => {};

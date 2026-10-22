@@ -72,6 +72,45 @@ const routes: Route[] = [
     load: () => import("@/app/api/admin/push/test/route"),
   },
   {
+    name: "POST /api/admin/security/passkeys/options",
+    method: "POST",
+    path: "/api/admin/security/passkeys/options",
+    load: () => import("@/app/api/admin/security/passkeys/options/route"),
+  },
+  {
+    name: "POST /api/admin/security/passkeys",
+    method: "POST",
+    path: "/api/admin/security/passkeys",
+    load: () => import("@/app/api/admin/security/passkeys/route"),
+  },
+  {
+    name: "DELETE /api/admin/security/passkeys/[id]",
+    method: "DELETE",
+    path: `/api/admin/security/passkeys/${OID}`,
+    params: { id: OID },
+    load: () => import("@/app/api/admin/security/passkeys/[id]/route"),
+  },
+  {
+    name: "POST /api/admin/security/sign-out-everywhere",
+    method: "POST",
+    path: "/api/admin/security/sign-out-everywhere",
+    load: () => import("@/app/api/admin/security/sign-out-everywhere/route"),
+  },
+  {
+    name: "POST /api/admin/security/sign-ins/[id]/options",
+    method: "POST",
+    path: "/api/admin/security/sign-ins/abc/options",
+    params: { id: "a".repeat(32) },
+    load: () => import("@/app/api/admin/security/sign-ins/[id]/options/route"),
+  },
+  {
+    name: "POST /api/admin/security/sign-ins/[id]",
+    method: "POST",
+    path: "/api/admin/security/sign-ins/abc",
+    params: { id: "a".repeat(32) },
+    load: () => import("@/app/api/admin/security/sign-ins/[id]/route"),
+  },
+  {
     name: "GET /api/admin/snapshot",
     method: "GET",
     path: "/api/admin/snapshot",
@@ -404,7 +443,7 @@ afterEach(() => {
 
 describe("admin-guarded routes reject unauthenticated requests", () => {
   test("the table covers every admin handler under app/api", () => {
-    expect(routes.length).toBeGreaterThanOrEqual(45);
+    expect(routes.length).toBeGreaterThanOrEqual(51);
   });
 
   test.each(routes.map((route) => [route.name, route] as const))(

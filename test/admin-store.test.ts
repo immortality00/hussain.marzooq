@@ -351,6 +351,26 @@ describe("loading and signing in", () => {
     expect(assign).toHaveBeenCalledWith("https://hussain.art/admin/sign-in?next=%2Fadmin%2Finquiries");
   });
 
+  it("after sign out everywhere, says why on the sign-in page and does not retry", async () => {
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, origin: "https://hussain.art", pathname: "/admin/inquiries", search: "", assign });
+    fetchMock.mockImplementationOnce(() => reply({ ok: false, error: "Unauthorized", reason: "revoked" }, 401));
+    await store.refreshAdminData();
+    expect(assign).toHaveBeenCalledWith(
+      "https://hussain.art/admin/sign-in?next=%2Fadmin%2Finquiries&signedout=revoked"
+    );
+  });
+
+  it("shows a screen with data signed out at once after sign out everywhere", async () => {
+    vi.stubGlobal("location", { ...window.location, origin: "https://hussain.art", pathname: "/admin/inquiries", search: "", assign: vi.fn() });
+    await loaded();
+    fetchMock.mockImplementationOnce(() => reply({ ok: false, error: "Unauthorized", reason: "revoked" }, 401));
+    await store.refreshAdminData();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(store.getAdminSignedOut()).toBe(true);
+    expect(store.adminSignInHref()).toContain("signedout=revoked");
+  });
+
   it("never bounces between a screen and sign-in: a second sign-out within a minute stays put", async () => {
     const assign = vi.fn();
     vi.stubGlobal("location", { ...window.location, origin: "https://hussain.art", pathname: "/admin/inquiries", search: "", assign });

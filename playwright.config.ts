@@ -1,7 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 import { E2E } from "./e2e/fixtures";
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://127.0.0.1:${E2E.port}`;
+// localhost, not 127.0.0.1: passkeys refuse an IP address as the site name.
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? `http://localhost:${E2E.port}`;
 
 // The suite only ever talks to the seeded end-to-end database. MONGODB_URI is
 // inherited (a local cluster or the CI service container); the database name is

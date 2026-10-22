@@ -1,20 +1,15 @@
 "use client";
 
-import { useState, useSyncExternalStore, type FormEvent, type KeyboardEvent } from "react";
-import { createPortal } from "react-dom";
+import { useCallback, useState, useSyncExternalStore, type FormEvent, type KeyboardEvent } from "react";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { adminCheckboxClasses, adminInputClasses } from "@/components/admin/admin-input";
-import { LoadingScreen } from "@/components/shared/LoadingScreen";
 import { requestAdminLogin } from "@/lib/auth/admin-login";
 import { isStandalone } from "@/lib/client/push-support";
 import { NextPathField } from "./LoginNotice";
+import { SecondStep } from "./SecondStep";
+import { LoginError, SigningIn } from "./SigningIn";
 
 const subscribeNever = () => () => {};
-
-function SigningIn({ pending }: { pending: boolean }) {
-  if (!pending) return null;
-  return createPortal(<LoadingScreen className="fixed inset-0 z-50 bg-background" />, document.body);
-}
 
 function submitOnEnter(event: KeyboardEvent<HTMLInputElement>) {
   if (event.key !== "Enter") return;
@@ -26,6 +21,12 @@ export function AdminLoginForm() {
   const installed = useSyncExternalStore(subscribeNever, isStandalone, () => false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [secondStep, setSecondStep] = useState(false);
+
+  const restart = useCallback((message: string) => {
+    setSecondStep(false);
+    setError(message);
+  }, []);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -35,22 +36,21 @@ export function AdminLoginForm() {
     setPending(true);
     setError(null);
     const result = await requestAdminLogin(new FormData(form));
-    if (result.ok) {
+    if (result.ok && "next" in result) {
       location.replace(result.next);
       return;
     }
     form.reset();
     setPending(false);
-    setError(result.message);
+    if (result.ok) setSecondStep(true);
+    else setError(result.message);
   }
+
+  if (secondStep) return <SecondStep onRestart={restart} />;
 
   return (
     <form method="post" onSubmit={submit} className="mt-8 space-y-4">
-      {error ? (
-        <div role="alert" className="rounded-2xl border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-          {error}
-        </div>
-      ) : null}
+      <LoginError message={error} />
 
       <input
         type="password"

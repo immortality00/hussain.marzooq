@@ -4,7 +4,7 @@ import { BSON, type Db } from "mongodb";
 export const BACKUP_STORE = "db-backups";
 export const BACKUP_PREFIX = "daily/";
 export const BACKUP_KEEP_DAYS = 30;
-export const BACKUP_EXCLUDED = ["testimonial_locations", "request_guards"];
+export const BACKUP_EXCLUDED = ["testimonial_locations", "request_guards", "admin_auth_requests"];
 
 type IndexSpec = { name: string; key: Record<string, unknown>; [option: string]: unknown };
 

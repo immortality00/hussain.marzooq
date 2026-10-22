@@ -21,20 +21,21 @@ import {
 
 const T = 1_700_000_000_000;
 const SECRET = "test-secret";
-const tok = (issued: number, started: number, mode: "s" | "r" = "s") => `v4.${issued}.${started}.${mode}.abc`;
+const tok = (issued: number, started: number, mode: "s" | "r" = "s", generation = 0) =>
+  `v5.${issued}.${started}.${mode}.${generation}.abc`;
 
 async function cookieAt(issuedAt: number, startedAt: number, remember = false) {
   return issueSessionCookie(SECRET, remember, startedAt, issuedAt);
 }
 
 describe("createSessionValue", () => {
-  it("produces a v4.<issued>.<started>.<s|r>.<32-hex> payload", () => {
-    expect(createSessionValue(false, T)).toMatch(/^v4\.1700000000000\.1700000000000\.s\.[0-9a-f]{32}$/);
-    expect(createSessionValue(true, T)).toMatch(/^v4\.1700000000000\.1700000000000\.r\.[0-9a-f]{32}$/);
+  it("produces a v5.<issued>.<started>.<s|r>.<generation>.<32-hex> payload", () => {
+    expect(createSessionValue(false, T)).toMatch(/^v5\.1700000000000\.1700000000000\.s\.0\.[0-9a-f]{32}$/);
+    expect(createSessionValue(true, T, T, 7)).toMatch(/^v5\.1700000000000\.1700000000000\.r\.7\.[0-9a-f]{32}$/);
   });
 
   it("a renewal keeps the original login time", () => {
-    expect(createSessionValue(true, T + 5_000, T)).toMatch(/^v4\.1700000005000\.1700000000000\.r\./);
+    expect(createSessionValue(true, T + 5_000, T)).toMatch(/^v5\.1700000005000\.1700000000000\.r\./);
   });
 
   it("uses a fresh nonce on each call", () => {
@@ -44,20 +45,23 @@ describe("createSessionValue", () => {
 
 describe("parseSession", () => {
   it("reads issue time, login time and remember flag", () => {
-    expect(parseSession(tok(T + 10, T))).toEqual({ issuedAt: T + 10, startedAt: T, remember: false });
-    expect(parseSession(tok(T, T, "r"))).toEqual({ issuedAt: T, startedAt: T, remember: true });
+    expect(parseSession(tok(T + 10, T))).toEqual({ issuedAt: T + 10, startedAt: T, remember: false, generation: 0 });
+    expect(parseSession(tok(T, T, "r", 3))).toEqual({ issuedAt: T, startedAt: T, remember: true, generation: 3 });
   });
 
   it("rejects anything malformed, including old-format tokens", () => {
+    expect(parseSession(`v4.${T}.${T}.s.abc`)).toBeNull();
+    expect(parseSession(`v5.${T}.${T}.s.x.abc`)).toBeNull();
+    expect(parseSession(`v5.${T}.${T}.s.-1.abc`)).toBeNull();
     expect(parseSession(`v3.${T}.${T}.s.abc`)).toBeNull();
     expect(parseSession("v2.1700000000000.s.abc")).toBeNull();
-    expect(parseSession(`v4.${T}.${T}.s`)).toBeNull();
-    expect(parseSession(`v4.${T}.${T}.s.abc.def`)).toBeNull();
-    expect(parseSession("v4.notanumber.1.s.abc")).toBeNull();
-    expect(parseSession(`v4.${T}.notanumber.s.abc`)).toBeNull();
-    expect(parseSession(`v4.0.0.s.abc`)).toBeNull();
-    expect(parseSession(`v4.${T}.${T}.x.abc`)).toBeNull();
-    expect(parseSession(`v4.${T}.${T}.s.`)).toBeNull();
+    expect(parseSession(`v5.${T}.${T}.s.0`)).toBeNull();
+    expect(parseSession(`v5.${T}.${T}.s.0.abc.def`)).toBeNull();
+    expect(parseSession("v5.notanumber.1.s.0.abc")).toBeNull();
+    expect(parseSession(`v5.${T}.notanumber.s.0.abc`)).toBeNull();
+    expect(parseSession(`v5.0.0.s.0.abc`)).toBeNull();
+    expect(parseSession(`v5.${T}.${T}.x.0.abc`)).toBeNull();
+    expect(parseSession(`v5.${T}.${T}.s.0.`)).toBeNull();
   });
 
   it("rejects a login time later than the issue time", () => {
@@ -128,10 +132,10 @@ describe("isWithinTtl", () => {
 describe("issueSessionCookie / readSessionCookie", () => {
   it("carries the payload and its signature in one value", async () => {
     const cookie = await cookieAt(T, T, true);
-    expect(cookie).toMatch(/^v4\.1700000000000\.1700000000000\.r\.[0-9a-f]{32}\.[0-9a-f]{64}$/);
+    expect(cookie).toMatch(/^v5\.1700000000000\.1700000000000\.r\.0\.[0-9a-f]{32}\.[0-9a-f]{64}$/);
     await expect(readSessionCookie(cookie, SECRET, T + 1_000)).resolves.toEqual({
       ok: true,
-      session: { issuedAt: T, startedAt: T, remember: true },
+      session: { issuedAt: T, startedAt: T, remember: true, generation: 0 },
       renew: false,
     });
   });
@@ -146,8 +150,8 @@ describe("issueSessionCookie / readSessionCookie", () => {
     const cookie = await cookieAt(T, T, true);
     await expect(readSessionCookie(cookie, "other-secret", T)).resolves.toEqual({ ok: false, reason: "signature" });
 
-    const [version, , started, mode, nonce, signature] = cookie.split(".");
-    const extended = [version, T + REMEMBER_MS, started, mode, nonce, signature].join(".");
+    const [version, , started, mode, generation, nonce, signature] = cookie.split(".");
+    const extended = [version, T + REMEMBER_MS, started, mode, generation, nonce, signature].join(".");
     await expect(readSessionCookie(extended, SECRET, T + REMEMBER_MS + 1_000)).resolves.toEqual({
       ok: false,
       reason: "signature",
@@ -155,6 +159,9 @@ describe("issueSessionCookie / readSessionCookie", () => {
 
     const promoted = cookie.replace(".r.", ".s.");
     await expect(readSessionCookie(promoted, SECRET, T)).resolves.toEqual({ ok: false, reason: "signature" });
+
+    const reset = [version, T, started, mode, "9", nonce, signature].join(".");
+    await expect(readSessionCookie(reset, SECRET, T)).resolves.toEqual({ ok: false, reason: "signature" });
   });
 
   it("names malformed, legacy, expired and future tokens", async () => {

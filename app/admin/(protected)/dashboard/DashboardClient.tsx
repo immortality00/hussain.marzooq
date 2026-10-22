@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { PushNotificationsCard } from "@/components/admin/push/PushNotificationsCard";
+import { SecurityCard } from "@/components/admin/security/SecurityCard";
 import { DashboardCopy } from "@/components/admin/DashboardCopy";
 import { useAdminPreview } from "@/hooks/useAdminData";
 import { AttentionRow, LibraryTile } from "./DashboardParts";
@@ -137,6 +138,8 @@ export default function DashboardClient() {
         </section>
 
         <PushNotificationsCard publicKey={snapshot.push.publicKey} devices={snapshot.push.devices} />
+
+        <SecurityCard />
       </div>
     </>
   );

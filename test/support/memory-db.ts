@@ -37,6 +37,8 @@ function satisfies(value: unknown, cond: unknown): boolean {
     const ops = cond as Record<string, unknown>;
     if ("$in" in ops) return (ops.$in as unknown[]).some((option) => satisfies(value, option));
     if ("$ne" in ops) return !satisfies(value, ops.$ne);
+    if ("$gt" in ops) return value !== undefined && value !== null && (value as number) > (ops.$gt as number);
+    if ("$exists" in ops) return (value !== undefined) === Boolean(ops.$exists);
   }
   return value === cond;
 }
@@ -45,6 +47,22 @@ function matches(doc: Doc, filter: Filter): boolean {
   return Object.entries(filter).every(([key, cond]) =>
     key === "$or" ? (cond as Filter[]).some((option) => matches(doc, option)) : satisfies(read(doc, key), cond)
   );
+}
+
+type Update = { $set?: Doc; $setOnInsert?: Doc; $inc?: Record<string, number> };
+
+function apply(doc: Doc, update: Update) {
+  for (const [path, value] of Object.entries(update.$set ?? {})) write(doc, path, value);
+  for (const [path, by] of Object.entries(update.$inc ?? {})) write(doc, path, ((read(doc, path) as number) ?? 0) + by);
+}
+
+function seedFrom(filter: Filter) {
+  return Object.fromEntries(Object.entries(filter).filter(([key, value]) => !key.startsWith("$") && !isOperator(value)));
+}
+
+function isOperator(value: unknown) {
+  return Boolean(value) && typeof value === "object" && !(value instanceof ObjectId) && !(value instanceof Date) &&
+    Object.keys(value as Doc).some((key) => key.startsWith("$"));
 }
 
 function collection(name: string) {
@@ -74,16 +92,37 @@ function collection(name: string) {
       docs().push({ _id: insertedId, ...doc });
       return { insertedId };
     },
-    updateOne: async (filter: Filter, update: { $set?: Doc; $setOnInsert?: Doc }, options?: { upsert?: boolean }) => {
+    updateOne: async (filter: Filter, update: Update, options?: { upsert?: boolean }) => {
       guardWrite();
       let doc = docs().find((entry) => matches(entry, filter));
       if (!doc && options?.upsert) {
-        doc = { _id: new ObjectId(), ...filter, ...update.$setOnInsert };
+        doc = { _id: new ObjectId(), ...seedFrom(filter), ...update.$setOnInsert };
         docs().push(doc);
       }
-      if (!doc) return { matchedCount: 0 };
-      for (const [path, value] of Object.entries(update.$set ?? {})) write(doc, path, value);
-      return { matchedCount: 1 };
+      if (!doc) return { matchedCount: 0, modifiedCount: 0 };
+      apply(doc, update);
+      return { matchedCount: 1, modifiedCount: 1 };
+    },
+    findOneAndUpdate: async (
+      filter: Filter,
+      update: Update,
+      options?: { upsert?: boolean; returnDocument?: "before" | "after" }
+    ) => {
+      guardWrite();
+      let doc = docs().find((entry) => matches(entry, filter));
+      const before = doc ? structuredClone(doc) : null;
+      if (!doc && options?.upsert) {
+        doc = { _id: new ObjectId(), ...seedFrom(filter), ...update.$setOnInsert };
+        docs().push(doc);
+      }
+      if (!doc) return null;
+      apply(doc, update);
+      return options?.returnDocument === "after" ? doc : before;
+    },
+    findOneAndDelete: async (filter: Filter) => {
+      guardWrite();
+      const index = docs().findIndex((doc) => matches(doc, filter));
+      return index >= 0 ? docs().splice(index, 1)[0]! : null;
     },
     deleteOne: async (filter: Filter) => {
       guardWrite();

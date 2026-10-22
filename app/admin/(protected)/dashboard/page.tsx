@@ -5,7 +5,7 @@ export default function Page() {
   return (
     <AdminScreen
       preview
-      reads={["dashboard", "inquiries", "testimonials", "removal", "people", "services", "galleries", "pages", "push"]}
+      reads={["dashboard", "inquiries", "testimonials", "removal", "people", "services", "galleries", "pages", "push", "security"]}
     >
       <DashboardClient />
     </AdminScreen>

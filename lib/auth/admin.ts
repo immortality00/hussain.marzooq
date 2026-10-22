@@ -1,13 +1,17 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
+import type { NextResponse } from "next/server";
 import {
   COOKIE_NAME,
   HINT_NAME,
+  adminSessionSecret,
   issueSessionCookie,
   readSessionCookie,
   sessionCookieOptions,
   type ParsedSession,
 } from "./session-token";
+import { TRUSTED_DEVICE_COOKIE, issueTrustedDevice, trustedDeviceCookieOptions } from "./trusted-device";
+import { readSessionGeneration } from "@/lib/server/admin-security";
 
 const SCRYPT_KEYLEN = 64;
 
@@ -47,33 +51,64 @@ export function isAdminPasswordConfigured() {
   return Boolean((process.env.ADMIN_PASSWORD_HASH ?? "").trim());
 }
 
+/** The plain cookie secret: the trusted-device key and the form tokens derive from it. */
+export function adminCookieSecret() {
+  return (process.env.ADMIN_COOKIE_SECRET ?? "").trim();
+}
+
+type SessionCookieInput = { remember: boolean; generation: number; startedAt?: number };
+
 /** Builds the cookies for a newly authenticated admin session. */
-export async function createAdminSessionCookies(
-  secret: string,
-  remember: boolean = false,
-  startedAt?: number
-) {
+export async function createAdminSessionCookies(secret: string, { remember, generation, startedAt }: SessionCookieInput) {
   return [
     {
       name: COOKIE_NAME,
-      value: await issueSessionCookie(secret, remember, startedAt),
+      value: await issueSessionCookie(secret, remember, startedAt, Date.now(), generation),
       options: sessionCookieOptions(remember),
     },
     { name: HINT_NAME, value: "1", options: sessionCookieOptions(remember, false) },
   ];
 }
 
-async function readAdminSession() {
-  const secret = (process.env.ADMIN_COOKIE_SECRET ?? "").trim();
-  if (!secret) return null;
+/** Signs the response's browser in; `trust` also marks the device as having passed the second step. */
+export async function setAdminSession(res: NextResponse, input: SessionCookieInput & { trust?: boolean }) {
+  for (const cookie of await createAdminSessionCookies(adminSessionSecret(), input)) {
+    res.cookies.set(cookie.name, cookie.value, cookie.options);
+  }
+  if (input.trust) trustDevice(res, input.generation);
+}
+
+export function trustDevice(res: NextResponse, generation: number) {
+  res.cookies.set(TRUSTED_DEVICE_COOKIE, issueTrustedDevice(adminCookieSecret(), generation), trustedDeviceCookieOptions());
+}
+
+type SessionRead =
+  | { ok: true; jar: Awaited<ReturnType<typeof cookies>>; secret: string; session: ParsedSession; renew: boolean }
+  | { ok: false; revoked: boolean };
+
+async function readAdminSession(): Promise<SessionRead> {
+  const secret = adminSessionSecret();
+  if (!secret) return { ok: false, revoked: false };
 
   const jar = await cookies();
   const check = await readSessionCookie(jar.get(COOKIE_NAME)?.value ?? "", secret);
-  return check.ok ? { jar, secret, session: check.session, renew: check.renew } : null;
+  if (!check.ok) return { ok: false, revoked: false };
+
+  if (check.session.generation !== (await readSessionGeneration())) {
+    console.warn("[admin-auth] refused a session from before sign-out-everywhere");
+    return { ok: false, revoked: true };
+  }
+  return { ok: true, jar, secret, session: check.session, renew: check.renew };
 }
 
 export async function isAdminAuthedServer(): Promise<boolean> {
-  return (await readAdminSession()) !== null;
+  return (await readAdminSession()).ok;
+}
+
+/** The signed-in session, for routes that re-issue it (sign out everywhere keeps this device). */
+export async function currentAdminSession(): Promise<ParsedSession | null> {
+  const auth = await readAdminSession();
+  return auth.ok ? auth.session : null;
 }
 
 async function renewAdminSession(
@@ -81,7 +116,7 @@ async function renewAdminSession(
   secret: string,
   session: ParsedSession
 ) {
-  const fresh = await createAdminSessionCookies(secret, session.remember, session.startedAt);
+  const fresh = await createAdminSessionCookies(secret, session);
   try {
     for (const cookie of fresh) {
       jar.set(cookie.name, cookie.value, cookie.options);
@@ -94,8 +129,9 @@ async function renewAdminSession(
 
 export async function requireAdminOr401() {
   const auth = await readAdminSession();
-  if (!auth) {
-    return Response.json({ ok: false, error: "Unauthorized" }, { status: 401 });
+  if (!auth.ok) {
+    const body = auth.revoked ? { ok: false, error: "Unauthorized", reason: "revoked" } : { ok: false, error: "Unauthorized" };
+    return Response.json(body, { status: 401 });
   }
   if (auth.renew) await renewAdminSession(auth.jar, auth.secret, auth.session);
   return null;

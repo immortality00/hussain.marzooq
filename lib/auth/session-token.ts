@@ -5,10 +5,13 @@
  * `proxy.ts` runs in the Edge runtime and imports this file; adding a Node-only
  * import here will break admin auth at the middleware layer.
  *
- * Cookie value:  v4.<issuedAtMs>.<startedAtMs>.<r|s>.<nonce>.<HMAC hex of everything before it>
+ * Cookie value:  v5.<issuedAtMs>.<startedAtMs>.<r|s>.<generation>.<nonce>.<HMAC hex of everything before it>
  * `issuedAt` moves forward on every renewal (idle window); `startedAt` is the original
  * login and never moves (absolute cap). Both and the remember flag are inside the signed
  * payload, so lifetime is enforced server-side and cannot be extended by editing the cookie.
+ * `generation` is the sign-out-everywhere counter; the Node side compares it with the
+ * database (lib/server/admin-security.ts). The signing key includes ADMIN_PASSWORD_HASH,
+ * so changing the password ends every session, here at the edge as well.
  */
 
 export const COOKIE_NAME = "hm_admin";
@@ -25,13 +28,20 @@ export const RENEW_AFTER_MS = 10 * 60 * 1000;
 export const REMEMBER_RENEW_AFTER_MS = 24 * 60 * 60 * 1000;
 const CLOCK_SKEW_MS = 5 * 60 * 1000;
 
-const TOKEN_VERSION = "v4";
+const TOKEN_VERSION = "v5";
 
-export type ParsedSession = { issuedAt: number; startedAt: number; remember: boolean };
+export type ParsedSession = { issuedAt: number; startedAt: number; remember: boolean; generation: number };
 export type SessionFailure = "malformed" | "expired" | "future" | "signature";
 export type SessionCheck =
   | { ok: true; session: ParsedSession; renew: boolean }
   | { ok: false; reason: SessionFailure };
+
+/** The key admin cookies are signed with: empty when ADMIN_COOKIE_SECRET is unset. */
+export function adminSessionSecret(): string {
+  const secret = (process.env.ADMIN_COOKIE_SECRET ?? "").trim();
+  if (!secret) return "";
+  return `${secret}\n${(process.env.ADMIN_PASSWORD_HASH ?? "").trim()}`;
+}
 
 export function sessionLifetimeMs(remember: boolean): number {
   return remember ? REMEMBER_MS : SESSION_IDLE_MS;
@@ -64,7 +74,8 @@ export function sessionCookieOptions(remember: boolean, httpOnly: boolean = true
 export function createSessionValue(
   remember: boolean = false,
   now: number = Date.now(),
-  startedAt: number = now
+  startedAt: number = now,
+  generation: number = 0
 ): string {
   const bytes = new Uint8Array(16);
   crypto.getRandomValues(bytes);
@@ -72,13 +83,13 @@ export function createSessionValue(
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("");
 
-  return `${TOKEN_VERSION}.${now}.${startedAt}.${remember ? "r" : "s"}.${nonce}`;
+  return `${TOKEN_VERSION}.${now}.${startedAt}.${remember ? "r" : "s"}.${generation}.${nonce}`;
 }
 
 /** Returns the parsed token, or null if the value is malformed / not this version. */
 export function parseSession(value: string): ParsedSession | null {
   const parts = value.split(".");
-  if (parts.length !== 5) return null;
+  if (parts.length !== 6) return null;
   if (parts[0] !== TOKEN_VERSION) return null;
 
   const issuedAt = Number(parts[1]);
@@ -86,13 +97,17 @@ export function parseSession(value: string): ParsedSession | null {
   if (!Number.isFinite(issuedAt) || issuedAt <= 0) return null;
   if (!Number.isFinite(startedAt) || startedAt <= 0 || startedAt > issuedAt) return null;
   if (parts[3] !== "r" && parts[3] !== "s") return null;
-  if (!parts[4]) return null;
+  if (!/^\d{1,9}$/.test(parts[4])) return null;
+  if (!parts[5]) return null;
 
-  return { issuedAt, startedAt, remember: parts[3] === "r" };
+  return { issuedAt, startedAt, remember: parts[3] === "r", generation: Number(parts[4]) };
 }
 
 /** True when the token is inside both its idle window and its absolute cap. */
-export function isWithinTtl(session: ParsedSession, now: number = Date.now()): boolean {
+export function isWithinTtl(
+  session: Pick<ParsedSession, "issuedAt" | "startedAt" | "remember">,
+  now: number = Date.now()
+): boolean {
   const idle = now - session.issuedAt;
   const total = now - session.startedAt;
   if (idle < -CLOCK_SKEW_MS) return false;
@@ -127,9 +142,10 @@ export async function issueSessionCookie(
   secret: string,
   remember: boolean,
   startedAt?: number,
-  now: number = Date.now()
+  now: number = Date.now(),
+  generation: number = 0
 ): Promise<string> {
-  const value = createSessionValue(remember, now, startedAt ?? now);
+  const value = createSessionValue(remember, now, startedAt ?? now, generation);
   return `${value}.${await hmacHex(value, secret)}`;
 }
 

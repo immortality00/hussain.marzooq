@@ -2,10 +2,12 @@ import { after } from "next/server";
 import {
   sendInquiryNotification,
   sendRemovalRequestNotification,
+  sendSignInRefusedNotification,
   sendTestimonialNotification,
 } from "@/lib/server/email";
 import { sendAdminPush } from "@/lib/server/push";
 import type { PushPayload } from "@/lib/push-subscription";
+import { ADMIN_APPROVE_SIGN_IN_PATH } from "@/lib/auth/admin-next-path";
 
 export type AdminAlert =
   | {
@@ -30,6 +32,11 @@ export type AdminAlert =
       slug: string;
       email: string;
       reason: string;
+    }
+  | {
+      kind: "sign-in-refused";
+      device: string;
+      reason: "rejected" | "wrong-number";
     };
 
 const SNIPPET_LENGTH = 120;
@@ -63,6 +70,12 @@ export function adminAlertPush(alert: AdminAlert): PushPayload {
         body: snippet(alert.reason),
         url: "/admin/removal-requests",
       };
+    case "sign-in-refused":
+      return {
+        title: "Sign-in refused",
+        body: `${alert.device} · ${alert.reason === "wrong-number" ? "wrong number picked" : "rejected"}`,
+        url: "/admin/dashboard",
+      };
   }
 }
 
@@ -74,6 +87,8 @@ function sendAlertEmail(alert: AdminAlert) {
       return sendTestimonialNotification(alert);
     case "removal-request":
       return sendRemovalRequestNotification(alert);
+    case "sign-in-refused":
+      return sendSignInRefusedNotification(alert);
   }
 }
 
@@ -96,5 +111,22 @@ export function queueAdminAlert(alert: AdminAlert) {
     after(() => deliverAdminAlert(alert));
   } catch {
     void deliverAdminAlert(alert);
+  }
+}
+
+async function deliverApprovalRequest(device: string) {
+  try {
+    await sendAdminPush({ title: "Sign-in request", body: `${device} — approve?`, url: ADMIN_APPROVE_SIGN_IN_PATH });
+  } catch (error) {
+    console.error("[admin-alert] sign-in approval push failed", error);
+  }
+}
+
+/** Asks every device with notifications on to approve a sign-in; push only, no email. */
+export function queueApprovalRequest(device: string) {
+  try {
+    after(() => deliverApprovalRequest(device));
+  } catch {
+    void deliverApprovalRequest(device);
   }
 }

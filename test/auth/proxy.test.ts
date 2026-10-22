@@ -7,11 +7,13 @@ import {
   HINT_NAME,
   REMEMBER_MS,
   REMEMBER_RENEW_AFTER_MS,
+  adminSessionSecret,
   issueSessionCookie,
   readSessionCookie,
 } from "@/lib/auth/session-token";
 
 const SECRET = "proxy-test-secret";
+const key = () => adminSessionSecret();
 const DAY = 24 * 60 * 60 * 1000;
 
 function request(
@@ -32,12 +34,13 @@ function request(
 
 beforeEach(() => {
   vi.stubEnv("ADMIN_COOKIE_SECRET", SECRET);
+  vi.stubEnv("ADMIN_PASSWORD_HASH", "scrypt:aa:bb");
   vi.spyOn(console, "warn").mockImplementation(() => {});
 });
 
 describe("proxy", () => {
-  it("lets the sign-in page, login and logout through without a session", async () => {
-    for (const path of ["/admin/sign-in", "/admin/login", "/admin/logout"]) {
+  it("lets the sign-in page, login, its second step and logout through without a session", async () => {
+    for (const path of ["/admin/sign-in", "/admin/login", "/admin/login/passkey", "/admin/login/approval", "/admin/logout"]) {
       const res = await proxy(request(path, { method: path === "/admin/sign-in" ? "GET" : "POST" }));
       expect(res.headers.get("x-middleware-next"), path).toBe("1");
     }
@@ -84,7 +87,7 @@ describe("proxy", () => {
   });
 
   it("names the reason when a page request carries a bad session", async () => {
-    const old = await issueSessionCookie(SECRET, false, Date.now() - 2 * DAY, Date.now() - 2 * DAY);
+    const old = await issueSessionCookie(key(), false, Date.now() - 2 * DAY, Date.now() - 2 * DAY);
     const res = await proxy(request("/admin/media", { cookie: `${COOKIE_NAME}=${old}; ${HINT_NAME}=1` }));
     const location = new URL(res.headers.get("location") ?? "");
     expect(location.searchParams.get("signedout")).toBe("expired");
@@ -92,16 +95,31 @@ describe("proxy", () => {
   });
 
   it("passes a fresh remembered session without rewriting its cookie", async () => {
-    const cookie = await issueSessionCookie(SECRET, true);
+    const cookie = await issueSessionCookie(key(), true);
     const res = await proxy(request("/admin/dashboard", { cookie: `${COOKIE_NAME}=${cookie}; ${HINT_NAME}=1` }));
     expect(res.headers.get("x-middleware-next")).toBe("1");
     expect(res.headers.get("set-cookie")).toBeNull();
   });
 
+  it("ends every session when the admin password changes", async () => {
+    const cookie = await issueSessionCookie(key(), true);
+    vi.stubEnv("ADMIN_PASSWORD_HASH", "scrypt:cc:dd");
+    const res = await proxy(request("/admin/dashboard", { cookie: `${COOKIE_NAME}=${cookie}` }));
+    expect(new URL(res.headers.get("location") ?? "").searchParams.get("signedout")).toBe("signature");
+  });
+
+  it("keeps the session's sign-out-everywhere counter when it renews", async () => {
+    const issuedAt = Date.now() - REMEMBER_RENEW_AFTER_MS - 60_000;
+    const cookie = await issueSessionCookie(key(), true, issuedAt, issuedAt, 4);
+    const res = await proxy(request("/admin/dashboard", { cookie: `${COOKIE_NAME}=${cookie}` }));
+    const check = await readSessionCookie(res.cookies.get(COOKIE_NAME)?.value ?? "", key());
+    expect(check).toMatchObject({ ok: true, session: { generation: 4 } });
+  });
+
   it("renews a remembered session after a day as one persistent cookie with the same login time", async () => {
     const startedAt = Date.now() - 3 * DAY;
     const issuedAt = Date.now() - REMEMBER_RENEW_AFTER_MS - 60_000;
-    const cookie = await issueSessionCookie(SECRET, true, startedAt, issuedAt);
+    const cookie = await issueSessionCookie(key(), true, startedAt, issuedAt);
     const res = await proxy(request("/admin/dashboard", { cookie: `${COOKIE_NAME}=${cookie}` }));
 
     const renewed = res.cookies.get(COOKIE_NAME);
@@ -110,12 +128,12 @@ describe("proxy", () => {
     expect(res.cookies.get("hm_admin_sig")).toBeUndefined();
     expect(res.cookies.get(HINT_NAME)?.value).toBe("1");
 
-    const check = await readSessionCookie(renewed?.value ?? "", SECRET);
+    const check = await readSessionCookie(renewed?.value ?? "", key());
     expect(check).toMatchObject({ ok: true, renew: false, session: { startedAt, remember: true } });
   });
 
   it("sends a signed-in visitor on the sign-in page straight to where they were going", async () => {
-    const cookie = `${COOKIE_NAME}=${await issueSessionCookie(SECRET, true)}`;
+    const cookie = `${COOKIE_NAME}=${await issueSessionCookie(key(), true)}`;
 
     const home = await proxy(request("/admin/sign-in", { cookie, fetchMode: "navigate" }));
     expect(home.status).toBe(307);
@@ -131,7 +149,7 @@ describe("proxy", () => {
   });
 
   it("shows the sign-in form after logout, a forced sign-out, a bad session, a form post or a background fetch", async () => {
-    const cookie = `${COOKIE_NAME}=${await issueSessionCookie(SECRET, true)}`;
+    const cookie = `${COOKIE_NAME}=${await issueSessionCookie(key(), true)}`;
     const forged = `${COOKIE_NAME}=${await issueSessionCookie("another-secret", true)}`;
 
     for (const res of [

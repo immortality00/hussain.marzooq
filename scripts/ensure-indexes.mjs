@@ -166,6 +166,9 @@ async function ensureIndexes() {
 
   await createIndex(db, "push_subscriptions", { endpoint: 1 }, { unique: true });
 
+  await createIndex(db, "admin_passkeys", { credentialId: 1 }, { unique: true });
+  await createIndex(db, "admin_auth_requests", { expiresAt: 1 }, { expireAfterSeconds: 0 });
+
   await createIndex(db, "request_guards", { expiresAt: 1 }, { expireAfterSeconds: 0 });
   await createIndex(db, "request_guards", { bucket: 1, type: 1, updatedAt: -1 });
 

@@ -116,3 +116,18 @@ export async function sendRemovalRequestNotification(data: {
     `
   );
 }
+
+export async function sendSignInRefusedNotification(data: { device: string; reason: "rejected" | "wrong-number" }) {
+  if (!hasRecipient()) return;
+  const baseUrl = await getBaseUrl();
+  const why = data.reason === "wrong-number" ? "The wrong number was picked." : "It was rejected.";
+  await sendAdminEmail(
+    `Admin sign-in refused — ${data.device}`,
+    `
+      <h2>Admin Sign-in Refused — Hussain.Art</h2>
+      <p><strong>Device:</strong> ${escapeHtml(data.device)}</p>
+      <p>${why} The password was right, so change it if this was not you.</p>
+      <p style="margin-top:24px"><a href="${baseUrl}/admin/dashboard">Open admin →</a></p>
+    `
+  );
+}

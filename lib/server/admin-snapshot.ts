@@ -13,6 +13,7 @@ import { listAdminMediaWithItems } from "./admin-media";
 import { loadAdminPages } from "./admin-pages";
 import { getVapidPublicKey, listPushDevices } from "./push";
 import { getRemovalRequestHistory, getRemovalRequestQueue } from "./removal-requests";
+import { loadAdminSecurity } from "./admin-security-state";
 import { pageFlags } from "@/app/admin/(protected)/pages/lib/rows";
 import { loadAdminBlog } from "@/app/admin/(protected)/blog/lib/server";
 
@@ -33,6 +34,7 @@ export async function buildAdminSnapshot({ mediaCount }: { mediaCount: number })
     serviceCatalog,
     removalItems,
     removalHistory,
+    security,
   ] = await Promise.all([
     getAdminDashboardStats(),
     loadAdminPages(),
@@ -48,6 +50,7 @@ export async function buildAdminSnapshot({ mediaCount }: { mediaCount: number })
     listAdminServiceCatalog(db),
     getRemovalRequestQueue(),
     getRemovalRequestHistory(),
+    loadAdminSecurity(),
   ]);
 
   return {
@@ -67,6 +70,7 @@ export async function buildAdminSnapshot({ mediaCount }: { mediaCount: number })
     services: serviceCatalog.services,
     serviceCategories: serviceCatalog.categories,
     removal: { items: removalItems, history: removalHistory },
+    security,
   };
 }
 

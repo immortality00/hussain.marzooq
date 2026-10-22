@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import {
   COOKIE_NAME,
   HINT_NAME,
+  adminSessionSecret,
   issueSessionCookie,
   readSessionCookie,
   sessionCookieOptions,
@@ -31,7 +32,12 @@ function isSignInPage(pathname: string) {
 }
 
 function isPublicAdminRoute(pathname: string) {
-  return isSignInPage(pathname) || isPath(pathname, ADMIN_LOGIN_PATH) || isPath(pathname, ADMIN_LOGOUT_PATH);
+  return (
+    isSignInPage(pathname) ||
+    isPath(pathname, ADMIN_LOGIN_PATH) ||
+    pathname.startsWith(`${ADMIN_LOGIN_PATH}/`) ||
+    isPath(pathname, ADMIN_LOGOUT_PATH)
+  );
 }
 
 function wantsSignInForm(req: NextRequest) {
@@ -61,7 +67,7 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  const secret = (process.env.ADMIN_COOKIE_SECRET ?? "").trim();
+  const secret = adminSessionSecret();
 
   if (isPublicAdminRoute(pathname)) {
     if (!isSignInPage(pathname) || wantsSignInForm(req) || !isPageLoad(req)) return NextResponse.next();
@@ -77,10 +83,10 @@ export async function proxy(req: NextRequest) {
   const auth = await checkAdminAuth(req, secret);
 
   if (auth.ok) {
-    const { remember, startedAt } = auth.session;
+    const { remember, startedAt, generation } = auth.session;
     const res = NextResponse.next();
     if (auth.renew) {
-      const fresh = await issueSessionCookie(secret, remember, startedAt);
+      const fresh = await issueSessionCookie(secret, remember, startedAt, Date.now(), generation);
       res.cookies.set(COOKIE_NAME, fresh, sessionCookieOptions(remember));
     }
     if (auth.renew || !req.cookies.has(HINT_NAME)) {

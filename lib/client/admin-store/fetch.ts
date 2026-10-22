@@ -10,7 +10,7 @@ import { emit, state, type AdminSlice } from "./state";
 import { noteWrite, settleChanges, writtenSince } from "./changes";
 import { keepPreview } from "./preview";
 import { keepSame } from "../keep-same";
-import { adminSignInHref, redirectedRecently, reloadOnceFor } from "./sign-in";
+import { adminSignInHref, noteSignedOutReason, redirectedRecently, reloadOnceFor } from "./sign-in";
 
 type SnapshotBody =
   | { ok: true; unchanged?: boolean; version: string; data?: AdminSnapshot }
@@ -29,7 +29,8 @@ function stopWith(update: () => void) {
   emit();
 }
 
-function handleUnauthorized() {
+function handleUnauthorized(reason: string | null) {
+  noteSignedOutReason(reason);
   if (!state.data) {
     if (redirectedRecently()) return stopWith(() => {
       state.signedOut = true;
@@ -37,7 +38,7 @@ function handleUnauthorized() {
     location.assign(adminSignInHref());
     return;
   }
-  if (!retriedSignIn) {
+  if (!retriedSignIn && !reason) {
     retriedSignIn = true;
     again = true;
     return;
@@ -51,6 +52,11 @@ function fail(message: string) {
   stopWith(() => {
     if (!state.data) state.failure = message;
   });
+}
+
+async function refusalReason(res: Response) {
+  const body = (await res.json().catch(() => null)) as { reason?: unknown } | null;
+  return body?.reason === "revoked" ? "revoked" : null;
 }
 
 async function request(requestedMedia: number) {
@@ -68,7 +74,7 @@ async function fetchSnapshot() {
   } catch {
     return fail("No connection.");
   }
-  if (res.status === 401) return handleUnauthorized();
+  if (res.status === 401) return handleUnauthorized(await refusalReason(res));
   const body = (await res.json().catch(() => null)) as SnapshotBody | null;
   if (!res.ok || !body?.ok) {
     return fail((body && !body.ok && body.error) || `Could not load the admin (error ${res.status}).`);
@@ -84,6 +90,7 @@ async function fetchSnapshot() {
   state.failure = null;
   state.signedOut = false;
   retriedSignIn = false;
+  noteSignedOutReason(null);
   let changed = false;
   if (body.data && !body.unchanged) {
     const next = keepSame(body.data, state.data);

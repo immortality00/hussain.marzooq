@@ -127,6 +127,9 @@ async function main() {
     "removal_requests",
     "blog_posts",
     "blog_categories",
+    "admin_passkeys",
+    "admin_auth_requests",
+    "admin_security",
   ];
 
   for (const name of collections) {

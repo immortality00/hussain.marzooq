@@ -1,3 +1,5 @@
+import { deviceLabelOf } from "@/lib/device-label";
+
 export type PushSupport = "checking" | "supported" | "needs-install" | "unsupported";
 
 const SUBSCRIBE_TIMEOUT_MS = 20_000;
@@ -22,26 +24,12 @@ export function readPushSupport(): PushSupport {
   return ios && !isStandalone() ? "needs-install" : "unsupported";
 }
 
-function deviceOs(ua: string) {
-  if (/iPhone/.test(ua)) return "iPhone";
-  if (isIpad(ua)) return "iPad";
-  if (/Android/.test(ua)) return "Android";
-  if (/Mac OS X/.test(ua)) return "Mac";
-  if (/Windows/.test(ua)) return "Windows";
-  return "Device";
-}
-
-function deviceBrowser(ua: string) {
-  if (/Edg\//.test(ua)) return "Edge";
-  if (/Firefox\//.test(ua)) return "Firefox";
-  if (/Chrome\//.test(ua)) return "Chrome";
-  if (/Safari\//.test(ua)) return "Safari";
-  return "Browser";
+export function thisDeviceLabel() {
+  return deviceLabelOf(navigator.userAgent, navigator.maxTouchPoints);
 }
 
 export function pushDeviceLabel() {
-  const ua = navigator.userAgent;
-  return `${deviceOs(ua)} · ${deviceBrowser(ua)}${isStandalone() ? " (Home Screen app)" : ""}`;
+  return `${thisDeviceLabel()}${isStandalone() ? " (Home Screen app)" : ""}`;
 }
 
 export function urlBase64ToUint8Array(value: string): Uint8Array<ArrayBuffer> {

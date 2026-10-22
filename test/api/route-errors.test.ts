@@ -19,6 +19,7 @@ vi.stubEnv("CLOUDINARY_CLOUD_NAME", "demo");
 vi.stubEnv("CLOUDINARY_API_KEY", "key");
 vi.stubEnv("CLOUDINARY_API_SECRET", "secret");
 vi.stubEnv("ADMIN_COOKIE_SECRET", "route-errors-secret");
+vi.stubEnv("ADMIN_PASSWORD_HASH", "scrypt:aa:bb");
 
 import { routeErrorResponse, isDatabaseUnavailable } from "@/app/api/_lib/route-errors";
 import { issueFormToken, type FormKind } from "@/lib/server/form-token";
@@ -46,6 +47,11 @@ const routes: [string, () => Promise<Response>][] = [
   ["gallery asset", async () => (await import("@/app/api/media/asset/[mediaId]/route")).GET(new Request("http://l/x?g=a"), mediaCtx)],
   ["inquiry", async () => (await import("@/app/api/inquiries/route")).POST(new Request("http://l/x", json({ name: "A", email: "a@b.co", message: "hello there", formToken: oldToken("inquiry") })))],
   ["media tags", async () => (await import("@/app/api/media-tags/route")).GET(new Request("http://l/x"))],
+  ["admin sign-in", async () => (await import("@/app/admin/login/route")).POST(new Request("http://l/x", { method: "POST", body: new URLSearchParams({ password: "p" }) }))],
+  ["admin passkey options", async () => (await import("@/app/admin/login/passkey/options/route")).POST(new Request("http://l/x", { method: "POST" }))],
+  ["admin passkey answer", async () => (await import("@/app/admin/login/passkey/route")).POST(new Request("http://l/x", json({ id: "cred" })))],
+  ["admin approval start", async () => (await import("@/app/admin/login/approval/route")).POST(new Request("http://l/x", { method: "POST" }))],
+  ["admin approval check", async () => (await import("@/app/admin/login/approval/route")).GET(new Request("http://l/x"))],
 ];
 
 describe("public API routes when the database is down", () => {
