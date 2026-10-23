@@ -1,0 +1,33 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    # Set explicitly so the allow list below limits version updates only.
+    # Security updates ignore an update block that names a target branch and
+    # keep covering every package on the default branch.
+    target-branch: v2-portfolio
+    schedule:
+      interval: daily
+      time: "09:00"
+      timezone: Asia/Dubai
+    # GitHub's default 3-day cooldown stays: a release that is pulled within
+    # days never reaches a deploy preview build. Security updates skip it.
+    allow:
+      - dependency-name: next
+      - dependency-name: eslint-config-next
+    # Majors need a planned upgrade; skipping them keeps each PR on the
+    # newest patch of the current major.
+    ignore:
+      - dependency-name: next
+        update-types: ["version-update:semver-major"]
+      - dependency-name: eslint-config-next
+        update-types: ["version-update:semver-major"]
+    groups:
+      next:
+        patterns:
+          - next
+          - eslint-config-next
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: fix(deps)
