@@ -51,6 +51,16 @@ describe("cloudinaryImageLoader", () => {
     expect(cloudinaryImageLoader({ src: "/local/photo.jpg", width: 3840 })).toBe("/local/photo.jpg");
   });
 
+  it("leaves an address that only mentions the Cloudinary host alone", () => {
+    for (const src of [
+      "https://example.com/res.cloudinary.com/demo/image/upload/photo.jpg",
+      "https://res.cloudinary.com.example.com/demo/image/upload/photo.jpg",
+      "https://example.com/image/upload/photo.jpg?from=res.cloudinary.com",
+    ]) {
+      expect(cloudinaryImageLoader({ src, width: 640 })).toBe(src);
+    }
+  });
+
   it("sends the private-gallery proxy its width as a query param", () => {
     expect(cloudinaryImageLoader({ src: "/api/media/asset/abc", width: 1200 })).toBe(
       "/api/media/asset/abc?w=1200"

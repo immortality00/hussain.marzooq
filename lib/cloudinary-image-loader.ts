@@ -30,12 +30,21 @@ function hasTransform(src: string): boolean {
   return /\/upload\/[^/]*(?:^|,)?[whqf]_/.test(src);
 }
 
+/** The host itself, not a mention of it — a path or query naming it is not Cloudinary. */
+function isCloudinaryUrl(src: string): boolean {
+  try {
+    return new URL(src).hostname === CLOUDINARY_HOST;
+  } catch {
+    return false;
+  }
+}
+
 export default function cloudinaryImageLoader({ src, width }: LoaderArgs): string {
   if (isMediaAssetPath(src)) {
     return `${src}${src.includes("?") ? "&" : "?"}w=${width}`;
   }
 
-  if (!src.includes(CLOUDINARY_HOST) || !src.includes(UPLOAD_SEGMENT)) return src;
+  if (!isCloudinaryUrl(src) || !src.includes(UPLOAD_SEGMENT)) return src;
   if (hasTransform(src)) return src;
 
   return src.replace(UPLOAD_SEGMENT, `${UPLOAD_SEGMENT}${imageTransform(width)}/`);
