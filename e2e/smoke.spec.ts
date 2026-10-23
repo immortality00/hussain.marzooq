@@ -47,7 +47,7 @@ test.describe("public site", () => {
     await expect(notFound).toHaveCount(0);
 
     await page.goto("/definitely-not-a-real-page");
-    await page.locator("footer").getByRole("link", { name: "Privacy" }).click();
+    await page.locator("footer").getByRole("link", { name: "Privacy", exact: true }).click();
     await expect(page).toHaveURL(/\/privacy$/);
     await expect(notFound).toHaveCount(0);
   });
