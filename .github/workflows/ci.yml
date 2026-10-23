@@ -5,6 +5,11 @@ on:
     branches: [master, v2-portfolio]
   pull_request:
 
+# The repository's default token can write; these jobs only read the code. The npm
+# cache and the Playwright report upload use Actions' own runtime token, not this one.
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
