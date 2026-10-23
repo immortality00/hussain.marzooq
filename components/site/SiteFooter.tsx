@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getFooterPageSettings } from "@/lib/server/page-settings";
 import { DISCIPLINES } from "@/lib/disciplines";
+import { EmailDirectory } from "@/components/shared/EmailDirectory";
 
 const ALWAYS_ON_PRIMARY = [
   { href: "/services", label: "Services" },
@@ -30,7 +31,7 @@ export async function SiteFooter() {
   return (
     <footer className="border-t bg-card">
       <div className="section-shell py-12">
-        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr_0.8fr]">
+        <div className="grid gap-10 lg:grid-cols-[1.2fr_0.7fr_0.7fr_1fr]">
           <div className="max-w-md">
             <h2 className="text-2xl font-semibold tracking-tight">
               Visual work shaped with cinematic clarity.
@@ -72,6 +73,13 @@ export async function SiteFooter() {
                 </Link>
               ))}
             </div>
+          </div>
+
+          <div>
+            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Email
+            </div>
+            <EmailDirectory className="mt-4" />
           </div>
         </div>
 

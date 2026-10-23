@@ -1,3 +1,5 @@
+import { SITE_EMAIL } from "@/lib/site-emails";
+
 export type PrivacySectionContent = { heading: string; body: string[] };
 
 export type Processor = { name: string; purpose: string; data: string };
@@ -36,7 +38,7 @@ export const PRIVACY_SECTIONS: PrivacySectionContent[] = [
   {
     heading: "Your choices",
     body: [
-      "You can ask for your enquiry or review to be corrected or deleted, ask for a published review to be taken down, or ask what is held about you. Write to hussain.marzooq.bh@icloud.com and it will be handled.",
+      `You can ask for your enquiry or review to be corrected or deleted, ask for a published review to be taken down, or ask what is held about you. Write to ${SITE_EMAIL.privacy} and it will be handled.`,
       "If you appear in the work and want your profile page made private or removed, the request form on your profile page goes straight to the same place.",
     ],
   },
@@ -62,6 +64,11 @@ export const PROCESSORS: Processor[] = [
     name: "Resend",
     purpose: "Sends the notification email when a form is submitted.",
     data: "The name, email, and message on that submission.",
+  },
+  {
+    name: "Apple iCloud Mail",
+    purpose: "Receives email sent to the @hussain.art addresses, including those notifications.",
+    data: "Anything you write to those addresses, and the name, email, and message on a form submission.",
   },
   {
     name: "GoatCounter",

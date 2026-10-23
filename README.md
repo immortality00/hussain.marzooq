@@ -37,8 +37,9 @@ Required environment variables (in `.env.local`, never committed):
   supported)
 - `ADMIN_COOKIE_SECRET` — HMAC secret for signing admin session cookies
 - `RESEND_API_KEY` — transactional email
-- `NOTIFICATION_EMAIL` — where admin alerts go (new inquiry, testimonial, removal request);
-  `RESEND_FROM` — sender on a domain verified in Resend (without it, Resend's test sender
+- `NOTIFICATION_EMAIL` — turns admin alert emails on (blank = off) and receives them until
+  `RESEND_DOMAIN` is set; `RESEND_DOMAIN` — the domain verified in Resend (`hussain.art`): each
+  alert then goes to its own address in `lib/site-emails.ts` (without it, Resend's test sender
   only delivers to the Resend account owner)
 - `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` — admin push notifications; generate once with
   `node scripts/generate-vapid-keys.mjs` (optional `VAPID_SUBJECT`, defaults to the site URL)

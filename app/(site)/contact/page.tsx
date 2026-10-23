@@ -4,6 +4,7 @@ import { ContactForm } from "@/components/contact/ContactForm";
 import { ContactFromUrl } from "@/components/contact/ContactFromUrl";
 import { getActiveServicesForContact } from "@/lib/server/public-services";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { EmailDirectory } from "@/components/shared/EmailDirectory";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 
@@ -37,6 +38,11 @@ export default async function ContactPage() {
           <Suspense fallback={<ContactForm services={services} />}>
             <ContactFromUrl services={services} />
           </Suspense>
+        </div>
+
+        <div className="mt-12 border-t border-border pt-8">
+          <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">Or write directly</h2>
+          <EmailDirectory className="mt-8 grid gap-6 sm:grid-cols-2" />
         </div>
       </section>
     </main>
