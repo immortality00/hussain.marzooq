@@ -8,7 +8,7 @@ import { deleteReplacedSectionImages } from "@/lib/server/section-images";
 import { storedPageSections } from "@/lib/server/admin-pages";
 import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 import { isRecord } from "@/app/api/_lib/common";
-import { normalizeSearchProfile, searchProfileError, shownProfileLinks } from "@/lib/seo/search-profile";
+import { normalizeSearchProfile, profileForSave, shownProfileLinks } from "@/lib/seo/search-profile";
 import { heroForSave } from "@/lib/hero-photos";
 import { resolveLinkLogos } from "@/lib/server/link-logos";
 
@@ -48,10 +48,9 @@ export async function PATCH(
   }
 
   if (slug === "about" && "profile" in data) {
-    const profile = normalizeSearchProfile(data.profile);
-    const error = searchProfileError(profile);
-    if (error) return NextResponse.json({ error }, { status: 400 });
-    data.profile = profile;
+    const saved = profileForSave(data.profile);
+    if ("error" in saved) return NextResponse.json({ error: saved.error }, { status: 400 });
+    data.profile = saved.profile;
   }
 
   if (slug === "home" && "hero" in data) {

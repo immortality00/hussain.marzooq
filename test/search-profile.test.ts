@@ -119,6 +119,54 @@ describe("PATCH /api/admin/page-sections/about", () => {
     expect(getDb).not.toHaveBeenCalled();
   });
 
+  const rows = (linkRows: unknown) => save({ profile: { ...DEFAULT_SEARCH_PROFILE, linkRows } });
+  const storedProfile = () => updateOne.mock.calls[0]![1].$set.data.profile;
+
+  test("builds the stored links from the network rows and never stores the rows", async () => {
+    const res = await rows([
+      { network: "instagram", value: "@hussain.art", shown: true },
+      { network: "linkedin", value: "https://www.linkedin.com/in/hussain-marzooq?trk=x", shown: false },
+      { network: "other", value: "https://objkt.com/profile/hussain", shown: true },
+      { network: "tiktok", value: "  ", shown: true },
+    ]);
+    expect(res.status).toBe(200);
+    expect(storedProfile()).toMatchObject({
+      links: [
+        "https://www.instagram.com/hussain.art/",
+        "https://www.linkedin.com/in/hussain-marzooq/",
+        "https://objkt.com/profile/hussain",
+      ],
+      shownLinks: ["https://www.instagram.com/hussain.art/", "https://objkt.com/profile/hussain"],
+    });
+    expect(storedProfile()).not.toHaveProperty("linkRows");
+  });
+
+  test.each([
+    ["an unknown network", [{ network: "myspace", value: "hussain" }], "Profile link 1: unknown network"],
+    ["a username outside the rule", [{ network: "x", value: "a", shown: true }, { network: "x", value: "hussain-art" }], "Profile link 2: X usernames cannot contain “-”"],
+    ["an oversized username", [{ network: "vimeo", value: "a".repeat(101) }], "Profile link 1: usernames are at most 100 characters"],
+    ["an oversized field", [{ network: "vimeo", value: "a".repeat(100_000) }], "Profile link 1: too long"],
+    ["a javascript: username", [{ network: "instagram", value: "javascript:alert(1)" }], "Profile link 1: not an Instagram address"],
+    ["a javascript: address", [{ network: "other", value: "javascript:alert(1)" }], "Profile link 1: not a valid web address"],
+    ["a row that is not an object", ["https://a.test"], "Profile link 1 is not valid"],
+    ["rows that are not a list", { network: "x", value: "a" }, "Profile links must be a list"],
+    ["21 rows", Array(21).fill({ network: "x", value: "a" }), "Keep profile links to 20 or fewer"],
+  ])("refuses %s, naming it, before touching the database", async (_, linkRows, error) => {
+    const res = await rows(linkRows);
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error });
+    expect(getDb).not.toHaveBeenCalled();
+  });
+
+  test("refuses a body that is not JSON", async () => {
+    const res = await PATCH(
+      new Request("https://hm.test/api/admin/page-sections/about", { method: "PATCH", body: "{profile:" }) as never,
+      { params: Promise.resolve({ slug: "about" }) },
+    );
+    expect(res.status).toBe(400);
+    expect(getDb).not.toHaveBeenCalled();
+  });
+
   test("a valid save refreshes every public page, since each shows the profile's social links", async () => {
     const res = await save({ profile: { ...DEFAULT_SEARCH_PROFILE, links: ["https://a.test"] } });
     expect(res.status).toBe(200);
