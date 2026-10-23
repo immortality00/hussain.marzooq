@@ -14,11 +14,12 @@ import {
 import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 import { findMediaUsageConflicts, removeMediaUsages } from "@/lib/server/media-usage";
 import { parseMediaPatch } from "./_lib/parse-media-patch";
-import { buildMediaSet } from "./_lib/media-set";
+import { buildMediaSet, type MediaSet } from "./_lib/media-set";
 import { checkPageUsage, finishFileChange } from "./_lib/media-page-usage";
 import { applyAssetChange } from "./_lib/media-asset-change";
 import { writeMediaChange } from "./_lib/media-write";
 import { scheduleOnUpdate } from "@/lib/media-schedule";
+import { deliveryFailureText, syncMediaDelivery } from "@/lib/server/media-delivery";
 
 export const dynamic = "force-dynamic";
 
@@ -56,7 +57,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (!schedule.ok) return noStoreJson({ ok: false, error: schedule.error }, { status: 400 });
 
   const oldAsset = getStoredMediaAsset(existingMedia);
-  const set = { ...(await buildMediaSet(db, oid, input)), ...schedule.set };
+  const set: MediaSet = { ...(await buildMediaSet(db, oid, input)), ...schedule.set };
 
   if (input.video) {
     const duplicate = await findMediaWithVideo(db, input.video, oid);
@@ -65,7 +66,8 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     }
   }
 
-  const usage = await checkPageUsage(db, existingMedia, oldAsset, input);
+  const hidden = (set.isPublic ?? existingMedia.isPublic) === false;
+  const usage = await checkPageUsage(db, existingMedia, oldAsset, input, hidden);
   if (usage instanceof Response) return usage;
 
   const change = await applyAssetChange(db, set, existingMedia, oldAsset, input);
@@ -75,6 +77,10 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (notWritten) return notWritten;
 
   const { pageEdit, pagesNotUpdated } = await finishFileChange(db, usage, input, set, oldAsset, change);
+  // A page that could not be cleared keeps the file public until the next save retries.
+  const delivery =
+    usage.hides && pagesNotUpdated.length ? null : await syncMediaDelivery(db, [String(oid)]);
+  const deliveryError = deliveryFailureText(delivery?.failures ?? []);
 
   revalidateMediaSurfaces([...input.tags, ...asStringArray(existingMedia.tags)]);
   if (pageEdit) revalidateSitePages();
@@ -86,6 +92,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     ...(saved ? await savedAdminMedia(db, saved) : {}),
     ...(change.posterMissing ? { posterMissing: true } : {}),
     ...(pagesNotUpdated.length ? { pagesNotUpdated } : {}),
+    ...(deliveryError ? { deliveryError } : {}),
   });
 }
 

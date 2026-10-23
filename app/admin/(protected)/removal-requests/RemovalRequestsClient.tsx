@@ -8,29 +8,12 @@ import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminAct
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
-import { adminWrite } from "@/lib/client/admin-store";
-import type { AdminSnapshot } from "@/lib/server/admin-snapshot";
 import { adminInputClasses } from "@/components/admin/admin-input";
+import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
+import { useMediaUsageDialog } from "@/components/admin/media-usage/useMediaUsageDialog";
+import { decideWithUsageCheck } from "./decide";
 
 const MIN_PASSWORD_LENGTH = 8;
-
-type DecisionReply = {
-  ok?: boolean;
-  error?: string;
-  removal?: AdminSnapshot["removal"];
-  person?: AdminSnapshot["people"][number] | null;
-};
-
-async function decide(id: string, body: Record<string, string>): Promise<DecisionReply> {
-  const res = await adminWrite(
-    `/api/people/${encodeURIComponent(id)}/removal`,
-    { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) },
-    ["removal", "people", "media", "dashboard"]
-  );
-  const data = (await res.json().catch(() => null)) as DecisionReply | null;
-  if (!res.ok || !data?.ok || !data.removal) throw new Error(data?.error ?? "Action failed.");
-  return data;
-}
 
 export default function RemovalRequestsClient() {
   const [removal, setRemoval] = useAdminSlice("removal");
@@ -41,6 +24,7 @@ export default function RemovalRequestsClient() {
   const [approvingId, setApprovingId] = useState("");
   const [approvePassword, setApprovePassword] = useState("");
   const { feedback, setFeedback } = useAdminAction();
+  const usage = useMediaUsageDialog(() => setFeedback(null));
 
   function startApprove(id: string) {
     if (busyId) return;
@@ -53,13 +37,18 @@ export default function RemovalRequestsClient() {
     setBusyId(id);
     setFeedback({ type: "info", text: busyText });
     try {
-      const reply = await decide(id, body);
+      const reply = await decideWithUsageCheck(id, body, usage.ask);
+      if (!reply) return setFeedback(null);
       setRemoval(reply.removal!);
       const person = reply.person;
       if (person) setPeople((prev) => prev.map((p) => (p.id === person.id ? person : p)));
       setApprovingId("");
       setApprovePassword("");
-      setFeedback({ type: "ok", text: okText });
+      setFeedback(
+        typeof reply.deliveryError === "string"
+          ? { type: "err", text: `Removal approved. ${reply.deliveryError}` }
+          : { type: "ok", text: okText }
+      );
     } catch (e: unknown) {
       setFeedback({ type: "err", text: errorMessage(e, "Action failed.") });
     } finally {
@@ -94,6 +83,7 @@ export default function RemovalRequestsClient() {
       />
 
       <AdminActionFeedback feedback={feedback} />
+      <MediaUsageDialog dialog={usage.dialog} />
 
       <section className="mt-8 space-y-3">
         {rows.length === 0 ? (

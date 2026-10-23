@@ -13,6 +13,8 @@ export type MediaUsageOption = {
   variant?: AdminButtonVariant;
 };
 
+export const REMOVE_AND_SAVE: MediaUsageOption = { answer: "remove", label: "Remove from those places and save" };
+
 export type AskMediaUsage = (items: MediaInUse[], options: MediaUsageOption[]) => Promise<MediaUsageAnswer>;
 
 export type MediaUsageDialogState = {

@@ -1,6 +1,7 @@
-import type {
-  AskMediaUsage,
-  MediaUsageOption,
+import {
+  REMOVE_AND_SAVE,
+  type AskMediaUsage,
+  type MediaUsageOption,
 } from "@/components/admin/media-usage/useMediaUsageDialog";
 import { readMediaInUse } from "@/lib/media-in-use";
 import { adminWrite } from "@/lib/client/admin-store";
@@ -25,7 +26,7 @@ type SaveOutcome =
 
 const GALLERY_USAGE_OPTIONS: MediaUsageOption[] = [
   { answer: "uncheck", label: "Take these out of the gallery" },
-  { answer: "remove", label: "Remove from those places and save" },
+  REMOVE_AND_SAVE,
 ];
 
 async function postGallery(

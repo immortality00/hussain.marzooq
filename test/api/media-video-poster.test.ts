@@ -33,6 +33,9 @@ function matches(doc: Doc, filter: Record<string, unknown>): boolean {
     const value = doc[key];
     if (cond instanceof RegExp) return typeof value === "string" && cond.test(value);
     if (cond instanceof ObjectId) return value instanceof ObjectId && value.equals(cond);
+    if (cond && typeof cond === "object" && "$in" in cond) {
+      return (cond as { $in: unknown[] }).$in.some((option) => option instanceof ObjectId && option.equals(value as ObjectId));
+    }
     if (cond && typeof cond === "object" && "$ne" in cond) {
       const ne = (cond as { $ne: unknown }).$ne;
       return !(ne instanceof ObjectId && value instanceof ObjectId && value.equals(ne));
@@ -42,6 +45,9 @@ function matches(doc: Doc, filter: Record<string, unknown>): boolean {
 }
 
 const mediaCollection = {
+  find: (filter: Record<string, unknown>) => ({
+    toArray: async () => media.filter((doc) => matches(doc, filter)).map((doc) => ({ ...doc })),
+  }),
   findOne: async (filter: Record<string, unknown>) => {
     const doc = media.find((entry) => matches(entry, filter));
     return doc ? { ...doc } : null;
@@ -72,7 +78,9 @@ const mediaCollection = {
 vi.mock("@/lib/server/db", () => ({
   getDb: async () => ({
     collection: (name: string) =>
-      name === "media" ? mediaCollection : { findOne: async () => null, find: () => ({ toArray: async () => [] }) },
+      name === "media"
+        ? mediaCollection
+        : { findOne: async () => null, find: () => ({ toArray: async () => [] }), distinct: async () => [] },
   }),
 }));
 

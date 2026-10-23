@@ -1,15 +1,10 @@
-import { cookies } from "next/headers";
-import { ObjectId, type Db } from "mongodb";
 import { sanitizeAppearances } from "@/app/api/_lib/media";
 import type { MediaItem as PublicMediaItem } from "@/components/media/types";
 import { getDb } from "@/lib/server/db";
-import {
-  getPersonGateSecret,
-  personGateCookieName,
-  verifyPersonGateCookieValue,
-} from "@/lib/password-gate";
 import { buildFallback } from "@/lib/server/public-read";
-import { PUBLIC_MEDIA_VISIBILITY, publicMediaFilter, releasedMediaFilter } from "@/lib/media-schedule";
+import { publicMediaFilter } from "@/lib/media-schedule";
+import { personMediaAssetPath } from "@/lib/media-asset-path";
+import { findUnlockedPersonMedia, hasPersonGateAccess, personMediaQuery } from "@/lib/server/person-gate-media";
 
 export type PublicPersonIndexItem = {
   id: string;
@@ -36,7 +31,13 @@ function normalizeStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((x): x is string => typeof x === "string") : [];
 }
 
-function toMediaItem(doc: Record<string, unknown>): PublicMediaItem {
+// On an unlocked profile a private file is read through the site (`personSlug`).
+function mediaUrl(doc: Record<string, unknown>, personSlug: string | null) {
+  if (personSlug && doc.deliveryType === "authenticated") return personMediaAssetPath(String(doc._id), personSlug);
+  return typeof doc.secureUrl === "string" ? doc.secureUrl : null;
+}
+
+function toMediaItem(doc: Record<string, unknown>, personSlug: string | null = null): PublicMediaItem {
   return {
     id: String(doc._id),
     type: typeof doc.type === "string" ? doc.type : "image",
@@ -49,7 +50,7 @@ function toMediaItem(doc: Record<string, unknown>): PublicMediaItem {
     categories: normalizeStringArray(doc.categories),
     people: normalizeStringArray(doc.people),
     appearances: sanitizeAppearances(doc.appearances),
-    secureUrl: typeof doc.secureUrl === "string" ? doc.secureUrl : null,
+    secureUrl: mediaUrl(doc, personSlug),
     embedUrl: typeof doc.embedUrl === "string" ? doc.embedUrl : null,
     posterUrl: typeof doc.posterUrl === "string" ? doc.posterUrl : null,
     createdAt:
@@ -69,65 +70,6 @@ function isPersonGated(doc: Record<string, unknown>) {
   return doc.isPrivate === true;
 }
 
-function buildPersonMediaQuery(personId: string, personName: string, includeHidden = false) {
-  const personMatch: Record<string, unknown>[] = [{ peopleIds: personId }];
-
-  if (personName) {
-    personMatch.push({ people: personName });
-  }
-
-  const clauses: Record<string, unknown>[] = [{ $or: personMatch }, releasedMediaFilter()];
-  if (!includeHidden) {
-    clauses.push(PUBLIC_MEDIA_VISIBILITY);
-  } else {
-    // Private-gallery media must never surface through a person's password
-    // gate, no matter why the rest of the gate is unlocked.
-    clauses.push({ deliveryType: { $ne: "authenticated" } });
-  }
-
-  return { $and: clauses };
-}
-
-// A person's own gate unlocking their hidden media must not also reveal
-// media that is hidden because a DIFFERENT, still-gated person appears in
-// it — that person's privacy isn't this person's to unlock.
-async function filterOutBlockedByOtherGatedPeople(
-  db: Db,
-  mediaDocs: Record<string, unknown>[],
-  ownerPersonId: string
-) {
-  const hiddenDocs = mediaDocs.filter((doc) => doc.isPublic === false);
-  if (hiddenDocs.length === 0) return mediaDocs;
-
-  const otherIds = new Set<string>();
-  for (const doc of hiddenDocs) {
-    for (const pid of normalizeStringArray(doc.peopleIds)) {
-      if (pid !== ownerPersonId) otherIds.add(pid);
-    }
-  }
-  if (otherIds.size === 0) return mediaDocs;
-
-  const objectIds = Array.from(otherIds)
-    .filter((pid) => ObjectId.isValid(pid))
-    .map((pid) => new ObjectId(pid));
-  if (objectIds.length === 0) return mediaDocs;
-
-  const gatedOthers = await db
-    .collection("people_profiles")
-    .find({ _id: { $in: objectIds }, $or: [{ isPublic: false }, { isPrivate: true }] })
-    .project({ _id: 1 })
-    .toArray();
-
-  const gatedIds = new Set(gatedOthers.map((p) => String(p._id)));
-  if (gatedIds.size === 0) return mediaDocs;
-
-  return mediaDocs.filter((doc) => {
-    if (doc.isPublic !== false) return true;
-    const linkedIds = normalizeStringArray(doc.peopleIds);
-    return !linkedIds.some((pid) => pid !== ownerPersonId && gatedIds.has(pid));
-  });
-}
-
 async function buildPersonDetail(
   db: Awaited<ReturnType<typeof getDb>>,
   doc: Record<string, unknown>,
@@ -135,29 +77,23 @@ async function buildPersonDetail(
 ): Promise<PublicPersonDetail> {
   const personId = String(doc._id);
   const name = typeof doc.name === "string" ? doc.name : "";
+  const slug = typeof doc.slug === "string" ? doc.slug : "";
 
-  let mediaDocs: Record<string, unknown>[] = await db
-    .collection("media")
-    .find(buildPersonMediaQuery(personId, name, includeHidden))
-    .sort({ createdAt: -1 })
-    .limit(200)
-    .toArray();
-
-  if (includeHidden) {
-    mediaDocs = await filterOutBlockedByOtherGatedPeople(db, mediaDocs, personId);
-  }
+  const mediaDocs: Record<string, unknown>[] = includeHidden
+    ? await findUnlockedPersonMedia(db, doc)
+    : await db.collection("media").find(personMediaQuery(personId, name)).sort({ createdAt: -1 }).limit(200).toArray();
 
   const deduped = new Map<string, Record<string, unknown>>();
   for (const mediaDoc of mediaDocs) {
     deduped.set(String(mediaDoc._id), mediaDoc as Record<string, unknown>);
   }
 
-  const mediaItems = Array.from(deduped.values()).map((item) => toMediaItem(item));
+  const mediaItems = Array.from(deduped.values()).map((item) => toMediaItem(item, includeHidden ? slug : null));
 
   return {
     id: personId,
     name,
-    slug: typeof doc.slug === "string" ? doc.slug : "",
+    slug,
     bio: typeof doc.bio === "string" ? doc.bio : null,
     avatarUrl: typeof doc.avatarUrl === "string" ? doc.avatarUrl : null,
     photoCount: mediaItems.filter((item) => !isVideoType(item.type)).length,
@@ -322,22 +258,9 @@ async function getPersonPageBySlugImpl(slug: string): Promise<PersonPageState> {
     return { state: "open", person: await buildPersonDetail(db, doc) };
   }
 
-  const personId = String(doc._id);
-  const accessToken = typeof doc.accessToken === "string" ? doc.accessToken : "";
   const passwordHash = typeof doc.passwordHash === "string" ? doc.passwordHash : "";
 
-  const jar = await cookies();
-  const cookieValue = jar.get(personGateCookieName(personId))?.value ?? "";
-  const hasAccess =
-    !!accessToken &&
-    verifyPersonGateCookieValue({
-      secret: getPersonGateSecret(),
-      personId,
-      accessToken,
-      cookieValue,
-    });
-
-  if (hasAccess) {
+  if (await hasPersonGateAccess(doc)) {
     return { state: "open", person: await buildPersonDetail(db, doc, true) };
   }
 

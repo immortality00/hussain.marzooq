@@ -166,7 +166,14 @@ export function useMediaEditorController({
 
       const posterNote = result.posterMissing ? " — the video thumbnail couldn't be fetched." : "";
 
-      if (result.mode === "created") {
+      if (result.deliveryError) {
+        setBanner({
+          type: "err",
+          text: `Media ${result.mode === "created" ? "created" : "updated"}. ${result.deliveryError}`,
+        });
+        if (result.mode === "created") editor.resetFields(true, () => setBanner(null));
+        else editor.loadIntoState(saved.item as MediaItem);
+      } else if (result.mode === "created") {
         setBanner({ type: "ok", text: posterNote ? `✅ Media created${posterNote}` : "✅ Media created successfully." });
         editor.resetFields(true, () => setBanner(null));
       } else if (result.pagesNotUpdated.length) {

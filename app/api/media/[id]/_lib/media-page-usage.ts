@@ -18,13 +18,16 @@ import type { MediaPatchInput } from "./parse-media-patch";
 import type { MediaSet } from "./media-set";
 import type { AssetChange } from "./media-asset-change";
 
-export type PageUsage = { replacesFile: boolean; oldFileInUse: MediaUsageConflict | null };
+export type PageUsage = { replacesFile: boolean; hides: boolean; oldFileInUse: MediaUsageConflict | null };
 
+// `hidden`: the item is hidden after this save, so a file not yet private is about to lose
+// its public address (lib/server/media-delivery.ts) and a page using it would break.
 export async function checkPageUsage(
   db: Db,
   existingMedia: Record<string, unknown>,
   oldAsset: StoredMediaAsset,
-  input: MediaPatchInput
+  input: MediaPatchInput,
+  hidden: boolean
 ): Promise<PageUsage | Response> {
   const { video, incomingAsset, usageChoice } = input;
   const replacesFile =
@@ -33,18 +36,22 @@ export async function checkPageUsage(
       (incomingAsset !== null && incomingAsset.publicId.trim().replace(/^\/+/, "") !== oldAsset.publicId));
   const mayMoveFile =
     Boolean(oldAsset.publicId) && !assetIsInsideFolder(oldAsset.publicId, input.targetFolder);
+  const hides = hidden && Boolean(oldAsset.publicId) && oldAsset.deliveryType !== "authenticated";
   const [oldFileInUse] =
-    replacesFile || mayMoveFile ? await findMediaUsageConflicts(db, [existingMedia]) : [];
+    replacesFile || mayMoveFile || hides ? await findMediaUsageConflicts(db, [existingMedia]) : [];
 
-  if (replacesFile && oldFileInUse) {
-    const newFileIsImage = !video && incomingAsset?.resourceType === "image";
-    if (!usageChoice) return mediaInUseResponse([oldFileInUse], { canReplace: newFileIsImage });
-    if (usageChoice === "replace" && !newFileIsImage) {
-      return noStoreJson({ ok: false, error: "Only a photo can take its place there." }, { status: 400 });
+  if ((replacesFile || hides) && oldFileInUse) {
+    const canReplace = replacesFile && !hidden && !video && incomingAsset?.resourceType === "image";
+    if (!usageChoice) {
+      return mediaInUseResponse([oldFileInUse], { canReplace, ...(hides && !replacesFile ? { hides: true } : {}) });
+    }
+    if (usageChoice === "replace" && !canReplace) {
+      const error = hidden ? "A hidden item can't be shown there." : "Only a photo can take its place there.";
+      return noStoreJson({ ok: false, error }, { status: 400 });
     }
   }
 
-  return { replacesFile, oldFileInUse: oldFileInUse ?? null };
+  return { replacesFile, hides, oldFileInUse: oldFileInUse ?? null };
 }
 
 function pageEditFor(usage: PageUsage, input: MediaPatchInput, set: MediaSet, movedFile: StoredMediaAsset | null): UsageEdit | null {
@@ -52,6 +59,7 @@ function pageEditFor(usage: PageUsage, input: MediaPatchInput, set: MediaSet, mo
   if (usage.replacesFile) {
     return input.usageChoice === "replace" ? { type: "replace", url: String(set.secureUrl) } : { type: "remove" };
   }
+  if (usage.hides) return { type: "remove" };
   return movedFile?.secureUrl ? { type: "replace", url: movedFile.secureUrl } : null;
 }
 

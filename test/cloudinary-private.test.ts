@@ -9,6 +9,7 @@ const {
   fullyQualifiedPublicId,
   normalizeAssetResourceType,
   normalizeDeliveryType,
+  withFreshVersion,
 } = await import("@/lib/server/cloudinary-private");
 
 describe("normalizeDeliveryType", () => {
@@ -81,5 +82,26 @@ describe("cloudinaryErrorMessage", () => {
 
   test("never leaks [object Object]", () => {
     expect(cloudinaryErrorMessage({ http_code: 400 })).toBe("Unknown Cloudinary error.");
+  });
+});
+
+describe("withFreshVersion", () => {
+  const url = "https://res.cloudinary.com/demo/image/upload/v1792719028/hm_visuals/media/photography/a.png";
+
+  test("moves the version to now, so no cached not-found can answer", () => {
+    expect(withFreshVersion(url, 1_800_000_000_000)).toBe(
+      "https://res.cloudinary.com/demo/image/upload/v1800000000/hm_visuals/media/photography/a.png"
+    );
+  });
+
+  test("always changes it, even when the clock is behind the stored version", () => {
+    expect(withFreshVersion(url, 0)).toContain("/v1792719029/");
+  });
+
+  test("leaves the public id alone and an address with no version unchanged", () => {
+    expect(withFreshVersion(url, 1_800_000_000_000)).toContain("/hm_visuals/media/photography/a.png");
+    expect(withFreshVersion("https://res.cloudinary.com/demo/image/upload/a.png")).toBe(
+      "https://res.cloudinary.com/demo/image/upload/a.png"
+    );
   });
 });

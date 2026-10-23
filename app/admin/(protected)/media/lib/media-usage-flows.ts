@@ -11,6 +11,8 @@ export const REMOVE_AND_DELETE: MediaUsageOption = {
   variant: "danger",
 };
 
+export const REMOVE_AND_HIDE: MediaUsageOption = { answer: "remove", label: "Remove from those places and hide" };
+
 function replaceOptions(canReplace: boolean): MediaUsageOption[] {
   const useNew: MediaUsageOption = { answer: "replace", label: "Use the new photo there", variant: "solid" };
   return [...(canReplace ? [useNew] : []), { answer: "remove", label: "Remove from those places" }];
@@ -33,7 +35,7 @@ export async function saveWithUsageCheck(args: Parameters<typeof saveMediaItem>[
     return await saveMediaItem(args);
   } catch (e: unknown) {
     if (!(e instanceof MediaInUseError)) throw e;
-    const answer = await ask(e.items, replaceOptions(e.canReplace));
+    const answer = await ask(e.items, e.hides ? [REMOVE_AND_HIDE] : replaceOptions(e.canReplace));
     if (answer !== "replace" && answer !== "remove") return null;
     return saveMediaItem({ ...args, usages: answer });
   }

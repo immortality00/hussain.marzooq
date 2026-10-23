@@ -10,6 +10,7 @@ import {
   type StoredMediaAsset,
 } from "@/lib/server/media-asset-management";
 import { cloudinaryErrorMessage } from "@/lib/server/cloudinary-assets";
+import { normalizeDeliveryType } from "@/lib/server/cloudinary-private";
 import type { MediaPatchInput } from "./parse-media-patch";
 import type { MediaSet } from "./media-set";
 
@@ -41,11 +42,17 @@ export async function restoreMovedAsset(moved: StoredMediaAsset | null, original
   await moveStoredMediaAssetToFolder(moved, folderOfPublicId(original.publicId));
 }
 
-function setAsset(set: MediaSet, asset: { secureUrl: string; publicId: string; resourceType: string }, type: string) {
+function setAsset(
+  set: MediaSet,
+  asset: { secureUrl: string; publicId: string; resourceType: string },
+  type: string,
+  deliveryType: string | null | undefined
+) {
   set.secureUrl = asset.secureUrl;
   set.publicId = asset.publicId;
   set.resourceType = asset.resourceType;
   set.type = type;
+  set.deliveryType = normalizeDeliveryType(deliveryType);
   set.embedUrl = null;
 }
 
@@ -54,7 +61,7 @@ async function moveOldAsset(set: MediaSet, oldAsset: StoredMediaAsset, folder: s
   if (move.failed) return move.failed;
   const { moved } = move;
 
-  setAsset(set, moved, moved.resourceType);
+  setAsset(set, moved, moved.resourceType, oldAsset.deliveryType);
   change.replacementAsset = {
     secureUrl: moved.secureUrl,
     publicId: moved.publicId,
@@ -72,6 +79,7 @@ async function setVideo(db: Db, set: MediaSet, existingMedia: Record<string, unk
   set.secureUrl = null;
   set.publicId = null;
   set.resourceType = null;
+  set.deliveryType = "upload";
 
   const keepsPoster =
     existingMedia.embedUrl === embedSrc &&
@@ -111,7 +119,8 @@ async function setUploadedAsset(
     return badRequest("Uploaded media URL is outside the selected media category folder.");
   }
 
-  setAsset(set, asset, asset.type);
+  // A fresh upload is public until the delivery sync after the write decides otherwise.
+  setAsset(set, asset, asset.type, isExistingAsset ? oldAsset.deliveryType : "upload");
   change.replacementAsset = { secureUrl: asset.secureUrl, publicId: asset.publicId, resourceType: asset.resourceType };
   return null;
 }

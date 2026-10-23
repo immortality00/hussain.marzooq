@@ -1,4 +1,3 @@
-import { ObjectId } from "mongodb";
 import { revalidatePath } from "next/cache";
 import { revalidatePublicTree } from "@/app/api/_lib/revalidate";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
@@ -21,6 +20,12 @@ import {
   hashPassword,
   makeAccessToken,
 } from "@/lib/password-gate";
+import {
+  checkPersonMediaPageUsage,
+  hidePersonMedia,
+  republishPersonMedia,
+  syncPersonMediaDelivery,
+} from "@/app/api/people/_lib/person-media";
 
 export const dynamic = "force-dynamic";
 
@@ -138,6 +143,13 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     existing.isPrivate === true ||
     existing.isPublic === false ||
     existing.removalApprovedAt instanceof Date;
+  const nowPublic = isPublic && !isPrivate;
+  const nowGated = !isPublic || isPrivate;
+
+  if (nowGated) {
+    const usage = await checkPersonMediaPageUsage(db, id, [previousName, name], body.clearPageUsages === true);
+    if (usage) return usage;
+  }
 
   const now = new Date();
   const set: Record<string, unknown> = {
@@ -176,50 +188,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     );
   }
 
-  const nowPublic = isPublic && !isPrivate;
-  const nowGated = !isPublic || isPrivate;
-
-  if (nowGated) {
-    await db.collection("media").updateMany(
-      { $or: [{ peopleIds: id }, ...(name ? [{ people: name }] : [])], isPublic: true },
-      { $set: { isPublic: false, updatedAt: now }, $addToSet: { removalHiddenBy: id } }
-    );
-  }
-
-  if (nowPublic && wasGated) {
-    const media = db.collection("media");
-    const linked = await media
-      .find({ $or: [{ peopleIds: id }, { people: name }], isPublic: false })
-      .project({ _id: 1, peopleIds: 1, deliveryType: 1 })
-      .toArray();
-
-    for (const doc of linked) {
-      // Private Gallery membership is a separate privacy system — never
-      // republish media that's still gallery-private, no matter what this
-      // person's own gate is doing.
-      if (doc.deliveryType === "authenticated") continue;
-
-      const otherIds = (Array.isArray(doc.peopleIds) ? doc.peopleIds : []).filter(
-        (pid): pid is string => typeof pid === "string" && pid !== id
-      );
-
-      let blockedByOther = false;
-      if (otherIds.length) {
-        const gatedOther = await db.collection("people_profiles").findOne({
-          _id: { $in: otherIds.filter((pid) => ObjectId.isValid(pid)).map((pid) => new ObjectId(pid)) },
-          $or: [{ isPublic: false }, { isPrivate: true }],
-        });
-        blockedByOther = !!gatedOther;
-      }
-
-      if (!blockedByOther) {
-        await media.updateOne(
-          { _id: doc._id },
-          { $set: { isPublic: true, updatedAt: now }, $unset: { removalHiddenBy: "" } }
-        );
-      }
-    }
-  }
+  if (nowGated) await hidePersonMedia(db, id, name, now);
+  if (nowPublic && wasGated) await republishPersonMedia(db, id, name, now);
+  const deliveryError = await syncPersonMediaDelivery(db, id, name);
 
   if (previousAvatarUrl && previousAvatarUrl !== avatarUrl) {
     await deleteManagedCloudinaryAsset({ url: previousAvatarUrl }, [CLOUDINARY_PEOPLE_FOLDER]);
@@ -229,7 +200,12 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (previousSlug && previousSlug !== slug) revalidatePath(`/people/${previousSlug}`);
   revalidatePath(`/people/${slug}`);
 
-  return noStoreJson({ ok: true, slug, item: await storedPerson(db, oid) });
+  return noStoreJson({
+    ok: true,
+    slug,
+    item: await storedPerson(db, oid),
+    ...(deliveryError ? { deliveryError } : {}),
+  });
 }
 
 export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string }> }) {

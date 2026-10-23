@@ -10,6 +10,7 @@ import { CLOUDINARY_PEOPLE_FOLDER } from "@/lib/cloudinary-folders";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { usePeopleAdmin } from "@/hooks/usePeopleAdmin";
 import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
+import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
 import { AvatarUploadField } from "@/components/shared/upload/AvatarUploadField";
 import { adminInputClasses } from "@/components/admin/admin-input";
 
@@ -85,6 +86,7 @@ export default function PeopleAdminClient() {
     bulkBusy,
     bulkRemove,
     changedDialog,
+    usageDialog,
   } = usePeopleAdmin();
 
   const selection = useBulkSelection(items.map((p) => p.id));
@@ -362,6 +364,7 @@ export default function PeopleAdminClient() {
         </section>
       )}
       <RecordChangedDialog dialog={changedDialog} />
+      <MediaUsageDialog dialog={usageDialog} />
     </main>
   );
 }

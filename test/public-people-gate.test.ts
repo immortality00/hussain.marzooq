@@ -47,6 +47,7 @@ function matchesFilter(doc: Record<string, unknown>, filter: Record<string, unkn
 let personDoc: Record<string, unknown>;
 let mediaDocs: Record<string, unknown>[];
 let otherPeople: Record<string, unknown>[];
+let galleries: Record<string, unknown>[];
 
 function collection(name: string) {
   if (name === "people_profiles") {
@@ -71,6 +72,12 @@ function collection(name: string) {
       }),
     };
   }
+  if (name === "private_galleries") {
+    return {
+      distinct: async (_field: string, filter: Record<string, unknown>) =>
+        galleries.filter((g) => matchesFilter(g, filter)).flatMap((g) => g.mediaIds as string[]),
+    };
+  }
   throw new Error(`unexpected collection ${name}`);
 }
 
@@ -87,6 +94,7 @@ beforeEach(() => {
   };
   mediaDocs = [];
   otherPeople = [];
+  galleries = [];
 });
 
 describe("an unlocked private person page", () => {
@@ -113,16 +121,38 @@ describe("an unlocked private person page", () => {
     if (result.state === "open") expect(result.person.mediaItems).toHaveLength(1);
   });
 
-  test("never reveals media that is still delivered as authenticated (Private Gallery)", async () => {
-    mediaDocs = [
-      { _id: new ObjectId(), peopleIds: [PERSON_ID], isPublic: false, deliveryType: "authenticated" },
-    ];
+  test("never reveals media that is in a Private Gallery", async () => {
+    const inGallery = new ObjectId();
+    mediaDocs = [{ _id: inGallery, peopleIds: [PERSON_ID], isPublic: false, deliveryType: "authenticated" }];
+    galleries = [{ _id: new ObjectId(), mediaIds: [String(inGallery)] }];
 
     const { getPersonPageBySlug } = await import("@/lib/server/public-people");
     const result = await getPersonPageBySlug("subject");
 
     expect(result.state).toBe("open");
     if (result.state === "open") expect(result.person.mediaItems).toHaveLength(0);
+  });
+
+  test("reads the person's own private files through the site, with the person in the address", async () => {
+    const locked = new ObjectId();
+    mediaDocs = [
+      {
+        _id: locked,
+        peopleIds: [PERSON_ID],
+        isPublic: false,
+        deliveryType: "authenticated",
+        secureUrl: "https://res.cloudinary.com/demo/image/authenticated/s--sig--/v1/hm_visuals/media/a.jpg",
+      },
+    ];
+
+    const { getPersonPageBySlug } = await import("@/lib/server/public-people");
+    const result = await getPersonPageBySlug("subject");
+
+    expect(result.state).toBe("open");
+    if (result.state === "open") {
+      expect(result.person.mediaItems[0]!.secureUrl).toBe(`/api/media/asset/${locked}?p=subject`);
+      expect(result.person.featuredImage).toBe(`/api/media/asset/${locked}?p=subject`);
+    }
   });
 
   test("never reveals media hidden because a different, still-gated person appears in it", async () => {

@@ -16,6 +16,7 @@ import {
 } from "@/lib/server/cloudinary-private";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { withRouteErrors } from "@/app/api/_lib/route-errors";
+import { personCanOpenMedia } from "@/lib/server/person-gate-media";
 
 export const dynamic = "force-dynamic";
 
@@ -56,6 +57,7 @@ async function handleGet(req: Request, ctx: { params: Promise<{ mediaId: string 
 
   const url = new URL(req.url);
   const gallerySlug = (url.searchParams.get("g") ?? "").trim().slice(0, 100);
+  const personSlug = (url.searchParams.get("p") ?? "").trim().slice(0, 100);
   const isAdmin = await isAdminAuthedServer();
 
   if (!isAdmin) {
@@ -67,10 +69,10 @@ async function handleGet(req: Request, ctx: { params: Promise<{ mediaId: string 
     });
 
     if (limit.limited) return new Response("Too many requests", { status: 429 });
-    if (!gallerySlug) return new Response("Forbidden", { status: 403 });
-    if (!(await hasGalleryAccess(mediaId, gallerySlug))) {
-      return new Response("Forbidden", { status: 403 });
-    }
+    const allowed = gallerySlug
+      ? await hasGalleryAccess(mediaId, gallerySlug)
+      : await personCanOpenMedia(await getDb(), personSlug, mediaId);
+    if (!allowed) return new Response("Forbidden", { status: 403 });
   }
 
   const db = await getDb();

@@ -104,6 +104,16 @@ export function expiringArchiveUrl(params: {
   });
 }
 
+// After a file goes back to public delivery, an address a visitor requested while it was
+// private keeps a cached "not found" for about a minute (measured SEC8). Cloudinary serves a
+// file under any version number, so the stored address gets one it has never served.
+export function withFreshVersion(url: string, nowMs = Date.now()) {
+  return url.replace(/\/v(\d+)\//, (_match, version: string) => {
+    const fresh = Math.max(Number(version) + 1, Math.floor(nowMs / 1000));
+    return `/v${fresh}/`;
+  });
+}
+
 export async function convertAssetDeliveryType(params: {
   publicId: string;
   resourceType: CloudinaryAssetResourceType;
@@ -129,7 +139,7 @@ export async function convertAssetDeliveryType(params: {
     const secureUrl = typeof record.secure_url === "string" ? record.secure_url : "";
 
     if (!secureUrl) return { ok: false, error: "Cloudinary returned no URL." };
-    return { ok: true, secureUrl };
+    return { ok: true, secureUrl: params.to === "upload" ? withFreshVersion(secureUrl) : secureUrl };
   } catch (error) {
     return { ok: false, error: cloudinaryErrorMessage(error) };
   }

@@ -3,12 +3,14 @@ import { asMediaInUseList, readMediaInUse, type MediaInUse } from "@/lib/media-i
 export class MediaInUseError extends Error {
   items: MediaInUse[];
   canReplace: boolean;
+  hides: boolean;
 
-  constructor(items: MediaInUse[], canReplace: boolean, message: string) {
+  constructor(items: MediaInUse[], canReplace: boolean, message: string, hides = false) {
     super(message);
     this.name = "MediaInUseError";
     this.items = items;
     this.canReplace = canReplace;
+    this.hides = hides;
   }
 }
 
@@ -19,7 +21,8 @@ export function throwIfMediaInUse(data: unknown) {
   throw new MediaInUseError(
     items,
     body.canReplace === true,
-    typeof body.error === "string" ? body.error : "This media is used on the site."
+    typeof body.error === "string" ? body.error : "This media is used on the site.",
+    body.hides === true
   );
 }
 

@@ -106,6 +106,7 @@ export default function BatchMediaClient() {
     const failed: string[] = [];
     const saved: SavedMedia[] = [];
     let postersMissing = 0;
+    const notPrivate: string[] = [];
     const results = await settleLimited(itemsToSave, ADMIN_REQUEST_LIMIT, (item) =>
       createBatchItem(buildBatchPayload(item, shared))
     );
@@ -127,6 +128,7 @@ export default function BatchMediaClient() {
       s.dropItem(item.id);
       if (r.value.saved) saved.push(r.value.saved);
       if (r.value.posterMissing) postersMissing += 1;
+      if (r.value.deliveryError) notPrivate.push(`“${label}”`);
     }
 
     setMedia((media) => saved.reduce((next, entry) => withSavedMedia(next, entry, true), media));
@@ -136,9 +138,16 @@ export default function BatchMediaClient() {
     const posterNote = postersMissing
       ? ` ${postersMissing} video thumbnail${postersMissing > 1 ? "s" : ""} couldn't be fetched.`
       : "";
+    const privateNote = notPrivate.length
+      ? ` Hidden, but the file could not be made private: ${notPrivate.join(", ")} — open each and press Update to retry.`
+      : "";
 
-    if (failed.length === 0) {
+    if (failed.length === 0 && !privateNote) {
       notify("ok", `✅ Created ${created} media.${posterNote}`);
+      s.resetAll();
+      setStep(0);
+    } else if (failed.length === 0) {
+      notify("err", `Created ${created} media.${privateNote}${posterNote}`);
       s.resetAll();
       setStep(0);
     } else {
@@ -146,7 +155,7 @@ export default function BatchMediaClient() {
         "err",
         `Created ${created} of ${itemsToSave.length}. Failed: ${failed.slice(0, 5).join(" · ")}${
           failed.length > 5 ? ` · +${failed.length - 5} more` : ""
-        }${posterNote}`
+        }${privateNote}${posterNote}`
       );
     }
   }

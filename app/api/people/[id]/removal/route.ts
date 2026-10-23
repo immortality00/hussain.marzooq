@@ -5,14 +5,23 @@ import { getDb } from "@/lib/server/db";
 import { MIN_PERSON_PASSWORD_LENGTH, hashPassword, makeAccessToken } from "@/lib/password-gate";
 import { getRemovalRequestHistory, getRemovalRequestQueue } from "@/lib/server/removal-requests";
 import { storedPerson } from "@/lib/server/admin-lists";
+import {
+  checkPersonMediaPageUsage,
+  hidePersonMedia,
+  syncPersonMediaDelivery,
+} from "@/app/api/people/_lib/person-media";
 
-async function decided(db: Awaited<ReturnType<typeof getDb>>, oid: Parameters<typeof storedPerson>[1]) {
+async function decided(
+  db: Awaited<ReturnType<typeof getDb>>,
+  oid: Parameters<typeof storedPerson>[1],
+  deliveryError: string | null = null
+) {
   const [items, history, person] = await Promise.all([
     getRemovalRequestQueue(),
     getRemovalRequestHistory(),
     storedPerson(db, oid),
   ]);
-  return noStoreJson({ ok: true, removal: { items, history }, person });
+  return noStoreJson({ ok: true, removal: { items, history }, person, ...(deliveryError ? { deliveryError } : {}) });
 }
 
 export const dynamic = "force-dynamic";
@@ -65,6 +74,9 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     );
   }
 
+  const usage = await checkPersonMediaPageUsage(db, id, [name], body.clearPageUsages === true);
+  if (usage) return usage;
+
   const accessToken = makeAccessToken();
   const passwordHash = await hashPassword(password);
 
@@ -82,10 +94,8 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     }
   );
 
-  await db.collection("media").updateMany(
-    { $or: [{ peopleIds: id }, ...(name ? [{ people: name }] : [])], isPublic: true },
-    { $set: { isPublic: false, updatedAt: now }, $addToSet: { removalHiddenBy: id } }
-  );
+  await hidePersonMedia(db, id, name, now);
+  const deliveryError = await syncPersonMediaDelivery(db, id, name);
 
   await db
     .collection("removal_requests")
@@ -95,5 +105,5 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
   revalidatePath("/", "layout");
   if (slug) revalidatePath(`/people/${slug}`);
 
-  return decided(db, oid);
+  return decided(db, oid, deliveryError);
 }

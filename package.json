@@ -17,7 +17,7 @@
     "db:backup": "vite-node -c vitest.config.mts scripts/db-backup.ts",
     "db:restore": "vite-node -c vitest.config.mts scripts/db-restore.ts",
     "test:e2e": "playwright test",
-    "media:repair-delivery": "node scripts/repair-media-delivery.mjs",
+    "media:repair-delivery": "vite-node -c vitest.config.mts scripts/repair-media-delivery.ts",
     "cloudinary:allow": "vite-node -c vitest.config.mts scripts/cloudinary-allow-transformations.ts",
     "cloudinary:check": "vite-node -c vitest.config.mts scripts/cloudinary-check-delivery.ts"
   },

@@ -27,6 +27,7 @@ import {
 import { storeVideoPoster } from "@/lib/server/video-posters";
 import { parseVideoLink, videoEmbedSrc } from "@/lib/video-embed";
 import { parsePublishAt, scheduleOnCreate } from "@/lib/media-schedule";
+import { deliveryFailureText, syncMediaDelivery } from "@/lib/server/media-delivery";
 
 export const dynamic = "force-dynamic";
 
@@ -200,8 +201,12 @@ export async function POST(req: Request) {
     { upsert: true }
   );
 
-  const found = await col.findOne(keyFilter);
-  if (!found) return noStoreJson({ ok: false, error: "Save failed" }, { status: 500 });
+  const inserted = await col.findOne(keyFilter);
+  if (!inserted) return noStoreJson({ ok: false, error: "Save failed" }, { status: 500 });
+
+  const delivery = await syncMediaDelivery(db, [String(inserted._id)]);
+  const found = delivery.converted ? ((await col.findOne({ _id: inserted._id })) ?? inserted) : inserted;
+  const deliveryError = deliveryFailureText(delivery.failures);
 
   revalidateMediaSurfaces(tags);
 
@@ -210,5 +215,6 @@ export async function POST(req: Request) {
     id: String(found._id),
     ...(await savedAdminMedia(db, found)),
     ...(video && !poster ? { posterMissing: true } : {}),
+    ...(deliveryError ? { deliveryError } : {}),
   });
 }

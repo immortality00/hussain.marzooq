@@ -7,6 +7,12 @@ import type { MediaItem } from "./types";
 import type { SavedMedia } from "./media-store";
 import { publishAtPayload, publishScheduleError, type PublishSchedule } from "@/lib/media-schedule";
 
+type SaveNotes = { posterMissing?: boolean; deliveryError?: unknown };
+
+export function deliveryErrorOf(data: SaveNotes | null) {
+  return typeof data?.deliveryError === "string" ? data.deliveryError : null;
+}
+
 function savedFrom(data: Partial<SavedMedia> | null): SavedMedia | null {
   return data?.item && data.listItem ? { item: data.item, listItem: data.listItem } : null;
 }
@@ -157,7 +163,7 @@ export async function saveMediaItem(args: {
     );
 
     const data = (await res.json().catch(() => null)) as
-      | (Partial<SavedMedia> & { ok?: boolean; id?: string; error?: string; posterMissing?: boolean })
+      | (Partial<SavedMedia> & SaveNotes & { ok?: boolean; id?: string; error?: string })
       | null;
 
     if (!res.ok || !data?.ok) {
@@ -168,6 +174,7 @@ export async function saveMediaItem(args: {
       mode: "created" as const,
       id: data.id ?? null,
       posterMissing: data.posterMissing === true,
+      deliveryError: deliveryErrorOf(data),
       saved: savedFrom(data),
     };
   }
@@ -185,7 +192,7 @@ export async function saveMediaItem(args: {
   );
 
   const data = (await res.json().catch(() => null)) as
-    | (Partial<SavedMedia> & { ok?: boolean; error?: string; posterMissing?: boolean; pagesNotUpdated?: string[] })
+    | (Partial<SavedMedia> & SaveNotes & { ok?: boolean; error?: string; pagesNotUpdated?: string[] })
     | null;
 
   if (!res.ok || !data?.ok) {
@@ -198,6 +205,7 @@ export async function saveMediaItem(args: {
     mode: "updated" as const,
     id: args.editingId,
     posterMissing: data.posterMissing === true,
+    deliveryError: deliveryErrorOf(data),
     pagesNotUpdated: Array.isArray(data.pagesNotUpdated) ? data.pagesNotUpdated : [],
     saved: savedFrom(data),
   };

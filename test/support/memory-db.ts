@@ -29,31 +29,57 @@ function write(doc: Doc, path: string, value: unknown) {
   node[keys[keys.length - 1]!] = value;
 }
 
+function compare(value: unknown, bound: unknown) {
+  const a = value instanceof Date ? value.getTime() : value;
+  const b = bound instanceof Date ? bound.getTime() : bound;
+  return a === undefined || a === null ? null : (a as number) - (b as number);
+}
+
 function satisfies(value: unknown, cond: unknown): boolean {
+  if (cond === null) return value === null || value === undefined;
   if (Array.isArray(value)) return value.some((item) => satisfies(item, cond));
   if (cond instanceof RegExp) return typeof value === "string" && cond.test(value);
   if (cond instanceof ObjectId) return value instanceof ObjectId && value.equals(cond);
   if (cond && typeof cond === "object") {
     const ops = cond as Record<string, unknown>;
     if ("$in" in ops) return (ops.$in as unknown[]).some((option) => satisfies(value, option));
+    if ("$nin" in ops) return !(ops.$nin as unknown[]).some((option) => satisfies(value, option));
     if ("$ne" in ops) return !satisfies(value, ops.$ne);
-    if ("$gt" in ops) return value !== undefined && value !== null && (value as number) > (ops.$gt as number);
+    if ("$gt" in ops) return (compare(value, ops.$gt) ?? -1) > 0;
+    if ("$lte" in ops) return (compare(value, ops.$lte) ?? 1) <= 0;
     if ("$exists" in ops) return (value !== undefined) === Boolean(ops.$exists);
   }
   return value === cond;
 }
 
 function matches(doc: Doc, filter: Filter): boolean {
-  return Object.entries(filter).every(([key, cond]) =>
-    key === "$or" ? (cond as Filter[]).some((option) => matches(doc, option)) : satisfies(read(doc, key), cond)
-  );
+  return Object.entries(filter).every(([key, cond]) => {
+    if (key === "$or") return (cond as Filter[]).some((option) => matches(doc, option));
+    if (key === "$and") return (cond as Filter[]).every((option) => matches(doc, option));
+    return satisfies(read(doc, key), cond);
+  });
 }
 
-type Update = { $set?: Doc; $setOnInsert?: Doc; $inc?: Record<string, number> };
+type Update = {
+  $set?: Doc;
+  $setOnInsert?: Doc;
+  $inc?: Record<string, number>;
+  $unset?: Doc;
+  $addToSet?: Doc;
+};
+
+function sameValue(a: unknown, b: unknown) {
+  return a instanceof ObjectId && b instanceof ObjectId ? a.equals(b) : a === b;
+}
 
 function apply(doc: Doc, update: Update) {
   for (const [path, value] of Object.entries(update.$set ?? {})) write(doc, path, value);
   for (const [path, by] of Object.entries(update.$inc ?? {})) write(doc, path, ((read(doc, path) as number) ?? 0) + by);
+  for (const path of Object.keys(update.$unset ?? {})) delete doc[path];
+  for (const [path, value] of Object.entries(update.$addToSet ?? {})) {
+    const list = Array.isArray(read(doc, path)) ? (read(doc, path) as unknown[]) : [];
+    write(doc, path, list.some((item) => sameValue(item, value)) ? list : [...list, value]);
+  }
 }
 
 function seedFrom(filter: Filter) {
@@ -76,6 +102,7 @@ function collection(name: string) {
       let max = Infinity;
       const cursor = {
         sort: () => cursor,
+        project: () => cursor,
         limit: (count: number) => {
           max = count;
           return cursor;
@@ -86,6 +113,22 @@ function collection(name: string) {
     },
     findOne: async (filter: Filter = {}) => docs().find((doc) => matches(doc, filter)) ?? null,
     countDocuments: async (filter: Filter = {}) => docs().filter((doc) => matches(doc, filter)).length,
+    distinct: async (field: string, filter: Filter = {}) => {
+      const values: unknown[] = [];
+      for (const doc of docs().filter((entry) => matches(entry, filter))) {
+        const value = read(doc, field);
+        for (const item of Array.isArray(value) ? value : [value]) {
+          if (item !== undefined && !values.some((seen) => sameValue(seen, item))) values.push(item);
+        }
+      }
+      return values;
+    },
+    updateMany: async (filter: Filter, update: Update) => {
+      guardWrite();
+      const hits = docs().filter((doc) => matches(doc, filter));
+      for (const doc of hits) apply(doc, update);
+      return { matchedCount: hits.length, modifiedCount: hits.length };
+    },
     insertOne: async (doc: Doc) => {
       guardWrite();
       const insertedId = new ObjectId();

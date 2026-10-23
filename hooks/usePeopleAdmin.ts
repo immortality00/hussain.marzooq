@@ -7,7 +7,8 @@ import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { bulkResultText } from "@/components/admin/bulk/bulk-result";
 import { useRecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 import { saveGuarded } from "@/lib/record-changed";
-import { deletePerson, savePerson } from "@/app/admin/(protected)/people/lib/api";
+import { deletePerson, savePerson, savePersonWithUsageCheck } from "@/app/admin/(protected)/people/lib/api";
+import { useMediaUsageDialog } from "@/components/admin/media-usage/useMediaUsageDialog";
 import { errorMessage, useAdminAction } from "./useAdminAction";
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 import { useLatest } from "./useLatest";
@@ -58,6 +59,7 @@ export function usePeopleAdmin() {
   const [editingRemovalApprovedAt, setEditingRemovalApprovedAt] = useState<string | null>(null);
   const [editingVersion, setEditingVersion] = useState<string | null>(null);
   const changed = useRecordChangedDialog(() => setBanner(null));
+  const usage = useMediaUsageDialog(() => setBanner(null));
 
   const latestAvatarUrl = useLatest(avatarUrl);
 
@@ -161,10 +163,10 @@ export function usePeopleAdmin() {
     };
 
     try {
-      const item = editingId
+      const saved = editingId
         ? await saveGuarded(
             editingVersion,
-            (expected) => savePerson(editingId, payload, expected),
+            (expected) => savePersonWithUsageCheck(editingId, payload, usage.ask, expected),
             changed.ask,
             (current: PersonItem) => current.updatedAt,
             (current: PersonItem) => {
@@ -173,10 +175,15 @@ export function usePeopleAdmin() {
             }
           )
         : await savePerson("", payload);
-      if (!item) return setBanner(null);
+      if (!saved) return setBanner(null);
+      const { item, deliveryError } = saved;
 
       setItems((prev) => [item, ...prev.filter((x) => x.id !== item.id)]);
-      setBanner({ type: "ok", text: editingId ? "✅ Person updated." : "✅ Person created." });
+      setBanner(
+        deliveryError
+          ? { type: "err", text: `Person ${editingId ? "updated" : "created"}. ${deliveryError}` }
+          : { type: "ok", text: editingId ? "✅ Person updated." : "✅ Person created." }
+      );
       resetForm();
       setMode("list");
     } catch (e: unknown) {
@@ -257,5 +264,6 @@ export function usePeopleAdmin() {
     save,
     remove,
     changedDialog: changed.dialog,
+    usageDialog: usage.dialog,
   };
 }
