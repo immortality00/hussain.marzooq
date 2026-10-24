@@ -79,13 +79,24 @@ jobs:
       - name: Check the Playwright image matches the lockfile
         timeout-minutes: 1
         run: |
-          image=$(node -p "require('/ms-playwright-agent/node_modules/playwright-core/package.json').version")
           lockfile=$(node -p "require('./node_modules/playwright-core/package.json').version")
+          image=$(grep -o 'mcr.microsoft.com/playwright:v[0-9.]*' .github/workflows/ci.yml | head -n 1 | sed 's/.*:v//')
           if [ "$image" != "$lockfile" ]; then
             echo "::error::The Playwright image is $image but the lockfile has $lockfile. Change the container image tag and digest in ci.yml."
             exit 1
           fi
-          echo "Playwright $image in the image and the lockfile."
+          dirs=$(npx playwright install --dry-run chromium | sed -n 's/^ *Install location: *//p')
+          if [ -z "$dirs" ]; then
+            echo "::error::Playwright listed no browser locations."
+            exit 1
+          fi
+          for dir in $dirs; do
+            if [ ! -d "$dir" ]; then
+              echo "::error::$dir is missing from the Playwright image."
+              exit 1
+            fi
+          done
+          echo "Playwright $lockfile: the image tag matches and its Chromium builds are in place."
 
       - run: npm run db:seed-e2e
         timeout-minutes: 2
