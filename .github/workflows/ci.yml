@@ -42,11 +42,17 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 40
+    # Playwright's own image already holds Chromium and the system libraries it
+    # needs, so nothing comes from the Ubuntu package mirror (`--with-deps` timed
+    # out on it three times). Its version must equal the lockfile's Playwright —
+    # the step after npm ci checks it. On a Playwright upgrade, change the tag and
+    # the digest together.
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.0-noble@sha256:06a9939e57531807f8d5fd76ce44b53165ffb7d7501d87ab10e285c20b1e971f
+      options: --user 1001 --ipc=host
     services:
       mongodb:
         image: mongo:7
-        ports:
-          - 27017:27017
         options: >-
           --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
           --health-interval 10s
@@ -55,11 +61,13 @@ jobs:
     env:
       # The seed script refuses any database whose name is not an e2e/test one,
       # and playwright.config.ts forces the same name onto the server it starts.
-      MONGODB_URI: mongodb://127.0.0.1:27017
+      # Inside a container job the service is reached by its name.
+      MONGODB_URI: mongodb://mongodb:27017
       MONGODB_DB_NAME: hm_visuals_e2e
     steps:
       - uses: actions/checkout@v4
 
+      # The image carries Node 24; the project pins 22.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -68,8 +76,27 @@ jobs:
       - run: npm ci
         timeout-minutes: 5
 
-      - run: npx playwright install --with-deps chromium
-        timeout-minutes: 5
+      - name: Check the Playwright image matches the lockfile
+        timeout-minutes: 1
+        run: |
+          lockfile=$(node -p "require('./node_modules/playwright-core/package.json').version")
+          image=$(grep -o 'mcr.microsoft.com/playwright:v[0-9.]*' .github/workflows/ci.yml | head -n 1 | sed 's/.*:v//')
+          if [ "$image" != "$lockfile" ]; then
+            echo "::error::The Playwright image is $image but the lockfile has $lockfile. Change the container image tag and digest in ci.yml."
+            exit 1
+          fi
+          dirs=$(npx playwright install --dry-run chromium | sed -n 's/^ *Install location: *//p')
+          if [ -z "$dirs" ]; then
+            echo "::error::Playwright listed no browser locations."
+            exit 1
+          fi
+          for dir in $dirs; do
+            if [ ! -d "$dir" ]; then
+              echo "::error::$dir is missing from the Playwright image."
+              exit 1
+            fi
+          done
+          echo "Playwright $lockfile: the image tag matches and its Chromium builds are in place."
 
       - run: npm run db:seed-e2e
         timeout-minutes: 2
