@@ -37,7 +37,7 @@ export default defineConfig({
     ...devices["Desktop Chrome"],
     // Falls back to the machine's installed Chrome when Playwright's own
     // browser download is unavailable; PLAYWRIGHT_CHANNEL is unset in CI, where
-    // `playwright install --with-deps chromium` provides the bundled build.
+    // the job's Playwright container image provides the bundled build.
     channel: process.env.PLAYWRIGHT_CHANNEL || undefined,
   },
   webServer: {
