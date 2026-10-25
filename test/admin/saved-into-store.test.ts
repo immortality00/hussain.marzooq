@@ -56,6 +56,7 @@ describe("blog posts saved on this device", () => {
     isPublished: publishedAt !== null,
     publishedAt,
     updatedAt: "2026-10-01T10:00:00.000Z",
+    notifiedAt: null,
   });
   const form = (title: string) => ({
     title,

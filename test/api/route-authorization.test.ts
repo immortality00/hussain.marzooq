@@ -155,6 +155,13 @@ const routes: Route[] = [
     load: () => import("@/app/api/blog/[id]/route"),
   },
   {
+    name: "POST /api/blog/[id]/notify",
+    method: "POST",
+    path: `/api/blog/${OID}/notify`,
+    params: { id: OID },
+    load: () => import("@/app/api/blog/[id]/notify/route"),
+  },
+  {
     name: "GET /api/blog-categories",
     method: "GET",
     path: "/api/blog-categories",

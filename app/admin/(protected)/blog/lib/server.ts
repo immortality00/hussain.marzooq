@@ -23,6 +23,7 @@ export function blogListItemOf(d: Document, labels: Map<string, string>): BlogLi
     isPublished: d.isPublished === true,
     publishedAt: asIsoDate(d.publishedAt),
     updatedAt: asIsoDate(d.updatedAt),
+    notifiedAt: asIsoDate(d.notifiedAt),
   };
 }
 

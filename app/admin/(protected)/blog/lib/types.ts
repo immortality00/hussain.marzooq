@@ -7,6 +7,7 @@ export type BlogListItem = {
   isPublished: boolean;
   publishedAt: string | null;
   updatedAt: string | null;
+  notifiedAt: string | null;
 };
 
 export type BlogCategoryOption = { id: string; name: string; slug: string };

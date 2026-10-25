@@ -65,6 +65,8 @@ export const DB_INDEXES: IndexRule[] = [
   { collection: "blog_categories", keys: { order: 1, createdAt: -1 } },
   { collection: "blog_categories", keys: { isActive: 1, order: 1 } },
 
+  { collection: "blog_signups", keys: { expiresAt: 1 }, options: { expireAfterSeconds: 0 } },
+
   { collection: "testimonials", keys: { isApproved: 1, sortOrder: 1, approvedAt: -1, createdAt: -1 } },
   { collection: "testimonials", keys: { email: 1, createdAt: -1 }, options: { sparse: true } },
 

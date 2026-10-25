@@ -13,6 +13,15 @@ let warnedAboutTo = false;
 
 type Delivery = { from: string; to: string };
 
+export type EmailContent = { subject: string; html: string; text: string };
+
+/** `Hussain.Art <address>` when `RESEND_DOMAIN` names that address's domain (verified in Resend), else null. */
+export function siteSender(inbox: SiteEmailKey): string | null {
+  const address = SITE_EMAIL[inbox];
+  const domain = process.env.RESEND_DOMAIN?.trim().toLowerCase();
+  return domain && address.endsWith(`@${domain}`) ? `${SENDER_NAME} <${address}>` : null;
+}
+
 /**
  * Where an alert goes. With `RESEND_DOMAIN` naming the domain verified in Resend, the alert goes to its own
  * address and comes from it; without it, Resend's test sender can only reach the account owner, so it goes to
@@ -29,10 +38,8 @@ export function alertDelivery(inbox: SiteEmailKey): Delivery | null {
   }
 
   const address = SITE_EMAIL[inbox];
-  const domain = process.env.RESEND_DOMAIN?.trim().toLowerCase();
-  if (domain && address.endsWith(`@${domain}`)) {
-    return { from: `${SENDER_NAME} <${address}>`, to: address };
-  }
+  const from = siteSender(inbox);
+  if (from) return { from, to: address };
 
   if (!warnedAboutDomain) {
     warnedAboutDomain = true;
@@ -62,6 +69,19 @@ async function sendAdminEmail(delivery: Delivery, subject: string, html: string,
   });
   if (error) {
     throw new Error(`Resend rejected "${subject}": ${error.name} — ${error.message}`);
+  }
+}
+
+/**
+ * An email to a visitor from one of the site's addresses. There is no test-sender fallback: Resend's test domain
+ * delivers only to the account owner, so without `RESEND_DOMAIN` this throws.
+ */
+export async function sendVisitorEmail(inbox: SiteEmailKey, to: string, content: EmailContent) {
+  const from = siteSender(inbox);
+  if (!from) throw new Error(`RESEND_DOMAIN does not cover ${SITE_EMAIL[inbox]}.`);
+  const { error } = await resend.emails.send({ from, to, ...content });
+  if (error) {
+    throw new Error(`Resend rejected "${content.subject}": ${error.name} — ${error.message}`);
   }
 }
 

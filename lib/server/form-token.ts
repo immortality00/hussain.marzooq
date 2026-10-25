@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-export const FORM_KINDS = ["inquiry", "review", "removal"] as const;
+export const FORM_KINDS = ["inquiry", "review", "removal", "subscribe"] as const;
 export type FormKind = (typeof FORM_KINDS)[number];
 
 export const FORM_TOKEN_MIN_AGE_MS = 2500;

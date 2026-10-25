@@ -11,6 +11,7 @@ export const PRIVACY_SECTIONS: PrivacySectionContent[] = [
       "Nothing is collected until you send it. Browsing the work — photography, film, NFT, dance, writing — requires no account, and there is no advertising or profiling on this site.",
       "The booking form collects your name, email, message, and the service or category you picked, so the enquiry can be answered.",
       "A review submitted from the testimonials page collects your name, email, an optional description of who you are, an optional city, your rating, the review text, and any photos you upload. Reviews are published only after approval, and only with the consent you tick when submitting. Your email is never published.",
+      "Subscribing to the blog collects your email address. It is added to the list only after you confirm it from the email that arrives, and every post email carries a link to unsubscribe.",
       "A private client gallery sets one cookie in your browser when you enter its password, so the gallery stays open while you use it. A password-protected profile page works the same way. Neither cookie carries personal data, and neither is used for tracking.",
     ],
   },
@@ -18,6 +19,7 @@ export const PRIVACY_SECTIONS: PrivacySectionContent[] = [
     heading: "How long it is kept",
     body: [
       "Enquiries and reviews are kept in the site's database for as long as they are useful for the work — an enquiry as a record of the project, a review as long as it is published.",
+      `A blog sign-up waits 24 hours for confirmation, then leaves the site's database. A confirmed address is kept by Resend, with the date it was confirmed, while you stay subscribed. Unsubscribing stops every post email at once; to have the address deleted too, write to ${SITE_EMAIL.privacy}.`,
       "Photos attached to a review that is never submitted are deleted when you close the form. Photos in a published review live in Cloudinary alongside it.",
       "Analytics counts are aggregate pageview numbers with no visitor record behind them, so there is nothing tied to you to delete.",
     ],
@@ -62,8 +64,8 @@ export const PROCESSORS: Processor[] = [
   },
   {
     name: "Resend",
-    purpose: "Sends the notification email when a form is submitted.",
-    data: "The name, email, and message on that submission.",
+    purpose: "Sends the notification email when a form is submitted, and the blog's confirmation and new-post emails. Keeps the blog subscriber list.",
+    data: "The name, email, and message on a form submission; a subscriber's email address and confirmation date.",
   },
   {
     name: "Apple iCloud Mail",

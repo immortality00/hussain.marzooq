@@ -19,6 +19,7 @@ const COLLECTIONS_WITHOUT_ASSETS = [
   "admin_passkeys",
   "admin_auth_requests",
   "admin_security",
+  "blog_signups",
 ];
 
 function sourceFiles(dir: string): string[] {

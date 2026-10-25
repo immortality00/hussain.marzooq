@@ -144,3 +144,9 @@ export async function claimDuplicateWindow(params: {
     expiresAt: effectiveExpiry.toISOString(),
   };
 }
+
+/** Ends a duplicate window early, so a request that failed after claiming it can be sent again. */
+export async function releaseDuplicateWindow(params: { bucket: string; key: string }) {
+  const collection = await getRequestGuardsCollection();
+  await collection.deleteOne({ _id: `dedupe:${params.bucket}:${storedGuardKey(params.key)}` });
+}

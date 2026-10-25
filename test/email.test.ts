@@ -21,6 +21,8 @@ import {
   sendRemovalRequestNotification,
   sendSignInRefusedNotification,
   sendTestimonialNotification,
+  sendVisitorEmail,
+  siteSender,
 } from "@/lib/server/email";
 
 const inquiry = {
@@ -134,5 +136,29 @@ describe("replyToAddress", () => {
     `${"a".repeat(250)}@example.com`,
   ])("refuses %j", (value) => {
     expect(replyToAddress(value)).toBeUndefined();
+  });
+});
+
+describe("visitor emails", () => {
+  const content = { subject: "Confirm your subscription", html: "<p>x</p>", text: "x" };
+
+  test("come from the site's own address once the domain is verified", async () => {
+    vi.stubEnv("RESEND_DOMAIN", "hussain.art");
+    expect(siteSender("press")).toBe("Hussain.Art <press@hussain.art>");
+    await sendVisitorEmail("press", "reader@example.com", content);
+    expect(sent()).toEqual({ from: "Hussain.Art <press@hussain.art>", to: "reader@example.com", ...content });
+  });
+
+  test("are never sent from Resend's test sender, which reaches only the account owner", async () => {
+    vi.stubEnv("RESEND_DOMAIN", "example.org");
+    expect(siteSender("press")).toBeNull();
+    await expect(sendVisitorEmail("press", "reader@example.com", content)).rejects.toThrow("RESEND_DOMAIN");
+    expect(send).not.toHaveBeenCalled();
+  });
+
+  test("throw Resend's reason", async () => {
+    vi.stubEnv("RESEND_DOMAIN", "hussain.art");
+    send.mockResolvedValueOnce({ data: null, error: { name: "daily_quota_exceeded", message: "Daily quota reached" } });
+    await expect(sendVisitorEmail("press", "reader@example.com", content)).rejects.toThrow("Daily quota reached");
   });
 });

@@ -5,6 +5,8 @@ import { StickyCta } from "@/components/site/StickyCta";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { NoResults } from "@/components/shared/NoResults";
 import { BlogCard } from "@/components/blog/BlogCard";
+import { BlogSubscribeForm } from "@/components/blog/BlogSubscribeForm";
+import { subscriptionsReady } from "@/lib/server/blog-subscribers";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { getPageSections } from "@/lib/server/page-sections";
@@ -68,6 +70,8 @@ export default async function BlogPage({
         ) : (
           <NoResults className="mt-10">Nothing published here yet.</NoResults>
         )}
+
+        {subscriptionsReady() ? <BlogSubscribeForm className="mt-12 sm:mt-16" /> : null}
       </main>
 
       <StickyCta

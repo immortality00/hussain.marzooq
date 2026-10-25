@@ -13,6 +13,7 @@ import { CLOUDINARY_BLOG_FOLDER } from "@/lib/cloudinary-folders";
 import { slugifyTag } from "@/lib/server/media-tags";
 import { TagsInput } from "./TagsInput";
 import { BlogMarkdownField } from "./BlogMarkdownField";
+import { SendToSubscribers } from "./SendToSubscribers";
 import type { BlogCategoryOption, BlogPostFormValues } from "../lib/types";
 
 const EMPTY: BlogPostFormValues = {
@@ -133,6 +134,8 @@ export function BlogPostEditor({
               label="Toggle published"
             />
           </div>
+
+          {id ? <SendToSubscribers id={id} values={values} /> : null}
 
           <label className="block space-y-1.5">
             <span className="text-xs text-muted-foreground">Category</span>

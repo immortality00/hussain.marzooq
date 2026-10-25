@@ -134,6 +134,20 @@
   }
 }
 
+/* The subscription page's backdrop (app/(site)/subscribe/page.tsx) settles once into place. */
+@keyframes hm-settle {
+  from {
+    transform: scale(1.08);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+.hm-settle {
+  animation: hm-settle 2.4s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .hm-cell-in,
   .hm-cell-out {
@@ -145,7 +159,8 @@
   }
 
   .hm-globe-ping,
-  .hm-float {
+  .hm-float,
+  .hm-settle {
     animation: none;
   }
 

@@ -20,6 +20,8 @@ vi.stubEnv("CLOUDINARY_API_KEY", "key");
 vi.stubEnv("CLOUDINARY_API_SECRET", "secret");
 vi.stubEnv("ADMIN_COOKIE_SECRET", "route-errors-secret");
 vi.stubEnv("ADMIN_PASSWORD_HASH", "scrypt:aa:bb");
+vi.stubEnv("RESEND_DOMAIN", "hussain.art");
+vi.stubEnv("RESEND_AUDIENCE_KEY", "re_audience_test");
 
 import { routeErrorResponse, isDatabaseUnavailable } from "@/app/api/_lib/route-errors";
 import { issueFormToken, type FormKind } from "@/lib/server/form-token";
@@ -46,6 +48,8 @@ const routes: [string, () => Promise<Response>][] = [
   ["media search", async () => (await import("@/app/api/media/list-public/route")).GET(new Request("http://l/x?q=a"))],
   ["gallery asset", async () => (await import("@/app/api/media/asset/[mediaId]/route")).GET(new Request("http://l/x?g=a"), mediaCtx)],
   ["inquiry", async () => (await import("@/app/api/inquiries/route")).POST(new Request("http://l/x", json({ name: "A", email: "a@b.co", message: "hello there", formToken: oldToken("inquiry") })))],
+  ["blog subscribe", async () => (await import("@/app/api/subscribe/route")).POST(new Request("http://l/x", json({ email: "a@b.co", formToken: oldToken("subscribe") })))],
+  ["blog subscribe confirm", async () => (await import("@/app/api/subscribe/confirm/route")).POST(new Request("http://l/x", json({ token: "A".repeat(43) })))],
   ["media tags", async () => (await import("@/app/api/media-tags/route")).GET(new Request("http://l/x"))],
   ["admin sign-in", async () => (await import("@/app/admin/login/route")).POST(new Request("http://l/x", { method: "POST", body: new URLSearchParams({ password: "p" }) }))],
   ["admin passkey options", async () => (await import("@/app/admin/login/passkey/options/route")).POST(new Request("http://l/x", { method: "POST" }))],

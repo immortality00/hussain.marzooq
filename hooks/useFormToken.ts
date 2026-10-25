@@ -3,7 +3,7 @@
 import { useCallback, useRef } from "react";
 import { errorMessage } from "@/lib/error-message";
 
-type FormKind = "inquiry" | "removal";
+type FormKind = "inquiry" | "removal" | "subscribe";
 type Issued = { token: string; receivedAt: number };
 
 export const FORM_TOKEN_READY_MS = 2700;

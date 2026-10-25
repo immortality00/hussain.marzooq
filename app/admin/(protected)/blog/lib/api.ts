@@ -36,6 +36,10 @@ export async function updatePost(id: string, patch: Partial<BlogPostFormValues>,
   return readSaved(await adminWrite(`/api/blog/${id}`, { method: "PATCH", headers, body: JSON.stringify(patch) }, TOUCHES));
 }
 
+export async function sendToSubscribers(id: string): Promise<SavedPost> {
+  return readSaved(await adminWrite(`/api/blog/${id}/notify`, { method: "POST" }, ["blog"]));
+}
+
 export async function deletePost(id: string): Promise<void> {
   const res = await adminWrite(`/api/blog/${id}`, { method: "DELETE" }, TOUCHES);
   if (!res.ok) {
