@@ -3,7 +3,11 @@ import { listAdminInquiries } from "@/lib/server/admin-lists";
 import { ObjectId } from "mongodb";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
-import { claimDuplicateWindow, consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
+import {
+  claimDuplicateWindow,
+  consumeFixedWindowRateLimit,
+  releaseDuplicateWindow,
+} from "@/lib/server/request-guards";
 import { queueAdminAlert } from "@/lib/server/admin-alerts";
 import {
   asNullableString,
@@ -97,27 +101,6 @@ async function handlePost(req: Request) {
     );
   }
 
-  const duplicateKey = createHash("sha256")
-    .update(
-      [email, serviceId ?? requestedServiceName ?? "", requestedCategory, message]
-        .join("|")
-        .toLowerCase()
-    )
-    .digest("hex");
-
-  const dedupe = await claimDuplicateWindow({
-    bucket: "public-inquiries-dedupe",
-    key: duplicateKey,
-    windowMs: INQUIRIES_DUPLICATE_WINDOW_MS,
-  });
-
-  if (dedupe.duplicated) {
-    return noStoreJson(
-      { ok: false, error: "This inquiry looks duplicated. Please wait before sending again." },
-      { status: 409 }
-    );
-  }
-
   const db = await getDb();
 
   let category: string | null = requestedCategory || null;
@@ -152,21 +135,48 @@ async function handlePost(req: Request) {
     category = typeof service.category === "string" ? service.category : category;
   }
 
+  const duplicateKey = createHash("sha256")
+    .update(
+      [email, serviceId ?? requestedServiceName ?? "", requestedCategory, message]
+        .join("|")
+        .toLowerCase()
+    )
+    .digest("hex");
+  const dedupeWindow = { bucket: "public-inquiries-dedupe", key: duplicateKey };
+
+  const dedupe = await claimDuplicateWindow({
+    ...dedupeWindow,
+    windowMs: INQUIRIES_DUPLICATE_WINDOW_MS,
+  });
+
+  if (dedupe.duplicated) {
+    return noStoreJson(
+      { ok: false, error: "This inquiry looks duplicated. Please wait before sending again." },
+      { status: 409 }
+    );
+  }
+
   const now = new Date();
 
-  const insertResult = await db.collection("inquiries").insertOne({
-    name,
-    email,
-    message,
-    category,
-    serviceId,
-    serviceName,
-    status: "new",
-    adminNotes: "",
-    isArchived: false,
-    createdAt: now,
-    updatedAt: now,
-  });
+  let insertResult;
+  try {
+    insertResult = await db.collection("inquiries").insertOne({
+      name,
+      email,
+      message,
+      category,
+      serviceId,
+      serviceName,
+      status: "new",
+      adminNotes: "",
+      isArchived: false,
+      createdAt: now,
+      updatedAt: now,
+    });
+  } catch (error) {
+    await releaseDuplicateWindow(dedupeWindow);
+    throw error;
+  }
 
   if (serviceId) {
     await db.collection("services").updateOne(
