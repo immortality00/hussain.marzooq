@@ -9,6 +9,8 @@ const SANS = "-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-s
 const SERIF = "'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif";
 const SIGNATURE = { path: "/brand/signature-white.png", width: 140, height: 69 };
 
+export const SIGN_OFF = "Hussain.Art — Dubai based, available worldwide.";
+
 const row = (cell: string, style = "") => `<tr><td style="${style}">${cell}</td></tr>`;
 
 export function headline(text: string, size = 34) {
@@ -19,6 +21,14 @@ export function headline(text: string, size = 34) {
 
 export function paragraph(text: string) {
   return row(`<p style="margin:0;font-family:${SANS};font-size:16px;line-height:1.65;color:#b3b3b3">${escapeHtml(text)}</p>`, "padding:18px 0 0");
+}
+
+/** Text someone wrote (a message, a review, a reason), with their line breaks kept. */
+export function quote(text: string) {
+  return row(
+    `<p style="margin:0;padding:0 0 0 16px;border-left:2px solid #333333;font-family:${SANS};font-size:16px;line-height:1.65;color:#d4d4d4;white-space:pre-line">${escapeHtml(text)}</p>`,
+    "padding:22px 0 0"
+  );
 }
 
 export function meta(text: string) {

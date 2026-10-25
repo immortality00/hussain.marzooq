@@ -8,6 +8,8 @@ import { CardsCtaForm } from "./CardsCtaForm";
 import { CtaOnlyForm } from "./CtaOnlyForm";
 import { DancingSectionsForm } from "./DancingSectionsForm";
 import { WebDevSectionsForm } from "./WebDevSectionsForm";
+import { BlogSectionsForm } from "./BlogSectionsForm";
+import { ContactSectionsForm } from "./ContactSectionsForm";
 
 type AnySections = PageSectionsMap[PageSectionsSlug];
 
@@ -15,7 +17,6 @@ const CTA_ONLY_SLUGS: PageSectionsSlug[] = [
   "photography",
   "videography",
   "nft",
-  "blog",
   "people",
   "people-detail",
   "testimonials",
@@ -51,10 +52,13 @@ function SectionForm({
       return (
         <WebDevSectionsForm data={data as PageSectionsMap["web-development"]} onChange={onChange} />
       );
+    case "blog":
+      return <BlogSectionsForm data={data as PageSectionsMap["blog"]} onChange={onChange} />;
+    case "contact":
+      return <ContactSectionsForm data={data as PageSectionsMap["contact"]} onChange={onChange} />;
     case "photography":
     case "videography":
     case "nft":
-    case "blog":
     case "people":
     case "people-detail":
     case "testimonials":

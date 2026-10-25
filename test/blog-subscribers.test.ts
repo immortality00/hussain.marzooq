@@ -124,6 +124,22 @@ describe("sendPostBroadcast", () => {
     });
   });
 
+  test("with the posts' subdomain set, sends from press@ on it and replies reach press@hussain.art", async () => {
+    vi.stubEnv("RESEND_NEWS_DOMAIN", "news.hussain.art");
+    await (await load()).sendPostBroadcast("post1", content);
+    expect(api.broadcastsCreate).toHaveBeenCalledWith(
+      expect.objectContaining({ from: "Hussain.Art <press@news.hussain.art>", replyTo: "press@hussain.art" })
+    );
+  });
+
+  test("a posts' domain that is not a hussain.art subdomain is never used", async () => {
+    vi.stubEnv("RESEND_NEWS_DOMAIN", "news.example.com");
+    await (await load()).sendPostBroadcast("post1", content);
+    const sent = api.broadcastsCreate.mock.calls.at(-1)?.[0] as Record<string, unknown>;
+    expect(sent.from).toBe("Hussain.Art <press@hussain.art>");
+    expect(sent).not.toHaveProperty("replyTo");
+  });
+
   test("never sends a post twice: a broadcast already out under its name is returned", async () => {
     api.broadcastsList.mockResolvedValue(
       ok({ data: [{ id: "bc_draft", name: "blog-post:post1", status: "draft" }, { id: "bc_old", name: "blog-post:post1", status: "sent" }] })

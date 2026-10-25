@@ -8,9 +8,9 @@ import { deleteReplacedSectionImages } from "@/lib/server/section-images";
 import { storedPageSections } from "@/lib/server/admin-pages";
 import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 import { isRecord } from "@/app/api/_lib/common";
-import { normalizeSearchProfile, profileForSave, shownProfileLinks } from "@/lib/seo/search-profile";
-import { heroForSave } from "@/lib/hero-photos";
+import { normalizeSearchProfile, shownProfileLinks } from "@/lib/seo/search-profile";
 import { resolveLinkLogos } from "@/lib/server/link-logos";
+import { sectionsForSave } from "../_lib/sections-for-save";
 
 const SLUG_TO_PATH: Record<PageSectionsSlug, string> = {
   home: "/",
@@ -24,6 +24,7 @@ const SLUG_TO_PATH: Record<PageSectionsSlug, string> = {
   people: "/people",
   "people-detail": "/people/[slug]",
   testimonials: "/testimonials",
+  contact: "/contact",
 };
 
 export async function PATCH(
@@ -38,26 +39,18 @@ export async function PATCH(
     return NextResponse.json({ error: "Unknown slug" }, { status: 400 });
   }
 
-  const data: unknown = await req.json().catch(() => null);
+  const body: unknown = await req.json().catch(() => null);
   // The whole body is the sections blob, always replaced wholesale. Guard the
   // shape: a null/array/primitive body would corrupt the stored document and,
   // via the replace-delete diff below, orphan-delete every uploaded asset. An
   // empty object stays valid — "empty means empty" is intentional.
-  if (!isRecord(data) || Array.isArray(data)) {
+  if (!isRecord(body) || Array.isArray(body)) {
     return NextResponse.json({ error: "data must be an object" }, { status: 400 });
   }
 
-  if (slug === "about" && "profile" in data) {
-    const saved = profileForSave(data.profile);
-    if ("error" in saved) return NextResponse.json({ error: saved.error }, { status: 400 });
-    data.profile = saved.profile;
-  }
-
-  if (slug === "home" && "hero" in data) {
-    const hero = heroForSave(data.hero);
-    if ("error" in hero) return NextResponse.json({ error: hero.error }, { status: 400 });
-    data.hero = hero;
-  }
+  const checked = sectionsForSave(slug as PageSectionsSlug, body);
+  if ("error" in checked) return NextResponse.json({ error: checked.error }, { status: 400 });
+  const data = checked.data;
 
   const db = await getDb();
 
@@ -85,8 +78,8 @@ export async function PATCH(
     .updateOne({ slug }, { $set: { data, updatedAt: new Date() } }, { upsert: true });
 
   const path = SLUG_TO_PATH[slug as PageSectionsSlug];
-  if (slug === "about") {
-    // Every public page shows the profile's social links.
+  if (slug === "about" || slug === "contact") {
+    // Every public page shows the profile's social links and the footer's email list.
     revalidateSitePages();
   } else if (path === "/people/[slug]") {
     revalidatePublicPattern(path);

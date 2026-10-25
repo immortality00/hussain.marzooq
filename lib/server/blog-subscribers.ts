@@ -1,5 +1,5 @@
 import { Resend } from "resend";
-import { siteSender, type EmailContent } from "@/lib/server/email";
+import { postSender, siteSender, type EmailContent } from "@/lib/server/email";
 
 /** The Resend segment that holds confirmed blog subscribers; found by name, created on first use. */
 export const BLOG_SEGMENT_NAME = "Blog subscribers";
@@ -67,10 +67,10 @@ async function sentBroadcast(resend: Resend, name: string): Promise<string | nul
   return listed.data.data.find((b) => b.name === name && b.status !== "draft")?.id ?? null;
 }
 
-/** Sends one post to every subscriber, from press@. Returns the broadcast id. */
+/** Sends one post to every subscriber, from press@ on the posts' own subdomain once set. Returns the broadcast id. */
 export async function sendPostBroadcast(postId: string, content: EmailContent & { previewText: string }) {
-  const from = siteSender("press");
-  if (!from) throw new Error("RESEND_DOMAIN does not cover press@.");
+  const sender = postSender();
+  if (!sender) throw new Error("RESEND_DOMAIN does not cover press@.");
   const resend = audience();
   const name = `blog-post:${postId}`;
   const earlier = await sentBroadcast(resend, name);
@@ -79,7 +79,8 @@ export async function sendPostBroadcast(postId: string, content: EmailContent & 
   const created = await resend.broadcasts.create({
     name,
     segmentId: await blogSegmentId(resend),
-    from,
+    from: sender.from,
+    ...(sender.replyTo ? { replyTo: sender.replyTo } : {}),
     subject: content.subject,
     previewText: content.previewText,
     html: content.html,

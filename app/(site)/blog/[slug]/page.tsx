@@ -7,6 +7,7 @@ import { StickyCta } from "@/components/site/StickyCta";
 import { BlogContent } from "@/components/blog/BlogContent";
 import { BlogSubscribeForm } from "@/components/blog/BlogSubscribeForm";
 import { subscriptionsReady } from "@/lib/server/blog-subscribers";
+import { publishedSubscribeCopy } from "@/lib/blog-subscribe-copy";
 import { formatBlogDate } from "@/components/blog/formatDate";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
@@ -125,7 +126,9 @@ export default async function BlogPostPage({
             </div>
           ) : null}
 
-          {subscriptionsReady() ? <BlogSubscribeForm className="mt-12" /> : null}
+          {subscriptionsReady() ? (
+            <BlogSubscribeForm copy={publishedSubscribeCopy(sections.subscribe)} className="mt-12" />
+          ) : null}
         </article>
       </main>
 

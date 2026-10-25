@@ -15,6 +15,8 @@ import {
 import { buildFallback } from "@/lib/server/public-read";
 import { heroPhotosOf, type HeroPhoto } from "@/lib/hero-photos";
 import type { LinkLogo } from "@/lib/social-links";
+import { DEFAULT_EMAIL_LIST, type EmailListItem } from "@/lib/email-list";
+import { DEFAULT_SUBSCRIBE_COPY, type SubscribeCopy } from "@/lib/blog-subscribe-copy";
 
 export type {
   FeaturedCard,
@@ -58,6 +60,11 @@ export type WebDevSections = {
   stickyCta: CtaCopy;
 };
 
+export type BlogSections = { subscribe: SubscribeCopy; stickyCta: CtaCopy };
+
+// The footer shows the same email list, so a save refreshes every public page.
+export type ContactSections = { heading: string; emails: EmailListItem[] };
+
 export type CtaOnlySections = { stickyCta: CtaCopy };
 
 export type PageSectionsMap = {
@@ -67,11 +74,12 @@ export type PageSectionsMap = {
   videography: CtaOnlySections;
   dancing: DancingSections;
   "web-development": WebDevSections;
-  blog: CtaOnlySections;
+  blog: BlogSections;
   nft: CtaOnlySections;
   people: CtaOnlySections;
   "people-detail": CtaOnlySections;
   testimonials: CtaOnlySections;
+  contact: ContactSections;
 };
 
 export type PageSectionsSlug = keyof PageSectionsMap;
@@ -175,7 +183,7 @@ const DEFAULTS: PageSectionsMap = {
     },
     stickyCta: BOOKING_CTA,
   },
-  blog: { stickyCta: BOOKING_CTA },
+  blog: { subscribe: DEFAULT_SUBSCRIBE_COPY, stickyCta: BOOKING_CTA },
   nft: {
     stickyCta: {
       title: "Interested in a piece?",
@@ -198,6 +206,7 @@ const DEFAULTS: PageSectionsMap = {
     },
   },
   testimonials: { stickyCta: BOOKING_CTA },
+  contact: { heading: "Or write directly", emails: DEFAULT_EMAIL_LIST },
 };
 
 export const ALL_PAGE_SECTIONS_SLUGS = Object.keys(DEFAULTS) as PageSectionsSlug[];
@@ -253,6 +262,9 @@ export async function readAllPageSections(): Promise<StoredPageSections[]> {
 
 // One read per render: the layout's social links and a page's Person data share it.
 export const getAboutSections = cache(() => getPageSections("about"));
+
+// One read per render: the footer's email list and the Contact page share it.
+export const getContactSections = cache(() => getPageSections("contact"));
 
 export async function getSearchProfile(): Promise<SearchProfile> {
   return normalizeSearchProfile((await getAboutSections()).profile);

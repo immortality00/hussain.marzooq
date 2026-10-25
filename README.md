@@ -39,8 +39,9 @@ Required environment variables (in `.env.local`, never committed):
 - `RESEND_API_KEY` — transactional email
 - `NOTIFICATION_EMAIL` — turns admin alert emails on (blank = off) and receives them until
   `RESEND_DOMAIN` is set; `RESEND_DOMAIN` — the domain verified in Resend (`hussain.art`): each
-  alert then goes to its own address in `lib/site-emails.ts` (without it, Resend's test sender
-  only delivers to the Resend account owner)
+  alert then goes to its own address in `lib/site-emails.ts` (inquiries@ for the contact form; without it, Resend's test sender
+  only delivers to the Resend account owner); `RESEND_NEWS_DOMAIN` — the Resend-verified subdomain blog
+  posts are sent from (`news.hussain.art`; unset, posts come from `RESEND_DOMAIN`)
 - `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` — admin push notifications; generate once with
   `node scripts/generate-vapid-keys.mjs` (optional `VAPID_SUBJECT`, defaults to the site URL)
 - Cloudinary credentials (cloud name, API key/secret) — see `lib/` for the exact names

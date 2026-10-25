@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getFooterPageSettings } from "@/lib/server/page-settings";
 import { DISCIPLINES } from "@/lib/disciplines";
 import { EmailDirectory } from "@/components/shared/EmailDirectory";
+import { getFooterEmails } from "@/lib/server/email-list";
 
 const ALWAYS_ON_PRIMARY = [
   { href: "/services", label: "Services" },
@@ -11,7 +12,7 @@ const ALWAYS_ON_PRIMARY = [
 const PRIMARY_DISCIPLINE_SLUGS = new Set(["photography", "videography"]);
 
 export async function SiteFooter() {
-  const pageSettings = await getFooterPageSettings();
+  const [pageSettings, emails] = await Promise.all([getFooterPageSettings(), getFooterEmails()]);
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
   const secondaryAlwaysOn = [
@@ -75,12 +76,14 @@ export async function SiteFooter() {
             </div>
           </div>
 
-          <div>
-            <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Email
+          {emails.length > 0 && (
+            <div>
+              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                Email
+              </div>
+              <EmailDirectory emails={emails} className="mt-4" />
             </div>
-            <EmailDirectory className="mt-4" />
-          </div>
+          )}
         </div>
 
         <div className="mt-10 flex flex-col gap-3 border-t pt-6 with-sticky-cta:pb-20 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">

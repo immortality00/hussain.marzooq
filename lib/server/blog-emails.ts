@@ -2,7 +2,7 @@ import cloudinaryImageLoader from "@/lib/cloudinary-image-loader";
 import { isHttpUrl } from "@/lib/http-url";
 import { absoluteUrl } from "@/lib/seo/site-url";
 import type { EmailContent } from "@/lib/server/email";
-import { footerLink, frame, headline, image, meta, note, paragraph, pill, plainLink } from "@/lib/server/email-frame";
+import { footerLink, frame, headline, image, meta, note, paragraph, pill, plainLink, SIGN_OFF } from "@/lib/server/email-frame";
 
 /** Resend swaps this for each subscriber's own unsubscribe link when the broadcast goes out. */
 export const UNSUBSCRIBE_PLACEHOLDER = "{{{RESEND_UNSUBSCRIBE_URL}}}";
@@ -12,7 +12,6 @@ export const SUBSCRIBE_PAGE_PATH = "/subscribe";
 /** 2× the email's 560px column, and a width already on Cloudinary's strict allow list. */
 const COVER_WIDTH = 1200;
 const PREVIEW_MAX = 150;
-const SIGN_OFF = "Hussain.Art — Dubai based, available worldwide.";
 
 export type PostEmailInput = {
   title: string;

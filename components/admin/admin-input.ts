@@ -20,7 +20,11 @@ export function adminInputClasses(size: AdminInputSize = "md", className?: strin
 }
 
 export function adminFieldShellClasses(className?: string) {
-  return cn(FIELD, "focus-within:ring-2 focus-within:ring-ring", className);
+  return cn(
+    FIELD,
+    "focus-within:ring-2 focus-within:ring-ring has-[[aria-invalid=true]]:border-destructive has-[[aria-invalid=true]]:focus-within:ring-destructive",
+    className,
+  );
 }
 
 export function adminCheckboxClasses(className?: string) {

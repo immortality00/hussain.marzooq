@@ -6,7 +6,8 @@ import type { FormStatusState } from "@/components/shared/FormStatus";
 
 type SubscribeReply = { ok?: boolean; error?: string } | null;
 
-export function useBlogSubscribe() {
+/** `confirmation` is the line shown once the confirmation email is on its way. */
+export function useBlogSubscribe(confirmation: string) {
   const formToken = useFormToken("subscribe");
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
@@ -34,7 +35,7 @@ export function useBlogSubscribe() {
       if (!res.ok || !data?.ok) return fail(data?.error ?? `error ${res.status}`);
       formToken.renew();
       setEmail("");
-      setStatus({ type: "ok", text: "Almost there — check your inbox to confirm." });
+      setStatus({ type: "ok", text: confirmation });
     } catch {
       fail("no connection.");
     } finally {

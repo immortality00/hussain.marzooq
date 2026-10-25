@@ -80,7 +80,7 @@ export const PAGE_ROWS: PageRow[] = [
     seoSlug: "blog-detail",
     seoDetailPage: true,
   },
-  { key: "contact", label: "Contact", seoSlug: "contact" },
+  { key: "contact", label: "Contact", seoSlug: "contact", sectionsSlug: "contact" },
   { key: "testimonials", label: "Testimonials", seoSlug: "testimonials", sectionsSlug: "testimonials" },
   { key: "privacy", label: "Privacy", seoSlug: "privacy" },
 ];

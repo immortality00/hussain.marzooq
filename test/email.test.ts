@@ -16,6 +16,7 @@ vi.mock("@/lib/server/get-base-url", () => ({ getBaseUrl: async () => "https://h
 
 import {
   alertDelivery,
+  postSender,
   replyToAddress,
   sendInquiryNotification,
   sendRemovalRequestNotification,
@@ -53,13 +54,19 @@ afterEach(() => {
 describe("with hussain.art verified", () => {
   beforeEach(() => vi.stubEnv("RESEND_DOMAIN", "hussain.art"));
 
-  test("a booking goes to book@, from book@, and Reply answers the visitor", async () => {
+  test("an inquiry goes to inquiries@, from inquiries@, and Reply answers the visitor", async () => {
     await sendInquiryNotification(inquiry);
     expect(sent()).toMatchObject({
-      from: "Hussain.Art <book@hussain.art>",
-      to: "book@hussain.art",
+      from: "Hussain.Art <inquiries@hussain.art>",
+      to: "inquiries@hussain.art",
       replyTo: ["sara@example.com"],
     });
+  });
+
+  test("an alert is sent in the site's email layout with a plain-text version", async () => {
+    await sendInquiryNotification(inquiry);
+    expect(sent()?.html).toContain("/brand/signature-white.png");
+    expect(sent()?.text).toContain("A wedding film in March.");
   });
 
   test("a review goes to hussain@", async () => {
@@ -84,7 +91,7 @@ describe("with hussain.art verified", () => {
 
   test("a visitor address that could name several recipients is left out of Reply-To", async () => {
     await sendInquiryNotification({ ...inquiry, email: "a,victim@example.com" });
-    expect(sent()).toMatchObject({ to: "book@hussain.art" });
+    expect(sent()).toMatchObject({ to: "inquiries@hussain.art" });
     expect(sent()).not.toHaveProperty("replyTo");
   });
 
@@ -106,7 +113,7 @@ describe("before the domain is verified", () => {
 
   test("a RESEND_DOMAIN other than the addresses' domain is never used as the sender", () => {
     vi.stubEnv("RESEND_DOMAIN", "example.com");
-    expect(alertDelivery("book")).toEqual({ from: "Hussain.Art <onboarding@resend.dev>", to: "owner@example.com" });
+    expect(alertDelivery("inquiries")).toEqual({ from: "Hussain.Art <onboarding@resend.dev>", to: "owner@example.com" });
   });
 });
 
@@ -160,5 +167,28 @@ describe("visitor emails", () => {
     vi.stubEnv("RESEND_DOMAIN", "hussain.art");
     send.mockResolvedValueOnce({ data: null, error: { name: "daily_quota_exceeded", message: "Daily quota reached" } });
     await expect(sendVisitorEmail("press", "reader@example.com", content)).rejects.toThrow("Daily quota reached");
+  });
+});
+
+describe("postSender", () => {
+  test("without the posts' subdomain, posts come from press@hussain.art", () => {
+    vi.stubEnv("RESEND_DOMAIN", "hussain.art");
+    expect(postSender()).toEqual({ from: "Hussain.Art <press@hussain.art>" });
+  });
+
+  test("with it, from press@news.hussain.art, replies to press@hussain.art", () => {
+    vi.stubEnv("RESEND_DOMAIN", "hussain.art");
+    vi.stubEnv("RESEND_NEWS_DOMAIN", " News.Hussain.Art ");
+    expect(postSender()).toEqual({ from: "Hussain.Art <press@news.hussain.art>", replyTo: "press@hussain.art" });
+  });
+
+  test("never without the main domain verified, and never another domain or the main domain itself", () => {
+    vi.stubEnv("RESEND_NEWS_DOMAIN", "news.hussain.art");
+    expect(postSender()).toBeNull();
+    vi.stubEnv("RESEND_DOMAIN", "hussain.art");
+    for (const value of ["news.example.com", "hussain.art", "evilhussain.art"]) {
+      vi.stubEnv("RESEND_NEWS_DOMAIN", value);
+      expect(postSender()).toEqual({ from: "Hussain.Art <press@hussain.art>" });
+    }
   });
 });
