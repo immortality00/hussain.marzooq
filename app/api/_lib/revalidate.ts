@@ -1,6 +1,6 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+import { TRANSITION_IMAGES_TAG } from "@/lib/transition-images";
 
-const MEDIA_BASE_PATHS = ["/", "/photography", "/videography", "/nft"];
 const PUBLIC_ROUTE_GROUP = "/(site)";
 
 function publicRoutePath(path: string) {
@@ -15,22 +15,15 @@ export function revalidatePublicPattern(pattern: string) {
   revalidatePath(publicRoutePath(pattern), "page");
 }
 
-// Revalidates every surface a media change can affect. Tag subpages are derived
-// from the document's own tag slugs (pass old + new on an edit) so a saved doc
-// never leaves a stale /photography/[tag] or /videography/[tag] behind — the
-// bug §S9 warns about when the path list is hardcoded.
-export function revalidateMediaSurfaces(tagSlugs: Iterable<string> = []) {
-  for (const path of MEDIA_BASE_PATHS) revalidatePath(path);
-  revalidatePublicTree("/people");
-
-  const unique = new Set<string>();
-  for (const slug of tagSlugs) {
-    if (typeof slug === "string" && slug) unique.add(slug);
-  }
-  for (const slug of unique) {
-    revalidatePath(`/photography/${slug}`);
-    revalidatePath(`/videography/${slug}`);
-  }
+// Every public page carries the page-transition photos (a cached random pick in
+// the (site) layout), so any change to which photos are public, or to their
+// files, drops that pick and refreshes every page — which also covers the
+// discipline, tag, people and home pages that show the media itself.
+// expire: 0 makes the next request pick again rather than be served the old pick
+// while it does, so a hidden or deleted photo never shows as an empty cell.
+export function revalidateMediaSurfaces() {
+  revalidateTag(TRANSITION_IMAGES_TAG, { expire: 0 });
+  revalidateSitePages();
 }
 
 export function revalidateSitePages() {

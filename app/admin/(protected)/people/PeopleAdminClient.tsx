@@ -13,6 +13,7 @@ import { RecordChangedDialog } from "@/components/admin/record-changed/RecordCha
 import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
 import { AvatarUploadField } from "@/components/shared/upload/AvatarUploadField";
 import { adminInputClasses } from "@/components/admin/admin-input";
+import { StickyToolbar } from "@/components/shared/StickyToolbar";
 
 function statusLabel(item: { isPublic: boolean; isPrivate: boolean }) {
   if (item.isPublic === false) return "Hidden";
@@ -122,16 +123,18 @@ export default function PeopleAdminClient() {
 
       {mode === "list" ? (
         <section className="mt-8 rounded-[2rem] border p-5">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="text-sm font-medium">Profiles</div>
+          <StickyToolbar surface="admin" className="[--sticky-bleed:1.25rem]">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="text-sm font-medium">Profiles</div>
 
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search profiles..."
-              className={adminInputClasses("md", "max-w-xs")}
-            />
-          </div>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search profiles..."
+                className={adminInputClasses("md", "max-w-xs")}
+              />
+            </div>
+          </StickyToolbar>
 
           {items.length > 0 && (
             <div className="mt-4 flex items-center gap-2.5 text-sm text-muted-foreground">

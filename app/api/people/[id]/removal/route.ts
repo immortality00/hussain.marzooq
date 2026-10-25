@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { revalidateMediaSurfaces } from "@/app/api/_lib/revalidate";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import { asNullableString, isRecord, noStoreJson } from "@/app/api/_lib/common";
 import { getDb } from "@/lib/server/db";
@@ -102,7 +103,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
     .updateMany({ personId: id, status: "pending" }, { $set: { status: "approved", decidedAt: now } });
 
   revalidatePath("/admin/removal-requests");
-  revalidatePath("/", "layout");
+  revalidateMediaSurfaces();
   if (slug) revalidatePath(`/people/${slug}`);
 
   return decided(db, oid, deliveryError);

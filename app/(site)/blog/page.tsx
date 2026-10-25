@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { StickyCta } from "@/components/site/StickyCta";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { NoResults } from "@/components/shared/NoResults";
+import { ChipScroller } from "@/components/shared/ChipScroller";
+import { StickyToolbar } from "@/components/shared/StickyToolbar";
+import { chipClasses } from "@/components/shared/chip-classes";
 import { BlogCard } from "@/components/blog/BlogCard";
 import { BlogSubscribeForm } from "@/components/blog/BlogSubscribeForm";
 import { subscriptionsReady } from "@/lib/server/blog-subscribers";
@@ -48,29 +51,34 @@ export default async function BlogPage({
       <main className="section-shell py-12 sm:py-16">
         <PageHeader title={seo.headerTitle} description={seo.headerDescription} className="max-w-3xl" />
 
-        {categories.length > 0 ? (
-          <div className="mt-8 flex flex-wrap gap-2">
-            <CategoryChip href="/blog" label="All" active={!activeCategory} />
-            {categories.map((c) => (
-              <CategoryChip
-                key={c.slug}
-                href={`/blog?category=${c.slug}`}
-                label={c.label}
-                active={activeCategory === c.slug}
-              />
-            ))}
-          </div>
-        ) : null}
+        {/* One box for the chips and the posts, so the chips stop sticking with the last post. */}
+        <div>
+          {categories.length > 0 ? (
+            <StickyToolbar className="mt-8">
+              <ChipScroller>
+                <CategoryChip href="/blog" label="All" active={!activeCategory} />
+                {categories.map((c) => (
+                  <CategoryChip
+                    key={c.slug}
+                    href={`/blog?category=${c.slug}`}
+                    label={c.label}
+                    active={activeCategory === c.slug}
+                  />
+                ))}
+              </ChipScroller>
+            </StickyToolbar>
+          ) : null}
 
-        {posts.length > 0 ? (
-          <section className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {posts.map((post, i) => (
-              <BlogCard key={post.id} post={post} priority={i < 3} />
-            ))}
-          </section>
-        ) : (
-          <NoResults className="mt-10">Nothing published here yet.</NoResults>
-        )}
+          {posts.length > 0 ? (
+            <section className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+              {posts.map((post, i) => (
+                <BlogCard key={post.id} post={post} priority={i < 3} />
+              ))}
+            </section>
+          ) : (
+            <NoResults className="mt-10">Nothing published here yet.</NoResults>
+          )}
+        </div>
 
         {subscriptionsReady() ? (
           <BlogSubscribeForm copy={publishedSubscribeCopy(content.subscribe)} className="mt-12 sm:mt-16" />
@@ -88,12 +96,7 @@ export default async function BlogPage({
 
 function CategoryChip({ href, label, active }: { href: string; label: string; active: boolean }) {
   return (
-    <Link
-      href={href}
-      className={`rounded-full border px-3.5 py-1.5 text-xs transition-colors ${
-        active ? "border-foreground bg-foreground text-background" : "hover:bg-accent"
-      }`}
-    >
+    <Link href={href} className={chipClasses(active, "shrink-0 whitespace-nowrap")}>
       {label}
     </Link>
   );

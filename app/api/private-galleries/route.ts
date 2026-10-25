@@ -1,8 +1,8 @@
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
+import { revalidateMediaSurfaces } from "@/app/api/_lib/revalidate";
 import { listAdminPrivateGalleries, storedGallery } from "@/lib/server/admin-lists";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
-import { TRANSITION_IMAGES_TAG } from "@/lib/server/public-media";
 import {
   asBooleanOrNull,
   asNullableString,
@@ -123,8 +123,7 @@ export async function POST(req: Request) {
   });
 
   revalidatePath(`/g/${slug}`);
-  revalidatePath("/", "layout");
-  revalidateTag(TRANSITION_IMAGES_TAG, "max");
+  revalidateMediaSurfaces();
 
   return noStoreJson({ ok: true, id: String(result.insertedId), slug, item: await storedGallery(db, result.insertedId) });
 }

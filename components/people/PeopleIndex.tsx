@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import SmartImage from "@/components/shared/SmartImage";
 import { SearchInput } from "@/components/search/SearchInput";
 import { NoResults } from "@/components/shared/NoResults";
+import { StickyToolbar } from "@/components/shared/StickyToolbar";
 import type { PublicPersonIndexItem } from "@/lib/server/public-people";
 import { Button } from "@/components/shared/Button";
 
@@ -22,12 +23,14 @@ export default function PeopleIndex({ items }: { items: PublicPersonIndexItem[] 
 
   return (
     <div className="mt-10 space-y-6">
-      <SearchInput
-        value={query}
-        onValueChange={setQuery}
-        placeholder="Search people..."
-        resultText={`${filtered.length} result${filtered.length === 1 ? "" : "s"}`}
-      />
+      <StickyToolbar>
+        <SearchInput
+          value={query}
+          onValueChange={setQuery}
+          placeholder="Search people..."
+          resultText={`${filtered.length} result${filtered.length === 1 ? "" : "s"}`}
+        />
+      </StickyToolbar>
 
       {filtered.length === 0 ? (
         <NoResults>No people match this search.</NoResults>

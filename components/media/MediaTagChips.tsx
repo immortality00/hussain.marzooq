@@ -1,5 +1,6 @@
 "use client";
 
+import { ChipScroller } from "@/components/shared/ChipScroller";
 import { chipClasses } from "@/components/shared/chip-classes";
 
 export default function MediaTagChips({
@@ -14,11 +15,11 @@ export default function MediaTagChips({
   if (!allTags.length) return null;
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <ChipScroller>
       <button
         type="button"
         onClick={() => setActiveTag("")}
-        className={chipClasses(activeTag === "")}
+        className={chipClasses(activeTag === "", "shrink-0 whitespace-nowrap")}
       >
         All
       </button>
@@ -28,11 +29,11 @@ export default function MediaTagChips({
           key={t}
           type="button"
           onClick={() => setActiveTag(t === activeTag ? "" : t)}
-          className={chipClasses(t === activeTag)}
+          className={chipClasses(t === activeTag, "shrink-0 whitespace-nowrap")}
         >
           {t}
         </button>
       ))}
-    </div>
+    </ChipScroller>
   );
 }

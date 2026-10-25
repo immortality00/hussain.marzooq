@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { getDb } from "@/lib/server/db";
 import cloudinaryImageLoader from "@/lib/cloudinary-image-loader";
 import { TRANSITION_IMAGE_WIDTH } from "@/lib/image-sizes";
+import { TRANSITION_IMAGES_TAG, TRANSITION_POOL_SIZE } from "@/lib/transition-images";
 import { PUBLIC_MEDIA_PAGE_SIZE } from "@/lib/media-cursor";
 import {
   buildPublicMediaQuery,
@@ -50,16 +51,24 @@ async function listPublicMedia({
   return docs.map((doc) => toPublicMediaItem(doc as Record<string, unknown>));
 }
 
-export const TRANSITION_IMAGES_TAG = "transition-images";
-
-// A single, consistent gallery pool for the page transition — recent public
-// photos, sized down for the grid. Used on every page so the transition reads
-// the same everywhere instead of depending on the current page's own images.
+// A single, consistent gallery pool for the page transition — a random pick of
+// all the library's public photos, sized down for the grid. One pick serves
+// every page until it is five minutes old or a media change drops it, so the
+// transition reads the same everywhere and its photos stay in the browser's
+// cache; the grid shuffles them again on every click.
 const getCachedTransitionImages = unstable_cache(
   async (): Promise<string[]> => {
-    const items = await listPublicMedia({ type: "image", limit: 24 });
-    return items
-      .map((item) => item.secureUrl)
+    const db = await getDb();
+    const docs = await db
+      .collection("media")
+      .aggregate([
+        { $match: buildPublicMediaQuery({ type: "image" }) },
+        { $sample: { size: TRANSITION_POOL_SIZE } },
+        { $project: PUBLIC_MEDIA_FIELDS },
+      ])
+      .toArray();
+    return docs
+      .map((doc) => toPublicMediaItem(doc as Record<string, unknown>).secureUrl)
       .filter((url): url is string => Boolean(url))
       .map((url) => cloudinaryImageLoader({ src: url, width: TRANSITION_IMAGE_WIDTH }));
   },

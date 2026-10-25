@@ -3,6 +3,8 @@
 import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { ChipScroller } from "@/components/shared/ChipScroller";
+import { StickyToolbar } from "@/components/shared/StickyToolbar";
 import { chipClasses } from "@/components/shared/chip-classes";
 
 export type ServiceTab = { slug: string; name: string };
@@ -20,17 +22,19 @@ export function ServicesView({ category, tabs, cards, empty }: ServicesViewProps
 
   return (
     <>
-      <div className="mt-8 flex flex-wrap gap-2">
-        {tabs.map((t) => (
-          <Link
-            key={t.slug}
-            href={t.slug === "all" ? "/services" : `/services?category=${encodeURIComponent(t.slug)}`}
-            className={chipClasses(t.slug === category)}
-          >
-            {t.name}
-          </Link>
-        ))}
-      </div>
+      <StickyToolbar className="mt-8">
+        <ChipScroller>
+          {tabs.map((t) => (
+            <Link
+              key={t.slug}
+              href={t.slug === "all" ? "/services" : `/services?category=${encodeURIComponent(t.slug)}`}
+              className={chipClasses(t.slug === category, "shrink-0 whitespace-nowrap")}
+            >
+              {t.name}
+            </Link>
+          ))}
+        </ChipScroller>
+      </StickyToolbar>
 
       {visible.length === 0 ? (
         empty

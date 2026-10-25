@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
+import { ChipScroller } from "@/components/shared/ChipScroller";
 
 export type TagChip = {
   slug: string;
@@ -26,21 +26,7 @@ export function TagChipRow({
   boxed?: boolean;
   className?: string;
 }) {
-  const scrollerRef = useRef<HTMLDivElement | null>(null);
-
   if (!chips.length) return null;
-
-  const inner = scroll
-    ? "flex gap-1.5 overflow-x-auto touch-pan-x overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-    : "flex flex-wrap gap-1.5";
-
-  // A vertical mouse wheel scrolls the row sideways; data-lenis-prevent stops
-  // the page's Lenis smooth-scroll from swallowing wheel/trackpad events here.
-  function onWheel(e: React.WheelEvent<HTMLDivElement>) {
-    const el = scrollerRef.current;
-    if (!el || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
-    el.scrollLeft += e.deltaY;
-  }
 
   const chipEls = chips.map((chip) => {
     const active = chip.slug === activeSlug;
@@ -60,25 +46,22 @@ export function TagChipRow({
     );
   });
 
-  const scrollerProps = scroll
-    ? { ref: scrollerRef, onWheel, "data-lenis-prevent": "" as const }
-    : {};
+  const row = (rowClassName?: string) =>
+    scroll ? (
+      <ChipScroller className={`gap-1.5 touch-pan-x${rowClassName ? ` ${rowClassName}` : ""}`}>{chipEls}</ChipScroller>
+    ) : (
+      <div className={`flex flex-wrap gap-1.5${rowClassName ? ` ${rowClassName}` : ""}`}>{chipEls}</div>
+    );
 
   if (boxed) {
     return (
       <div
         className={`rounded-xl border bg-background px-5 py-1.5${className ? ` ${className}` : ""}`}
       >
-        <div className={inner} {...scrollerProps}>
-          {chipEls}
-        </div>
+        {row()}
       </div>
     );
   }
 
-  return (
-    <div className={`${inner}${className ? ` ${className}` : ""}`} {...scrollerProps}>
-      {chipEls}
-    </div>
-  );
+  return row(className);
 }

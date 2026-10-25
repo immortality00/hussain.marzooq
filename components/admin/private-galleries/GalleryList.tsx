@@ -4,6 +4,7 @@ import { SearchInput } from "@/components/search/SearchInput";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { adminInputClasses } from "@/components/admin/admin-input";
+import { StickyToolbar } from "@/components/shared/StickyToolbar";
 import type { GalleryItem } from "./types";
 import { getGalleryStatus } from "./helpers";
 
@@ -36,19 +37,21 @@ export function GalleryList({
 }: GalleryListProps) {
   return (
     <section className="mt-8 rounded-[2rem] border p-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="text-sm font-medium">Galleries</div>
+      <StickyToolbar surface="admin" className="[--sticky-bleed:1.25rem]">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="text-sm font-medium">Galleries</div>
 
-        <SearchInput
-          value={searchValue}
-          onValueChange={onSearchChange}
-          onClear={onSearchClear}
-          placeholder="Search galleries..."
-          wrapperClassName="flex w-full flex-wrap gap-2 md:w-auto"
-          inputClassName={adminInputClasses("md", "max-w-xs")}
-          clearButtonClassName={adminButtonClasses("default", "md")}
-        />
-      </div>
+          <SearchInput
+            value={searchValue}
+            onValueChange={onSearchChange}
+            onClear={onSearchClear}
+            placeholder="Search galleries..."
+            wrapperClassName="flex w-full flex-wrap gap-2 md:w-auto"
+            inputClassName={adminInputClasses("md", "max-w-xs")}
+            clearButtonClassName={adminButtonClasses("default", "md")}
+          />
+        </div>
+      </StickyToolbar>
 
       {items.length > 0 && (
         <div className="mt-4 flex items-center gap-2.5 text-sm text-muted-foreground">

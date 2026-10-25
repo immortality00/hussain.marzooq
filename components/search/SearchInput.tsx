@@ -19,7 +19,8 @@ export function SearchInput({
   showClear = value.trim().length > 0,
   onClear,
   wrapperClassName = "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
-  inputClassName = "w-full rounded-2xl border bg-background px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-ring sm:max-w-md",
+  // 16px below 768px: iOS zooms the page into any field smaller than that.
+  inputClassName = "w-full rounded-2xl border bg-background px-4 py-2 text-base outline-none focus:ring-2 focus:ring-ring sm:max-w-md md:text-sm",
   clearButtonClassName = "rounded-full border px-3 py-1.5 text-sm transition-colors hover:bg-accent",
   resultText,
 }: SearchInputProps) {

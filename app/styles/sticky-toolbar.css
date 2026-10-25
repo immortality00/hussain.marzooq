@@ -1,0 +1,63 @@
+/* Search and filter bars that stay under the navbar while their results scroll
+   (components/shared/StickyToolbar.tsx). Plain position: sticky, so the bar moves
+   with the scroll itself. Once stuck, a flat surface with one hairline is drawn
+   around it — a pseudo-element, never part of the layout, so nothing shifts when
+   it sticks. It reaches up to the navbar (admin: the top of the screen), the gap
+   below the bar, and sideways by --sticky-bleed: the whole window unless the
+   caller sets it (admin bars stop at their card's edges). The background appears
+   at once, so nothing shows through as the first row slides under; the hairline
+   fades in. */
+:root {
+  /* The public navbar: h-14 plus its 1px hairline (components/site/Navbar.tsx). */
+  --site-nav-height: calc(3.5rem + 1px);
+}
+
+.hm-sticky-toolbar {
+  --sticky-gap: 0.75rem;
+  --sticky-offset: var(--site-nav-height);
+  --sticky-reach: var(--sticky-gap);
+  --sticky-surface: var(--background);
+  position: sticky;
+  top: calc(var(--sticky-offset) + var(--sticky-gap));
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  transition: top 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+/* Admin: under the save message / bulk bar (AdminStickyRegion publishes how much
+   of the screen they cover), on the card colour, below the loading cover (z-20). */
+.hm-sticky-toolbar[data-surface="admin"] {
+  --sticky-offset: var(--admin-sticky-offset, 0px);
+  --sticky-reach: calc(var(--sticky-offset) + var(--sticky-gap));
+  --sticky-surface: var(--card);
+  z-index: 10;
+}
+
+.hm-sticky-toolbar::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: calc(-1 * var(--sticky-reach));
+  bottom: calc(-1 * var(--sticky-gap));
+  left: calc(-1 * var(--sticky-bleed, 100vmax));
+  right: calc(-1 * var(--sticky-bleed, 100vmax));
+  border-bottom: 1px solid transparent;
+  background: var(--sticky-surface);
+  visibility: hidden;
+  pointer-events: none;
+  transition: border-color 200ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.hm-sticky-toolbar[data-stuck]::before {
+  visibility: visible;
+  pointer-events: auto;
+  border-bottom-color: var(--border);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-sticky-toolbar,
+  .hm-sticky-toolbar::before {
+    transition: none;
+  }
+}

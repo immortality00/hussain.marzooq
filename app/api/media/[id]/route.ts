@@ -3,7 +3,7 @@ import { savedAdminMedia, serializeAdminMediaItem } from "@/lib/server/admin-med
 import { mediaInUseResponse, usageUpdateFailedResponse } from "@/app/api/_lib/media-usage";
 import { getDb } from "@/lib/server/db";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
-import { asStringArray, noStoreJson } from "@/app/api/_lib/common";
+import { noStoreJson } from "@/app/api/_lib/common";
 import { duplicateVideoMessage, findMediaWithVideo } from "@/app/api/_lib/media";
 import { deleteVideoPoster } from "@/lib/server/video-posters";
 import { deleteStoredMediaAsset, getStoredMediaAsset } from "@/lib/server/media-asset-management";
@@ -82,7 +82,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     usage.hides && pagesNotUpdated.length ? null : await syncMediaDelivery(db, [String(oid)]);
   const deliveryError = deliveryFailureText(delivery?.failures ?? []);
 
-  revalidateMediaSurfaces([...input.tags, ...asStringArray(existingMedia.tags)]);
+  revalidateMediaSurfaces();
   if (pageEdit) revalidateSitePages();
 
   const saved = await db.collection("media").findOne({ _id: oid });
@@ -139,7 +139,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
   await deleteStoredMediaAsset(mediaAsset);
   await deleteVideoPoster(media.posterPublicId);
 
-  revalidateMediaSurfaces(asStringArray(media.tags));
+  revalidateMediaSurfaces();
 
   return noStoreJson({ ok: true });
 }

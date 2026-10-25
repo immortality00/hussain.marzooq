@@ -7,6 +7,7 @@ import { useTestimonialActions } from "./lib/useTestimonialActions";
 import { ReviewRow } from "./components/TestimonialList";
 import { TestimonialInspectModal } from "./components/TestimonialForm";
 import { adminInputClasses } from "@/components/admin/admin-input";
+import { StickyToolbar } from "@/components/shared/StickyToolbar";
 
 export default function TestimonialsAdminClient() {
   const {
@@ -55,32 +56,34 @@ export default function TestimonialsAdminClient() {
       <AdminActionFeedback feedback={banner} />
 
       <section className="mt-6 rounded-[2rem] border border-border/50 p-5">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2">
-            {(["all", "pending", "approved"] as const).map((value) => (
-              <button
-                key={value}
-                type="button"
-                disabled={actionBusy}
-                onClick={() => setStatus(value)}
-                className={`rounded-full border px-4 py-2 text-sm capitalize disabled:cursor-not-allowed disabled:opacity-60 ${
-                  status === value
-                    ? "border-foreground bg-foreground text-background"
-                    : "border-border/60 hover:bg-accent"
-                }`}
-              >
-                {value}
-              </button>
-            ))}
+        <StickyToolbar surface="admin" className="[--sticky-bleed:1.25rem]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap gap-2">
+              {(["all", "pending", "approved"] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  disabled={actionBusy}
+                  onClick={() => setStatus(value)}
+                  className={`rounded-full border px-4 py-2 text-sm capitalize disabled:cursor-not-allowed disabled:opacity-60 ${
+                    status === value
+                      ? "border-foreground bg-foreground text-background"
+                      : "border-border/60 hover:bg-accent"
+                  }`}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+            <input
+              value={search}
+              disabled={actionBusy}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by name, email, review, location..."
+              className={adminInputClasses("md", "max-w-sm")}
+            />
           </div>
-          <input
-            value={search}
-            disabled={actionBusy}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, email, review, location..."
-            className={adminInputClasses("md", "max-w-sm")}
-          />
-        </div>
+        </StickyToolbar>
 
         {filtered.length > 0 && (
           <div className="mt-4 flex items-center gap-2.5 text-sm text-muted-foreground">

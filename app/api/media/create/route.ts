@@ -208,7 +208,7 @@ export async function POST(req: Request) {
   const found = delivery.converted ? ((await col.findOne({ _id: inserted._id })) ?? inserted) : inserted;
   const deliveryError = deliveryFailureText(delivery.failures);
 
-  revalidateMediaSurfaces(tags);
+  revalidateMediaSurfaces();
 
   return noStoreJson({
     ok: true,

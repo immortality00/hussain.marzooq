@@ -1,5 +1,5 @@
 import { revalidatePath } from "next/cache";
-import { revalidatePublicTree } from "@/app/api/_lib/revalidate";
+import { revalidateMediaSurfaces, revalidatePublicTree } from "@/app/api/_lib/revalidate";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import {
   asBooleanOrNull,
@@ -196,7 +196,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
     await deleteManagedCloudinaryAsset({ url: previousAvatarUrl }, [CLOUDINARY_PEOPLE_FOLDER]);
   }
 
-  revalidatePath("/", "layout");
+  revalidateMediaSurfaces();
   if (previousSlug && previousSlug !== slug) revalidatePath(`/people/${previousSlug}`);
   revalidatePath(`/people/${slug}`);
 

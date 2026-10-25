@@ -2,6 +2,7 @@
 
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { StickyToolbar } from "@/components/shared/StickyToolbar";
 import { STATUSES } from "../lib/types";
 import { adminInputClasses } from "@/components/admin/admin-input";
 
@@ -17,11 +18,11 @@ export default function InquiriesToolbar({
   onRefresh: () => void | Promise<void>;
 }) {
   return (
-    <AdminPageHeader
-      title="Inquiries"
-      description="Active on top, archived below."
-      actions={
-        <>
+    <>
+      <AdminPageHeader title="Inquiries" description="Active on top, archived below." />
+
+      <StickyToolbar surface="admin" className="mt-6 [--sticky-bleed:0.75rem] md:[--sticky-bleed:2.75rem]">
+        <div className="flex flex-wrap items-center gap-2">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -38,8 +39,8 @@ export default function InquiriesToolbar({
           <button className={adminButtonClasses("default", "md")} onClick={() => void onRefresh()}>
             Refresh
           </button>
-        </>
-      }
-    />
+        </div>
+      </StickyToolbar>
+    </>
   );
 }

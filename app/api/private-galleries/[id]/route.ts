@@ -1,6 +1,6 @@
-import { revalidatePath, revalidateTag } from "next/cache";
+import { revalidatePath } from "next/cache";
+import { revalidateMediaSurfaces } from "@/app/api/_lib/revalidate";
 import { getDb } from "@/lib/server/db";
-import { TRANSITION_IMAGES_TAG } from "@/lib/server/public-media";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 import { storedGallery } from "@/lib/server/admin-lists";
@@ -159,8 +159,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   revalidatePath(`/g/${slug}`);
   if (previousSlug && previousSlug !== slug) revalidatePath(`/g/${previousSlug}`);
-  revalidatePath("/", "layout");
-  revalidateTag(TRANSITION_IMAGES_TAG, "max");
+  revalidateMediaSurfaces();
 
   return noStoreJson({ ok: true, slug, item: await storedGallery(db, oid) });
 }
@@ -187,8 +186,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   await releaseMediaFromPrivateGalleries(db, releasedMediaIds);
 
   if (slug) revalidatePath(`/g/${slug}`);
-  revalidatePath("/", "layout");
-  revalidateTag(TRANSITION_IMAGES_TAG, "max");
+  revalidateMediaSurfaces();
 
   return noStoreJson({ ok: true });
 }

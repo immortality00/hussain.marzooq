@@ -48,16 +48,18 @@ export default function TagRow({
         </button>
 
         <div className="min-w-0 flex-1 space-y-3">
+          {/* Keyed on the stored value so a rename saved elsewhere replaces what the box
+              shows; the prefix keeps the keys apart when the label and the slug match. */}
           <div className="grid gap-2 sm:grid-cols-2">
             <input
-              key={tag.label}
+              key={`label:${tag.label}`}
               defaultValue={tag.label}
               className={adminInputClasses("sm")}
               onBlur={(e) => void save(e.currentTarget, "label", true)}
               placeholder="Label"
             />
             <input
-              key={tag.slug}
+              key={`slug:${tag.slug}`}
               defaultValue={tag.slug}
               className={adminInputClasses("sm", "font-mono")}
               onBlur={(e) => void save(e.currentTarget, "slug", true)}
@@ -66,7 +68,7 @@ export default function TagRow({
           </div>
 
           <input
-            key={tag.description}
+            key={`description:${tag.description}`}
             defaultValue={tag.description}
             className={adminInputClasses("sm")}
             onBlur={(e) => void save(e.currentTarget, "description", false)}
