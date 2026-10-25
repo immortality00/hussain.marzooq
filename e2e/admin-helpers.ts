@@ -1,7 +1,9 @@
 import { expect, type Browser, type Page } from "@playwright/test";
 import { E2E } from "./fixtures";
+import { resetSiteSignInLimit } from "./security-db";
 
 export async function signIn(page: Page) {
+  await resetSiteSignInLimit();
   await page.goto("/admin");
   await page.getByPlaceholder("Password").fill(E2E.adminPassword);
   await page.getByRole("button", { name: "Login" }).click();

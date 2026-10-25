@@ -28,7 +28,8 @@ export default defineConfig({
   workers: 1,
   forbidOnly: Boolean(process.env.CI),
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? [["github"], ["list"]] : [["list"]],
+  // The html report (with the retry's trace) is what CI uploads when a test fails.
+  reporter: process.env.CI ? [["github"], ["list"], ["html", { open: "never" }]] : [["list"]],
   timeout: 45_000,
   expect: { timeout: 10_000 },
   use: {
