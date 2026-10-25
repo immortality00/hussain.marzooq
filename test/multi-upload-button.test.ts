@@ -11,13 +11,19 @@ import { CloudinaryMultiUploadButton } from "@/components/shared/upload/Cloudina
 function pick(files: File[]) {
   const onUploaded = vi.fn();
   const onError = vi.fn();
+  const onRunChange = vi.fn();
   const { container } = render(
-    createElement(CloudinaryMultiUploadButton, { folder: "hm_visuals/testimonials/s/photos", onUploaded, onError })
+    createElement(CloudinaryMultiUploadButton, {
+      folder: "hm_visuals/testimonials/s/photos",
+      onUploaded,
+      onError,
+      onRunChange,
+    })
   );
   const input = container.querySelector<HTMLInputElement>('input[type="file"]')!;
   Object.defineProperty(input, "files", { value: files, configurable: true });
   fireEvent.change(input);
-  return { onUploaded, onError, container };
+  return { onUploaded, onError, onRunChange, container };
 }
 
 uploadFileToCloudinary.mockImplementation(async (file: File) => {
@@ -52,5 +58,16 @@ describe("CloudinaryMultiUploadButton", () => {
     await waitFor(() => expect(onUploaded).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(container.querySelector("button")?.textContent).toBe("Choose files"));
     expect(onError).not.toHaveBeenCalled();
+  });
+
+  it("reports the run's start, then its outcome after the last file", async () => {
+    const { onRunChange, onUploaded } = pick([new File(["a"], "a.jpg"), new File(["<svg/>"], "logo.svg")]);
+
+    await waitFor(() => expect(onRunChange).toHaveBeenCalledTimes(2));
+    expect(onRunChange.mock.calls).toEqual([
+      [{ total: 2, failed: 0, finished: false }],
+      [{ total: 2, failed: 1, finished: true }],
+    ]);
+    expect(onUploaded.mock.invocationCallOrder[0]).toBeLessThan(onRunChange.mock.invocationCallOrder[1]);
   });
 });

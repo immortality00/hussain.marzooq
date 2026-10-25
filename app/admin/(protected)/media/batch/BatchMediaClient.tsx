@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-import { CloudinaryMultiUploadButton } from "@/components/shared/upload/CloudinaryMultiUploadButton";
+import { CloudinaryMultiUploadButton, type UploadRun } from "@/components/shared/upload/CloudinaryMultiUploadButton";
 import { WizardTabs } from "@/components/admin/wizard/WizardTabs";
 import { LocationSearch } from "@/components/testimonials/review-form/LocationSearch";
 import { useAdminAction } from "@/hooks/useAdminAction";
@@ -18,6 +18,7 @@ import { withSavedMedia, type SavedMedia } from "../lib/media-store";
 import { BatchItemThumb } from "./components/BatchItemThumb";
 import { BatchLinkInput } from "./components/BatchLinkInput";
 import { BatchReviewList } from "./components/BatchReviewList";
+import { batchReadyText } from "./lib/batch-ready";
 import { buildBatchPayload, createBatchItem } from "./lib/batch-save";
 import { batchItemLabel, useBatchMediaState } from "./lib/useBatchMediaState";
 import { adminInputClasses } from "@/components/admin/admin-input";
@@ -34,6 +35,7 @@ export default function BatchMediaClient() {
   const [, setMedia] = useAdminSlice("media");
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [uploadRun, setUploadRun] = useState<UploadRun | null>(null);
 
   const uploadFolder = getCloudinaryMediaFolderForCategory(s.primaryCategory);
   const allowLinks =
@@ -50,6 +52,7 @@ export default function BatchMediaClient() {
         : null;
 
   const isLast = step === STEPS.length - 1;
+  const readyText = batchReadyText(s.items.length, uploadRun);
 
   function sharedPayload() {
     const yearNum = s.year.trim() ? Number(s.year.trim()) : null;
@@ -145,10 +148,12 @@ export default function BatchMediaClient() {
     if (failed.length === 0 && !privateNote) {
       notify("ok", `✅ Created ${created} media.${posterNote}`);
       s.resetAll();
+      setUploadRun(null);
       setStep(0);
     } else if (failed.length === 0) {
       notify("err", `Created ${created} media.${privateNote}${posterNote}`);
       s.resetAll();
+      setUploadRun(null);
       setStep(0);
     } else {
       notify(
@@ -190,12 +195,9 @@ export default function BatchMediaClient() {
                   s.addFiles(files);
                 }}
                 onError={(msg) => notify("err", msg)}
+                onRunChange={setUploadRun}
               />
-              {s.items.length ? (
-                <span className="text-xs text-muted-foreground">
-                  {s.items.length} item{s.items.length > 1 ? "s" : ""} ready
-                </span>
-              ) : null}
+              {readyText ? <span className="text-xs text-muted-foreground">{readyText}</span> : null}
             </div>
 
             {allowLinks ? (

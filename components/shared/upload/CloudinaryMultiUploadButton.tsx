@@ -11,6 +11,8 @@ export type CloudinaryUploadedFile = CloudinaryUploaded & {
   originalFilename: string;
 };
 
+export type UploadRun = { total: number; failed: number; finished: boolean };
+
 export function CloudinaryMultiUploadButton({
   folder,
   accept = "image/*,video/*",
@@ -21,6 +23,7 @@ export function CloudinaryMultiUploadButton({
   className = adminButtonClasses("default", "md"),
   onUploaded,
   onError,
+  onRunChange,
 }: {
   folder: string;
   accept?: string;
@@ -31,6 +34,7 @@ export function CloudinaryMultiUploadButton({
   className?: string;
   onUploaded: (files: CloudinaryUploadedFile[]) => void;
   onError?: (message: string) => void;
+  onRunChange?: (run: UploadRun) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
@@ -40,6 +44,7 @@ export function CloudinaryMultiUploadButton({
     if (files.length === 0) return;
 
     setProgress({ done: 0, total: files.length });
+    onRunChange?.({ total: files.length, failed: 0, finished: false });
     const failures: UploadFailure[] = [];
 
     for (const file of files) {
@@ -55,6 +60,7 @@ export function CloudinaryMultiUploadButton({
 
     setProgress(null);
     if (inputRef.current) inputRef.current.value = "";
+    onRunChange?.({ total: files.length, failed: failures.length, finished: true });
 
     const message = uploadFailureMessage(files.length, failures);
     if (message) onError?.(message);
