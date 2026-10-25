@@ -8,10 +8,10 @@ import {
   displayStatus,
   editionLabel,
   editionSubline,
-  getPriceText,
   statusClasses,
   statusLabel,
 } from "./lib";
+import { NftPrice } from "./NftPrice";
 import { buttonClasses } from "@/components/shared/Button";
 
 export default function NftModal({
@@ -21,7 +21,6 @@ export default function NftModal({
   item: PublicNftItem;
   onClose: () => void;
 }) {
-  const priceText = getPriceText(item);
   const inquiryHref = buildInquiryHref(item);
   const shownStatus = displayStatus(item);
 
@@ -115,7 +114,7 @@ export default function NftModal({
                       <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                         Price
                       </div>
-                      <div className="mt-3 text-lg font-semibold">{priceText}</div>
+                      <div className="mt-3 text-lg font-semibold"><NftPrice item={item} /></div>
                     </div>
 
                     <div className="rounded-2xl border bg-background/50 p-4">

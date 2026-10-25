@@ -1,13 +1,6 @@
 import type { PublicNftItem } from "@/lib/server/public-nfts";
 import { absoluteUrl } from "@/lib/seo/site-url";
 
-export const currencySymbol: Record<PublicNftItem["nft"]["currency"], string> = {
-  ETH: "Ξ",
-  SOL: "◎",
-  XTZ: "ꜩ",
-  BTC: "₿",
-};
-
 export function formatStableDateTime(value: string | null) {
   if (!value) return null;
 
@@ -92,7 +85,7 @@ export function getNftPublicHref(item: PublicNftItem) {
 export function buildInquiryContext(item: PublicNftItem) {
   const priceText =
     item.nft.price !== null
-      ? `${item.nft.price} ${currencySymbol[item.nft.currency]} (${item.nft.currency})`
+      ? `${item.nft.price} ${item.nft.currency}`
       : "Price on request";
 
   const editionText =
@@ -116,10 +109,4 @@ export function buildInquiryHref(item: PublicNftItem) {
   return `/contact?service=${encodeURIComponent("NFT Inquiry")}&category=${encodeURIComponent(
     "nft"
   )}&context=${encodeURIComponent(buildInquiryContext(item))}`;
-}
-
-export function getPriceText(item: PublicNftItem) {
-  return item.nft.price !== null
-    ? `${item.nft.price} ${currencySymbol[item.nft.currency]}`
-    : "Price on request";
 }

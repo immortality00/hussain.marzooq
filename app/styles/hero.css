@@ -28,10 +28,16 @@
   }
 }
 
-/* Touch screens follow taps; a mouse or trackpad follows the pointer. */
+/* Touch screens follow taps; a mouse or trackpad follows the pointer. A tapped
+   strip opens as fast as a hovered one and goes back with After Effects' Easy Ease. */
 @media not all and (hover: hover) and (pointer: fine) {
+  .hm-hero-strip {
+    transition: flex-grow 700ms cubic-bezier(0.33, 0, 0.67, 1);
+  }
+
   .hm-hero-strip[data-tapped] {
     flex-grow: var(--hero-open);
+    transition: flex-grow 500ms cubic-bezier(0.2, 0.7, 0.2, 1);
   }
 }
 
@@ -67,8 +73,13 @@
 }
 
 @media not all and (hover: hover) and (pointer: fine) {
+  .hm-hero-dim {
+    transition: opacity 700ms cubic-bezier(0.33, 0, 0.67, 1);
+  }
+
   .hm-hero:has(.hm-hero-strip[data-tapped]) .hm-hero-dim {
     opacity: 0.2;
+    transition: opacity 300ms cubic-bezier(0.2, 0.7, 0.2, 1);
   }
 }
 
@@ -88,7 +99,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hm-hero-strip,
-  .hm-hero-dim {
+  .hm-hero-strip[data-tapped],
+  .hm-hero-dim,
+  .hm-hero:has(.hm-hero-strip[data-tapped]) .hm-hero-dim {
     transition: none;
   }
 }

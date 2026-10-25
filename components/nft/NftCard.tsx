@@ -7,9 +7,9 @@ import {
   displayStatus,
   editionLabel,
   editionSubline,
-  getPriceText,
   statusLabel,
 } from "./lib";
+import { NftPrice } from "./NftPrice";
 
 function FrontBadge({ status }: { status: ReturnType<typeof displayStatus> }) {
   if (status === "sold") return null;
@@ -33,7 +33,6 @@ export default function NftCard({
   onOpen: (item: PublicNftItem) => void;
   loadImageEagerly?: boolean;
 }) {
-  const priceText = getPriceText(item);
   const shownStatus = displayStatus(item);
   const inquiryHref = buildInquiryHref(item);
   const canBuy = Boolean(item.nft.marketplaceUrl) && shownStatus !== "sold";
@@ -85,7 +84,7 @@ export default function NftCard({
               {editionLabel(item)}
             </div>
             <div className="mt-3 flex items-baseline justify-between gap-4 border-t border-white/15 pt-3 text-sm">
-              <span className="font-semibold text-white">{priceText}</span>
+              <span className="font-semibold text-white"><NftPrice item={item} /></span>
               <span className="text-white/70">{editionSubline(item)}</span>
             </div>
           </div>
@@ -110,7 +109,7 @@ export default function NftCard({
           <dl className="mt-6 space-y-3.5 text-sm">
             <div className="flex items-baseline justify-between gap-4 border-t border-white/10 pt-3.5">
               <dt className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">Price</dt>
-              <dd className="font-semibold">{priceText}</dd>
+              <dd className="font-semibold"><NftPrice item={item} /></dd>
             </div>
             <div className="flex items-baseline justify-between gap-4 border-t border-white/10 pt-3.5">
               <dt className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">Edition</dt>

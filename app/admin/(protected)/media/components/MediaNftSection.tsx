@@ -2,13 +2,9 @@
 
 import type { CryptoCurrency, NftEditionType, NftStatus } from "../lib/types";
 import { adminFieldShellClasses, adminInputClasses } from "@/components/admin/admin-input";
+import { CurrencyMark } from "@/components/nft/CurrencyMark";
 
-const currencies: Array<{ value: CryptoCurrency; label: string; symbol: string }> = [
-  { value: "ETH", label: "ETH", symbol: "Ξ" },
-  { value: "SOL", label: "SOL", symbol: "◎" },
-  { value: "XTZ", label: "XTZ", symbol: "ꜩ" },
-  { value: "BTC", label: "BTC", symbol: "₿" },
-];
+const CURRENCIES: CryptoCurrency[] = ["ETH", "SOL", "XTZ", "BTC"];
 
 export default function MediaNftSection({
   nftPrice,
@@ -70,7 +66,7 @@ export default function MediaNftSection({
               placeholder="0.35"
             />
             <div className="flex items-center border-l px-3 text-sm text-muted-foreground">
-              {currencies.find((c) => c.value === nftCurrency)?.symbol ?? "Ξ"}
+              <CurrencyMark currency={nftCurrency} />
             </div>
           </div>
         </label>
@@ -82,9 +78,9 @@ export default function MediaNftSection({
             onChange={(e) => setNftCurrency((e.target.value as CryptoCurrency) || "ETH")}
             className={adminInputClasses()}
           >
-            {currencies.map((item) => (
-              <option key={item.value} value={item.value}>
-                {item.label} — {item.symbol}
+            {CURRENCIES.map((code) => (
+              <option key={code} value={code}>
+                {code}
               </option>
             ))}
           </select>
