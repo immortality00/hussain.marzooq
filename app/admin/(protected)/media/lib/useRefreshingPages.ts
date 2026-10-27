@@ -69,5 +69,9 @@ export function useRefreshingPages(source: PagesSource | null, onError: (message
       setPages((previous) =>
         previous ? { ...previous, items: previous.items.filter((item) => !ids.includes(item.id)) } : previous
       ),
+    replace: (next: MediaListItem) =>
+      setPages((previous) =>
+        previous ? { ...previous, items: previous.items.map((item) => (item.id === next.id ? next : item)) } : previous
+      ),
   };
 }

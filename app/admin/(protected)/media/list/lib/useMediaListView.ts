@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import type { AdminActionFeedbackState } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { useAdminSlice } from "@/hooks/useAdminData";
 import { filtersKey, isDefaultView, type MediaFilters } from "../../lib/media-pages";
-import { withoutMedia } from "../../lib/media-store";
+import { withSavedMedia, withoutMedia, type SavedMedia } from "../../lib/media-store";
 import { useMediaBrowse } from "../../lib/useMediaBrowse";
 import { useRefreshingPages } from "../../lib/useRefreshingPages";
 
@@ -46,6 +46,12 @@ export function useMediaListView(filters: MediaFilters, setBanner: (next: AdminA
     search.remove(ids);
   }
 
+  function replaceItem(saved: SavedMedia) {
+    setMedia((media) => withSavedMedia(media, saved, false));
+    browse.replace(saved.listItem);
+    search.replace(saved.listItem);
+  }
+
   return {
     items: view.items,
     nextCursor: view.nextCursor,
@@ -54,5 +60,6 @@ export function useMediaListView(filters: MediaFilters, setBanner: (next: AdminA
     loadMore,
     refresh,
     removeItems,
+    replaceItem,
   };
 }

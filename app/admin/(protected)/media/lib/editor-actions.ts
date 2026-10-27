@@ -146,7 +146,7 @@ export function buildMediaPayload(args: {
 }
 
 const CREATE_TOUCHES = ["media", "dashboard", "mediaTags"] as const;
-const CHANGE_TOUCHES = ["media", "dashboard", "mediaTags", "pages", "blog"] as const;
+export const CHANGE_TOUCHES = ["media", "dashboard", "mediaTags", "pages", "blog"] as const;
 
 export async function saveMediaItem(args: {
   editingId: string;

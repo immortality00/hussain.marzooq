@@ -34,5 +34,6 @@ export function useMediaBrowse(onError: (message: string) => void) {
       await Promise.all([refreshAdminData(), tail.refresh()]);
     },
     remove: tail.remove,
+    replace: tail.replace,
   };
 }

@@ -5,9 +5,15 @@ import type { MediaPatchInput } from "./parse-media-patch";
 
 export type MediaSet = Record<string, unknown>;
 
+// A media item linked to a hidden or password-protected person, or inside a Private Gallery, can't be public.
+export async function mustStayHidden(db: Db, oid: ObjectId, gatedPersonName: string | null) {
+  if (gatedPersonName) return true;
+  return (await getPrivateGalleryTitlesForMedia(db, String(oid))).length > 0;
+}
+
 export async function buildMediaSet(db: Db, oid: ObjectId, input: MediaPatchInput): Promise<MediaSet> {
   const resolvedPeople = await resolvePeopleSelection(db, { peopleIds: input.peopleIds });
-  const galleryTitles = await getPrivateGalleryTitlesForMedia(db, String(oid));
+  const hiddenByRule = await mustStayHidden(db, oid, resolvedPeople.gatedPersonName);
   const { mediaLocation } = input;
 
   const set: MediaSet = {
@@ -29,7 +35,7 @@ export async function buildMediaSet(db: Db, oid: ObjectId, input: MediaPatchInpu
     updatedAt: new Date(),
   };
 
-  if (resolvedPeople.gatedPersonName || galleryTitles.length > 0) {
+  if (hiddenByRule) {
     set.isPublic = false;
   } else if (typeof input.isPublic === "boolean") {
     set.isPublic = input.isPublic;

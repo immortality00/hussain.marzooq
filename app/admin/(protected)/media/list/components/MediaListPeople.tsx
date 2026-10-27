@@ -1,12 +1,12 @@
 import { Users } from "lucide-react";
-import { useMemo } from "react";
+import { useMemo, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { useMediaOptions } from "../../components/MediaOptionsContext";
 import { linkedPeopleOf, personGate } from "../../lib/media-people";
 
 const GATED = "border-amber-500/30 bg-amber-500/12 text-amber-700 dark:text-amber-300";
 
-export function MediaListPeople({ ids, names }: { ids: string[]; names: string[] }) {
+export function MediaListPeople({ ids, names, action }: { ids: string[]; names: string[]; action?: ReactNode }) {
   const { people: profiles } = useMediaOptions();
   const people = useMemo(
     () =>
@@ -37,6 +37,7 @@ export function MediaListPeople({ ids, names }: { ids: string[]; names: string[]
       ) : (
         <span className="text-xs text-muted-foreground">No people</span>
       )}
+      {action}
     </div>
   );
 }

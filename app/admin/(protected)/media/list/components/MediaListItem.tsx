@@ -3,8 +3,9 @@ import type { AdminMediaListItem } from "@/lib/server/media-serializers";
 import { AdminLink } from "@/components/admin/AdminLink";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { formatPublishAt, isScheduled } from "@/lib/media-schedule";
+import type { MediaListLabels } from "../lib/useMediaListLabels";
 import { NftDetails, NftStatusChip } from "./MediaListNft";
-import { MediaListPeople } from "./MediaListPeople";
+import { MediaListLabelLines } from "./MediaListLabelLines";
 
 export type MediaItem = AdminMediaListItem;
 
@@ -14,12 +15,14 @@ export function MediaListItem({
   deleting,
   actionDisabled,
   onDelete,
+  labels,
 }: {
   item: MediaItem;
   index: number;
   deleting: boolean;
   actionDisabled: boolean;
   onDelete: (id: string) => void;
+  labels: MediaListLabels;
 }) {
   const stillSrc = item.type === "embed" ? item.posterUrl : item.secureUrl;
 
@@ -103,17 +106,7 @@ export function MediaListItem({
 
           {item.nft ? <NftDetails nft={item.nft} /> : null}
 
-          <MediaListPeople ids={item.peopleIds} names={item.people} />
-
-          {item.tags?.length ? (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {item.tags.slice(0, 14).map((t) => (
-                <span key={`${item.id}-${t}`} className="rounded-full border px-2 py-0.5 text-xs text-muted-foreground">
-                  {t}
-                </span>
-              ))}
-            </div>
-          ) : null}
+          <MediaListLabelLines item={item} labels={labels} disabled={actionDisabled} />
 
           <div className="mt-3 font-mono text-xs text-muted-foreground wrap-anywhere">ID: {item.id}</div>
         </div>

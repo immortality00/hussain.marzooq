@@ -4,7 +4,7 @@ import { MediaOptionsProvider } from "../components/MediaOptionsContext";
 
 export default function Page() {
   return (
-    <AdminScreen reads={["media", "people"]}>
+    <AdminScreen reads={["media", "people", "mediaTags"]}>
       <MediaOptionsProvider>
         <MediaListClient />
       </MediaOptionsProvider>

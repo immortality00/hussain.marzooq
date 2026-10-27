@@ -255,6 +255,13 @@ const routes: Route[] = [
     load: () => import("@/app/api/media/[id]/route"),
   },
   {
+    name: "PATCH /api/media/[id]/labels",
+    method: "PATCH",
+    path: `/api/media/${OID}/labels`,
+    params: { id: OID },
+    load: () => import("@/app/api/media/[id]/labels/route"),
+  },
+  {
     name: "GET /api/media/admin-list",
     method: "GET",
     path: "/api/media/admin-list",

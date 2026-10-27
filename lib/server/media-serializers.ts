@@ -1,4 +1,4 @@
-import { asNullableString, asNumberOrNull, asStringArray, isRecord } from "@/app/api/_lib/common";
+import { asIsoDate, asNullableString, asNumberOrNull, asStringArray, isRecord } from "@/app/api/_lib/common";
 import { sanitizeAppearances, type Appearance, type NftMeta } from "@/app/api/_lib/media";
 import { mediaAssetPath } from "@/lib/media-asset-path";
 import { publicMediaFilter } from "@/lib/media-schedule";
@@ -41,6 +41,8 @@ export type AdminMediaListItem = {
   isPublic: boolean;
   publishAt: string | null;
   createdAt: string | null;
+  /** The version the overwrite guard compares (`x-hm-expected-version`). */
+  updatedAt: string | null;
 };
 
 export function buildPublicMediaQuery({
@@ -163,5 +165,6 @@ export function toAdminMediaListItem(doc: Record<string, unknown>): AdminMediaLi
     isPublic: doc.isPublic !== false,
     publishAt: serializeDate(doc.publishAt),
     createdAt: serializeDate(doc.createdAt),
+    updatedAt: asIsoDate(doc.updatedAt),
   };
 }

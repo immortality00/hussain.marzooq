@@ -11,9 +11,11 @@ import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
+import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 import { MediaListFilterBar } from "./components/MediaListFilterBar";
 import { MediaListItem } from "./components/MediaListItem";
 import { useMediaListDelete } from "./lib/useMediaListDelete";
+import { useMediaListLabels } from "./lib/useMediaListLabels";
 import { useMediaListView } from "./lib/useMediaListView";
 
 export default function MediaListClient() {
@@ -25,7 +27,7 @@ export default function MediaListClient() {
   const [typeFilter, setTypeFilter] = useState("");
   const [visibilityFilter, setVisibilityFilter] = useState("");
 
-  const { items, nextCursor, loading, loadingMore, loadMore, refresh, removeItems } = useMediaListView(
+  const { items, nextCursor, loading, loadingMore, loadMore, refresh, removeItems, replaceItem } = useMediaListView(
     { query, category: categoryFilter, type: typeFilter, visibility: visibilityFilter },
     setBanner,
   );
@@ -47,6 +49,7 @@ export default function MediaListClient() {
     selection,
     setBanner,
   });
+  const labels = useMediaListLabels({ replaceItem, setBanner });
 
   return (
     <main className="mx-auto max-w-6xl px-0 py-3 md:px-6 md:py-10">
@@ -125,6 +128,7 @@ export default function MediaListClient() {
                   deleting={deletingId === m.id}
                   actionDisabled={Boolean(deletingId)}
                   onDelete={(id) => void del(id)}
+                  labels={labels}
                 />
               </div>
             </div>
@@ -153,6 +157,8 @@ export default function MediaListClient() {
       ) : null}
 
       <MediaUsageDialog dialog={usageDialog} />
+      <MediaUsageDialog dialog={labels.usageDialog} />
+      <RecordChangedDialog dialog={labels.changedDialog} />
     </main>
   );
 }
