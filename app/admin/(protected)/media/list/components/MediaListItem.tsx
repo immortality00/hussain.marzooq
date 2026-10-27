@@ -3,32 +3,10 @@ import type { AdminMediaListItem } from "@/lib/server/media-serializers";
 import { AdminLink } from "@/components/admin/AdminLink";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { formatPublishAt, isScheduled } from "@/lib/media-schedule";
-
-type NftData = {
-  price: number | null;
-  currency: "ETH" | "SOL" | "XTZ" | "BTC";
-  editionType: "1/1" | "limited" | "open";
-  editionsTotal: number | null;
-  editionsRemaining: number | null;
-  openUntil: string | null;
-  status: "available" | "sold" | "coming-soon";
-  marketplaceUrl: string | null;
-};
+import { NftDetails, NftStatusChip } from "./MediaListNft";
+import { MediaListPeople } from "./MediaListPeople";
 
 export type MediaItem = AdminMediaListItem;
-
-function statusClasses(status: "available" | "sold" | "coming-soon") {
-  if (status === "sold") return "border-rose-500/30 bg-rose-500/12 text-rose-700 dark:text-rose-300";
-  if (status === "coming-soon") return "border-amber-500/30 bg-amber-500/12 text-amber-700 dark:text-amber-300";
-  return "border-emerald-500/30 bg-emerald-500/12 text-emerald-700 dark:text-emerald-300";
-}
-
-function formatNftQuantity(nft: NftData) {
-  if (nft.editionType === "open") {
-    return nft.openUntil ? `Open until ${nft.openUntil.replace("T", " ")}` : "Open edition";
-  }
-  return `${nft.editionsRemaining ?? "—"}/${nft.editionsTotal ?? "—"} remaining`;
-}
 
 export function MediaListItem({
   item,
@@ -47,7 +25,7 @@ export function MediaListItem({
 
   return (
     <div className="rounded-2xl border p-5">
-      <div className="grid gap-4 md:grid-cols-[240px_1fr]">
+      <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
         <div className="overflow-hidden rounded-2xl border bg-muted">
           {item.type === "video" && item.secureUrl ? (
             <video className="h-full w-full" controls preload="metadata" src={item.secureUrl} />
@@ -120,24 +98,12 @@ export function MediaListItem({
                 {c}
               </span>
             ))}
-            {item.nft ? (
-              <span className={`rounded-full border px-2 py-0.5 text-xs ${statusClasses(item.nft.status)}`}>
-                {item.nft.status}
-              </span>
-            ) : null}
+            {item.nft ? <NftStatusChip nft={item.nft} /> : null}
           </div>
 
-          {item.nft ? (
-            <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-              <span className="rounded-full border px-2 py-0.5">{item.nft.editionType}</span>
-              <span className="rounded-full border px-2 py-0.5">{formatNftQuantity(item.nft)}</span>
-              {item.nft.price !== null ? (
-                <span className="rounded-full border px-2 py-0.5">
-                  {item.nft.price} {item.nft.currency}
-                </span>
-              ) : null}
-            </div>
-          ) : null}
+          {item.nft ? <NftDetails nft={item.nft} /> : null}
+
+          <MediaListPeople ids={item.peopleIds} names={item.people} />
 
           {item.tags?.length ? (
             <div className="mt-3 flex flex-wrap gap-2">
@@ -149,7 +115,7 @@ export function MediaListItem({
             </div>
           ) : null}
 
-          <div className="mt-3 font-mono text-xs text-muted-foreground">ID: {item.id}</div>
+          <div className="mt-3 font-mono text-xs text-muted-foreground wrap-anywhere">ID: {item.id}</div>
         </div>
       </div>
     </div>

@@ -4,14 +4,9 @@ import { AdminLink } from "@/components/admin/AdminLink";
 import { useMemo, useState } from "react";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { PersonProfileOption } from "../lib/types";
+import { linkedPeopleOf, personGate, type LinkedPerson } from "../lib/media-people";
 import { useMediaOptions } from "./MediaOptionsContext";
 import { adminInputClasses } from "@/components/admin/admin-input";
-
-type SelectedPerson = {
-  id: string;
-  name: string;
-  legacy?: boolean;
-};
 
 export default function MediaPeoplePicker({
   selectedPeopleIds,
@@ -25,39 +20,16 @@ export default function MediaPeoplePicker({
   const { people: profiles } = useMediaOptions();
   const [peopleQuery, setPeopleQuery] = useState("");
 
-  const selectedPeople = useMemo<SelectedPerson[]>(() => {
-    const out: SelectedPerson[] = [];
-    const seen = new Set<string>();
-
-    for (let i = 0; i < selectedPeopleNames.length; i += 1) {
-      const name = selectedPeopleNames[i] ?? "";
-      const id = selectedPeopleIds[i] ?? "";
-
-      if (!name) continue;
-
-      const key = id ? `id:${id}` : `legacy:${name.toLowerCase()}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-
-      out.push({
-        id,
-        name,
-        legacy: !id,
-      });
-    }
-
-    return out;
-  }, [selectedPeopleIds, selectedPeopleNames]);
+  const selectedPeople = useMemo(
+    () => linkedPeopleOf(selectedPeopleIds, selectedPeopleNames),
+    [selectedPeopleIds, selectedPeopleNames]
+  );
 
   const gatedSelectedNames = useMemo(() => {
     const byId = new Map(profiles.map((p) => [p.id, p]));
-    const names: string[] = [];
-    for (const person of selectedPeople) {
-      if (!person.id) continue;
-      const profile = byId.get(person.id);
-      if (profile && (profile.isPublic === false || profile.isPrivate)) names.push(person.name);
-    }
-    return names;
+    return selectedPeople
+      .filter((person) => person.id && personGate(byId.get(person.id)))
+      .map((person) => person.name);
   }, [profiles, selectedPeople]);
 
   const availableMatches = useMemo(() => {
@@ -81,7 +53,7 @@ export default function MediaPeoplePicker({
   function addPerson(profile: PersonProfileOption) {
     const next = [...selectedPeople.filter((p) => p.id)];
     if (!next.some((p) => p.id === profile.id)) {
-      next.push({ id: profile.id, name: profile.name });
+      next.push({ id: profile.id, name: profile.name, legacy: false });
     }
 
     setSelectedPeople({
@@ -91,7 +63,7 @@ export default function MediaPeoplePicker({
     setPeopleQuery("");
   }
 
-  function removePerson(target: SelectedPerson) {
+  function removePerson(target: LinkedPerson) {
     const next = selectedPeople.filter((person) =>
       target.id ? person.id !== target.id : person.name !== target.name
     );
