@@ -1,4 +1,5 @@
 export type { PrivateGalleryAdminItem as GalleryItem } from "@/lib/server/private-gallery-admin";
+export type { GalleryVisibility } from "@/lib/private-galleries";
 
 export type MediaItem = {
   id: string;

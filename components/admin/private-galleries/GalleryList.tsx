@@ -6,7 +6,7 @@ import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { adminInputClasses } from "@/components/admin/admin-input";
 import { StickyToolbar } from "@/components/shared/StickyToolbar";
 import type { GalleryItem } from "./types";
-import { getGalleryStatus } from "./helpers";
+import { galleryPath, getGalleryStatus } from "./helpers";
 
 type GalleryListProps = {
   items: GalleryItem[];
@@ -14,7 +14,7 @@ type GalleryListProps = {
   deletingId: string | null;
   onSearchChange: (value: string) => void;
   onSearchClear: () => void;
-  onCopyLink: (slug: string) => void;
+  onCopyLink: (item: GalleryItem) => void;
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
   isSelected: (id: string) => boolean;
@@ -94,6 +94,9 @@ export function GalleryList({
                       >
                         {status.label}
                       </span>
+                      <span className="inline-flex rounded-full border px-2.5 py-1 text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
+                        {item.visibility === "public" ? "Public" : "Private"}
+                      </span>
                       {deleting ? (
                         <span className="inline-flex rounded-full border border-sky-500/30 bg-sky-500/10 px-2.5 py-1 text-[11px] uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
                           Processing
@@ -102,7 +105,7 @@ export function GalleryList({
                     </div>
 
                     <div className="mt-1 text-xs text-muted-foreground">
-                      /g/{item.slug} • {item.mediaIds.length} media •{" "}
+                      {galleryPath(item.slug, item.linkKey ? "…" : null)} • {item.mediaIds.length} media •{" "}
                       {item.isActive ? "Enabled" : "Disabled"}
                     </div>
 
@@ -116,7 +119,7 @@ export function GalleryList({
                     <button
                       type="button"
                       disabled={actionDisabled}
-                      onClick={() => onCopyLink(item.slug)}
+                      onClick={() => onCopyLink(item)}
                       className={adminButtonClasses("default", "md")}
                     >
                       Copy link

@@ -3,21 +3,9 @@ import { revalidateMediaSurfaces } from "@/app/api/_lib/revalidate";
 import { listAdminPrivateGalleries, storedGallery } from "@/lib/server/admin-lists";
 import { requireAdminOr401 } from "@/lib/auth/admin";
 import { getDb } from "@/lib/server/db";
-import {
-  asBooleanOrNull,
-  asNullableString,
-  asStringArray,
-  isRecord,
-  noStoreJson,
-} from "@/app/api/_lib/common";
-import {
-  MIN_PRIVATE_GALLERY_PASSWORD_LENGTH,
-  hashGalleryPassword,
-  isFutureDate,
-  makeGalleryAccessToken,
-  normalizeLocalDateTimeString,
-  parseClientLocalDateTimeToUtc,
-} from "@/lib/private-galleries";
+import { noStoreJson } from "@/app/api/_lib/common";
+import { isFutureDate } from "@/lib/private-galleries";
+import { accessFields, parseGalleryBody } from "@/app/api/private-galleries/_lib/gallery-body";
 import {
   ensureUniquePrivateGallerySlug,
   validatePrivateGalleryMediaIds,
@@ -41,83 +29,50 @@ export async function POST(req: Request) {
   const deny = await requireAdminOr401();
   if (deny) return deny;
 
-  const body = (await req.json().catch(() => null)) as unknown;
-  if (!isRecord(body)) {
-    return noStoreJson({ ok: false, error: "Invalid body." }, { status: 400 });
+  const parsed = parseGalleryBody(await req.json().catch(() => null));
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.value;
+
+  if (!isFutureDate(body.expiresAtUtc)) {
+    return noStoreJson({ ok: false, error: "Expiry date must be in the future." }, { status: 400 });
   }
 
-  const title = (asNullableString(body.title) ?? "").trim().slice(0, 140);
-  const slugInput = (asNullableString(body.slug) ?? "").trim();
-  const description = (asNullableString(body.description) ?? "").trim().slice(0, 2000);
-  const password = (asNullableString(body.password) ?? "").trim();
-  const rawMediaIds = asStringArray(body.mediaIds, 300);
-  const isActive = asBooleanOrNull(body.isActive) ?? true;
-  const expiresAtLocal = normalizeLocalDateTimeString(asNullableString(body.expiresAtLocal) ?? "");
-  const timezoneOffsetMinutes = Number(body.timezoneOffsetMinutes);
-
-  if (!title) {
-    return noStoreJson({ ok: false, error: "Title is required." }, { status: 400 });
-  }
-
-  if (!password || password.length < MIN_PRIVATE_GALLERY_PASSWORD_LENGTH) {
-    return noStoreJson(
-      {
-        ok: false,
-        error: `Password must be at least ${MIN_PRIVATE_GALLERY_PASSWORD_LENGTH} characters.`,
-      },
-      { status: 400 }
-    );
-  }
-
-  if (!expiresAtLocal) {
-    return noStoreJson({ ok: false, error: "Expiry date is required." }, { status: 400 });
-  }
-
-  if (!Number.isFinite(timezoneOffsetMinutes)) {
-    return noStoreJson({ ok: false, error: "Timezone offset is required." }, { status: 400 });
-  }
-
-  const expiresAtUtc = parseClientLocalDateTimeToUtc(expiresAtLocal, timezoneOffsetMinutes);
-  if (!isFutureDate(expiresAtUtc)) {
-    return noStoreJson(
-      { ok: false, error: "Expiry date must be in the future." },
-      { status: 400 }
-    );
-  }
+  const access = await accessFields(body, null);
+  if (!access.ok) return noStoreJson({ ok: false, error: access.error }, { status: 400 });
 
   const db = await getDb();
-  const validatedMedia = await validatePrivateGalleryMediaIds(db, rawMediaIds);
+  const validatedMedia = await validatePrivateGalleryMediaIds(db, body.rawMediaIds);
   if (!validatedMedia.ok) {
     return noStoreJson({ ok: false, error: validatedMedia.error }, { status: 400 });
   }
 
-  const pageUsage = await resolveGalleryPageUsage(db, validatedMedia.mediaIds, body.clearPageUsages === true);
-  if (pageUsage) return pageUsage;
+  // Only a private gallery hides its photos; a public one leaves them as they are.
+  if (body.visibility === "private") {
+    const pageUsage = await resolveGalleryPageUsage(db, validatedMedia.mediaIds, body.clearPageUsages);
+    if (pageUsage) return pageUsage;
 
-  const madePrivate = await makeMediaPrivateForGallery(db, validatedMedia.mediaIds);
-  if (madePrivate.failures.length > 0) {
-    return noStoreJson(
-      { ok: false, error: formatGalleryConversionError(madePrivate.failures) },
-      { status: 502 }
-    );
+    const madePrivate = await makeMediaPrivateForGallery(db, validatedMedia.mediaIds);
+    if (madePrivate.failures.length > 0) {
+      return noStoreJson(
+        { ok: false, error: formatGalleryConversionError(madePrivate.failures) },
+        { status: 502 }
+      );
+    }
   }
 
-  const slug = await ensureUniquePrivateGallerySlug(db, { title, slugInput });
-  const passwordHash = await hashGalleryPassword(password);
-  const accessToken = makeGalleryAccessToken();
+  const slug = await ensureUniquePrivateGallerySlug(db, { title: body.title, slugInput: body.slugInput });
   const now = new Date();
 
   const result = await db.collection("private_galleries").insertOne({
-    title,
+    title: body.title,
     slug,
-    description: description || null,
-    passwordHash,
-    accessToken,
+    description: body.description || null,
+    ...access.set,
     mediaIds: validatedMedia.mediaIds,
-    isActive,
-    expiresAtUtc,
-    expiresAt: expiresAtUtc,
-    expiresAtLocal,
+    isActive: body.isActive,
+    expiresAtUtc: body.expiresAtUtc,
+    expiresAt: body.expiresAtUtc,
+    expiresAtLocal: body.expiresAtLocal,
     createdAt: now,
     updatedAt: now,
   });

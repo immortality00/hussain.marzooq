@@ -1,16 +1,24 @@
 import { ObjectId, type Db } from "mongodb";
 import { asStringArray } from "@/app/api/_lib/common";
 import {
+  PRIVATE_GALLERY_FILTER,
+  galleryVisibilityOf,
   getPrivateGalleryExpiryDate,
+  isGalleryLinkKey,
   makeGallerySlug,
   normalizeLocalDateTimeString,
+  type GalleryVisibility,
 } from "@/lib/private-galleries";
+import { GALLERY_MAX_ITEMS } from "@/lib/admin-data";
 
 export type PrivateGalleryAdminItem = {
   id: string;
   title: string;
   slug: string;
   description: string | null;
+  visibility: GalleryVisibility;
+  // The admin copies the link from here; it lives in memory on the admin's devices only.
+  linkKey: string | null;
   mediaIds: string[];
   isActive: boolean;
   expiresAtLocal: string;
@@ -27,7 +35,9 @@ export function serializePrivateGalleryAdminItem(
     title: typeof doc.title === "string" ? doc.title : "",
     slug: typeof doc.slug === "string" ? doc.slug : "",
     description: typeof doc.description === "string" ? doc.description : null,
-    mediaIds: asStringArray(doc.mediaIds, 300),
+    visibility: galleryVisibilityOf(doc),
+    linkKey: galleryVisibilityOf(doc) === "public" && isGalleryLinkKey(doc.linkKey) ? doc.linkKey : null,
+    mediaIds: asStringArray(doc.mediaIds, GALLERY_MAX_ITEMS),
     isActive: typeof doc.isActive === "boolean" ? doc.isActive : true,
     expiresAtLocal:
       typeof doc.expiresAtLocal === "string"
@@ -97,10 +107,11 @@ export async function validatePrivateGalleryMediaIds(db: Db, rawMediaIds: string
   return normalized;
 }
 
-export async function findPrivateGalleriesUsingMedia(db: Db, mediaId: string) {
+// Every gallery holding the item, public ones included (a media delete is blocked by both).
+export async function findPrivateGalleriesUsingMedia(db: Db, mediaId: string, onlyPrivate = false) {
   return db
     .collection("private_galleries")
-    .find({ mediaIds: mediaId })
+    .find(onlyPrivate ? { mediaIds: mediaId, ...PRIVATE_GALLERY_FILTER } : { mediaIds: mediaId })
     .project({ _id: 1, title: 1, slug: 1 })
     .sort({ updatedAt: -1, createdAt: -1 })
     .toArray();
@@ -109,11 +120,12 @@ export async function findPrivateGalleriesUsingMedia(db: Db, mediaId: string) {
 function galleryTitle(gallery: Record<string, unknown>) {
   const title = typeof gallery.title === "string" ? gallery.title.trim() : "";
   const slug = typeof gallery.slug === "string" ? gallery.slug.trim() : "";
-  return title || (slug ? `/g/${slug}` : "Untitled private gallery");
+  return title || (slug ? `/g/${slug}` : "Untitled gallery");
 }
 
+// Only private galleries keep an item hidden; a public gallery leaves it as it is.
 export async function getPrivateGalleryTitlesForMedia(db: Db, mediaId: string) {
-  const galleries = await findPrivateGalleriesUsingMedia(db, mediaId);
+  const galleries = await findPrivateGalleriesUsingMedia(db, mediaId, true);
   return galleries.map(galleryTitle);
 }
 
@@ -123,7 +135,7 @@ export async function getPrivateGalleryTitlesByMedia(db: Db, mediaIds: string[])
 
   const galleries = await db
     .collection("private_galleries")
-    .find({ mediaIds: { $in: mediaIds } })
+    .find({ mediaIds: { $in: mediaIds }, ...PRIVATE_GALLERY_FILTER })
     .project({ _id: 1, title: 1, slug: 1, mediaIds: 1 })
     .sort({ updatedAt: -1, createdAt: -1 })
     .toArray();
@@ -144,12 +156,12 @@ export function formatPrivateGalleryMediaDeleteBlocker(galleries: Record<string,
     .map((gallery) => {
       const title = typeof gallery.title === "string" ? gallery.title.trim() : "";
       const slug = typeof gallery.slug === "string" ? gallery.slug.trim() : "";
-      return title || (slug ? `/g/${slug}` : "Untitled private gallery");
+      return title || (slug ? `/g/${slug}` : "Untitled gallery");
     })
     .filter(Boolean)
     .slice(0, 5);
 
   const suffix = galleries.length > names.length ? ` and ${galleries.length - names.length} more` : "";
 
-  return `This media is used in private galleries: ${names.join(", ")}${suffix}. Remove it from those galleries before deleting it.`;
+  return `This media is used in galleries: ${names.join(", ")}${suffix}. Remove it from those galleries before deleting it.`;
 }

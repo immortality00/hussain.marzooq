@@ -1,4 +1,4 @@
-import { Briefcase, Images, LayoutDashboard, Lock, Users, type LucideIcon } from "lucide-react";
+import { Briefcase, GalleryHorizontalEnd, Images, LayoutDashboard, Users, type LucideIcon } from "lucide-react";
 
 export type NavItem = { href: string; label: string };
 export type NavGroup = { label: string; icon: LucideIcon; items: NavItem[] };
@@ -42,8 +42,8 @@ export const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
-    label: "Private",
-    icon: Lock,
-    items: [{ href: "/admin/private-galleries", label: "Private Galleries" }],
+    label: "Galleries",
+    icon: GalleryHorizontalEnd,
+    items: [{ href: "/admin/private-galleries", label: "Galleries" }],
   },
 ];

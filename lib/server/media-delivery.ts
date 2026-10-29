@@ -6,6 +6,7 @@ import {
   type CloudinaryDeliveryType,
 } from "@/lib/server/cloudinary-private";
 import { settleLimited } from "@/lib/settle-limited";
+import { PRIVATE_GALLERY_FILTER } from "@/lib/private-galleries";
 
 // A few at a time: a person or gallery with many photos still saves well inside the
 // server's time limit, and a cut-off save is finished by the next one.
@@ -15,15 +16,17 @@ export type DeliveryFailure = { title: string; error: string; to: CloudinaryDeli
 
 export type DeliverySyncResult = { converted: number; missing: number; failures: DeliveryFailure[] };
 
-// The one rule: a hidden item, or one in a Private Gallery, is served only through the
-// site, so an address saved while it was public stops working.
+// The one rule: a hidden item, or one in a private gallery, is served only through the
+// site, so an address saved while it was public stops working. A public gallery changes nothing.
 export function requiredDelivery(doc: Document, inGallery: boolean): CloudinaryDeliveryType {
   return inGallery || doc.isPublic === false ? "authenticated" : "upload";
 }
 
 export async function privateGalleryMediaIds(db: Db, mediaIds: string[]): Promise<Set<string>> {
   if (mediaIds.length === 0) return new Set();
-  const ids = await db.collection("private_galleries").distinct("mediaIds", { mediaIds: { $in: mediaIds } });
+  const ids = await db
+    .collection("private_galleries")
+    .distinct("mediaIds", { mediaIds: { $in: mediaIds }, ...PRIVATE_GALLERY_FILTER });
   return new Set(ids.filter((id): id is string => typeof id === "string"));
 }
 

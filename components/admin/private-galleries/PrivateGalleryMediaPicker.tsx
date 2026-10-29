@@ -1,12 +1,13 @@
 "use client";
 
-import { SearchInput } from "@/components/search/SearchInput";
+import { MediaListFilterBar } from "@/app/admin/(protected)/media/list/components/MediaListFilterBar";
 import { PrivateGalleryMediaCard } from "./PrivateGalleryMediaCard";
 import { usePrivateGalleryMediaPicker } from "./usePrivateGalleryMediaPicker";
+import type { BulkSelectHandlers } from "./useSelectAllMatches";
+import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-import { adminInputClasses } from "@/components/admin/admin-input";
 
-type PrivateGalleryMediaPickerProps = {
+type PrivateGalleryMediaPickerProps = BulkSelectHandlers & {
   selectedMediaIds: string[];
   onToggleMedia: (id: string) => void;
 };
@@ -14,29 +15,48 @@ type PrivateGalleryMediaPickerProps = {
 export function PrivateGalleryMediaPicker({
   selectedMediaIds,
   onToggleMedia,
+  onSelectMedia,
+  onDeselectMedia,
 }: PrivateGalleryMediaPickerProps) {
-  const picker = usePrivateGalleryMediaPicker(selectedMediaIds);
+  const picker = usePrivateGalleryMediaPicker(selectedMediaIds, { onSelectMedia, onDeselectMedia });
+  const { filters } = picker;
 
   return (
     <section className="rounded-[2rem] border p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-medium">Select media</div>
-          <div className="mt-1 text-xs text-muted-foreground">
-            {selectedMediaIds.length} selected. Search loads from the full media library, not only the first page.
-          </div>
-        </div>
+      <div className="text-sm font-medium">Select media</div>
+      <div className="mt-1 text-xs text-muted-foreground">{selectedMediaIds.length} selected.</div>
 
-        <SearchInput
-          value={picker.searchValue}
-          onValueChange={picker.setSearchValue}
-          onClear={picker.clearSearch}
-          placeholder="Search title, tags, location, people, event..."
-          wrapperClassName="flex w-full flex-wrap gap-2 md:w-auto"
-          inputClassName={adminInputClasses("md", "w-auto min-w-0 flex-1 md:w-80")}
-          clearButtonClassName={adminButtonClasses("default", "md")}
-        />
-      </div>
+      <MediaListFilterBar
+        query={filters.query}
+        categoryFilter={filters.category}
+        typeFilter={filters.type}
+        visibilityFilter={filters.visibility}
+        disabled={false}
+        className="mt-4 [--sticky-bleed:1.25rem]"
+        onQueryChange={(value) => picker.setFilter("query", value)}
+        onCategoryChange={(value) => picker.setFilter("category", value)}
+        onTypeChange={(value) => picker.setFilter("type", value)}
+        onVisibilityChange={(value) => picker.setFilter("visibility", value)}
+        onReset={picker.clearFilters}
+      />
+
+      {picker.selectAll.visible ? (
+        <div className="mt-4 flex items-center gap-2.5 text-sm text-muted-foreground">
+          <BulkCheckbox
+            checked={picker.selectAll.checked}
+            indeterminate={picker.selectAll.indeterminate}
+            onChange={picker.selectAll.toggle}
+            label="Select all media"
+          />
+          Select all
+        </div>
+      ) : null}
+
+      {picker.selectAll.note ? (
+        <div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm">
+          {picker.selectAll.note}
+        </div>
+      ) : null}
 
       {picker.error ? (
         <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm">

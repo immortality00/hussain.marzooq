@@ -9,8 +9,9 @@ import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
 import { useRecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 import { saveGuarded } from "@/lib/record-changed";
 import { deleteGallery, saveGalleryWithUsageCheck } from "./save-gallery";
-import type { GalleryItem } from "./types";
-import { buildGalleryUrl, MIN_PRIVATE_GALLERY_PASSWORD_LENGTH } from "./helpers";
+import type { GalleryItem, GalleryVisibility } from "./types";
+import { GALLERY_MAX_ITEMS } from "@/lib/admin-data";
+import { addUpTo, buildGalleryUrl, MIN_PRIVATE_GALLERY_PASSWORD_LENGTH } from "./helpers";
 
 export function usePrivateGalleriesAdmin() {
   const [view, setView] = useState<"list" | "form">("list");
@@ -25,6 +26,10 @@ export function usePrivateGalleriesAdmin() {
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
   const [password, setPassword] = useState("");
+  const [visibility, setVisibility] = useState<GalleryVisibility>("private");
+  const [savedVisibility, setSavedVisibility] = useState<GalleryVisibility | null>(null);
+  const [savedLinkKey, setSavedLinkKey] = useState<string | null>(null);
+  const [newLink, setNewLink] = useState(false);
   const [isActive, setIsActive] = useState(true);
   const [expiresAtLocal, setExpiresAtLocal] = useState("");
   const [selectedMediaIds, setSelectedMediaIds] = useState<string[]>([]);
@@ -40,6 +45,10 @@ export function usePrivateGalleriesAdmin() {
     setSlug("");
     setDescription("");
     setPassword("");
+    setVisibility("private");
+    setSavedVisibility(null);
+    setSavedLinkKey(null);
+    setNewLink(false);
     setIsActive(true);
     setExpiresAtLocal("");
     setSelectedMediaIds([]);
@@ -58,6 +67,10 @@ export function usePrivateGalleriesAdmin() {
     setSlug(item.slug);
     setDescription(item.description ?? "");
     setPassword("");
+    setVisibility(item.visibility);
+    setSavedVisibility(item.visibility);
+    setSavedLinkKey(item.linkKey);
+    setNewLink(false);
     setIsActive(item.isActive);
     setExpiresAtLocal(item.expiresAtLocal ?? "");
     setSelectedMediaIds(item.mediaIds ?? []);
@@ -78,19 +91,15 @@ export function usePrivateGalleriesAdmin() {
     setView("list");
   }
 
+  // A password is needed when the gallery is new or was public; otherwise it is optional.
+  const passwordRequired = visibility === "private" && savedVisibility !== "private";
+
   function validateForm() {
     if (!title.trim()) return "Title is required.";
 
-    if (!editingId && password.trim().length < MIN_PRIVATE_GALLERY_PASSWORD_LENGTH) {
-      return `Password must be at least ${MIN_PRIVATE_GALLERY_PASSWORD_LENGTH} characters.`;
-    }
-
-    if (
-      editingId &&
-      password.trim() &&
-      password.trim().length < MIN_PRIVATE_GALLERY_PASSWORD_LENGTH
-    ) {
-      return `New password must be at least ${MIN_PRIVATE_GALLERY_PASSWORD_LENGTH} characters.`;
+    const typed = password.trim();
+    if (visibility === "private" && (passwordRequired || typed) && typed.length < MIN_PRIVATE_GALLERY_PASSWORD_LENGTH) {
+      return `${passwordRequired ? "Password" : "New password"} must be at least ${MIN_PRIVATE_GALLERY_PASSWORD_LENGTH} characters.`;
     }
 
     if (!expiresAtLocal.trim()) return "Expiry date is required.";
@@ -113,14 +122,16 @@ export function usePrivateGalleriesAdmin() {
     setSaving(true);
     setBanner({
       type: "info",
-      text: editingId ? "Updating private gallery…" : "Creating private gallery…",
+      text: editingId ? "Updating gallery…" : "Creating gallery…",
     });
 
     const payload = {
       title,
       slug,
       description,
-      password,
+      visibility,
+      password: visibility === "private" ? password : "",
+      newLink: visibility === "public" && savedVisibility === "public" && newLink,
       isActive,
       expiresAtLocal,
       timezoneOffsetMinutes: new Date().getTimezoneOffset(),
@@ -164,11 +175,11 @@ export function usePrivateGalleriesAdmin() {
   async function remove(id: string) {
     if (deletingId) return;
 
-    const ok = confirm("Delete this private gallery?");
+    const ok = confirm("Delete this gallery?");
     if (!ok) return;
 
     setDeletingId(id);
-    setBanner({ type: "info", text: "Deleting private gallery…" });
+    setBanner({ type: "info", text: "Deleting gallery…" });
 
     try {
       await deleteGallery(id);
@@ -185,7 +196,7 @@ export function usePrivateGalleriesAdmin() {
 
   async function bulkRemove(ids: string[]) {
     if (bulkBusy || ids.length === 0) return;
-    if (!confirm(`Delete ${ids.length} private gallery(ies)?`)) return;
+    if (!confirm(`Delete ${ids.length} gallery(ies)?`)) return;
     setBulkBusy(true);
     notify("info", "Deleting selected galleries…");
     const result = await runBulkAction(ids, deleteGallery);
@@ -195,9 +206,9 @@ export function usePrivateGalleriesAdmin() {
     setBulkBusy(false);
   }
 
-  async function copyLink(slugValue: string) {
+  async function copyLink(item: GalleryItem) {
     try {
-      await navigator.clipboard.writeText(buildGalleryUrl(slugValue));
+      await navigator.clipboard.writeText(buildGalleryUrl(item.slug, item.linkKey));
       setBanner({ type: "ok", text: "✅ Gallery link copied." });
     } catch {
       setBanner({ type: "err", text: "Failed to copy gallery link." });
@@ -208,6 +219,18 @@ export function usePrivateGalleriesAdmin() {
     setSelectedMediaIds((prev) =>
       prev.includes(id) ? prev.filter((value) => value !== id) : [...prev, id]
     );
+  }
+
+  // Adds ids in the order given until the gallery is full; returns how many were added.
+  function selectMedia(ids: string[]) {
+    const added = addUpTo(selectedMediaIds, ids, GALLERY_MAX_ITEMS);
+    setSelectedMediaIds(added.ids);
+    return added.count;
+  }
+
+  function deselectMedia(ids: string[]) {
+    const remove = new Set(ids);
+    setSelectedMediaIds((prev) => prev.filter((id) => !remove.has(id)));
   }
 
   const filteredItems = useMemo(() => {
@@ -236,6 +259,11 @@ export function usePrivateGalleriesAdmin() {
     slug,
     description,
     password,
+    visibility,
+    savedVisibility,
+    savedLinkKey,
+    newLink,
+    passwordRequired,
     isActive,
     expiresAtLocal,
     selectedMediaIds,
@@ -245,6 +273,8 @@ export function usePrivateGalleriesAdmin() {
     setSlug,
     setDescription,
     setPassword,
+    setVisibility,
+    setNewLink,
     setIsActive,
     setExpiresAtLocal,
     openNew,
@@ -254,5 +284,7 @@ export function usePrivateGalleriesAdmin() {
     remove,
     copyLink,
     toggleMedia,
+    selectMedia,
+    deselectMedia,
   };
 }

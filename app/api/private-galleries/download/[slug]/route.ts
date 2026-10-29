@@ -11,13 +11,25 @@ import {
   normalizeDeliveryType,
 } from "@/lib/server/cloudinary-private";
 import { withRouteErrors } from "@/app/api/_lib/route-errors";
+import { noStoreJson } from "@/app/api/_lib/common";
+import { LINK_DOWNLOADS_USED_UP_TEXT, consumeLinkDownloads } from "@/lib/server/gallery-link-limits";
 
 export const dynamic = "force-dynamic";
 
 const ARCHIVE_RATE_LIMIT_MAX = 10;
 const ARCHIVE_RATE_LIMIT_WINDOW_MS = 60_000;
 
+// `?format=json` answers { ok, url } (or { ok:false, error }) so the gallery page can show a
+// refusal in words; without it the route redirects straight to the archive, as before.
+function refuse(asJson: boolean, error: string, status: number) {
+  return asJson ? noStoreJson({ ok: false, error }, { status }) : new Response(error, { status });
+}
+
 async function handleGet(req: Request, ctx: { params: Promise<{ slug: string }> }) {
+  const params = new URL(req.url).searchParams;
+  const asJson = params.get("format") === "json";
+  const linkKey = (params.get("k") ?? "").trim().slice(0, 100);
+
   const rateLimit = await consumeFixedWindowRateLimit({
     bucket: "gallery-zip",
     key: getClientAddress(req),
@@ -25,12 +37,12 @@ async function handleGet(req: Request, ctx: { params: Promise<{ slug: string }> 
     windowMs: ARCHIVE_RATE_LIMIT_WINDOW_MS,
   });
 
-  if (rateLimit.limited) return new Response("Too many requests", { status: 429 });
+  if (rateLimit.limited) return refuse(asJson, "Too many downloads. Try again shortly.", 429);
 
   const { slug } = await ctx.params;
 
-  const unlocked = await openUnlockedGallery(slug);
-  if (!unlocked.ok) return unlocked.response;
+  const unlocked = await openUnlockedGallery(slug.slice(0, 100), linkKey || null);
+  if (!unlocked.ok) return asJson ? refuse(true, "Access denied.", unlocked.response.status) : unlocked.response;
 
   const mediaDocs = await listGalleryMedia(unlocked.gallery);
 
@@ -45,20 +57,23 @@ async function handleGet(req: Request, ctx: { params: Promise<{ slug: string }> 
     );
 
   if (fullyQualifiedPublicIds.length === 0) {
-    return new Response("No downloadable assets", { status: 400 });
+    return refuse(asJson, "No downloadable assets", 400);
   }
 
   let archiveUrl: string;
   try {
     archiveUrl = expiringArchiveUrl({
       fullyQualifiedPublicIds,
-      targetPublicId: `gallery-${slug}`,
+      targetPublicId: `gallery-${unlocked.gallery.slug}`,
     });
   } catch {
-    return new Response("Cloudinary download is not configured", { status: 500 });
+    return refuse(asJson, "Cloudinary download is not configured", 500);
   }
 
-  return Response.redirect(archiveUrl, 302);
+  const downloads = await consumeLinkDownloads(unlocked.gallery, fullyQualifiedPublicIds.length);
+  if (downloads.limited) return refuse(asJson, LINK_DOWNLOADS_USED_UP_TEXT, 429);
+
+  return asJson ? noStoreJson({ ok: true, url: archiveUrl }) : Response.redirect(archiveUrl, 302);
 }
 
 export const GET = withRouteErrors(handleGet);

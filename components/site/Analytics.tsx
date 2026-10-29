@@ -1,15 +1,21 @@
 import Script from "next/script";
+import { GOATCOUNTER_SETTINGS_SCRIPT } from "@/lib/analytics-path";
 
 export function SiteAnalytics() {
   const code = process.env.NEXT_PUBLIC_GOATCOUNTER_CODE?.trim();
   if (!code) return null;
 
   return (
-    <Script
-      async
-      strategy="afterInteractive"
-      data-goatcounter={`https://${code}.goatcounter.com/count`}
-      src="https://gc.zgo.at/count.js"
-    />
+    <>
+      <Script id="goatcounter-settings" strategy="afterInteractive">
+        {GOATCOUNTER_SETTINGS_SCRIPT}
+      </Script>
+      <Script
+        async
+        strategy="afterInteractive"
+        data-goatcounter={`https://${code}.goatcounter.com/count`}
+        src="https://gc.zgo.at/count.js"
+      />
+    </>
   );
 }

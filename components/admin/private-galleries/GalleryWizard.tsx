@@ -5,12 +5,20 @@ import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { WizardSummaryRow } from "@/components/admin/wizard/WizardSummaryRow";
 import { WizardTabs } from "@/components/admin/wizard/WizardTabs";
 import { GalleryFormFields } from "./GalleryFormFields";
+import { buildGalleryUrl, galleryPath } from "./helpers";
 import { PrivateGalleryMediaPicker } from "./PrivateGalleryMediaPicker";
 import type { usePrivateGalleriesAdmin } from "./usePrivateGalleriesAdmin";
 
 type Admin = ReturnType<typeof usePrivateGalleriesAdmin>;
 
 const STEPS = ["Details", "Media", "Review"] as const;
+
+function reviewLink(admin: Admin) {
+  if (admin.visibility === "private") return admin.slug ? galleryPath(admin.slug) : "—";
+  if (admin.savedVisibility !== "public") return "Made when you save";
+  if (admin.newLink) return "A new link is made when you save; the current one stops working";
+  return admin.savedLinkKey ? buildGalleryUrl(admin.slug, admin.savedLinkKey) : "—";
+}
 
 export function GalleryWizard({ admin }: { admin: Admin }) {
   const [step, setStep] = useState(0);
@@ -26,17 +34,22 @@ export function GalleryWizard({ admin }: { admin: Admin }) {
       <div className="mt-5">
         {step === 0 ? (
           <GalleryFormFields
-            editing={Boolean(admin.editingId)}
             title={admin.title}
             slug={admin.slug}
             description={admin.description}
+            visibility={admin.visibility}
             password={admin.password}
+            passwordRequired={admin.passwordRequired}
+            canMakeNewLink={admin.savedVisibility === "public"}
+            newLink={admin.newLink}
             expiresAtLocal={admin.expiresAtLocal}
             isActive={admin.isActive}
             onTitleChange={admin.setTitle}
             onSlugChange={admin.setSlug}
             onDescriptionChange={admin.setDescription}
+            onVisibilityChange={admin.setVisibility}
             onPasswordChange={admin.setPassword}
+            onNewLinkChange={admin.setNewLink}
             onExpiresAtLocalChange={admin.setExpiresAtLocal}
             onIsActiveChange={admin.setIsActive}
           />
@@ -46,6 +59,8 @@ export function GalleryWizard({ admin }: { admin: Admin }) {
           <PrivateGalleryMediaPicker
             selectedMediaIds={admin.selectedMediaIds}
             onToggleMedia={admin.toggleMedia}
+            onSelectMedia={admin.selectMedia}
+            onDeselectMedia={admin.deselectMedia}
           />
         ) : null}
 
@@ -54,7 +69,8 @@ export function GalleryWizard({ admin }: { admin: Admin }) {
             <div className="text-sm font-medium">Review</div>
             <dl className="mt-4 grid gap-2 text-sm">
               <WizardSummaryRow label="Title" value={admin.title || "—"} />
-              <WizardSummaryRow label="Link" value={admin.slug ? `/g/${admin.slug}` : "—"} />
+              <WizardSummaryRow label="Visibility" value={admin.visibility === "public" ? "Public" : "Private"} />
+              <WizardSummaryRow label="Link" value={reviewLink(admin)} />
               <WizardSummaryRow label="Media items" value={String(admin.selectedMediaIds.length)} />
               <WizardSummaryRow label="Status" value={admin.isActive ? "Active" : "Inactive"} />
               <WizardSummaryRow label="Expires" value={admin.expiresAtLocal || "Never"} />

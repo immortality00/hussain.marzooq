@@ -138,6 +138,31 @@ describe("private galleries", () => {
     expect(byTitle("a")).toMatchObject({ isPublic: false, deliveryType: "authenticated" });
   });
 
+  test("a public gallery leaves its photos as they are: a public photo stays on the CDN", async () => {
+    const member = item("client");
+    memory.collections.media = [member];
+    memory.collections.private_galleries = [{ _id: new ObjectId(), visibility: "public", mediaIds: [String(member._id)] }];
+
+    await syncMediaDelivery(db, ids());
+
+    expect(convertAssetDeliveryType).not.toHaveBeenCalled();
+    expect(byTitle("client")).toMatchObject({ isPublic: true });
+    expect(byTitle("client").deliveryType).toBeUndefined();
+  });
+
+  test("a photo in a public and a private gallery is still private", async () => {
+    const member = item("both", { isPublic: false });
+    memory.collections.media = [member];
+    memory.collections.private_galleries = [
+      { _id: new ObjectId(), visibility: "public", mediaIds: [String(member._id)] },
+      { _id: new ObjectId(), mediaIds: [String(member._id)] },
+    ];
+
+    await syncMediaDelivery(db, ids());
+
+    expect(byTitle("both").deliveryType).toBe("authenticated");
+  });
+
   test("leaving the last gallery keeps a still-hidden item's file private", async () => {
     memory.collections.media = [item("left", { isPublic: false, deliveryType: "authenticated" })];
 

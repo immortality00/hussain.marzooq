@@ -11,6 +11,8 @@ export const E2E = {
   galleryCookieSecret: "e2e-gallery-cookie-secret",
   galleryPassword: "e2e-gallery-password",
   gallerySlug: "e2e-private-gallery",
+  linkGallerySlug: "e2e-public-gallery",
+  linkGalleryKey: "e2e-public-gallery-key-00000000000000000000",
   serviceName: "Seed Editorial Session",
   photographyCount: 65,
   videographyCount: 4,

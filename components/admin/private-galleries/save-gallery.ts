@@ -6,13 +6,15 @@ import {
 import { readMediaInUse } from "@/lib/media-in-use";
 import { adminWrite } from "@/lib/client/admin-store";
 import { expectVersion, throwIfRecordChanged } from "@/lib/record-changed";
-import type { GalleryItem } from "./types";
+import type { GalleryItem, GalleryVisibility } from "./types";
 
 export type GalleryPayload = {
   title: string;
   slug: string;
   description: string;
+  visibility: GalleryVisibility;
   password: string;
+  newLink: boolean;
   isActive: boolean;
   expiresAtLocal: string;
   timezoneOffsetMinutes: number;

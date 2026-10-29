@@ -38,9 +38,9 @@ test.describe("admin content screens", () => {
     await expect(fieldAfter(page, "Bio")).toHaveValue("Bio written by the end-to-end suite.");
   });
 
-  test("private galleries: a renamed gallery shows at once and after a fresh load", async ({ page }) => {
+  test("galleries: a renamed gallery shows at once and after a fresh load", async ({ page }) => {
     await signIn(page);
-    await openScreen(page, "Private Galleries");
+    await openScreen(page, "Galleries");
     await page.getByRole("button", { name: "Edit", exact: true }).first().click();
     await fieldAfter(page, "Title").fill("E2E Gallery Renamed");
     await page.getByRole("button", { name: "Next", exact: true }).click();

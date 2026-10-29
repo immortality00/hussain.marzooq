@@ -4,23 +4,10 @@ import { getDb } from "@/lib/server/db";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
 import { storedGallery } from "@/lib/server/admin-lists";
-import {
-  asBooleanOrNull,
-  asNullableString,
-  asStringArray,
-  isRecord,
-  noStoreJson,
-} from "@/app/api/_lib/common";
-import {
-  MIN_PRIVATE_GALLERY_PASSWORD_LENGTH,
-  getPrivateGalleryExpiryDate,
-  hashGalleryPassword,
-  isFutureDate,
-  isSameExpiryInstant,
-  makeGalleryAccessToken,
-  normalizeLocalDateTimeString,
-  parseClientLocalDateTimeToUtc,
-} from "@/lib/private-galleries";
+import { asStringArray, noStoreJson } from "@/app/api/_lib/common";
+import { getPrivateGalleryExpiryDate, isFutureDate, isSameExpiryInstant } from "@/lib/private-galleries";
+import { accessFields, parseGalleryBody } from "@/app/api/private-galleries/_lib/gallery-body";
+import { GALLERY_MAX_ITEMS } from "@/lib/admin-data";
 import {
   ensureUniquePrivateGallerySlug,
   serializePrivateGalleryAdminItem,
@@ -52,36 +39,9 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (gate instanceof Response) return gate;
   const { id, oid } = gate;
 
-  const body = (await req.json().catch(() => null)) as unknown;
-  if (!isRecord(body)) {
-    return noStoreJson({ ok: false, error: "Invalid body." }, { status: 400 });
-  }
-
-  const title = (asNullableString(body.title) ?? "").trim().slice(0, 140);
-  const slugInput = (asNullableString(body.slug) ?? "").trim();
-  const description = (asNullableString(body.description) ?? "").trim().slice(0, 2000);
-  const password = (asNullableString(body.password) ?? "").trim();
-  const rawMediaIds = asStringArray(body.mediaIds, 300);
-  const isActive = asBooleanOrNull(body.isActive) ?? true;
-  const expiresAtLocal = normalizeLocalDateTimeString(asNullableString(body.expiresAtLocal) ?? "");
-  const timezoneOffsetMinutes = Number(body.timezoneOffsetMinutes);
-
-  if (!title) {
-    return noStoreJson({ ok: false, error: "Title is required." }, { status: 400 });
-  }
-
-  if (!expiresAtLocal) {
-    return noStoreJson({ ok: false, error: "Expiry date is required." }, { status: 400 });
-  }
-
-  if (!Number.isFinite(timezoneOffsetMinutes)) {
-    return noStoreJson({ ok: false, error: "Timezone offset is required." }, { status: 400 });
-  }
-
-  const expiresAtUtc = parseClientLocalDateTimeToUtc(expiresAtLocal, timezoneOffsetMinutes);
-  if (!expiresAtUtc) {
-    return noStoreJson({ ok: false, error: "Expiry date is required." }, { status: 400 });
-  }
+  const parsed = parseGalleryBody(await req.json().catch(() => null));
+  if (!parsed.ok) return parsed.response;
+  const body = parsed.value;
 
   const db = await getDb();
   const found = await findByIdOr404(db, "private_galleries", oid);
@@ -90,72 +50,68 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (changedSinceOpened(req, existing)) return recordChangedResponse(await storedGallery(db, oid));
 
   const expiryUnchanged = isSameExpiryInstant(
-    expiresAtUtc,
+    body.expiresAtUtc,
     getPrivateGalleryExpiryDate(existing)
   );
 
-  if (!expiryUnchanged && !isFutureDate(expiresAtUtc)) {
+  if (!expiryUnchanged && !isFutureDate(body.expiresAtUtc)) {
     return noStoreJson(
       { ok: false, error: "Expiry date must be in the future." },
       { status: 400 }
     );
   }
 
+  const access = await accessFields(body, existing);
+  if (!access.ok) return noStoreJson({ ok: false, error: access.error }, { status: 400 });
+
   const previousSlug = typeof existing.slug === "string" ? existing.slug : null;
 
-  const validatedMedia = await validatePrivateGalleryMediaIds(db, rawMediaIds);
+  const validatedMedia = await validatePrivateGalleryMediaIds(db, body.rawMediaIds);
   if (!validatedMedia.ok) {
     return noStoreJson({ ok: false, error: validatedMedia.error }, { status: 400 });
   }
 
-  const pageUsage = await resolveGalleryPageUsage(db, validatedMedia.mediaIds, body.clearPageUsages === true);
-  if (pageUsage) return pageUsage;
-
-  const previousMediaIds = asStringArray(existing.mediaIds, 300);
+  const isPrivate = body.visibility === "private";
+  const previousMediaIds = asStringArray(existing.mediaIds, GALLERY_MAX_ITEMS);
   const nextMediaIds = validatedMedia.mediaIds;
-  const detachedMediaIds = previousMediaIds.filter((mediaId) => !nextMediaIds.includes(mediaId));
+  // Photos this save takes out of a private gallery: the ones removed, or every one when it turns public.
+  const releasedMediaIds = isPrivate
+    ? previousMediaIds.filter((mediaId) => !nextMediaIds.includes(mediaId))
+    : previousMediaIds;
 
-  const madePrivate = await makeMediaPrivateForGallery(db, nextMediaIds);
-  if (madePrivate.failures.length > 0) {
-    return noStoreJson(
-      { ok: false, error: formatGalleryConversionError(madePrivate.failures) },
-      { status: 502 }
-    );
-  }
+  // Only a private gallery hides its photos; a public one leaves them as they are.
+  if (isPrivate) {
+    const pageUsage = await resolveGalleryPageUsage(db, nextMediaIds, body.clearPageUsages);
+    if (pageUsage) return pageUsage;
 
-  const slug = await ensureUniquePrivateGallerySlug(db, { title, slugInput, excludeId: id });
-
-  const set: Record<string, unknown> = {
-    title,
-    slug,
-    description: description || null,
-    mediaIds: validatedMedia.mediaIds,
-    isActive,
-    expiresAtUtc,
-    expiresAt: expiresAtUtc,
-    expiresAtLocal,
-    updatedAt: new Date(),
-  };
-
-  if (password) {
-    if (password.length < MIN_PRIVATE_GALLERY_PASSWORD_LENGTH) {
+    const madePrivate = await makeMediaPrivateForGallery(db, nextMediaIds);
+    if (madePrivate.failures.length > 0) {
       return noStoreJson(
-        {
-          ok: false,
-          error: `Password must be at least ${MIN_PRIVATE_GALLERY_PASSWORD_LENGTH} characters.`,
-        },
-        { status: 400 }
+        { ok: false, error: formatGalleryConversionError(madePrivate.failures) },
+        { status: 502 }
       );
     }
-
-    set.passwordHash = await hashGalleryPassword(password);
-    set.accessToken = makeGalleryAccessToken();
   }
+
+  const slug = await ensureUniquePrivateGallerySlug(db, { title: body.title, slugInput: body.slugInput, excludeId: id });
+
+  const set: Record<string, unknown> = {
+    title: body.title,
+    slug,
+    description: body.description || null,
+    ...access.set,
+    mediaIds: nextMediaIds,
+    isActive: body.isActive,
+    expiresAtUtc: body.expiresAtUtc,
+    expiresAt: body.expiresAtUtc,
+    expiresAtLocal: body.expiresAtLocal,
+    updatedAt: new Date(),
+  };
 
   const result = await db.collection("private_galleries").updateOne({ _id: oid }, { $set: set });
   if (!result.matchedCount) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });
 
-  await releaseMediaFromPrivateGalleries(db, detachedMediaIds);
+  await releaseMediaFromPrivateGalleries(db, releasedMediaIds);
 
   revalidatePath(`/g/${slug}`);
   if (previousSlug && previousSlug !== slug) revalidatePath(`/g/${previousSlug}`);
@@ -178,7 +134,7 @@ export async function DELETE(_req: Request, ctx: { params: Promise<{ id: string 
   const existing = found.doc;
 
   const slug = typeof existing.slug === "string" ? existing.slug : null;
-  const releasedMediaIds = asStringArray(existing.mediaIds, 300);
+  const releasedMediaIds = asStringArray(existing.mediaIds, GALLERY_MAX_ITEMS);
 
   const result = await db.collection("private_galleries").deleteOne({ _id: oid });
   if (!result.deletedCount) return noStoreJson({ ok: false, error: "Not found." }, { status: 404 });

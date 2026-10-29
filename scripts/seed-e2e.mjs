@@ -64,6 +64,8 @@ const E2E = {
   serviceName: "Seed Editorial Session",
   galleryPassword: "e2e-gallery-password",
   gallerySlug: "e2e-private-gallery",
+  linkGallerySlug: "e2e-public-gallery",
+  linkGalleryKey: "e2e-public-gallery-key-00000000000000000000",
   photographyCount: 65,
   videographyCount: 4,
   personName: "Seed Person",
@@ -213,6 +215,25 @@ async function main() {
     updatedAt: new Date(),
   });
 
+  // A public gallery holding the same hidden photo (it stays hidden: a public gallery changes
+  // nothing). Older than the private gallery, so the admin list still opens that one first.
+  await db.collection("private_galleries").insertOne({
+    title: "E2E Public Gallery",
+    slug: E2E.linkGallerySlug,
+    description: "Seeded public gallery used by the end-to-end suite.",
+    visibility: "public",
+    linkKey: E2E.linkGalleryKey,
+    passwordHash: null,
+    accessToken: crypto.randomBytes(24).toString("hex"),
+    mediaIds: [String(galleryMedia._id)],
+    isActive: true,
+    expiresAtUtc: new Date(Date.now() + 30 * 86_400_000),
+    expiresAt: new Date(Date.now() + 30 * 86_400_000),
+    expiresAtLocal: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 16),
+    createdAt: new Date(Date.now() - 60_000),
+    updatedAt: new Date(Date.now() - 60_000),
+  });
+
   await db.collection("page_settings").insertMany(
     ["photography", "videography", "nft", "dancing", "web-development", "blog"].map((slug) => ({
       slug,
@@ -258,6 +279,7 @@ async function main() {
       `  photography public  ${photography.length}`,
       `  videography public  ${videography.length}`,
       `  private gallery     /g/${E2E.gallerySlug}`,
+      `  public gallery      /g/${E2E.linkGallerySlug}/${E2E.linkGalleryKey}`,
     ].join("\n")
   );
 

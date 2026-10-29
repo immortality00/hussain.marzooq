@@ -47,7 +47,24 @@ export function getGalleryStatus(item: GalleryItem) {
   };
 }
 
-export function buildGalleryUrl(slug: string) {
-  if (typeof window === "undefined") return `/g/${slug}`;
-  return `${window.location.origin}/g/${slug}`;
+export function galleryPath(slug: string, linkKey?: string | null) {
+  return linkKey ? `/g/${slug}/${linkKey}` : `/g/${slug}`;
+}
+
+export function buildGalleryUrl(slug: string, linkKey?: string | null) {
+  const path = galleryPath(slug, linkKey);
+  if (typeof window === "undefined") return path;
+  return `${window.location.origin}${path}`;
+}
+// Adds the new ids after the current ones, keeping order and dropping repeats, until `max`.
+export function addUpTo(current: string[], ids: string[], max: number) {
+  const seen = new Set(current);
+  const next = [...current];
+  for (const id of ids) {
+    if (next.length >= max) break;
+    if (seen.has(id)) continue;
+    seen.add(id);
+    next.push(id);
+  }
+  return { ids: next, count: next.length - current.length };
 }

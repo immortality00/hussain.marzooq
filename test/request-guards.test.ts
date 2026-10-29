@@ -14,6 +14,7 @@ import {
   claimDuplicateWindow,
   clearFixedWindowRateLimit,
   consumeFixedWindowRateLimit,
+  fixedWindowCount,
   storedGuardKey,
 } from "@/lib/server/request-guards";
 
@@ -107,5 +108,43 @@ describe("stored keys", () => {
     const [dedupeFilter, dedupePipeline] = findOneAndUpdate.mock.calls[1];
     expect(dedupeFilter).toEqual({ _id: `dedupe:b:${hashed}` });
     expect(JSON.stringify(dedupePipeline)).not.toContain(long);
+  });
+});
+
+describe("consumeFixedWindowRateLimit — amount", () => {
+  function countStage() {
+    const pipeline = findOneAndUpdate.mock.calls[0]?.[1] as Record<string, Record<string, unknown>>[];
+    return JSON.stringify(pipeline[1]?.$set?.count);
+  }
+
+  test("adds the amount in one step (a ZIP counts every file in it)", async () => {
+    findOneAndUpdate.mockResolvedValueOnce({ count: 50, resetAt: new Date(Date.now() + 60_000) });
+    const result = await consumeFixedWindowRateLimit({ bucket: "b", key: "k", limit: 40, windowMs: 60_000, amount: 50 });
+    expect(countStage()).toBe(JSON.stringify({ $cond: ["$expired", 50, { $add: [{ $ifNull: ["$count", 0] }, 50] }] }));
+    expect(result).toMatchObject({ limited: true, count: 50 });
+  });
+
+  test("a missing or nonsense amount counts one", async () => {
+    findOneAndUpdate.mockResolvedValue({ count: 1, resetAt: new Date(Date.now() + 60_000) });
+    for (const amount of [undefined, Number.NaN, 0, -5]) {
+      findOneAndUpdate.mockClear();
+      await consumeFixedWindowRateLimit({ bucket: "b", key: "k", limit: 5, windowMs: 60_000, amount });
+      expect(countStage()).toContain('"$expired",1,');
+    }
+  });
+});
+
+describe("fixedWindowCount", () => {
+  test("reads a live window's count", async () => {
+    findOne.mockResolvedValueOnce({ count: 7, resetAt: new Date(Date.now() + 60_000) });
+    await expect(fixedWindowCount({ bucket: "b", key: "k" })).resolves.toBe(7);
+    expect(findOne).toHaveBeenCalledWith({ _id: "rate:b:k" });
+  });
+
+  test("an expired or missing window counts zero", async () => {
+    findOne.mockResolvedValueOnce({ count: 7, resetAt: new Date(Date.now() - 1) });
+    await expect(fixedWindowCount({ bucket: "b", key: "k" })).resolves.toBe(0);
+    findOne.mockResolvedValueOnce(null);
+    await expect(fixedWindowCount({ bucket: "b", key: "k" })).resolves.toBe(0);
   });
 });

@@ -88,8 +88,8 @@ export default function MediaPlacementSection({
 
       {lockedByGallery ? (
         <div className="rounded-2xl border border-amber-500/40 bg-amber-500/10 p-4 text-sm text-amber-200">
-          Delivered privately for {privateGalleryTitles.join(", ")}. Remove it from the private
-          gallery to publish it.
+          Delivered privately for {privateGalleryTitles.join(", ")}. Remove it from the gallery
+          to publish it.
         </div>
       ) : null}
     </section>

@@ -2,12 +2,21 @@ import crypto from "crypto";
 
 export const MIN_PRIVATE_GALLERY_PASSWORD_LENGTH = 8;
 
+// "private": /g/<slug> asks for a password and sets a signed cookie, and every photo in it is
+// hidden from the site with its file made private. "public": no password; the link
+// /g/<slug>/<linkKey> is the only key, and the photos keep their own visibility.
+export type GalleryVisibility = "private" | "public";
+
+export const GALLERY_LINK_KEY_PATTERN = /^[A-Za-z0-9_-]{43}$/;
+
 export type PrivateGalleryDoc = {
   _id?: unknown;
   title: string;
   slug: string;
   description: string | null;
-  passwordHash: string;
+  visibility?: GalleryVisibility;
+  passwordHash: string | null;
+  linkKey?: string | null;
   accessToken: string;
   mediaIds: string[];
   isActive: boolean;
@@ -82,6 +91,26 @@ export function makeGallerySlug(value: string) {
 
 export function makeGalleryAccessToken() {
   return crypto.randomBytes(24).toString("hex");
+}
+
+export function galleryVisibilityOf(doc: Record<string, unknown>): GalleryVisibility {
+  return doc.visibility === "public" ? "public" : "private";
+}
+
+// What a gallery query adds to count only private galleries (absent means private).
+export const PRIVATE_GALLERY_FILTER = { visibility: { $ne: "public" } } as const;
+
+export function makeGalleryLinkKey() {
+  return crypto.randomBytes(32).toString("base64url");
+}
+
+export function isGalleryLinkKey(value: unknown): value is string {
+  return typeof value === "string" && GALLERY_LINK_KEY_PATTERN.test(value);
+}
+
+export function galleryLinkOpens(doc: Record<string, unknown>, key: unknown) {
+  if (galleryVisibilityOf(doc) !== "public" || !isGalleryLinkKey(key) || !isGalleryLinkKey(doc.linkKey)) return false;
+  return timingSafeStringEqual(key, doc.linkKey);
 }
 
 export function privateGalleryCookieName(id: string) {

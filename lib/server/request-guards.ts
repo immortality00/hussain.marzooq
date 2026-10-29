@@ -33,8 +33,10 @@ export async function consumeFixedWindowRateLimit(params: {
   key: string;
   limit: number;
   windowMs: number;
+  amount?: number;
 }) {
   const { bucket, limit, windowMs } = params;
+  const amount = Number.isFinite(params.amount) ? Math.max(1, Math.floor(params.amount as number)) : 1;
   const key = storedGuardKey(params.key);
   const collection = await getRequestGuardsCollection();
 
@@ -60,7 +62,7 @@ export async function consumeFixedWindowRateLimit(params: {
           bucket,
           key,
           count: {
-            $cond: ["$expired", 1, { $add: [{ $ifNull: ["$count", 0] }, 1] }],
+            $cond: ["$expired", amount, { $add: [{ $ifNull: ["$count", 0] }, amount] }],
           },
           resetAt: {
             $cond: ["$expired", nextReset, "$resetAt"],
@@ -80,7 +82,7 @@ export async function consumeFixedWindowRateLimit(params: {
     }
   );
 
-  const count = typeof result?.count === "number" ? result.count : 1;
+  const count = typeof result?.count === "number" ? result.count : amount;
   const resetAt =
     result?.resetAt instanceof Date ? result.resetAt.toISOString() : nextReset.toISOString();
 
@@ -89,6 +91,15 @@ export async function consumeFixedWindowRateLimit(params: {
     count,
     resetAt,
   };
+}
+
+// For showing a visitor that a limit is used up. Never gate on it: a gate consumes first
+// (consumeFixedWindowRateLimit) and checks the count it returns.
+export async function fixedWindowCount(params: { bucket: string; key: string }) {
+  const collection = await getRequestGuardsCollection();
+  const doc = await collection.findOne({ _id: buildRateLimitId(params.bucket, storedGuardKey(params.key)) });
+  const live = doc?.resetAt instanceof Date && doc.resetAt.getTime() > Date.now();
+  return live && typeof doc?.count === "number" ? doc.count : 0;
 }
 
 export async function clearFixedWindowRateLimit(params: { bucket: string; key: string }) {

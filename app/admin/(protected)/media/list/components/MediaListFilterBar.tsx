@@ -10,9 +10,11 @@ type Props = {
   categoryFilter: string;
   typeFilter: string;
   visibilityFilter: string;
-  itemCount: number;
-  activeFilterLabel: string;
+  // Without these the "Showing N results" line is left out (the gallery picker).
+  itemCount?: number;
+  activeFilterLabel?: string;
   disabled: boolean;
+  className?: string;
   onQueryChange: (v: string) => void;
   onCategoryChange: (v: string) => void;
   onTypeChange: (v: string) => void;
@@ -30,6 +32,7 @@ export function MediaListFilterBar({
   itemCount,
   activeFilterLabel,
   disabled,
+  className = "mt-6 [--sticky-bleed:0.75rem] md:[--sticky-bleed:2.75rem]",
   onQueryChange,
   onCategoryChange,
   onTypeChange,
@@ -40,7 +43,7 @@ export function MediaListFilterBar({
 
   return (
     <>
-      <StickyToolbar surface="admin" className="mt-6 [--sticky-bleed:0.75rem] md:[--sticky-bleed:2.75rem]">
+      <StickyToolbar surface="admin" className={className}>
         <section className="flex flex-col gap-2 rounded-2xl border p-3 lg:flex-row lg:items-center lg:gap-3">
           <SearchInput
             value={query}
@@ -86,9 +89,11 @@ export function MediaListFilterBar({
         </section>
       </StickyToolbar>
 
-      <div className="mt-4 text-xs text-muted-foreground">
-        Showing {itemCount} result{itemCount === 1 ? "" : "s"} for {activeFilterLabel}.
-      </div>
+      {itemCount !== undefined && activeFilterLabel ? (
+        <div className="mt-4 text-xs text-muted-foreground">
+          Showing {itemCount} result{itemCount === 1 ? "" : "s"} for {activeFilterLabel}.
+        </div>
+      ) : null}
     </>
   );
 }

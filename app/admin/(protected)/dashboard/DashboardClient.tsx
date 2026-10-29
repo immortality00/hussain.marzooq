@@ -14,7 +14,7 @@ import {
   Palette,
   Users,
   Briefcase,
-  Lock,
+  GalleryHorizontalEnd,
   type LucideIcon,
 } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -131,7 +131,7 @@ export default function DashboardClient() {
           <div className="grid grid-cols-2 gap-4 content-start">
             <LibraryTile icon={Users} label="People" value={stats.people} href="/admin/people" />
             <LibraryTile icon={Briefcase} label="Services" value={stats.services} href="/admin/services" />
-            <LibraryTile icon={Lock} label="Private galleries" value={stats.privateGalleries} href="/admin/private-galleries" />
+            <LibraryTile icon={GalleryHorizontalEnd} label="Galleries" value={stats.privateGalleries} href="/admin/private-galleries" />
             <LibraryTile icon={Star} label="Testimonials" value={stats.testimonials.total} href="/admin/testimonials" />
             <LibraryTile icon={Inbox} label="Active inquiries" value={stats.inquiries.active} href="/admin/inquiries" />
           </div>

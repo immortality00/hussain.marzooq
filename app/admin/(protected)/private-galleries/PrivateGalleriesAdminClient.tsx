@@ -18,7 +18,7 @@ export default function PrivateGalleriesAdminClient() {
   return (
     <main className="mx-auto max-w-6xl px-0 py-3 md:px-6 md:py-10">
       <AdminPageHeader
-        title="Private Galleries"
+        title="Galleries"
         actions={
           admin.view === "list" ? (
             <button
@@ -52,7 +52,7 @@ export default function PrivateGalleriesAdminClient() {
           deletingId={admin.deletingId}
           onSearchChange={admin.setGallerySearchValue}
           onSearchClear={admin.clearGallerySearch}
-          onCopyLink={(slug) => void admin.copyLink(slug)}
+          onCopyLink={(item) => void admin.copyLink(item)}
           onEdit={admin.openEdit}
           onDelete={(id) => void admin.remove(id)}
           isSelected={selection.isSelected}

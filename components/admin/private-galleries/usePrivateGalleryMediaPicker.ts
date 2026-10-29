@@ -3,10 +3,18 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOnAdminDataChange } from "@/hooks/useAdminData";
 import { errorMessage } from "@/hooks/useAdminAction";
-import { NO_FILTERS, fetchMediaPage, type MediaListItem } from "@/app/admin/(protected)/media/lib/media-pages";
+import {
+  NO_FILTERS,
+  fetchMediaPage,
+  filtersKey,
+  isDefaultView,
+  type MediaFilters,
+  type MediaListItem,
+} from "@/app/admin/(protected)/media/lib/media-pages";
 import { useMediaBrowse } from "@/app/admin/(protected)/media/lib/useMediaBrowse";
 import { useRefreshingPages } from "@/app/admin/(protected)/media/lib/useRefreshingPages";
 import { mediaIdsQuery, mergeMediaItems } from "./media-picker-utils";
+import { useSelectAllMatches, type BulkSelectHandlers } from "./useSelectAllMatches";
 
 const SEARCH_DEBOUNCE_MS = 250;
 
@@ -41,23 +49,21 @@ function useSelectedPreviews(selectedMediaIds: string[], shown: MediaListItem[])
   return fetched;
 }
 
-export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
-  const [searchValue, setSearchValue] = useState("");
+const NO_BULK: BulkSelectHandlers = { onSelectMedia: () => 0, onDeselectMedia: () => {} };
+
+export function usePrivateGalleryMediaPicker(selectedMediaIds: string[], handlers: BulkSelectHandlers = NO_BULK) {
+  const [filters, setFilters] = useState<MediaFilters>(NO_FILTERS);
   const [error, setError] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
-  const activeSearch = searchValue.trim();
-  const mode = activeSearch ? "search" : "browse";
+  const filtered = !isDefaultView(filters);
+  const mode = filtered ? "search" : "browse";
 
   const onError = useCallback((message: string) => setError(message), []);
+  const selectAll = useSelectAllMatches({ enabled: handlers !== NO_BULK, filters, selectedMediaIds, handlers, onError });
   const browse = useMediaBrowse(onError);
   const search = useRefreshingPages(
-    activeSearch
-      ? {
-          key: activeSearch,
-          filters: { ...NO_FILTERS, query: activeSearch },
-          startCursor: null,
-          autoLoadAfterMs: SEARCH_DEBOUNCE_MS,
-        }
+    filtered
+      ? { key: filtersKey(filters), filters, startCursor: null, autoLoadAfterMs: SEARCH_DEBOUNCE_MS }
       : null,
     onError
   );
@@ -77,6 +83,11 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
     });
   }, [mode, selectedItems, selectedMediaIds, view.items]);
 
+  function setFilter(name: keyof MediaFilters, value: string) {
+    selectAll.clearNote();
+    setFilters((previous) => ({ ...previous, [name]: value }));
+  }
+
   async function loadMore() {
     if (!view.nextCursor) return;
     setLoadingMore(true);
@@ -94,15 +105,20 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[]) {
     items: view.items,
     selectedIdSet,
     selectedMediaShelfItems,
-    searchValue,
-    mode,
-    hasSearch: mode === "search",
+    filters,
     nextCursor: view.nextCursor,
     loading: view.loading,
     loadingMore,
+    selectAll,
     error,
-    setSearchValue,
-    clearSearch: () => setSearchValue(""),
+    setFilter,
+    searchValue: filters.query,
+    setSearchValue: (value: string) => setFilter("query", value),
+    clearSearch: () => setFilter("query", ""),
+    clearFilters: () => {
+      selectAll.clearNote();
+      setFilters(NO_FILTERS);
+    },
     loadMore,
   };
 }

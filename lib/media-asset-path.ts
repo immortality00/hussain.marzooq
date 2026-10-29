@@ -1,9 +1,11 @@
 export const MEDIA_ASSET_ROUTE_PREFIX = "/api/media/asset/";
 
-export function mediaAssetPath(mediaId: string, gallerySlug?: string | null) {
+// A public gallery's hidden files carry its key (`k`): the link is the only key it has.
+export function mediaAssetPath(mediaId: string, gallerySlug?: string | null, linkKey?: string | null) {
   const base = `${MEDIA_ASSET_ROUTE_PREFIX}${encodeURIComponent(mediaId)}`;
   if (!gallerySlug) return base;
-  return `${base}?g=${encodeURIComponent(gallerySlug)}`;
+  const gallery = `${base}?g=${encodeURIComponent(gallerySlug)}`;
+  return linkKey ? `${gallery}&k=${encodeURIComponent(linkKey)}` : gallery;
 }
 
 // An unlocked password-protected profile reads its private files through this address;

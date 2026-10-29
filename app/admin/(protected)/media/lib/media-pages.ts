@@ -27,6 +27,20 @@ export function mediaListUrl(filters: MediaFilters, cursor: string | null, limit
   return `/api/media/admin-list?${params.toString()}`;
 }
 
+export function matchingIdsUrl(filters: MediaFilters) {
+  const params = new URLSearchParams(mediaListUrl(filters, null).split("?")[1]);
+  params.delete("limit");
+  params.set("idsOnly", "1");
+  return `/api/media/admin-list?${params.toString()}`;
+}
+
+export async function fetchMatchingIds(filters: MediaFilters): Promise<string[]> {
+  const res = await fetch(matchingIdsUrl(filters), { cache: "no-store" });
+  const data = (await res.json().catch(() => null)) as { ok?: boolean; ids?: unknown; error?: string } | null;
+  if (!res.ok || !data?.ok || !Array.isArray(data.ids)) throw new Error(data?.error ?? "Failed to load media.");
+  return data.ids.filter((id): id is string => typeof id === "string");
+}
+
 export async function fetchMediaPage(url: string): Promise<MediaPage> {
   const res = await fetch(url, { cache: "no-store" });
   const data = (await res.json().catch(() => null)) as (MediaPage & { ok?: boolean; error?: string }) | null;

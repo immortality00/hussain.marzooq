@@ -141,6 +141,26 @@ async function findAdminMediaPage(params: URLSearchParams) {
   return { db, docs: pageDocs, items, nextCursor };
 }
 
+// Every item the filters match (no cursor), newest first, for "Select all" in the gallery
+// picker. Capped well above a gallery's 300 items so "Deselect all" sees every match.
+export const MATCHING_IDS_LIMIT = 5000;
+
+export async function listMatchingMediaIds(params: URLSearchParams) {
+  const filters = new URLSearchParams(params);
+  filters.delete("cursor");
+  filters.delete("ids");
+  const { query } = buildQuery(filters);
+
+  const db = await getDb();
+  const docs = await db
+    .collection("media")
+    .find(query, { projection: { _id: 1 } })
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(MATCHING_IDS_LIMIT)
+    .toArray();
+  return { ids: docs.map((doc) => String(doc._id)) };
+}
+
 export async function listAdminMedia(params: URLSearchParams) {
   const { items, nextCursor } = await findAdminMediaPage(params);
   return { items, nextCursor };

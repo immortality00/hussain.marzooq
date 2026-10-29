@@ -10,12 +10,29 @@ import { buttonClasses } from "@/components/shared/Button";
 
 const EAGER_GRID_IMAGE_COUNT = 3;
 
+function startDownload(url: string) {
+  const link = document.createElement("a");
+  link.href = url;
+  link.rel = "noreferrer";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
+async function readDownloadUrl(res: Response | null): Promise<{ url: string } | { error: string }> {
+  const data = (await res?.json().catch(() => null)) as { ok?: boolean; url?: string; error?: string } | null;
+  if (res?.ok && data?.ok && data.url) return { url: data.url };
+  return { error: data?.error ?? "Download link could not be created." };
+}
+
 export default function PrivateGalleryBrowser({
   items,
   gallerySlug,
+  linkKey = null,
 }: {
   items: MediaItem[];
   gallerySlug: string;
+  linkKey?: string | null;
 }) {
   const [active, setActive] = useState<MediaItem | null>(null);
   const [downloadError, setDownloadError] = useState("");
@@ -30,37 +47,35 @@ export default function PrivateGalleryBrowser({
     const res = await fetch("/api/private-galleries/download-url", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ slug: gallerySlug, mediaId }),
+      body: JSON.stringify({ slug: gallerySlug, mediaId, ...(linkKey ? { key: linkKey } : {}) }),
     }).catch(() => null);
 
-    const data = (await res?.json().catch(() => null)) as
-      | { ok?: boolean; url?: string; error?: string }
-      | null;
+    const result = await readDownloadUrl(res);
+    if ("error" in result) return setDownloadError(result.error);
+    startDownload(result.url);
+  }
 
-    if (!res?.ok || !data?.ok || !data.url) {
-      setDownloadError(data?.error ?? "Download link could not be created.");
-      return;
-    }
+  async function downloadAll() {
+    setDownloadError("");
 
-    const link = document.createElement("a");
-    link.href = data.url;
-    link.rel = "noreferrer";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
+    const params = new URLSearchParams({ format: "json" });
+    if (linkKey) params.set("k", linkKey);
+    const res = await fetch(
+      `/api/private-galleries/download/${encodeURIComponent(gallerySlug)}?${params.toString()}`
+    ).catch(() => null);
+
+    const result = await readDownloadUrl(res);
+    if ("error" in result) return setDownloadError(result.error);
+    startDownload(result.url);
   }
 
   return (
     <div className="mt-10 space-y-6">
       {downloadableItems.length > 0 ? (
         <div className="flex justify-end">
-          <a
-            href={`/api/private-galleries/download/${encodeURIComponent(gallerySlug)}`}
-            data-no-transition
-            className={buttonClasses("ghost")}
-          >
+          <button type="button" onClick={() => void downloadAll()} className={buttonClasses("ghost")}>
             Download gallery
-          </a>
+          </button>
         </div>
       ) : null}
 

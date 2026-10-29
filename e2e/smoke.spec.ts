@@ -149,6 +149,34 @@ test.describe("private gallery", () => {
   });
 });
 
+test.describe("public gallery", () => {
+  const link = `/g/${E2E.linkGallerySlug}/${E2E.linkGalleryKey}`;
+
+  test("opens with its link alone, and its files and downloads carry the key", async ({ page }) => {
+    const fileRequest = page.waitForRequest((req) => req.url().includes("/api/media/asset/"));
+    await page.goto(link);
+
+    await expect(page.getByRole("heading", { name: "E2E Public Gallery" })).toBeVisible();
+    await expect(page.getByText("Seed Private Frame").first()).toBeVisible();
+    expect(new URL((await fileRequest).url()).searchParams.get("k")).toBe(E2E.linkGalleryKey);
+
+    // The test server has no Cloudinary keys, so the download stops at "not configured" —
+    // past the key check, which would answer "Access denied." for a wrong key.
+    const answer = page.waitForResponse((res) => res.url().includes("/api/private-galleries/download-url"));
+    await page.getByRole("button", { name: "Download", exact: true }).first().click();
+    expect((await answer).status()).toBe(500);
+    await expect(page.getByText("Downloads are not configured.")).toBeVisible();
+  });
+
+  test("the address without its key, or with a wrong one, shows nothing", async ({ page }) => {
+    for (const path of [`/g/${E2E.linkGallerySlug}`, `/g/${E2E.linkGallerySlug}/${"x".repeat(43)}`]) {
+      const res = await page.goto(path);
+      expect(res?.status()).toBe(404);
+      await expect(page.getByText("Seed Private Frame")).toHaveCount(0);
+    }
+  });
+});
+
 test.describe("admin", () => {
   test("rejects a wrong password and signs in with the right one", async ({ page }) => {
     await page.goto("/admin");

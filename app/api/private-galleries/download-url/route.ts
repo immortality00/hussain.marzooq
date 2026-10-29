@@ -12,6 +12,7 @@ import {
 } from "@/lib/server/cloudinary-private";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { withRouteErrors } from "@/app/api/_lib/route-errors";
+import { LINK_DOWNLOADS_USED_UP_TEXT, consumeLinkDownloads } from "@/lib/server/gallery-link-limits";
 
 export const dynamic = "force-dynamic";
 
@@ -26,6 +27,7 @@ async function handlePost(req: Request) {
 
   const slug = (asNullableString(body.slug) ?? "").trim().slice(0, 100);
   const mediaId = (asNullableString(body.mediaId) ?? "").trim().slice(0, 40);
+  const linkKey = (asNullableString(body.key) ?? "").trim().slice(0, 100);
 
   if (!slug || !mediaId) {
     return noStoreJson({ ok: false, error: "Gallery and media are required." }, { status: 400 });
@@ -45,7 +47,7 @@ async function handlePost(req: Request) {
     );
   }
 
-  const unlocked = await openUnlockedGallery(slug);
+  const unlocked = await openUnlockedGallery(slug, linkKey || null);
   if (!unlocked.ok) {
     return noStoreJson({ ok: false, error: "Access denied." }, { status: unlocked.response.status });
   }
@@ -63,6 +65,11 @@ async function handlePost(req: Request) {
 
   if (!format) {
     return noStoreJson({ ok: false, error: "This item cannot be downloaded." }, { status: 404 });
+  }
+
+  const downloads = await consumeLinkDownloads(unlocked.gallery, 1);
+  if (downloads.limited) {
+    return noStoreJson({ ok: false, error: LINK_DOWNLOADS_USED_UP_TEXT }, { status: 429 });
   }
 
   try {

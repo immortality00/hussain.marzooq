@@ -7,6 +7,7 @@ export const ADMIN_ACTIVE_INQUIRY_LIMIT = 1000;
 export const ADMIN_ARCHIVED_INQUIRY_LIMIT = 100;
 export const ADMIN_MEDIA_PAGE = 60;
 export const ADMIN_MEDIA_MAX = 300;
+export const GALLERY_MAX_ITEMS = 300;
 export const ADMIN_BUILD = process.env.NEXT_PUBLIC_ADMIN_BUILD ?? "dev";
 
 export function adminMediaCount(value: unknown) {

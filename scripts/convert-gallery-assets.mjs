@@ -74,7 +74,8 @@ async function convertGalleryAssets() {
   await client.connect();
   const db = client.db(dbName);
 
-  const galleries = await db.collection("private_galleries").find({}).toArray();
+  // Public galleries leave their photos as they are; only private ones need private files.
+  const galleries = await db.collection("private_galleries").find({ visibility: { $ne: "public" } }).toArray();
   const mediaIds = new Set();
 
   for (const gallery of galleries) {

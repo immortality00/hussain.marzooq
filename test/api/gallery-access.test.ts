@@ -154,7 +154,7 @@ describe("openUnlockedGallery", () => {
 });
 
 describe("findGalleryMedia — membership", () => {
-  const gallery = { id: GALLERY_ID, slug: "gallery-a", mediaIds: [MEDIA_ID] };
+  const gallery = { id: GALLERY_ID, slug: "gallery-a", mediaIds: [MEDIA_ID], linkLimitKey: null };
 
   test("returns the document for a member id", async () => {
     await expect(findGalleryMedia(gallery, MEDIA_ID)).resolves.toEqual({
@@ -179,6 +179,7 @@ describe("listGalleryMedia", () => {
       id: GALLERY_ID,
       slug: "gallery-a",
       mediaIds: [MEDIA_ID, "garbage", OTHER_MEDIA_ID],
+      linkLimitKey: null,
     });
 
     expect(mediaFind).toHaveBeenCalledWith({
@@ -188,7 +189,7 @@ describe("listGalleryMedia", () => {
 
   test("short-circuits an empty membership list without querying", async () => {
     await expect(
-      listGalleryMedia({ id: GALLERY_ID, slug: "gallery-a", mediaIds: [] })
+      listGalleryMedia({ id: GALLERY_ID, slug: "gallery-a", mediaIds: [], linkLimitKey: null })
     ).resolves.toEqual([]);
     expect(mediaFind).not.toHaveBeenCalled();
   });
