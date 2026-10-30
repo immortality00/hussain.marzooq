@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { ADMIN_BUILD, pendingCount } from "@/lib/admin-data";
 import { getDb } from "./db";
-import { getAdminDashboardStats } from "./admin-dashboard";
+import { getAdminDashboardStats, type AdminDashboardStats } from "./admin-dashboard";
 import { listAdminBlogCategories, listAdminMediaTags, listAdminServiceCatalog } from "./admin-catalog";
 import {
   listAdminInquiries,
@@ -53,9 +53,14 @@ export async function buildAdminSnapshot({ mediaCount }: { mediaCount: number })
     loadAdminSecurity(),
   ]);
 
+  const dashboardStats: AdminDashboardStats = {
+    ...stats,
+    blogDrafts: blog.posts.filter((post) => post.waiting).length,
+  };
+
   return {
     build: ADMIN_BUILD,
-    dashboard: { stats, ...pageFlags(pages) },
+    dashboard: { stats: dashboardStats, ...pageFlags(pages) },
     notificationCount: pendingCount(stats),
     push: { publicKey: getVapidPublicKey(), devices: pushDevices },
     pages,

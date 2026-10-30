@@ -1,5 +1,6 @@
 import { ObjectId, type Db } from "mongodb";
 import { findAssetUsagesByPublicId } from "@/lib/server/asset-references";
+import { waitingDraftIdsByMedia } from "@/lib/server/waiting-drafts";
 import { editedValue, type UsageEdit } from "@/lib/asset-usage-edits";
 import { publicIdPattern, type AssetUsage } from "@/lib/asset-usage-locations";
 import type { MediaInUse } from "@/lib/media-in-use";
@@ -15,17 +16,30 @@ function filePublicId(doc: Record<string, unknown>) {
   return typeof doc.publicId === "string" ? doc.publicId.trim() : "";
 }
 
+/**
+ * `ignoreWaitingDrafts`: the items are being deleted or made private, and a blog draft still
+ * waiting on one of them goes with it (lib/server/waiting-drafts.ts), so it is not asked about.
+ */
 export async function findMediaUsageConflicts(
   db: Db,
-  docs: Record<string, unknown>[]
+  docs: Record<string, unknown>[],
+  { ignoreWaitingDrafts = false }: { ignoreWaitingDrafts?: boolean } = {}
 ): Promise<MediaUsageConflict[]> {
   const withFile = docs.filter((doc) => filePublicId(doc));
-  const usages = await findAssetUsagesByPublicId(db, withFile.map(filePublicId));
+  const [usages, drafts] = await Promise.all([
+    findAssetUsagesByPublicId(db, withFile.map(filePublicId)),
+    ignoreWaitingDrafts
+      ? waitingDraftIdsByMedia(db, withFile.map((doc) => String(doc._id)))
+      : new Map<string, Set<string>>(),
+  ]);
 
   return withFile.flatMap((doc) => {
     const publicId = filePublicId(doc);
-    const found = usages.get(publicId);
-    if (!found) return [];
+    const ownDrafts = drafts.get(String(doc._id));
+    const found = usages
+      .get(publicId)
+      ?.filter((usage) => !(ownDrafts && "id" in usage.key && ownDrafts.has(usage.key.id)));
+    if (!found?.length) return [];
     return [
       {
         id: String(doc._id),

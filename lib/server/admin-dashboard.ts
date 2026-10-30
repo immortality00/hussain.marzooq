@@ -23,6 +23,8 @@ export type AdminDashboardStats = {
   removalRequests: number;
   services: number;
   privateGalleries: number;
+  /** Blog drafts made from new media, still waiting (U7); worked out from the blog list. */
+  blogDrafts: number;
 };
 
 const NOT_ARCHIVED = { isArchived: { $ne: true } };
@@ -74,7 +76,7 @@ async function getMediaCounts() {
   };
 }
 
-export async function getAdminDashboardStats(): Promise<AdminDashboardStats> {
+export async function getAdminDashboardStats(): Promise<Omit<AdminDashboardStats, "blogDrafts">> {
   const db = await getDb();
   const [testimonials, inquiries, people, media, services, privateGalleries] = await Promise.all([
     facetCounts(db.collection("testimonials"), { total: {}, pending: { isApproved: { $ne: true } } }),

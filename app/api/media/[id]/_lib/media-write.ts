@@ -1,6 +1,7 @@
 import type { Db, ObjectId } from "mongodb";
 import { noStoreJson } from "@/app/api/_lib/common";
 import { deleteVideoPoster, discardUnsavedPoster } from "@/lib/server/video-posters";
+import { findAssetUsages } from "@/lib/server/asset-references";
 import type { StoredMediaAsset } from "@/lib/server/media-asset-management";
 import { restoreMovedAsset, type AssetChange } from "./media-asset-change";
 import type { MediaSet } from "./media-set";
@@ -33,8 +34,15 @@ export async function writeMediaChange(
   }
 
   if ("posterPublicId" in set && set.posterPublicId !== oldPosterId) {
-    await deleteVideoPoster(oldPosterId);
+    await deletePosterUnlessShown(db, oldPosterId);
   }
 
   return null;
+}
+
+/** A video link's thumbnail can be a blog post's cover (U7): it stays while a page shows it. */
+export async function deletePosterUnlessShown(db: Db, posterPublicId: unknown) {
+  if (typeof posterPublicId !== "string" || !posterPublicId) return;
+  if ((await findAssetUsages(db, posterPublicId)).length > 0) return;
+  await deleteVideoPoster(posterPublicId);
 }

@@ -14,6 +14,7 @@ import {
   type StoredMediaAsset,
 } from "@/lib/server/media-asset-management";
 import type { UsageEdit } from "@/lib/asset-usage-edits";
+import { VIDEO_COVER_TRANSFORM, videoFrameUrl } from "@/lib/cloudinary-delivery";
 import type { MediaPatchInput } from "./parse-media-patch";
 import type { MediaSet } from "./media-set";
 import type { AssetChange } from "./media-asset-change";
@@ -37,8 +38,11 @@ export async function checkPageUsage(
   const mayMoveFile =
     Boolean(oldAsset.publicId) && !assetIsInsideFolder(oldAsset.publicId, input.targetFolder);
   const hides = hidden && Boolean(oldAsset.publicId) && oldAsset.deliveryType !== "authenticated";
+  // A hidden item's waiting blog draft goes with it (lib/server/waiting-drafts.ts).
   const [oldFileInUse] =
-    replacesFile || mayMoveFile || hides ? await findMediaUsageConflicts(db, [existingMedia]) : [];
+    replacesFile || mayMoveFile || hides
+      ? await findMediaUsageConflicts(db, [existingMedia], { ignoreWaitingDrafts: hidden })
+      : [];
 
   if ((replacesFile || hides) && oldFileInUse) {
     const canReplace = replacesFile && !hidden && !video && incomingAsset?.resourceType === "image";
@@ -60,7 +64,11 @@ function pageEditFor(usage: PageUsage, input: MediaPatchInput, set: MediaSet, mo
     return input.usageChoice === "replace" ? { type: "replace", url: String(set.secureUrl) } : { type: "remove" };
   }
   if (usage.hides) return { type: "remove" };
-  return movedFile?.secureUrl ? { type: "replace", url: movedFile.secureUrl } : null;
+  if (!movedFile?.secureUrl) return null;
+  // A picture of a video is its first frame (a blog draft's cover), so it follows the frame.
+  return movedFile.resourceType === "video"
+    ? { type: "replace", url: movedFile.secureUrl, imageUrl: videoFrameUrl(movedFile.secureUrl, VIDEO_COVER_TRANSFORM) }
+    : { type: "replace", url: movedFile.secureUrl };
 }
 
 export async function finishFileChange(

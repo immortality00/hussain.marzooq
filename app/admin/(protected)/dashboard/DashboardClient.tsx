@@ -15,6 +15,7 @@ import {
   Users,
   Briefcase,
   GalleryHorizontalEnd,
+  NotebookPen,
   type LucideIcon,
 } from "lucide-react";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
@@ -41,6 +42,7 @@ export default function DashboardClient() {
     { icon: Star, label: "Testimonials to review", count: stats.testimonials.pending, href: "/admin/testimonials" },
     { icon: Inbox, label: "New inquiries", count: stats.inquiries.new, href: "/admin/inquiries" },
     { icon: UserX, label: "Removal requests", count: stats.removalRequests, href: "/admin/removal-requests" },
+    { icon: NotebookPen, label: "Blog drafts waiting", count: stats.blogDrafts ?? 0, href: "/admin/blog" },
     { icon: ImageOff, label: "Pages missing an image", count: missingImage, href: "/admin/pages" },
     { icon: EyeOff, label: "Pages hidden from the site", count: hidden, href: "/admin/pages" },
   ];

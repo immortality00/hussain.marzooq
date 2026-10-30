@@ -32,6 +32,7 @@ export function overviewOf(data: AdminSnapshot): AdminPreview {
         people: data.people.length,
         services: data.services.length,
         privateGalleries: data.galleries.length,
+        blogDrafts: data.blog.posts.filter((post) => post.waiting).length,
       },
       ...pageFlags(data.pages),
     },

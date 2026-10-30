@@ -19,7 +19,7 @@ import { BatchItemThumb } from "./components/BatchItemThumb";
 import { BatchLinkInput } from "./components/BatchLinkInput";
 import { BatchReviewList } from "./components/BatchReviewList";
 import { batchReadyText } from "./lib/batch-ready";
-import { buildBatchPayload, createBatchItem } from "./lib/batch-save";
+import { buildBatchPayload, createBatchDraft, createBatchItem } from "./lib/batch-save";
 import { batchItemLabel, useBatchMediaState } from "./lib/useBatchMediaState";
 import { adminInputClasses } from "@/components/admin/admin-input";
 import { ADMIN_REQUEST_LIMIT, settleLimited } from "@/lib/settle-limited";
@@ -36,6 +36,7 @@ export default function BatchMediaClient() {
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [uploadRun, setUploadRun] = useState<UploadRun | null>(null);
+  const [batchKey, setBatchKey] = useState(() => crypto.randomUUID());
 
   const uploadFolder = getCloudinaryMediaFolderForCategory(s.primaryCategory);
   const allowLinks =
@@ -108,6 +109,7 @@ export default function BatchMediaClient() {
     const shared = sharedPayload();
     const failed: string[] = [];
     const saved: SavedMedia[] = [];
+    const createdIds: string[] = [];
     let postersMissing = 0;
     const notPrivate: string[] = [];
     const results = await settleLimited(itemsToSave, ADMIN_REQUEST_LIMIT, (item) =>
@@ -129,12 +131,14 @@ export default function BatchMediaClient() {
       }
 
       s.dropItem(item.id);
+      if (r.value.createdId) createdIds.push(r.value.createdId);
       if (r.value.saved) saved.push(r.value.saved);
       if (r.value.posterMissing) postersMissing += 1;
       if (r.value.deliveryError) notPrivate.push(`“${label}”`);
     }
 
     setMedia((media) => saved.reduce((next, entry) => withSavedMedia(next, entry, true), media));
+    const draftError = await createBatchDraft(createdIds, batchKey);
     setSaving(false);
 
     const created = itemsToSave.length - failed.length;
@@ -144,23 +148,26 @@ export default function BatchMediaClient() {
     const privateNote = notPrivate.length
       ? ` Hidden, but the file could not be made private: ${notPrivate.join(", ")} — open each and press Update to retry.`
       : "";
+    const draftNote = draftError ? ` Blog draft not made: ${draftError}` : "";
 
-    if (failed.length === 0 && !privateNote) {
+    if (failed.length === 0 && !privateNote && !draftNote) {
       notify("ok", `✅ Created ${created} media.${posterNote}`);
       s.resetAll();
       setUploadRun(null);
+      setBatchKey(crypto.randomUUID());
       setStep(0);
     } else if (failed.length === 0) {
-      notify("err", `Created ${created} media.${privateNote}${posterNote}`);
+      notify("err", `Created ${created} media.${privateNote}${draftNote}${posterNote}`);
       s.resetAll();
       setUploadRun(null);
+      setBatchKey(crypto.randomUUID());
       setStep(0);
     } else {
       notify(
         "err",
         `Created ${created} of ${itemsToSave.length}. Failed: ${failed.slice(0, 5).join(" · ")}${
           failed.length > 5 ? ` · +${failed.length - 5} more` : ""
-        }${privateNote}${posterNote}`
+        }${privateNote}${draftNote}${posterNote}`
       );
     }
   }

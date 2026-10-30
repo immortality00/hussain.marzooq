@@ -7,6 +7,7 @@ import {
 } from "@/lib/server/cloudinary-private";
 import { settleLimited } from "@/lib/settle-limited";
 import { PRIVATE_GALLERY_FILTER } from "@/lib/private-galleries";
+import { retireWaitingDrafts } from "@/lib/server/waiting-drafts";
 
 // A few at a time: a person or gallery with many photos still saves well inside the
 // server's time limit, and a cut-off save is finished by the next one.
@@ -73,10 +74,25 @@ export async function syncMediaDelivery(db: Db, mediaIds: string[]): Promise<Del
     .collection("media")
     .find(
       { _id: { $in: objectIds } },
-      { projection: { title: 1, publicId: 1, resourceType: 1, type: 1, deliveryType: 1, isPublic: 1 } }
+      {
+        projection: {
+          title: 1,
+          publicId: 1,
+          posterPublicId: 1,
+          resourceType: 1,
+          type: 1,
+          deliveryType: 1,
+          isPublic: 1,
+        },
+      }
     )
     .toArray();
   const inGallery = await privateGalleryMediaIds(db, docs.map((doc) => String(doc._id)));
+  // A blog draft still waiting on an item that is now private goes with it (U7).
+  await retireWaitingDrafts(
+    db,
+    docs.filter((doc) => requiredDelivery(doc, inGallery.has(String(doc._id))) === "authenticated")
+  );
 
   const pending = docs.flatMap((doc) => {
     const publicId = typeof doc.publicId === "string" ? doc.publicId.trim() : "";

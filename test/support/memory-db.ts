@@ -138,13 +138,15 @@ function collection(name: string) {
     updateOne: async (filter: Filter, update: Update, options?: { upsert?: boolean }) => {
       guardWrite();
       let doc = docs().find((entry) => matches(entry, filter));
+      let upsertedId: ObjectId | null = null;
       if (!doc && options?.upsert) {
-        doc = { _id: new ObjectId(), ...seedFrom(filter), ...update.$setOnInsert };
+        upsertedId = new ObjectId();
+        doc = { _id: upsertedId, ...seedFrom(filter), ...update.$setOnInsert };
         docs().push(doc);
       }
-      if (!doc) return { matchedCount: 0, modifiedCount: 0 };
+      if (!doc) return { matchedCount: 0, modifiedCount: 0, upsertedId };
       apply(doc, update);
-      return { matchedCount: 1, modifiedCount: 1 };
+      return { matchedCount: upsertedId ? 0 : 1, modifiedCount: upsertedId ? 0 : 1, upsertedId };
     },
     findOneAndUpdate: async (
       filter: Filter,

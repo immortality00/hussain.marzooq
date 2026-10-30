@@ -134,6 +134,20 @@ describe("edits", () => {
     const content = `![a](${URL}) and [b](${URL})`;
     expect(editMarkdown(content, ID, { type: "replace", url: OTHER })).toBe(`![a](${OTHER}) and [b](${OTHER})`);
   });
+
+  test("a moved video: pictures of it follow its first frame, links follow the file (U7)", () => {
+    const VIDEO_ID = "hm_visuals/media/videography/film";
+    const video = (folder: string) => `https://res.cloudinary.com/demo/video/upload/v2/hm_visuals/media/${folder}/film.mp4`;
+    const frame = (folder: string) =>
+      `https://res.cloudinary.com/demo/video/upload/so_0,w_1200/hm_visuals/media/${folder}/film.jpg`;
+    const edit = { type: "replace" as const, url: video("showreel"), imageUrl: frame("showreel") };
+
+    expect(editedValue("url", frame("videography"), VIDEO_ID, edit)).toBe(frame("showreel"));
+    expect(editedValue("image", image(frame("videography")), VIDEO_ID, edit)).toEqual(image(frame("showreel")));
+    expect(editMarkdown(`![f](${frame("videography")}) [watch](${video("videography")})`, VIDEO_ID, edit)).toBe(
+      `![f](${frame("showreel")}) [watch](${video("showreel")})`
+    );
+  });
 });
 
 describe("media-in-use payload", () => {

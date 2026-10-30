@@ -8,6 +8,8 @@ export type BlogListItem = {
   publishedAt: string | null;
   updatedAt: string | null;
   notifiedAt: string | null;
+  /** Made from new media and not yet published or dismissed (U7). */
+  waiting: boolean;
 };
 
 export type BlogCategoryOption = { id: string; name: string; slug: string };

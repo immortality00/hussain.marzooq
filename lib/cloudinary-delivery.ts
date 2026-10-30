@@ -9,6 +9,9 @@ import {
 
 export const VIDEO_FRAME_TRANSFORM = "so_0";
 
+/** A video's first frame as a picture (a blog cover, U7), sized like a 1200px photo. */
+export const VIDEO_COVER_TRANSFORM = `${VIDEO_FRAME_TRANSFORM},${imageTransform(1200)}`;
+
 export const STRICT_IMAGE_FORMATS = [
   "jpg",
   "jpeg",
@@ -25,6 +28,12 @@ export const STRICT_IMAGE_FORMATS = [
 
 export function imageTransform(width: number): string {
   return `w_${width},h_${heightCapForWidth(width)},c_limit,q_auto,f_auto`;
+}
+
+/** The still of an uploaded video's address through `transform`; "" for anything else. */
+export function videoFrameUrl(url: string, transform: string): string {
+  const match = url.match(/^(https:\/\/res\.cloudinary\.com\/[^/]+\/video\/upload\/)(.+)\.[a-z0-9]+$/i);
+  return match ? `${match[1]}${transform}/${match[2]}.jpg` : "";
 }
 
 export function textureTransform(width: number): string {
@@ -47,5 +56,7 @@ export function strictAllowList(): string[] {
     ]),
     VIDEO_FRAME_TRANSFORM,
     `${VIDEO_FRAME_TRANSFORM}/jpg`,
+    VIDEO_COVER_TRANSFORM,
+    `${VIDEO_COVER_TRANSFORM}/jpg`,
   ];
 }

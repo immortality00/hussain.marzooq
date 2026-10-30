@@ -5,7 +5,6 @@ import { getDb } from "@/lib/server/db";
 import { findByIdOr404, requireAdminObjectId } from "@/app/api/_lib/admin-route";
 import { noStoreJson } from "@/app/api/_lib/common";
 import { duplicateVideoMessage, findMediaWithVideo } from "@/app/api/_lib/media";
-import { deleteVideoPoster } from "@/lib/server/video-posters";
 import { deleteStoredMediaAsset, getStoredMediaAsset } from "@/lib/server/media-asset-management";
 import {
   findPrivateGalleriesUsingMedia,
@@ -17,7 +16,8 @@ import { parseMediaPatch } from "./_lib/parse-media-patch";
 import { buildMediaSet, type MediaSet } from "./_lib/media-set";
 import { checkPageUsage, finishFileChange } from "./_lib/media-page-usage";
 import { applyAssetChange } from "./_lib/media-asset-change";
-import { writeMediaChange } from "./_lib/media-write";
+import { deletePosterUnlessShown, writeMediaChange } from "./_lib/media-write";
+import { retireWaitingDrafts } from "@/lib/server/waiting-drafts";
 import { scheduleOnUpdate } from "@/lib/media-schedule";
 import { deliveryFailureText, syncMediaDelivery } from "@/lib/server/media-delivery";
 
@@ -75,6 +75,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   const notWritten = await writeMediaChange(db, oid, set, change, oldAsset, existingMedia.posterPublicId);
   if (notWritten) return notWritten;
+  if (hidden) await retireWaitingDrafts(db, [existingMedia]);
 
   const { pageEdit, pagesNotUpdated } = await finishFileChange(db, usage, input, set, oldAsset, change);
   // A page that could not be cleared keeps the file public until the next save retries.
@@ -119,7 +120,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
     );
   }
 
-  const [inUse] = await findMediaUsageConflicts(db, [media]);
+  const [inUse] = await findMediaUsageConflicts(db, [media], { ignoreWaitingDrafts: true });
   if (inUse) {
     if (new URL(req.url).searchParams.get("detach") !== "1") return mediaInUseResponse([inUse]);
 
@@ -127,7 +128,7 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
     revalidateSitePages();
     if (failed.length) return usageUpdateFailedResponse(failed, "Nothing was deleted.");
 
-    const [stillInUse] = await findMediaUsageConflicts(db, [media]);
+    const [stillInUse] = await findMediaUsageConflicts(db, [media], { ignoreWaitingDrafts: true });
     if (stillInUse) return mediaInUseResponse([stillInUse]);
   }
 
@@ -136,8 +137,9 @@ export async function DELETE(req: Request, ctx: { params: Promise<{ id: string }
     return noStoreJson({ ok: false, error: "Delete failed" }, { status: 500 });
   }
 
+  await retireWaitingDrafts(db, [media]);
   await deleteStoredMediaAsset(mediaAsset);
-  await deleteVideoPoster(media.posterPublicId);
+  await deletePosterUnlessShown(db, media.posterPublicId);
 
   revalidateMediaSurfaces();
 

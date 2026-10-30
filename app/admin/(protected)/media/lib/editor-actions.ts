@@ -7,10 +7,15 @@ import type { MediaItem } from "./types";
 import type { SavedMedia } from "./media-store";
 import { publishAtPayload, publishScheduleError, type PublishSchedule } from "@/lib/media-schedule";
 
-type SaveNotes = { posterMissing?: boolean; deliveryError?: unknown };
+type SaveNotes = { posterMissing?: boolean; deliveryError?: unknown; draftError?: unknown };
 
 export function deliveryErrorOf(data: SaveNotes | null) {
   return typeof data?.deliveryError === "string" ? data.deliveryError : null;
+}
+
+/** Why a new item's blog draft (U7) was not made; the item itself saved. */
+export function draftErrorOf(data: SaveNotes | null) {
+  return typeof data?.draftError === "string" ? data.draftError : null;
 }
 
 function savedFrom(data: Partial<SavedMedia> | null): SavedMedia | null {
@@ -145,7 +150,7 @@ export function buildMediaPayload(args: {
   return { payloadBase, payloadWithAsset };
 }
 
-const CREATE_TOUCHES = ["media", "dashboard", "mediaTags"] as const;
+const CREATE_TOUCHES = ["media", "dashboard", "mediaTags", "blog"] as const;
 export const CHANGE_TOUCHES = ["media", "dashboard", "mediaTags", "pages", "blog"] as const;
 
 export async function saveMediaItem(args: {
@@ -175,6 +180,7 @@ export async function saveMediaItem(args: {
       id: data.id ?? null,
       posterMissing: data.posterMissing === true,
       deliveryError: deliveryErrorOf(data),
+      draftError: draftErrorOf(data),
       saved: savedFrom(data),
     };
   }

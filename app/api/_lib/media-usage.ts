@@ -32,7 +32,7 @@ export async function resolvePageUsageBeforeLock(
     .find(filter, { projection: { title: 1, publicId: 1, deliveryType: 1 } })
     .toArray();
   const goingPrivate = docs.filter((doc) => normalizeDeliveryType(doc.deliveryType) !== "authenticated");
-  const conflicts = await findMediaUsageConflicts(db, goingPrivate);
+  const conflicts = await findMediaUsageConflicts(db, goingPrivate, { ignoreWaitingDrafts: true });
   if (conflicts.length === 0) return null;
   if (!clearPageUsages) return mediaInUseResponse(conflicts);
 

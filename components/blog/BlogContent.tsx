@@ -1,5 +1,6 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { ProseImage } from "./ProseImage";
 
 export function BlogContent({ content }: { content: string }) {
   return (
@@ -12,6 +13,7 @@ export function BlogContent({ content }: { content: string }) {
               {children}
             </a>
           ),
+          img: ({ src, alt, title }) => <ProseImage src={src} alt={alt} title={title} />,
         }}
       >
         {content}

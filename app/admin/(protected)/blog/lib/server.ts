@@ -24,6 +24,7 @@ export function blogListItemOf(d: Document, labels: Map<string, string>): BlogLi
     publishedAt: asIsoDate(d.publishedAt),
     updatedAt: asIsoDate(d.updatedAt),
     notifiedAt: asIsoDate(d.notifiedAt),
+    waiting: d.awaitingReview === true && d.isPublished !== true,
   };
 }
 

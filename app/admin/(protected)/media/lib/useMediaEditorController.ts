@@ -165,11 +165,15 @@ export function useMediaEditorController({
       setVersion(saved.item.updatedAt);
 
       const posterNote = result.posterMissing ? " — the video thumbnail couldn't be fetched." : "";
+      const draftNote =
+        result.mode === "created" && result.draftError ? `Blog draft not made: ${result.draftError}` : "";
 
-      if (result.deliveryError) {
+      if (result.deliveryError || draftNote) {
         setBanner({
           type: "err",
-          text: `Media ${result.mode === "created" ? "created" : "updated"}. ${result.deliveryError}`,
+          text: [`Media ${result.mode === "created" ? "created" : "updated"}.`, result.deliveryError, draftNote]
+            .filter(Boolean)
+            .join(" "),
         });
         if (result.mode === "created") editor.resetFields(true, () => setBanner(null));
         else editor.loadIntoState(saved.item as MediaItem);

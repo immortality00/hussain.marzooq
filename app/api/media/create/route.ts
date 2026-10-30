@@ -28,6 +28,7 @@ import { storeVideoPoster } from "@/lib/server/video-posters";
 import { parseVideoLink, videoEmbedSrc } from "@/lib/video-embed";
 import { parsePublishAt, scheduleOnCreate } from "@/lib/media-schedule";
 import { deliveryFailureText, syncMediaDelivery } from "@/lib/server/media-delivery";
+import { draftAfterSave } from "@/lib/server/media-drafts";
 
 export const dynamic = "force-dynamic";
 
@@ -195,11 +196,12 @@ export async function POST(req: Request) {
       ? ({ type: "embed", embedUrl: normalizedEmbedUrl } as const)
       : ({ publicId: normalizedAsset?.publicId } as const);
 
-  await col.updateOne(
+  const written = await col.updateOne(
     keyFilter,
     { $set: doc, ...(schedule.set.createdAt ? {} : { $setOnInsert: { createdAt: now } }) },
     { upsert: true }
   );
+  const created = Boolean(written.upsertedId);
 
   const inserted = await col.findOne(keyFilter);
   if (!inserted) return noStoreJson({ ok: false, error: "Save failed" }, { status: 500 });
@@ -207,14 +209,18 @@ export async function POST(req: Request) {
   const delivery = await syncMediaDelivery(db, [String(inserted._id)]);
   const found = delivery.converted ? ((await col.findOne({ _id: inserted._id })) ?? inserted) : inserted;
   const deliveryError = deliveryFailureText(delivery.failures);
+  // A new item gets a blog draft (U7); batch upload asks for one draft for the batch instead.
+  const draft = created && bodyUnknown.blogDraft !== false ? await draftAfterSave(db, [String(found._id)]) : null;
 
   revalidateMediaSurfaces();
 
   return noStoreJson({
     ok: true,
     id: String(found._id),
+    created,
     ...(await savedAdminMedia(db, found)),
     ...(video && !poster ? { posterMissing: true } : {}),
     ...(deliveryError ? { deliveryError } : {}),
+    ...(draft?.error ? { draftError: draft.error } : {}),
   });
 }

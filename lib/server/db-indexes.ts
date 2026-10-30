@@ -60,6 +60,12 @@ export const DB_INDEXES: IndexRule[] = [
   { collection: "blog_posts", keys: { isPublished: 1, publishedAt: -1 } },
   { collection: "blog_posts", keys: { category: 1, isPublished: 1, publishedAt: -1 } },
   { collection: "blog_posts", keys: { updatedAt: -1 } },
+  // One waiting blog draft per media item at most (U7); posts written by hand have no sourceMediaIds.
+  {
+    collection: "blog_posts",
+    keys: { sourceMediaIds: 1 },
+    options: { unique: true, partialFilterExpression: { sourceMediaIds: { $exists: true } } },
+  },
 
   { collection: "blog_categories", keys: { slug: 1 }, options: { unique: true } },
   { collection: "blog_categories", keys: { order: 1, createdAt: -1 } },

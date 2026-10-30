@@ -21,7 +21,8 @@ export async function POST(req: Request) {
     .collection("media")
     .find({ _id: { $in: ids.map((id) => new ObjectId(id)) } }, { projection: { title: 1, publicId: 1 } })
     .toArray();
-  const conflicts = await findMediaUsageConflicts(db, docs);
+  // Asked before a delete, so a draft still waiting on an item is not a place it is used.
+  const conflicts = await findMediaUsageConflicts(db, docs, { ignoreWaitingDrafts: true });
 
   return noStoreJson({
     ok: true,

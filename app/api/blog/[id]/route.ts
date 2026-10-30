@@ -19,6 +19,7 @@ import {
 import { CLOUDINARY_BLOG_FOLDER } from "@/lib/cloudinary-folders";
 import { savedBlogPost } from "@/app/admin/(protected)/blog/lib/server";
 import { changedSinceOpened, recordChangedResponse } from "@/app/api/_lib/record-version";
+import { publishedAtWithMedia } from "@/lib/server/media-drafts";
 
 export const dynamic = "force-dynamic";
 
@@ -104,13 +105,17 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
 
   if (typeof body.isPublished === "boolean" || "publishedAt" in body) {
     if (finalPublished) {
-      patch.publishedAt =
-        asDate(body.publishedAt) ??
-        (existing.publishedAt instanceof Date ? existing.publishedAt : new Date());
+      patch.publishedAt = await publishedAtWithMedia(
+        db,
+        existing,
+        asDate(body.publishedAt) ?? (existing.publishedAt instanceof Date ? existing.publishedAt : new Date())
+      );
     } else {
       patch.publishedAt = null;
     }
   }
+  // Publishing a draft made from new media is the action it was waiting for (U7).
+  if (finalPublished && existing.awaitingReview === true) patch.awaitingReview = false;
 
   const previousImageUrl = typeof existing.coverImageUrl === "string" ? existing.coverImageUrl : "";
   const nextImageUrl = typeof patch.coverImageUrl === "string" ? patch.coverImageUrl : previousImageUrl;

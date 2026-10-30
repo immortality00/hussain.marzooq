@@ -24,6 +24,7 @@ function snapshot(inquiryNames: string[], media = 2, build = ADMIN_BUILD) {
     people: [],
     services: [],
     galleries: [],
+    blog: { posts: [] as { waiting: boolean }[], forms: {}, categoryOptions: [] },
     removal: { items: [], history: [] },
     pages: { settings: {}, seo: {}, sections: {}, sectionsUpdatedAt: {} },
     media: { items: mediaItems(media), nextCursor: "next", full: {} },
