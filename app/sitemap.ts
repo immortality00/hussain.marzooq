@@ -6,6 +6,8 @@ import { getPublicPeople } from "@/lib/server/public-people";
 import { getPublicServicesData } from "@/lib/server/public-services";
 import { getDisciplineTags } from "@/lib/server/public-media-tags";
 import { getSitemapSources } from "@/lib/server/sitemap-sources";
+import { getPhotographySitemapPhotos } from "@/lib/server/sitemap-photos";
+import { sitemapImages } from "@/lib/sitemap-images";
 import {
   personPageModified,
   postPageModified,
@@ -18,11 +20,17 @@ export const revalidate = 300;
 
 const ALWAYS_PUBLIC = ["/", "/about", "/services", "/people", "/testimonials", "/contact", "/privacy"];
 
-function entry(path: string, priority: number, lastModified?: Date): MetadataRoute.Sitemap[number] {
+function entry(
+  path: string,
+  priority: number,
+  lastModified?: Date,
+  images?: string[]
+): MetadataRoute.Sitemap[number] {
   return {
     url: absoluteUrl(path),
     ...(lastModified ? { lastModified } : {}),
     priority,
+    ...(images?.length ? { images } : {}),
   };
 }
 
@@ -40,7 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
 
-  const [posts, photographyTags, videographyTags] = await Promise.all([
+  const [posts, photographyTags, videographyTags, photos] = await Promise.all([
     activeSet.has("blog") ? getPublishedPosts() : Promise.resolve([]),
     activeSet.has("photography")
       ? getDisciplineTags({ category: "photography", mediaMode: "image" })
@@ -48,18 +56,26 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     activeSet.has("videography")
       ? getDisciplineTags({ category: "videography", mediaMode: "video" })
       : Promise.resolve([]),
+    activeSet.has("photography") ? getPhotographySitemapPhotos() : Promise.resolve([]),
   ]);
 
-  const page = (path: string, priority: number) =>
-    entry(path, priority, staticPageModified(sources, path));
+  const page = (path: string, priority: number, images?: string[]) =>
+    entry(path, priority, staticPageModified(sources, path), images);
 
   return [
     ...ALWAYS_PUBLIC.map((path) => page(path, path === "/" ? 1 : 0.7)),
     ...["photography", "videography", "nft", "dancing", "web-development"]
       .filter((slug) => activeSet.has(slug))
-      .map((slug) => page(`/${slug}`, 0.8)),
+      .map((slug) =>
+        page(`/${slug}`, 0.8, slug === "photography" ? sitemapImages(photos) : undefined)
+      ),
     ...withSlug(photographyTags).map((tag) =>
-      entry(`/photography/${tag.slug}`, 0.6, tagPageModified(sources, "photography", tag.slug))
+      entry(
+        `/photography/${tag.slug}`,
+        0.6,
+        tagPageModified(sources, "photography", tag.slug),
+        sitemapImages(photos, tag.slug)
+      )
     ),
     ...withSlug(videographyTags).map((tag) =>
       entry(`/videography/${tag.slug}`, 0.6, tagPageModified(sources, "videography", tag.slug))
