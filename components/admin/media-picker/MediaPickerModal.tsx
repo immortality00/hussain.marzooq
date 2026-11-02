@@ -7,6 +7,7 @@ import type { SectionImage } from "@/lib/page-sections-shared";
 import { isMediaAssetPath } from "@/lib/media-asset-path";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { adminInputClasses } from "@/components/admin/admin-input";
+import { ModalPortal } from "@/components/shared/ModalPortal";
 
 // Single-select image picker over the existing media library. Reuses the
 // private-galleries picker hook + card (both generic); picking an image stores
@@ -33,8 +34,15 @@ export function MediaPickerModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4">
-      <div className="flex max-h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border bg-background shadow-xl">
+    <ModalPortal
+      onClose={onClose}
+      label="Choose an image"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 p-4"
+    >
+      <div
+        className="flex max-h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border bg-background shadow-xl"
+        onClick={(event) => event.stopPropagation()}
+      >
         <div className="flex items-center justify-between gap-4 border-b px-5 py-4">
           <p className="text-sm font-semibold">Pick from media library</p>
           <button
@@ -94,6 +102,6 @@ export function MediaPickerModal({
           ) : null}
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

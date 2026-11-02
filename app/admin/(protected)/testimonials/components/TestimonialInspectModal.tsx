@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { AdminProcessingPill } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { ModalPortal } from "@/components/shared/ModalPortal";
 import {
   type TestimonialItem,
   identityLine,
@@ -58,7 +59,11 @@ export function TestimonialInspectModal({
   const actionBusy = updating || deleting;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/72 p-4 backdrop-blur-sm" onClick={onClose}>
+    <ModalPortal
+      onClose={onClose}
+      label={`Review by ${item.name}`}
+      className="fixed inset-0 z-[60] bg-black/72 p-4 backdrop-blur-sm"
+    >
       <div
         className="mx-auto mt-6 w-full max-w-6xl overflow-hidden rounded-[2rem] bg-background shadow-2xl ring-1 ring-white/10"
         onClick={(e) => e.stopPropagation()}
@@ -108,6 +113,7 @@ export function TestimonialInspectModal({
               type="button"
               onClick={onClose}
               disabled={actionBusy}
+              data-autofocus
               className={adminButtonClasses("default", "md")}
             >
               Close
@@ -168,6 +174,6 @@ export function TestimonialInspectModal({
           </div>
         </div>
       </div>
-    </div>
+    </ModalPortal>
   );
 }

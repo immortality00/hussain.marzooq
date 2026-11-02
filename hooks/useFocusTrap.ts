@@ -20,7 +20,8 @@ export function useFocusTrap<T extends HTMLElement>() {
 
     const previouslyFocused = document.activeElement as HTMLElement | null;
 
-    const initial = focusableWithin(container)[0];
+    const initial =
+      container.querySelector<HTMLElement>("[data-autofocus]") ?? focusableWithin(container)[0];
     (initial ?? container).focus({ preventScroll: true });
 
     function onKeyDown(event: KeyboardEvent) {

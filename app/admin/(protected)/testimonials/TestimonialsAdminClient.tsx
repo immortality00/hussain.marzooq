@@ -5,7 +5,7 @@ import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { useTestimonialActions } from "./lib/useTestimonialActions";
 import { ReviewRow } from "./components/TestimonialList";
-import { TestimonialInspectModal } from "./components/TestimonialForm";
+import { TestimonialInspectModal } from "./components/TestimonialInspectModal";
 import { adminInputClasses } from "@/components/admin/admin-input";
 import { StickyToolbar } from "@/components/shared/StickyToolbar";
 

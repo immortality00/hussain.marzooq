@@ -56,4 +56,37 @@ test.describe("admin catalog screens", () => {
     await freshLoad(page);
     await expect(page.getByText(`${E2E.serviceName} Updated`).first()).toBeVisible();
   });
+
+  test("services on a phone: the editor covers the bottom nav, and Escape asks before throwing away a change", async ({ page }) => {
+    await signIn(page);
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/admin/services");
+    await page.getByRole("button", { name: "Edit", exact: true }).first().click();
+    const editor = page.getByRole("dialog", { name: "Edit Service" });
+    await expect(editor).toBeVisible();
+
+    const navReachable = await page.evaluate(() => {
+      const nav = document.querySelector("nav.fixed.bottom-0");
+      if (!nav) return null;
+      const { top } = nav.getBoundingClientRect();
+      return [40, 110, 187, 262, 335].some((x) => document.elementFromPoint(x, top + 30)?.closest("nav"));
+    });
+    expect(navReachable).toBe(false);
+
+    await page.keyboard.press("Escape");
+    await expect(editor).toBeHidden();
+
+    await page.getByRole("button", { name: "Edit", exact: true }).first().click();
+    const name = editor.getByRole("textbox", { name: "Name", exact: true });
+    await name.fill("Not saved");
+    await page.keyboard.press("Escape");
+    const question = page.getByRole("dialog", { name: "Discard your changes?" });
+    await question.getByRole("button", { name: "Keep editing" }).click();
+    await expect(question).toBeHidden();
+    await expect(name).toHaveValue("Not saved");
+
+    await page.keyboard.press("Escape");
+    await question.getByRole("button", { name: "Discard", exact: true }).click();
+    await expect(editor).toBeHidden();
+  });
 });

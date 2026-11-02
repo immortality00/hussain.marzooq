@@ -11,12 +11,14 @@ export function ChoiceDialog<A extends string>({
   options,
   onAnswer,
   cancel,
+  cancelLabel = "Cancel",
   children,
 }: {
   heading: string;
   options: ChoiceOption<A>[];
   onAnswer: (answer: A) => void;
   cancel: A;
+  cancelLabel?: string;
   children?: ReactNode;
 }) {
   return (
@@ -32,7 +34,7 @@ export function ChoiceDialog<A extends string>({
         <p className="text-sm font-semibold">{heading}</p>
         {children}
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
-          <AdminButton onClick={() => onAnswer(cancel)}>Cancel</AdminButton>
+          <AdminButton onClick={() => onAnswer(cancel)}>{cancelLabel}</AdminButton>
           {options.map((option) => (
             <AdminButton
               key={option.answer}
