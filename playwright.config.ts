@@ -14,6 +14,11 @@ const serverEnv = {
   PRIVATE_GALLERY_COOKIE_SECRET: E2E.galleryCookieSecret,
   PERSON_GATE_COOKIE_SECRET: E2E.galleryCookieSecret,
   RESEND_API_KEY: "e2e_resend_key",
+  // Dummy values that make the blog's subscribe form render; the spec answers /api/subscribe in the browser, so
+  // nothing reaches Resend, and a real key in .env.local can never be used by a run. Alerts stay off.
+  RESEND_DOMAIN: "hussain.art",
+  RESEND_AUDIENCE_KEY: "e2e_audience_key",
+  NOTIFICATION_EMAIL: "",
   NEXT_PUBLIC_SITE_URL: baseURL,
   CLOUDINARY_CLOUD_NAME: E2E.cloudName,
   NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME: E2E.cloudName,

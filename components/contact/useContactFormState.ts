@@ -1,79 +1,81 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { type RefObject, useCallback, useLayoutEffect, useMemo, useState } from "react";
 import { useFormToken } from "@/hooks/useFormToken";
 import type { FormStatusState } from "@/components/shared/FormStatus";
-import type { CategoryMode, ServiceItem, ServiceMode } from "./types";
-import {
-  findInitialServiceMatch,
-  getServiceCategories,
-  isValidEmail,
-  normalize,
-  safeTrim,
-} from "./utils";
+import type { CategoryMode, ContactPrefill, ServiceChoice, ServiceItem, ServiceMode } from "./types";
+import { getServiceCategories, isValidEmail, NO_PREFILL, safeTrim, samePrefill, startingChoice } from "./utils";
 
-export function useContactFormState({
-  services,
-  initialService = "",
-  initialCategory = "",
-  initialContextMessage = "",
-}: {
-  services: ServiceItem[];
-  initialService?: string;
-  initialCategory?: string;
-  initialContextMessage?: string;
-}) {
+function typedValue(data: FormData, key: string) {
+  const value = data.get(key);
+  return typeof value === "string" ? value : "";
+}
+
+export function useContactFormState(services: ServiceItem[], formRef: RefObject<HTMLFormElement | null>) {
   const formToken = useFormToken("inquiry");
 
   const categories = useMemo(() => getServiceCategories(services), [services]);
 
-  const initialServiceMatch = useMemo(
-    () => findInitialServiceMatch(services, initialService),
-    [initialService, services]
+  // The booking details arrive from the address once the page has loaded (ContactUrlParams).
+  const [prefill, setPrefill] = useState<ContactPrefill>(NO_PREFILL);
+  const [appliedPrefill, setAppliedPrefill] = useState<ContactPrefill>(NO_PREFILL);
+  const applyUrl = useCallback(
+    (next: ContactPrefill) => setPrefill((current) => (samePrefill(current, next) ? current : next)),
+    []
   );
-
-  const normalizedInitialCategory = safeTrim(initialCategory);
-  const lockedContextMessage = safeTrim(initialContextMessage);
-
-  const hasKnownInitialCategory = categories.some(
-    (c) => normalize(c) === normalize(normalizedInitialCategory)
-  );
+  const start = useMemo(() => startingChoice(services, categories, prefill), [services, categories, prefill]);
+  const lockedContextMessage = safeTrim(prefill.context);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [website, setWebsite] = useState("");
 
-  const [serviceMode, setServiceMode] = useState<ServiceMode>(
-    initialServiceMatch ? "select" : initialService.trim() ? "other" : "select"
-  );
-  const [selectedServiceId, setSelectedServiceId] = useState<string>(initialServiceMatch?.id ?? "");
-  const [otherService, setOtherService] = useState<string>(
-    !initialServiceMatch ? initialService : ""
-  );
+  const [serviceMode, setServiceMode] = useState<ServiceMode>(start.serviceMode);
+  const [selectedServiceId, setSelectedServiceId] = useState<string>(start.serviceId);
+  const [otherService, setOtherService] = useState<string>(start.otherService);
+  const [categoryMode, setCategoryMode] = useState<CategoryMode>(start.categoryMode);
+  const [selectedCategory, setSelectedCategory] = useState<string>(start.selectedCategory);
+  const [otherCategory, setOtherCategory] = useState<string>(start.otherCategory);
 
-  const [categoryMode, setCategoryMode] = useState<CategoryMode>(() => {
-    if (initialServiceMatch?.category) return "select";
-    if (!normalizedInitialCategory) return "select";
-    return hasKnownInitialCategory ? "select" : "other";
-  });
+  function choose(choice: ServiceChoice) {
+    setServiceMode(choice.serviceMode);
+    setSelectedServiceId(choice.serviceId);
+    setOtherService(choice.otherService);
+    setCategoryMode(choice.categoryMode);
+    setSelectedCategory(choice.selectedCategory);
+    setOtherCategory(choice.otherCategory);
+  }
 
-  const [selectedCategory, setSelectedCategory] = useState<string>(() => {
-    if (initialServiceMatch?.category) return initialServiceMatch.category;
-    if (hasKnownInitialCategory) {
-      return (
-        categories.find((c) => normalize(c) === normalize(normalizedInitialCategory)) ?? "others"
-      );
+  if (appliedPrefill !== prefill) {
+    setAppliedPrefill(prefill);
+    choose(start);
+  }
+
+  // Anything typed or picked before the page loaded is on screen but not in state, and the first redraw would wipe
+  // it — so it is taken in once, at load.
+  useLayoutEffect(() => {
+    if (!formRef.current) return;
+    const typed = new FormData(formRef.current);
+    const early = {
+      name: typedValue(typed, "name"),
+      email: typedValue(typed, "email"),
+      message: typedValue(typed, "message"),
+      website: typedValue(typed, "website"),
+    };
+    if (early.name) setName(early.name);
+    if (early.email) setEmail(early.email);
+    if (early.message) setMessage(early.message);
+    if (early.website) setWebsite(early.website);
+
+    const service = services.find((s) => s.id === typedValue(typed, "service"));
+    if (service) {
+      setSelectedServiceId(service.id);
+      setCategoryMode("select");
+      setSelectedCategory(service.category || "others");
+      setOtherCategory("");
     }
-    return "others";
-  });
-
-  const [otherCategory, setOtherCategory] = useState<string>(() => {
-    if (!initialServiceMatch && normalizedInitialCategory && !hasKnownInitialCategory) {
-      return normalizedInitialCategory;
-    }
-    return "";
-  });
+  }, [services, formRef]);
 
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<FormStatusState>(null);
@@ -154,36 +156,7 @@ export function useContactFormState({
     setWebsite("");
     formToken.renew();
     setStatus(null);
-
-    setServiceMode("select");
-    setSelectedServiceId(initialServiceMatch?.id ?? "");
-    setOtherService(!initialServiceMatch ? initialService : "");
-
-    if (initialServiceMatch?.category) {
-      setCategoryMode("select");
-      setSelectedCategory(initialServiceMatch.category);
-      setOtherCategory("");
-      return;
-    }
-
-    if (normalizedInitialCategory) {
-      if (hasKnownInitialCategory) {
-        setCategoryMode("select");
-        setSelectedCategory(
-          categories.find((c) => normalize(c) === normalize(normalizedInitialCategory)) ?? "others"
-        );
-        setOtherCategory("");
-      } else {
-        setCategoryMode("other");
-        setSelectedCategory("others");
-        setOtherCategory(normalizedInitialCategory);
-      }
-      return;
-    }
-
-    setCategoryMode("select");
-    setSelectedCategory("others");
-    setOtherCategory("");
+    choose({ ...start, serviceMode: "select" });
   }
 
   async function submit() {
@@ -288,5 +261,6 @@ export function useContactFormState({
     resetForm,
     submit,
     prime: formToken.prime,
+    applyUrl,
   };
 }

@@ -55,6 +55,7 @@ export default function ContactServiceSelector({
       {serviceMode === "select" ? (
         <select
           id={fieldId}
+          name="service"
           value={selectedServiceId}
           onChange={(e) => onSelectService(e.target.value)}
           className="w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"

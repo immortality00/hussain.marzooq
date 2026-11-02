@@ -1,4 +1,4 @@
-import type { ServiceItem } from "./types";
+import type { ContactPrefill, ServiceChoice, ServiceItem } from "./types";
 
 export function safeTrim(v: string) {
   return v.trim().slice(0, 5000);
@@ -44,4 +44,35 @@ export function getServiceCategories(services: ServiceItem[]) {
   }
   set.add("others");
   return Array.from(set).sort((a, b) => a.localeCompare(b));
+}
+export const NO_PREFILL: ContactPrefill = { service: "", category: "", context: "" };
+
+export function samePrefill(a: ContactPrefill, b: ContactPrefill) {
+  return a.service === b.service && a.category === b.category && a.context === b.context;
+}
+
+/** The service and category fields as a booking link opens the form. */
+export function startingChoice(services: ServiceItem[], categories: string[], prefill: ContactPrefill): ServiceChoice {
+  const match = findInitialServiceMatch(services, prefill.service);
+  const category = safeTrim(prefill.category);
+  const known = category ? categories.find((c) => normalize(c) === normalize(category)) : undefined;
+
+  if (match?.category) {
+    return {
+      serviceMode: "select",
+      serviceId: match.id,
+      otherService: "",
+      categoryMode: "select",
+      selectedCategory: match.category,
+      otherCategory: "",
+    };
+  }
+  return {
+    serviceMode: match ? "select" : prefill.service.trim() ? "other" : "select",
+    serviceId: match?.id ?? "",
+    otherService: match ? "" : prefill.service,
+    categoryMode: !category || known ? "select" : "other",
+    selectedCategory: known ?? "others",
+    otherCategory: !match && category && !known ? category : "",
+  };
 }

@@ -1,35 +1,22 @@
 "use client";
 
+import { Suspense, useRef } from "react";
 import ContactActions from "./ContactActions";
 import ContactCategorySelector from "./ContactCategorySelector";
 import ContactIdentityFields from "./ContactIdentityFields";
 import ContactMessageField from "./ContactMessageField";
 import ContactServiceSelector from "./ContactServiceSelector";
+import { ContactUrlParams } from "./ContactUrlParams";
 import type { ServiceItem } from "./types";
 import { useContactFormState } from "./useContactFormState";
 
-type Props = {
-  services: ServiceItem[];
-  initialService?: string;
-  initialCategory?: string;
-  initialContextMessage?: string;
-};
-
-export function ContactForm({
-  services,
-  initialService = "",
-  initialCategory = "",
-  initialContextMessage = "",
-}: Props) {
-  const form = useContactFormState({
-    services,
-    initialService,
-    initialCategory,
-    initialContextMessage,
-  });
+export function ContactForm({ services }: { services: ServiceItem[] }) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const form = useContactFormState(services, formRef);
 
   return (
     <form
+      ref={formRef}
       className="rounded-2xl border p-6"
       noValidate
       onFocusCapture={() => void form.prime().catch(() => undefined)}
@@ -38,6 +25,10 @@ export function ContactForm({
         void form.submit();
       }}
     >
+      <Suspense fallback={null}>
+        <ContactUrlParams onChange={form.applyUrl} />
+      </Suspense>
+
       {form.bookingBadge ? (
         <div className="mb-4 inline-flex rounded-full border px-3 py-1 text-xs text-muted-foreground">
           Booking: {form.bookingBadge}

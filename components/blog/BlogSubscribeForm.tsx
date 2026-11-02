@@ -49,26 +49,15 @@ export function BlogSubscribeForm({ copy, className }: { copy: SubscribeCopy; cl
         <form
           className="space-y-3"
           noValidate
+          action={form.action}
           onFocusCapture={() => void form.prime().catch(() => undefined)}
-          onSubmit={(event) => {
-            event.preventDefault();
-            void form.submit();
-          }}
         >
           <div className="sr-only" aria-hidden="true">
             <label htmlFor={`${id}-website`}>Website</label>
-            <input
-              id={`${id}-website`}
-              name="website"
-              type="text"
-              tabIndex={-1}
-              autoComplete="off"
-              value={form.website}
-              onChange={(e) => form.setWebsite(e.target.value)}
-            />
+            <input id={`${id}-website`} name="website" type="text" tabIndex={-1} autoComplete="off" />
           </div>
 
-          <FormStatus status={form.status} />
+          <FormStatus status={form.sending ? null : form.status} />
 
           <div className="flex flex-col gap-3 @sm:flex-row">
             <label htmlFor={`${id}-email`} className="sr-only">
@@ -76,12 +65,12 @@ export function BlogSubscribeForm({ copy, className }: { copy: SubscribeCopy; cl
             </label>
             <input
               id={`${id}-email`}
+              name="email"
               type="email"
               inputMode="email"
               autoComplete="email"
               maxLength={254}
-              value={form.email}
-              onChange={(e) => form.setEmail(e.target.value)}
+              defaultValue={form.email}
               placeholder="you@email.com"
               className="min-w-0 flex-1 rounded-xl border bg-background px-4 py-2.5 text-base outline-none focus:ring-2 focus:ring-ring md:text-sm"
             />

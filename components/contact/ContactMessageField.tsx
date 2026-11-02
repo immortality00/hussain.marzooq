@@ -32,6 +32,7 @@ export default function ContactMessageField({
         </label>
         <textarea
           id={messageId}
+          name="message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           className="h-32 w-full rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"

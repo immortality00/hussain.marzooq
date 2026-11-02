@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { ContactForm } from "@/components/contact/ContactForm";
-import { ContactFromUrl } from "@/components/contact/ContactFromUrl";
 import { getActiveServicesForContact } from "@/lib/server/public-services";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { EmailDirectory } from "@/components/shared/EmailDirectory";
@@ -41,9 +39,7 @@ export default async function ContactPage() {
         />
 
         <div className="mt-10">
-          <Suspense fallback={<ContactForm services={services} />}>
-            <ContactFromUrl services={services} />
-          </Suspense>
+          <ContactForm services={services} />
         </div>
 
         {emails.length > 0 && (
