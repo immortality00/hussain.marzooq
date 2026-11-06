@@ -1,6 +1,7 @@
 import { MongoClient } from "mongodb";
 import { isBuildPhase } from "@/lib/server/public-read";
 import { logPoolConnections } from "@/lib/server/mongodb-pool-log";
+import { POOL_OPTIONS } from "@/lib/server/mongodb-options";
 
 const uri = process.env.MONGODB_URI ?? "";
 const SERVER_SELECTION_TIMEOUT_MS = 10_000;
@@ -19,7 +20,7 @@ declare global {
 
 function connect() {
   const client = new MongoClient(uri, {
-    maxConnecting: 10,
+    ...POOL_OPTIONS,
     serverSelectionTimeoutMS: SERVER_SELECTION_TIMEOUT_MS,
     connectTimeoutMS: CONNECT_TIMEOUT_MS,
   });

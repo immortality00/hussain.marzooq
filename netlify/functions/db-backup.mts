@@ -9,10 +9,11 @@ import {
   expiredBackupKeys,
   exportDatabase,
 } from "../../lib/server/db-backup";
+import { POOL_OPTIONS } from "../../lib/server/mongodb-options";
 
 export default async function dbBackup() {
   const now = new Date();
-  const client = new MongoClient(process.env.MONGODB_URI ?? "", { serverSelectionTimeoutMS: 10_000 });
+  const client = new MongoClient(process.env.MONGODB_URI ?? "", { ...POOL_OPTIONS, serverSelectionTimeoutMS: 10_000 });
   await client.connect();
   try {
     const backup = await exportDatabase(client.db(process.env.MONGODB_DB_NAME || "hm_visuals"), now);

@@ -1,5 +1,6 @@
 import { MongoClient } from "mongodb";
 import { ensureIndexes } from "./db-indexes";
+import { POOL_OPTIONS } from "./mongodb-options";
 
 // Relative imports only: bundled into netlify/functions/deploy-succeeded.mts.
 
@@ -20,7 +21,7 @@ export async function ensureIndexesAfterDeploy(body: unknown) {
     return;
   }
 
-  const client = new MongoClient(process.env.MONGODB_URI ?? "", { serverSelectionTimeoutMS: 5_000 });
+  const client = new MongoClient(process.env.MONGODB_URI ?? "", { ...POOL_OPTIONS, serverSelectionTimeoutMS: 5_000 });
   try {
     await client.connect();
     const { total, recreated } = await ensureIndexes(client.db(process.env.MONGODB_DB_NAME || "hm_visuals"));

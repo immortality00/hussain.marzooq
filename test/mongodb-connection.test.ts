@@ -45,6 +45,19 @@ afterEach(() => {
 });
 
 describe("the database connection", () => {
+  it("caps every server instance at a few connections", async () => {
+    connect.mockResolvedValue({ db: vi.fn() });
+    const { mongoClient } = await import("@/lib/mongodb");
+    await mongoClient();
+    expect(options[0]).toMatchObject({
+      maxPoolSize: 3,
+      maxConnecting: 3,
+      minPoolSize: 0,
+      maxIdleTimeMS: 30_000,
+      serverMonitoringMode: "poll",
+    });
+  });
+
   it("opens nothing when the code loads, only on first use", async () => {
     connect.mockResolvedValue({ db: vi.fn() });
     const { mongoClient } = await import("@/lib/mongodb");
