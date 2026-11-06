@@ -11,6 +11,35 @@ function cachedUntilChanged(cacheControl: string | undefined) {
   return !shared || Number(shared[1]) >= DAY;
 }
 
+async function renameService(page: import("@playwright/test").Page, id: string | null, name: string) {
+  return page.evaluate(
+    async ({ id, name }) => {
+      const list = await (await fetch("/api/admin/snapshot")).json();
+      const service = (id ? list.data.services.find((s: { id: string }) => s.id === id) : list.data.services[0]) as {
+        id: string;
+      };
+      const res = await fetch(`/api/services/${service.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      return { ok: res.ok, id: service.id };
+    },
+    { id, name }
+  );
+}
+
+// Other specs (the contact form's) expect the seeded service's own name, so a rename here is always put back.
+let renamedServiceId: string | null = null;
+
+test.afterEach(async ({ browser }) => {
+  if (!renamedServiceId) return;
+  const other = await otherDevice(browser);
+  expect((await renameService(other.page, renamedServiceId, E2E.serviceName)).ok).toBe(true);
+  renamedServiceId = null;
+  await other.context.close();
+});
+
 test.describe("admin speed", () => {
   test("serves the sign-in page and every admin screen pre-built, with no five-minute expiry", async ({ page }) => {
     const signInPage = await page.request.get("/admin/sign-in");
@@ -50,18 +79,10 @@ test.describe("admin speed", () => {
     await expect(page.getByText(E2E.serviceName).first()).toBeVisible();
 
     const other = await otherDevice(browser);
-    const renamed = await other.page.evaluate(async () => {
-      const list = await (await fetch("/api/admin/snapshot")).json();
-      const service = list.data.services[0] as { id: string };
-      const res = await fetch(`/api/services/${service.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: "Renamed On Another Device" }),
-      });
-      return res.ok;
-    });
+    const renamed = await renameService(other.page, null, "Renamed On Another Device");
+    renamedServiceId = renamed.id;
     await other.context.close();
-    expect(renamed).toBe(true);
+    expect(renamed.ok).toBe(true);
 
     await page.locator("aside").getByRole("link", { name: /^Dashboard/ }).click();
     await page.locator("aside").getByRole("link", { name: "Services", exact: true }).click();
