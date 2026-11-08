@@ -1,19 +1,130 @@
 @layer utilities {
   /* Button system — one geometry, two looks modelled on the hero pills
      (colour set in Button.tsx: ghost = hero "Book" outline, solid = hero
-     "See the work" white). Motion: 220ms fill transition, 160ms press scale,
-     focus ring. Chips reuse the same motion one size down. */
+     "See the work" white). Motion: 220ms fill transition, the press spring
+     below, focus ring. Chips share the press. */
   .hm-btn {
     @apply inline-flex items-center gap-2 whitespace-nowrap rounded-full px-5 py-[0.6875rem] text-sm leading-none;
-    transition:
-      background-color 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
-      border-color 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
-      color 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
   }
 
-  .hm-btn:active {
-    transform: scale(0.975);
-    transition: transform 160ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  /* Press (MO1, modelled on the "Sink, then spring" reel): the control sinks to
+     95% and holds while pressed, its fill dims and a circle of its own fill grows
+     out from the finger; on release the dim and circle fade and the scale springs
+     back once past 100% (~1.017 at 220ms, a small dip to ~0.994, settled by
+     800ms). The spring is a damped spring (damping 0.32) sampled into linear().
+     `data-pressed` and the --press-* values come from PressFeedback (pointer
+     events, so it shows on touch too); `:active` covers anything before it runs.
+     Achromatic: the dim and the circle are the control's own colours. `scale` is
+     the independent property, so it composes with useMagneticHover's `translate`.
+     Position/overflow sit in :where() so a caller's `absolute` still wins. */
+  :where(.hm-btn, .hm-chip, .hm-press) {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .hm-btn,
+  .hm-chip,
+  .hm-press {
+    --hm-press-color: 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
+    transition:
+      background-color var(--hm-press-color),
+      border-color var(--hm-press-color),
+      color var(--hm-press-color),
+      scale 800ms
+        linear(
+          0, 0.0425, 0.1563, 0.3196, 0.5101, 0.7075, 0.8943, 1.0569, 1.1863, 1.2776, 1.33, 1.3461,
+          1.3308, 1.291, 1.2342, 1.1682, 1.0999, 1.0354, 0.9793, 0.9348, 0.9034, 0.8856, 0.8802,
+          0.8857, 0.8996, 0.9194, 0.9423, 0.9659, 0.9882, 1.0075, 1.0228, 1.0336, 1.0397, 1.0414,
+          1.0395, 1.0346, 1.0278, 1.0198, 1.0116, 1.0039, 1
+        );
+  }
+
+  .hm-press-quick {
+    --hm-press-color: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hm-btn::before,
+  .hm-chip::before,
+  .hm-press::before,
+  .hm-btn::after,
+  .hm-chip::after,
+  .hm-press::after {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  /* The dim: the control's text colour laid thinly over its fill. */
+  .hm-btn::before,
+  .hm-chip::before,
+  .hm-press::before {
+    inset: 0;
+    border-radius: inherit;
+    background: color-mix(in oklab, currentColor 14%, transparent);
+    opacity: 0;
+    transition: opacity 450ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  /* The circle: the control's own fill lifting back through the dim (a brighter
+     wash of the text colour on an outline control), centred on the press point
+     and growing to reach the farthest corner. */
+  .hm-btn::after,
+  .hm-chip::after,
+  .hm-press::after {
+    left: var(--press-x, 50%);
+    top: var(--press-y, 50%);
+    width: calc(var(--press-r, 50%) * 2);
+    aspect-ratio: 1;
+    translate: -50% -50%;
+    border-radius: 9999px;
+    background: color-mix(in oklab, var(--press-fill, currentColor) var(--press-fill-mix, 18%), transparent);
+    opacity: 0;
+    scale: 0;
+    transition:
+      opacity 500ms cubic-bezier(0.23, 1, 0.32, 1),
+      scale 0s 500ms;
+  }
+
+  .hm-btn:active,
+  .hm-chip:active,
+  .hm-press:active,
+  .hm-btn[data-pressed],
+  .hm-chip[data-pressed],
+  .hm-press[data-pressed] {
+    scale: 0.95;
+    transition:
+      background-color var(--hm-press-color),
+      border-color var(--hm-press-color),
+      color var(--hm-press-color),
+      scale 220ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .hm-btn[data-pressed]::before,
+  .hm-chip[data-pressed]::before,
+  .hm-press[data-pressed]::before {
+    opacity: 1;
+    transition-duration: 160ms;
+  }
+
+  .hm-btn[data-pressed]::after,
+  .hm-chip[data-pressed]::after,
+  .hm-press[data-pressed]::after {
+    opacity: 1;
+    scale: 1;
+    transition:
+      opacity 140ms cubic-bezier(0.23, 1, 0.32, 1),
+      scale 900ms cubic-bezier(0.2, 0.7, 0.2, 1);
+  }
+
+  .hm-btn[data-press-reset]::after,
+  .hm-chip[data-press-reset]::after,
+  .hm-press[data-press-reset]::after {
+    opacity: 0;
+    scale: 0;
+    transition: none;
   }
 
   .hm-btn:focus-visible {
@@ -38,15 +149,6 @@
 
   .hm-chip {
     @apply inline-flex items-center rounded-full border px-3.5 py-1.5 text-xs;
-    transition:
-      background-color 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
-      border-color 220ms cubic-bezier(0.2, 0.7, 0.2, 1),
-      color 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
-  }
-
-  .hm-chip:active {
-    transform: scale(0.975);
-    transition: transform 160ms cubic-bezier(0.2, 0.7, 0.2, 1);
   }
 
   .hm-chip:focus-visible {

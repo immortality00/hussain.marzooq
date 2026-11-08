@@ -15,7 +15,7 @@ import { useHiddenByModal } from "@/hooks/useHiddenByModal";
 const ADMIN_HREF = "/admin/dashboard";
 
 const NAV_PILL =
-  "rounded-full border border-border/60 px-5 py-1.5 text-[13px] tracking-wide transition-[background-color,border-color] hover:border-foreground/40 hover:bg-accent";
+  "rounded-full border border-border/60 px-5 py-1.5 text-[13px] tracking-wide hm-press hm-press-quick hover:border-foreground/40 hover:bg-accent";
 
 const noopSubscribe = () => () => {};
 

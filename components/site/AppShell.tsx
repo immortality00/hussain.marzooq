@@ -8,6 +8,7 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { Preloader } from "@/components/site/Preloader";
 import { CustomCursor } from "@/components/site/CustomCursor";
 import { SiteAnalytics } from "@/components/site/Analytics";
+import { PressFeedback } from "@/components/shared/PressFeedback";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -36,7 +37,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, [isAdmin]);
 
   if (isAdmin) {
-    return <>{children}</>;
+    return (
+      <>
+        <PressFeedback />
+        {children}
+      </>
+    );
   }
 
   return (
@@ -51,6 +57,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {pathname === "/" && <Preloader />}
       <div className="grain-overlay" />
       <CustomCursor />
+      <PressFeedback />
       <SiteAnalytics />
       {children}
     </div>

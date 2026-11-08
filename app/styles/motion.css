@@ -169,4 +169,21 @@
   .hm-loading-line {
     animation: none;
   }
+  .hm-btn,
+  .hm-chip,
+  .hm-press,
+  .hm-btn:active,
+  .hm-chip:active,
+  .hm-press:active,
+  .hm-btn[data-pressed],
+  .hm-chip[data-pressed],
+  .hm-press[data-pressed] {
+    scale: none;
+  }
+
+  .hm-btn::after,
+  .hm-chip::after,
+  .hm-press::after {
+    display: none;
+  }
 }
