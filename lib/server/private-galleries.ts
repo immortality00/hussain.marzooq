@@ -99,7 +99,7 @@ async function openGallery(db: Db, doc: Document, linkKey: string | null): Promi
 }
 
 // A public gallery never answers at /g/<slug>: it has no password to ask for.
-async function findPasswordGallery(db: Db, slug: string) {
+async function findLockedGallery(db: Db, slug: string) {
   const doc = await db.collection("private_galleries").findOne({ slug });
   if (!doc || galleryVisibilityOf(doc) !== "private") return null;
   if (isPrivateGalleryUnavailable(doc as Record<string, unknown>)) return null;
@@ -108,7 +108,7 @@ async function findPasswordGallery(db: Db, slug: string) {
 
 export async function getPrivateGalleryMetaBySlug(slug: string) {
   const db = await getDb();
-  const doc = await findPasswordGallery(db, slug);
+  const doc = await findLockedGallery(db, slug);
   if (!doc) return { exists: false, unlocked: false, title: "" };
 
   const unlocked = await hasGalleryCookie(doc);
@@ -127,7 +127,7 @@ export async function getPrivateGalleryPublicBySlug(
   | { state: "open"; gallery: PrivateGalleryPublic }
 > {
   const db = await getDb();
-  const doc = await findPasswordGallery(db, slug);
+  const doc = await findLockedGallery(db, slug);
   if (!doc) return { state: "missing" };
   if (!(await hasGalleryCookie(doc))) return { state: "locked", slug };
 

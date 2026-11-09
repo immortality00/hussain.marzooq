@@ -7,7 +7,7 @@ import {
 } from "@/lib/private-galleries";
 import { accessFields, parseGalleryBody, PASSWORD_TOO_SHORT } from "@/app/api/private-galleries/_lib/gallery-body";
 import { addUpTo, buildGalleryUrl, galleryPath } from "@/components/admin/private-galleries/helpers";
-import { countedPath, GOATCOUNTER_SETTINGS_SCRIPT, GALLERY_LINK_PATH } from "@/lib/analytics-path";
+import { countedPath, GOATCOUNTER_SETTINGS_SCRIPT, GALLERY_LINK_PATH, scriptStringLiteral } from "@/lib/analytics-path";
 import { linkDownloadLimit, linkViewLimit } from "@/lib/server/gallery-link-limits";
 
 const KEY = makeGalleryLinkKey();
@@ -169,8 +169,17 @@ describe("analytics never records a link key", () => {
   });
 
   test("the browser script uses the same rule", () => {
-    expect(GOATCOUNTER_SETTINGS_SCRIPT).toContain(JSON.stringify(GALLERY_LINK_PATH.source));
+    expect(GOATCOUNTER_SETTINGS_SCRIPT).toContain(scriptStringLiteral(GALLERY_LINK_PATH.source));
     expect(GOATCOUNTER_SETTINGS_SCRIPT).toContain("path:cut,referrer:cut");
+  });
+
+  test("writes the pattern as a script literal that cannot close the tag or break the line", () => {
+    const hostile = 'a</script><b>"\\\u2028\u2029\n\0x/y';
+    const literal = scriptStringLiteral(hostile);
+    expect(literal).not.toMatch(/[<>\u2028\u2029\n\0]/);
+    expect(literal).not.toContain("</");
+    expect(JSON.parse(literal)).toBe(hostile);
+    expect(JSON.parse(scriptStringLiteral(GALLERY_LINK_PATH.source))).toBe(GALLERY_LINK_PATH.source);
   });
 });
 

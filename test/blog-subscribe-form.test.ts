@@ -41,7 +41,7 @@ describe("BlogSubscribeForm", () => {
     const html = renderToStaticMarkup(form());
     const action = html.match(/<form[^>]*\saction="([^"]*)"/)?.[1] ?? "";
 
-    expect(action.startsWith("javascript:")).toBe(true);
+    expect(action).toMatch(/^javascript:throw new Error\(/);
     expect(html).not.toMatch(/<form[^>]*\smethod=/);
     expect(html).toMatch(/<input[^>]*name="email"/);
     expect(html).toMatch(/<button[^>]*type="submit"/);
