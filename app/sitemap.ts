@@ -3,6 +3,7 @@ import { absoluteUrl } from "@/lib/seo/site-url";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 import { getPublishedPosts } from "@/lib/server/public-blog";
 import { getPublicPeople } from "@/lib/server/public-people";
+import { hasPublicWork } from "@/lib/person-indexing";
 import { getPublicServicesData } from "@/lib/server/public-services";
 import { getDisciplineTags } from "@/lib/server/public-media-tags";
 import { getSitemapSources } from "@/lib/server/sitemap-sources";
@@ -83,7 +84,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...withSlug(services).map((service) =>
       entry(`/services/${service.slug}`, 0.6, servicePageModified(sources, service.slug))
     ),
-    ...withSlug(people).map((person) =>
+    ...withSlug(people.filter(hasPublicWork)).map((person) =>
       entry(`/people/${person.slug}`, 0.5, personPageModified(sources, person.slug))
     ),
     ...(activeSet.has("blog") ? [page("/blog", 0.7)] : []),

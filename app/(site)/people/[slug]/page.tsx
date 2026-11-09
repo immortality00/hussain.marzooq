@@ -14,6 +14,7 @@ import { getPageSeo } from "@/lib/server/page-seo";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { breadcrumbNode } from "@/lib/seo/structured-data";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { EMPTY_PROFILE_ROBOTS, hasPublicWork } from "@/lib/person-indexing";
 
 export const revalidate = 300;
 
@@ -30,13 +31,14 @@ export async function generateMetadata({
   if (!person) {
     return { title: "Private profile", robots: { index: false, follow: false } };
   }
-  return buildPublicMetadata({
+  const metadata = buildPublicMetadata({
     title: seo.title.replaceAll("{name}", person.name),
     description: seo.description.replaceAll("{name}", person.name),
     path: `/people/${slug}`,
     image: person.featuredImage ?? person.avatarUrl ?? undefined,
     type: "profile",
   });
+  return hasPublicWork(person) ? metadata : { ...metadata, robots: EMPTY_PROFILE_ROBOTS };
 }
 
 export default async function PersonDetailPage({
