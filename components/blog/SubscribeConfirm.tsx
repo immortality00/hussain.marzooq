@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { AnimatedText } from "@/components/shared/AnimatedText";
 import { Button } from "@/components/shared/Button";
 import { LoadingScreen } from "@/components/shared/LoadingScreen";
+import { SuccessCheck } from "@/components/shared/SuccessCheck";
 import { CONFIRM_COPY, confirmLink, linkToken, type ConfirmResult } from "./subscribe-confirm";
 
 function onHashChange(notify: () => void) {
@@ -36,6 +37,7 @@ export function SubscribeConfirm() {
 
   return (
     <div className="mx-auto max-w-2xl text-center">
+      {view === "done" ? <SuccessCheck className="mx-auto mb-6 size-10" /> : null}
       <h1 className="text-4xl font-semibold tracking-tight wrap-anywhere text-foreground sm:text-6xl">
         <AnimatedText key={view} revealOnLoad>
           {copy.heading}

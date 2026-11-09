@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/shared/Button";
 import { useFormToken } from "@/hooks/useFormToken";
 import { FormStatus, type FormStatusState } from "@/components/shared/FormStatus";
+import { SuccessCheck } from "@/components/shared/SuccessCheck";
 
 export default function RemovalRequestButton({ slug }: { slug: string }) {
   const [open, setOpen] = useState(false);
@@ -56,8 +57,9 @@ export default function RemovalRequestButton({ slug }: { slug: string }) {
 
   if (done) {
     return (
-      <p className="mt-16 text-center text-xs leading-6 text-muted-foreground">
-        Your removal request has been received and will be reviewed.
+      <p role="status" className="mt-16 flex items-center justify-center gap-2 text-center text-xs leading-6 text-muted-foreground">
+        <SuccessCheck className="size-4" />
+        <span>Your removal request has been received and will be reviewed.</span>
       </p>
     );
   }
