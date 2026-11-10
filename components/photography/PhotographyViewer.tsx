@@ -12,6 +12,7 @@ import MediaLightbox from "@/components/media/MediaLightbox";
 import type { MediaItem, TagLink } from "@/components/media/types";
 import { useMediaSearch } from "@/components/media/useMediaSearch";
 import { useModalNavbarLock } from "@/components/media/useModalNavbarLock";
+import { useListGeneration } from "@/hooks/useListGeneration";
 import ModeSwitcher, {
   VIEWER_MODE_STORAGE_KEY,
   isViewerMode,
@@ -57,9 +58,11 @@ export default function PhotographyViewer({
     isLoadingMore,
     canLoadMore,
     loadMore,
-  } = useMediaSearch({ items, mediaMode: "image", searchCategory, lockedTag });
+  } = useMediaSearch({ items, mediaMode: "image", searchCategory, lockedTag, loadAll: mode !== "grid" });
 
   useModalNavbarLock(Boolean(active));
+  // Starts the views over only for a new list, never while more photos arrive.
+  const listGeneration = useListGeneration(displayedItems.map((m) => m.id));
 
   // All three views work on every breakpoint — the cylinder included. There is
   // deliberately no viewport gate here: gating on a post-mount matchMedia check
@@ -89,10 +92,10 @@ export default function PhotographyViewer({
 
       <div className="mt-1">
         {mode === "cylinder" ? (
-          <PhotographyCylinder items={displayedItems} onSelect={setActive} />
+          <PhotographyCylinder key={listGeneration} items={displayedItems} onSelect={setActive} />
         ) : mode === "horizontal" ? (
           <PhotographyHorizontal
-            key={displayedItems.map((m) => m.id).join(",")}
+            key={listGeneration}
             items={displayedItems}
             onSelect={setActive}
           />

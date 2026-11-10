@@ -61,11 +61,14 @@ export function useMediaSearch({
   mediaMode = "image",
   searchCategory,
   lockedTag,
+  loadAll = false,
 }: {
   items: MediaItem[];
   mediaMode?: PublicMediaSearchMode;
   searchCategory?: string;
   lockedTag?: string;
+  /** Keep fetching pages in the background until every match is loaded (Cylinder, Scroll). */
+  loadAll?: boolean;
 }) {
   const [q, setQ] = useState("");
   const [activeTag, setActiveTag] = useState<string>("");
@@ -77,6 +80,8 @@ export function useMediaSearch({
   const [searchError, setSearchError] = useState("");
 
   const requestIdRef = useRef(0);
+  // A page request in flight; state alone can't stop a second call made before it re-renders.
+  const loadingMoreRef = useRef(false);
   const hasDbSearch = Boolean(searchCategory);
   const cleanQuery = q.trim();
   const cleanTag = activeTag.trim();
@@ -179,7 +184,7 @@ export function useMediaSearch({
   const canLoadMore = hasDbSearch && (hasActiveSearch ? Boolean(nextCursor) : browseHasMore);
 
   async function loadMore() {
-    if (!hasDbSearch || !searchCategory || isLoadingMore || !canLoadMore) return;
+    if (!hasDbSearch || !searchCategory || isLoadingMore || loadingMoreRef.current || !canLoadMore) return;
 
     let cursor: string | null;
     if (hasActiveSearch) {
@@ -195,6 +200,7 @@ export function useMediaSearch({
       }
     }
 
+    loadingMoreRef.current = true;
     setIsLoadingMore(true);
     setSearchError("");
 
@@ -226,9 +232,20 @@ export function useMediaSearch({
     } catch (error) {
       setSearchError(error instanceof Error ? error.message : "Could not load more media.");
     } finally {
+      loadingMoreRef.current = false;
       setIsLoadingMore(false);
     }
   }
+
+  // One page at a time, each starting when the last has landed; stops at the end
+  // of the list or on an error (the Grid's "Load more" still shows that error).
+  const wantsNextPage = loadAll && canLoadMore && !isLoadingMore && !isSearching && !searchError;
+  useEffect(() => {
+    if (!wantsNextPage) return;
+    const timer = window.setTimeout(() => void loadMore(), 0);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- loadMore is rebuilt every render; the flags decide
+  }, [wantsNextPage, remoteItems.length]);
 
   return {
     q,

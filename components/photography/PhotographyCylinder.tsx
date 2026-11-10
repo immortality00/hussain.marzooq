@@ -7,7 +7,8 @@ import type { MediaItem } from "@/components/media/types";
 import { NoResults } from "@/components/shared/NoResults";
 import { useLatest } from "@/hooks/useLatest";
 import { rememberOrigin, uniformRadii, type ExpandOrigin } from "@/lib/client/expand-origin";
-import { cloudinaryTextureUrl, cylinderItems } from "./lib";
+import { cloudinaryTextureUrl, maxTextures } from "./lib";
+import { frontPosition, photoIndex, slotPlace } from "@/lib/cylinder-slots";
 import { CYLINDER_HEIGHT } from "./viewer-heights";
 
 const PLANE_W = 3.4;
@@ -101,19 +102,22 @@ export default function PhotographyCylinder({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const onSelectRef = useLatest(onSelect);
 
-  const ringItems = cylinderItems(items);
-  const signature = ringItems.map((m) => m.id).join(",");
+  // Every photo is in the line; the ring keeps a fixed number of slots and swaps
+  // photos at its hidden back as it turns (lib/cylinder-slots.ts).
+  const photos = items.filter((m) => Boolean(m.secureUrl));
+  const photosRef = useLatest(photos);
+  const slotCount = Math.min(photos.length, maxTextures());
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || ringItems.length === 0) return;
+    if (!canvas || slotCount === 0) return;
     let disposed = false;
 
     const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 
     const scene = new THREE.Scene();
-    const count = ringItems.length;
+    const count = slotCount;
     const isFew = count <= FEW;
 
     // Few → wide shallow arc; many → closed prism whose flat edges touch.
@@ -137,8 +141,58 @@ export default function PhotographyCylinder({
 
     const meshes: THREE.Mesh[] = [];
     const textureCache = new Map<string, THREE.Texture>();
+    const loading = new Set<string>();
+    const slotPlaces: number[] = [];
+    const slotUrls: (string | null)[] = [];
 
-    ringItems.forEach((item, i) => {
+    function showTexture(slot: number, tex: THREE.Texture | null) {
+      const material = meshes[slot]!.material as THREE.MeshBasicMaterial;
+      material.map = tex;
+      material.color.set(tex ? 0xffffff : 0x2a2a2a);
+      material.needsUpdate = true;
+    }
+
+    /** Frees textures no slot shows any more, so memory stays at about one per slot. */
+    function releaseUnused() {
+      const wanted = new Set(slotUrls);
+      for (const [url, tex] of textureCache) {
+        if (!wanted.has(url)) {
+          tex.dispose();
+          textureCache.delete(url);
+        }
+      }
+    }
+
+    function assign(slot: number, place: number) {
+      const list = photosRef.current;
+      const item = list[photoIndex(place, list.length)];
+      slotPlaces[slot] = place;
+      meshes[slot]!.userData.item = item;
+      const url = item?.secureUrl ? cloudinaryTextureUrl(item.secureUrl) : null;
+      slotUrls[slot] = url;
+      const cached = url ? textureCache.get(url) : undefined;
+      showTexture(slot, cached ?? null);
+      if (!url || cached || loading.has(url)) return;
+      loading.add(url);
+      loader.load(
+        url,
+        (tex) => {
+          loading.delete(url);
+          if (disposed) return tex.dispose();
+          tex.colorSpace = THREE.SRGBColorSpace;
+          coverTexture(tex);
+          textureCache.set(url, tex);
+          slotUrls.forEach((wanted, i) => {
+            if (wanted === url) showTexture(i, tex);
+          });
+          releaseUnused();
+        },
+        undefined,
+        () => loading.delete(url),
+      );
+    }
+
+    for (let i = 0; i < count; i++) {
       const theta = (i - (count - 1) / 2) * spacing;
       const material = new THREE.MeshBasicMaterial({
         color: 0x2a2a2a,
@@ -149,9 +203,9 @@ export default function PhotographyCylinder({
       const mesh = new THREE.Mesh(geometry, material);
       mesh.position.set(Math.sin(theta) * radius, 0, Math.cos(theta) * radius);
       mesh.rotation.y = theta;
-      mesh.userData.item = item;
       group.add(mesh);
       meshes.push(mesh);
+      assign(i, i);
 
       const scatter = new THREE.Vector3(
         (Math.random() - 0.5) * 14,
@@ -169,32 +223,22 @@ export default function PhotographyCylinder({
         ease: "power3.out",
       });
       gsap.to(material, { opacity: 1, duration: 0.6, delay: i * 0.04, ease: "power2.out" });
+    }
 
-      if (item.secureUrl) {
-        const url = cloudinaryTextureUrl(item.secureUrl);
-        const cached = textureCache.get(url);
-        const apply = (tex: THREE.Texture) => {
-          if (disposed) return;
-          material.map = tex;
-          material.color.set(0xffffff);
-          material.needsUpdate = true;
-        };
-        if (cached) {
-          apply(cached);
-        } else {
-          loader.load(url, (tex) => {
-            if (disposed) {
-              tex.dispose();
-              return;
-            }
-            tex.colorSpace = THREE.SRGBColorSpace;
-            coverTexture(tex);
-            textureCache.set(url, tex);
-            apply(tex);
-          });
+    /** Swaps the photo of any slot that has just passed the back of the ring. */
+    function rollConveyor() {
+      if (isFew || photosRef.current.length <= count) return;
+      const front = frontPosition(group.rotation.y, count, spacing);
+      let swapped = false;
+      for (let slot = 0; slot < count; slot++) {
+        const place = slotPlace(slot, count, front);
+        if (place !== slotPlaces[slot]) {
+          assign(slot, place);
+          swapped = true;
         }
       }
-    });
+      if (swapped) releaseUnused();
+    }
 
     // --- interaction ---
     const pointer = new THREE.Vector2();
@@ -281,7 +325,7 @@ export default function PhotographyCylinder({
     const ro = new ResizeObserver(resize);
     ro.observe(canvas);
 
-    let raf: number;
+    let raf = 0;
     let lastFrame = performance.now();
     function animate(now = performance.now()) {
       raf = requestAnimationFrame(animate);
@@ -311,13 +355,32 @@ export default function PhotographyCylinder({
           }
         }
       }
+      rollConveyor();
       renderer.render(scene, camera);
     }
-    animate();
+
+    // Off-screen the ring stops turning (and so stops fetching photos nobody sees),
+    // and picks up where it was when it comes back.
+    let running = false;
+    const visibility = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting && !running) {
+          running = true;
+          lastFrame = performance.now();
+          animate();
+        } else if (!entry?.isIntersecting && running) {
+          running = false;
+          cancelAnimationFrame(raf);
+        }
+      },
+      { rootMargin: "100px" },
+    );
+    visibility.observe(canvas);
 
     return () => {
       disposed = true;
       cancelAnimationFrame(raf);
+      visibility.disconnect();
       ro.disconnect();
       canvas.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointermove", onMove);
@@ -334,9 +397,9 @@ export default function PhotographyCylinder({
       renderer.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [signature]);
+  }, [slotCount]);
 
-  if (ringItems.length === 0) {
+  if (slotCount === 0) {
     return <NoResults />;
   }
 

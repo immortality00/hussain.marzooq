@@ -172,6 +172,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  [data-slide] > .hm-mode-layer {
+    transition: none;
+  }
+
   .hm-cell-in,
   .hm-cell-out {
     animation-duration: 1ms;

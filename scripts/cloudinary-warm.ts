@@ -14,13 +14,16 @@ const docs = await db
   .collection("media")
   .find({ type: { $in: ["image", "embed"] } }, { projection: { type: 1, secureUrl: 1, posterUrl: 1, deliveryType: 1, isPublic: 1 } })
   .toArray();
-const urls = docs.map(warmableUrl).filter((url): url is string => Boolean(url));
+const targets = docs
+  .map((doc) => ({ url: warmableUrl(doc), textures: doc.type === "image" }))
+  .filter((t): t is { url: string; textures: boolean } => Boolean(t.url));
+const urls = targets.map((t) => t.url);
 console.log(`Warming ${urls.length} photos and video posters…`);
 
 let done = 0;
 let failedSizes = 0;
-await settleLimited(urls, 3, async (url) => {
-  const { failed } = await warmImageSizes(url);
+await settleLimited(targets, 3, async ({ url, textures }) => {
+  const { failed } = await warmImageSizes(url, fetch, textures);
   failedSizes += failed.length;
   for (const line of failed) console.error(`Not ready: ${line}`);
   done += 1;

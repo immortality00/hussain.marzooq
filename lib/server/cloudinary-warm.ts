@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import cloudinaryImageLoader from "@/lib/cloudinary-image-loader";
-import { IMAGE_DEVICE_SIZES } from "@/lib/image-sizes";
+import { IMAGE_DEVICE_SIZES, TEXTURE_WIDTH, TEXTURE_WIDTH_SMALL } from "@/lib/image-sizes";
+import { cloudinaryTextureUrl } from "@/components/photography/lib";
 import { settleLimited } from "@/lib/settle-limited";
 
 /**
@@ -51,15 +52,24 @@ export function warmableUrl(doc: WarmDoc): string | null {
   return cloudinaryImageLoader({ src: url, width: WARM_WIDTHS[0] }) === url ? null : url;
 }
 
-/** The delivery addresses of every width, exactly as the site's loader builds them. */
-export function warmUrls(secureUrl: string): string[] {
-  return [...new Set(WARM_WIDTHS.map((width) => cloudinaryImageLoader({ src: secureUrl, width })))];
+/**
+ * The delivery addresses of every width, exactly as the site's loader builds them;
+ * photos also get the Cylinder's two texture sizes (posters never appear there).
+ */
+export function warmUrls(secureUrl: string, withTextures = false): string[] {
+  const sizes = WARM_WIDTHS.map((width) => cloudinaryImageLoader({ src: secureUrl, width }));
+  const textures = withTextures ? [TEXTURE_WIDTH, TEXTURE_WIDTH_SMALL].map((w) => cloudinaryTextureUrl(secureUrl, w)) : [];
+  return [...new Set([...sizes, ...textures])];
 }
 
 export type WarmResult = { requested: number; failed: string[] };
 
-export async function warmImageSizes(secureUrl: string, fetchImpl: typeof fetch = fetch): Promise<WarmResult> {
-  const urls = warmUrls(secureUrl);
+export async function warmImageSizes(
+  secureUrl: string,
+  fetchImpl: typeof fetch = fetch,
+  withTextures = false,
+): Promise<WarmResult> {
+  const urls = warmUrls(secureUrl, withTextures);
   const failed: string[] = [];
   for (const headers of BROWSERS) {
     const results = await settleLimited(urls, PARALLEL, async (url) => {
@@ -80,7 +90,7 @@ export function queueImageWarm(doc: WarmDoc | null | undefined) {
   if (!url || process.env.NODE_ENV === "test") return;
   const run = async () => {
     try {
-      const { failed } = await warmImageSizes(url);
+      const { failed } = await warmImageSizes(url, fetch, doc?.type === "image");
       if (failed.length) console.error(`[cloudinary-warm] ${failed.length} sizes not ready: ${failed[0]}`);
     } catch (error) {
       console.error("[cloudinary-warm] failed", error);

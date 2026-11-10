@@ -35,6 +35,13 @@ describe("warmImageSizes", () => {
     }
   });
 
+  it("adds the Cylinder's two texture sizes for photos", () => {
+    const urls = warmUrls(PHOTO, true);
+    expect(urls).toHaveLength(WARM_WIDTHS.length + 2);
+    expect(urls.some((u) => u.includes("/upload/w_600,c_limit,q_auto,f_auto/"))).toBe(true);
+    expect(urls.some((u) => u.includes("/upload/w_420,c_limit,q_auto,f_auto/"))).toBe(true);
+  });
+
   it("reports sizes that failed", async () => {
     const fetchImpl = vi.fn(async (url: string) => new Response(null, { status: url.includes("w_3840") ? 400 : 200 }));
     const { failed } = await warmImageSizes(PHOTO, fetchImpl as unknown as typeof fetch);

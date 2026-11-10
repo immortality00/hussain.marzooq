@@ -1,4 +1,3 @@
-import type { MediaItem } from "@/components/media/types";
 import { textureTransform } from "@/lib/cloudinary-delivery";
 import { TEXTURE_WIDTH, TEXTURE_WIDTH_SMALL } from "@/lib/image-sizes";
 
@@ -28,9 +27,4 @@ export function cloudinaryTextureUrl(url: string, width = textureWidth()): strin
   if (!url.includes("/upload/")) return url;
   if (/\/upload\/[^/]*[whqf]_/.test(url)) return url; // already transformed
   return url.replace("/upload/", `/upload/${textureTransform(width)}/`);
-}
-
-/** Image items with a usable source, capped for GPU/memory. Unique — no repeats. */
-export function cylinderItems(items: MediaItem[]): MediaItem[] {
-  return items.filter((m) => Boolean(m.secureUrl)).slice(0, maxTextures());
 }

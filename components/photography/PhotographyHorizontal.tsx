@@ -26,9 +26,11 @@ export default function PhotographyHorizontal({
   const trackRef = useRef<HTMLDivElement>(null);
   const draggedRef = useRef(false);
 
+  const hasItems = items.length > 0;
+
   useEffect(() => {
     const track = trackRef.current;
-    if (!track || items.length === 0) return;
+    if (!track || !hasItems) return;
 
     const reduceMotion = prefersReducedMotion();
 
@@ -45,8 +47,14 @@ export default function PhotographyHorizontal({
     };
 
     let maxT = getMax();
+    // More photos arriving widen the centred strip, which moves its left edge by
+    // half the added width; shift by the same amount so nothing on screen jumps.
     const remeasure = () => {
-      maxT = getMax();
+      const next = getMax();
+      x += next - maxT;
+      maxT = next;
+      x = clamp(x);
+      track.style.transform = `translate3d(${maxT > 0 ? x : 0}px,0,0)`;
     };
     const ro = new ResizeObserver(remeasure);
     ro.observe(track);
@@ -142,7 +150,8 @@ export default function PhotographyHorizontal({
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [items]);
+    // Rebuilt only for a new list (the viewer's key); more photos arriving just widen the strip.
+  }, [hasItems]);
 
   if (items.length === 0) {
     return <NoResults />;

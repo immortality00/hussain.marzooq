@@ -155,4 +155,14 @@
     outline: 2px solid var(--foreground);
     outline-offset: 2px;
   }
+
+  /* The photography view switcher's white indicator (ModeSwitcher). Hidden until
+     measured; slides only once a button has been clicked ([data-slide]). */
+  .hm-mode-layer {
+    clip-path: inset(50% 50% 50% 50%);
+  }
+
+  [data-slide] > .hm-mode-layer {
+    transition: clip-path 250ms cubic-bezier(0.23, 1, 0.32, 1);
+  }
 }
