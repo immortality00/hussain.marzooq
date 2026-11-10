@@ -2,6 +2,7 @@ import { requireAdminOr401 } from "@/lib/auth/admin";
 import { noStoreJson } from "@/app/api/_lib/common";
 import { buildAdminSnapshot, snapshotVersion } from "@/lib/server/admin-snapshot";
 import { scheduleUploadSweep } from "@/lib/server/upload-ledger";
+import { scheduleMissingPosterRetry } from "@/lib/server/video-poster-retry";
 import { adminMediaCount, KNOWN_VERSION_HEADER, MEDIA_COUNT_HEADER } from "@/lib/admin-data";
 import { errorMessage } from "@/lib/error-message";
 
@@ -12,6 +13,7 @@ export async function GET(req: Request) {
   if (deny) return deny;
 
   scheduleUploadSweep();
+  scheduleMissingPosterRetry();
   const startedAt = performance.now();
 
   try {

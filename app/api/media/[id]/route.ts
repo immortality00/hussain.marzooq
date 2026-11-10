@@ -20,6 +20,7 @@ import { deletePosterUnlessShown, writeMediaChange } from "./_lib/media-write";
 import { retireWaitingDrafts } from "@/lib/server/waiting-drafts";
 import { scheduleOnUpdate } from "@/lib/media-schedule";
 import { deliveryFailureText, syncMediaDelivery } from "@/lib/server/media-delivery";
+import { queueImageWarm } from "@/lib/server/cloudinary-warm";
 
 export const dynamic = "force-dynamic";
 
@@ -87,6 +88,7 @@ export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }>
   if (pageEdit) revalidateSitePages();
 
   const saved = await db.collection("media").findOne({ _id: oid });
+  queueImageWarm(saved);
 
   return noStoreJson({
     ok: true,

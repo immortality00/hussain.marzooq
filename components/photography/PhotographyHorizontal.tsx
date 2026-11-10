@@ -2,6 +2,8 @@
 
 import { useEffect, useRef } from "react";
 import SmartMediaPreview from "@/components/media/SmartMediaPreview";
+import { originFromElement, rememberOrigin, uniformRadii } from "@/lib/client/expand-origin";
+import { preloadPopupImage } from "@/lib/client/preload-popup-image";
 import type { MediaItem } from "@/components/media/types";
 import { NoResults } from "@/components/shared/NoResults";
 import { prefersReducedMotion } from "@/lib/reduced-motion";
@@ -12,6 +14,7 @@ const HEIGHTS = [56, 46, 60, 50, 54];
 const AUTO_SPEED = 0.5; // px per frame
 const KEY_SPEED = 5; // px per frame while an arrow key is held
 const RESUME_MS = 1500;
+const FRAME_MS = 1000 / 60; // the frame the speeds above were tuned at
 
 export default function PhotographyHorizontal({
   items,
@@ -102,17 +105,21 @@ export default function PhotographyHorizontal({
     window.addEventListener("keyup", onKeyUp);
 
     let raf: number;
-    function frame() {
+    let lastFrame = performance.now();
+    function frame(now = performance.now()) {
       raf = requestAnimationFrame(frame);
+      // Per-frame speeds scaled by the real frame time, so a 120 Hz screen moves at the tuned speed.
+      const frames = Math.min((now - lastFrame) / FRAME_MS, 4);
+      lastFrame = now;
       if (maxT > 0 && !dragging) {
         if (keyDir !== 0) {
-          x = clamp(x + keyDir * KEY_SPEED);
+          x = clamp(x + keyDir * KEY_SPEED * frames);
           lastInteract = performance.now();
         } else if (Math.abs(velocity) > 0.1) {
-          x = clamp(x + velocity);
-          velocity *= 0.92;
+          x = clamp(x + velocity * frames);
+          velocity *= Math.pow(0.92, frames);
         } else if (!reduceMotion && performance.now() - lastInteract > RESUME_MS) {
-          x += dir * AUTO_SPEED;
+          x += dir * AUTO_SPEED * frames;
           if (x <= -maxT) {
             x = -maxT;
             dir = 1;
@@ -159,8 +166,10 @@ export default function PhotographyHorizontal({
             <button
               key={m.id}
               type="button"
-              onClick={() => {
+              onPointerDown={() => preloadPopupImage(isImage ? m.secureUrl : isEmbed ? m.posterUrl : null)}
+              onClick={(e) => {
                 if (draggedRef.current) return;
+                rememberOrigin(originFromElement(e.currentTarget, uniformRadii(16)));
                 onSelect(m);
               }}
               style={{ height: `${height}vh` }}

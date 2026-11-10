@@ -13,6 +13,8 @@ import {
 } from "./lib";
 import { NftPrice } from "./NftPrice";
 import { buttonClasses } from "@/components/shared/Button";
+import { NFT_POPUP_IMAGE_SIZES } from "@/lib/client/preload-popup-image";
+import { useCardExpand } from "@/components/shared/expand/useCardExpand";
 
 export default function NftModal({
   item,
@@ -23,14 +25,16 @@ export default function NftModal({
 }) {
   const inquiryHref = buildInquiryHref(item);
   const shownStatus = displayStatus(item);
+  const { panelRef, requestClose } = useCardExpand<HTMLDivElement>(onClose);
 
   return (
     <ModalPortal
-      onClose={onClose}
+      onClose={requestClose}
       label={item.title || "NFT detail"}
       className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4"
     >
       <div
+        ref={panelRef}
         className="mx-auto w-full max-w-6xl overflow-hidden rounded-[2rem] border bg-background shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -42,7 +46,7 @@ export default function NftModal({
 
           <button
             className="rounded-xl border px-3 py-2 text-sm hover:bg-accent"
-            onClick={onClose}
+            onClick={requestClose}
           >
             Close
           </button>
@@ -50,7 +54,7 @@ export default function NftModal({
 
         <div className="grid h-[82vh] min-h-0 grid-rows-[45vh_minmax(0,1fr)] lg:grid-rows-none lg:grid-cols-[1.1fr_0.9fr]">
           <div className="min-h-0 bg-black/5 p-4">
-            <div className="h-full w-full overflow-hidden rounded-[2rem] border bg-black">
+            <div data-expand-target className="h-full w-full overflow-hidden rounded-[2rem] border bg-black">
               {item.mediaUrl ? (
                 item.mediaType === "video" ? (
                   <video
@@ -67,7 +71,7 @@ export default function NftModal({
                       alt={item.title}
                       fill
                       className="object-contain"
-                      sizes="(min-width: 1024px) 58vw, 100vw"
+                      sizes={NFT_POPUP_IMAGE_SIZES}
                       preload
                     />
                   </div>

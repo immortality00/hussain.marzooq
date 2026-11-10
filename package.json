@@ -19,7 +19,8 @@
     "test:e2e": "playwright test",
     "media:repair-delivery": "vite-node -c vitest.config.mts scripts/repair-media-delivery.ts",
     "cloudinary:allow": "vite-node -c vitest.config.mts scripts/cloudinary-allow-transformations.ts",
-    "cloudinary:check": "vite-node -c vitest.config.mts scripts/cloudinary-check-delivery.ts"
+    "cloudinary:check": "vite-node -c vitest.config.mts scripts/cloudinary-check-delivery.ts",
+    "cloudinary:warm": "vite-node -c vitest.config.mts scripts/cloudinary-warm.ts"
   },
   "engines": {
     "node": ">=22 <23"

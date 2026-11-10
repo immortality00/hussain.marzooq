@@ -29,6 +29,7 @@ import { parseVideoLink, videoEmbedSrc } from "@/lib/video-embed";
 import { parsePublishAt, scheduleOnCreate } from "@/lib/media-schedule";
 import { deliveryFailureText, syncMediaDelivery } from "@/lib/server/media-delivery";
 import { draftAfterSave } from "@/lib/server/media-drafts";
+import { queueImageWarm } from "@/lib/server/cloudinary-warm";
 
 export const dynamic = "force-dynamic";
 
@@ -213,6 +214,7 @@ export async function POST(req: Request) {
   const draft = created && bodyUnknown.blogDraft !== false ? await draftAfterSave(db, [String(found._id)]) : null;
 
   revalidateMediaSurfaces();
+  queueImageWarm(found);
 
   return noStoreJson({
     ok: true,

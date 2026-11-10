@@ -89,3 +89,24 @@ export function toVideoWatchUrl(raw: string): string {
   const ref = parseVideoLink(raw);
   return ref ? videoWatchUrl(ref) : raw;
 }
+
+/** The player address that starts playing as it loads (after a tap on Play). */
+export function autoplayEmbedSrc(src: string): string {
+  try {
+    const url = new URL(src);
+    url.searchParams.set("autoplay", "1");
+    if (url.hostname.endsWith("youtube-nocookie.com")) url.searchParams.set("playsinline", "1");
+    return url.toString();
+  } catch {
+    return src;
+  }
+}
+
+/** The origin a player address loads from, for an early connection; null for anything else. */
+export function embedOrigin(src: string): string | null {
+  try {
+    return new URL(src).origin;
+  } catch {
+    return null;
+  }
+}

@@ -3,6 +3,10 @@
 import SmartMediaPreview from "./SmartMediaPreview";
 import { NoResults } from "@/components/shared/NoResults";
 import type { MediaItem } from "./types";
+import { originFromElement, rememberOrigin } from "@/lib/client/expand-origin";
+import { preloadPopupImage } from "@/lib/client/preload-popup-image";
+
+const CARD_RADII: [number, number, number, number] = [16, 16, 0, 0];
 
 const EAGER_GRID_IMAGE_COUNT = 3;
 
@@ -33,10 +37,15 @@ export default function MediaCardGrid({
           <button
             key={m.id}
             type="button"
-            onClick={() => onSelect(m)}
+            onPointerDown={() => preloadPopupImage(isImage ? m.secureUrl : isEmbed ? m.posterUrl : null)}
+            onClick={(e) => {
+              const area = e.currentTarget.querySelector("[data-expand-source]");
+              rememberOrigin(area ? originFromElement(area, CARD_RADII) : null);
+              onSelect(m);
+            }}
             className="group overflow-hidden rounded-2xl border bg-muted text-left"
           >
-            <div className={`relative ${cardAspect}`}>
+            <div data-expand-source className={`relative ${cardAspect}`}>
               <SmartMediaPreview
                 mode={isImage ? "image" : isVideo ? "video" : isEmbed ? "embed" : "empty"}
                 src={m.secureUrl}

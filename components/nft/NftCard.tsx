@@ -10,6 +10,17 @@ import {
   statusLabel,
 } from "./lib";
 import { NftPrice } from "./NftPrice";
+import { originFromElement, rememberOrigin, uniformRadii } from "@/lib/client/expand-origin";
+import { NFT_POPUP_IMAGE_SIZES, preloadPopupImage } from "@/lib/client/preload-popup-image";
+
+/** The front face's corners, `rounded-[2.25rem]`. */
+const CARD_RADIUS = 36;
+
+function openFromCard(card: HTMLElement, item: PublicNftItem, onOpen: (item: PublicNftItem) => void) {
+  const front = card.querySelector(".hm-nft-face");
+  rememberOrigin(originFromElement(front ?? card, uniformRadii(CARD_RADIUS)));
+  onOpen(item);
+}
 
 function FrontBadge({ status }: { status: ReturnType<typeof displayStatus> }) {
   if (status === "sold") return null;
@@ -43,11 +54,12 @@ export default function NftCard({
         role="button"
         tabIndex={0}
         aria-label={`View ${item.title}`}
-        onClick={() => onOpen(item)}
+        onPointerDown={() => preloadPopupImage(item.mediaType === "video" ? null : item.mediaUrl, NFT_POPUP_IMAGE_SIZES)}
+        onClick={(e) => openFromCard(e.currentTarget, item, onOpen)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
-            onOpen(item);
+            openFromCard(e.currentTarget, item, onOpen);
           }
         }}
         className="hm-nft-flip h-full w-full cursor-pointer rounded-[2.25rem] outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"

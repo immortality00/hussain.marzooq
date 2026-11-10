@@ -5,6 +5,7 @@ import { getTransitionImages } from "@/lib/server/public-media";
 import { getFooterPageSettings } from "@/lib/server/page-settings";
 import { getSocialItems } from "@/lib/server/social-links";
 import { DISCIPLINES } from "@/lib/disciplines";
+import { scheduleMissingPosterRetry } from "@/lib/server/video-poster-retry";
 
 export async function PublicFrame({
   children,
@@ -13,6 +14,7 @@ export async function PublicFrame({
   children: React.ReactNode;
   fullPageLoads?: boolean;
 }) {
+  scheduleMissingPosterRetry();
   const [transitionImages, pageSettings, socialItems] = await Promise.all([
     getTransitionImages(),
     getFooterPageSettings(),

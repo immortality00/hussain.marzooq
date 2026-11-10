@@ -1,6 +1,9 @@
+"use client";
+
 import type { PublicTestimonial } from "@/lib/server/testimonials";
 import { Button } from "@/components/shared/Button";
 import { ModalPortal } from "@/components/shared/ModalPortal";
+import { useCardExpand } from "@/components/shared/expand/useCardExpand";
 import { Avatar } from "./Avatar";
 import { SafeImage } from "./SafeImage";
 
@@ -19,13 +22,16 @@ export function ReviewModal({
   item: PublicTestimonial;
   onClose: () => void;
 }) {
+  const { panelRef, requestClose } = useCardExpand<HTMLDivElement>(onClose);
+
   return (
     <ModalPortal
-      onClose={onClose}
+      onClose={requestClose}
       label={item.name ? `Review by ${item.name}` : "Review"}
       className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm"
     >
       <div
+        ref={panelRef}
         className="mx-auto mt-5 w-full max-w-6xl overflow-hidden rounded-[2rem] bg-background text-foreground shadow-2xl ring-1 ring-border/80"
         onClick={(event) => event.stopPropagation()}
       >
@@ -44,7 +50,7 @@ export function ReviewModal({
             </div>
           </div>
 
-          <Button onClick={onClose}>Close</Button>
+          <Button onClick={requestClose}>Close</Button>
         </div>
 
         <div className="max-h-[82vh] overflow-y-auto p-5 sm:p-7" data-lenis-prevent>

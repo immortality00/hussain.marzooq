@@ -6,6 +6,7 @@ import gsap from "gsap";
 import type { MediaItem } from "@/components/media/types";
 import { NoResults } from "@/components/shared/NoResults";
 import { useLatest } from "@/hooks/useLatest";
+import { rememberOrigin, uniformRadii, type ExpandOrigin } from "@/lib/client/expand-origin";
 import { cloudinaryTextureUrl, cylinderItems } from "./lib";
 import { CYLINDER_HEIGHT } from "./viewer-heights";
 
@@ -18,14 +19,19 @@ const FEW = 5;
 const FEW_RADIUS = 9;
 const FEW_SPACING = 0.38; // radians between photos, so their flat edges meet
 const FEW_CAMERA = 4.6; // camera distance from the front photo
-const SWAY_SPEED = 0.0016; // gentle ping-pong for the few-photo arc
 
 // Many photos: a closed prism/cylinder that spins the whole way around.
 const MANY_CAMERA = 5; // camera distance from the front photo (kept large)
-const AUTO_SPEED = 0.0032; // continuous rotation, radians/frame
+/**
+ * The idle spin moves one photo past the front every this many seconds, whatever
+ * the photo count (Hussain, 2026-11-10). A fixed angle per frame made more photos
+ * spin faster, since each one then takes a smaller slice of the circle.
+ */
+const SECONDS_PER_PHOTO = 3;
 
 const KEY_SPEED = 0.02; // rotation while an arrow key is held
 const RESUME_MS = 1500;
+const FRAME_MS = 1000 / 60; // the frame the speeds above were tuned at
 
 const FOV = 55;
 const FIT_MARGIN = 1.28; // breathing room around the front photo
@@ -40,6 +46,35 @@ function fitDistance(aspect: number): number {
   const forHeight = PLANE_H / 2 / Math.tan(halfFov);
   const forWidth = PLANE_W / 2 / (Math.tan(halfFov) * Math.max(aspect, 0.0001));
   return Math.max(forHeight, forWidth) * FIT_MARGIN;
+}
+
+/**
+ * The clicked photo's place on screen (its corners projected, as a box) and the
+ * texture file it shows, so the popup grows out of it (MO3). It is not found
+ * again on close — the cylinder keeps turning — so the popup fades out.
+ */
+function planeOrigin(mesh: THREE.Mesh, camera: THREE.Camera, canvas: HTMLCanvasElement): ExpandOrigin {
+  const rect = canvas.getBoundingClientRect();
+  const xs: number[] = [];
+  const ys: number[] = [];
+  mesh.updateMatrixWorld();
+  for (const [x, y] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) {
+    const p = new THREE.Vector3((x * PLANE_W) / 2, (y * PLANE_H) / 2, 0).applyMatrix4(mesh.matrixWorld).project(camera);
+    xs.push(rect.left + ((p.x + 1) / 2) * rect.width);
+    ys.push(rect.top + ((1 - p.y) / 2) * rect.height);
+  }
+  const left = Math.min(...xs);
+  const top = Math.min(...ys);
+  const map = (mesh.material as THREE.MeshBasicMaterial).map;
+  const img = map?.image as HTMLImageElement | undefined;
+  const ready = Boolean(img?.naturalWidth);
+  return {
+    box: { left, top, width: Math.max(...xs) - left, height: Math.max(...ys) - top },
+    src: ready ? img!.currentSrc || img!.src : null,
+    ratio: ready ? img!.naturalWidth / img!.naturalHeight : null,
+    radii: uniformRadii(0),
+    element: null,
+  };
 }
 
 /** Crop a loaded texture "cover"-style onto the fixed plane aspect. */
@@ -86,6 +121,7 @@ export default function PhotographyCylinder({
     const spacing = isFew ? FEW_SPACING : (2 * Math.PI) / count;
     // Few photos sway within the arc so nothing rotates into empty space.
     const maxRot = isFew ? Math.max(0.0001, ((count - 1) / 2) * spacing) : Infinity;
+    const idleStep = spacing / SECONDS_PER_PHOTO / 60; // radians per 60 Hz frame
 
     const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 200);
     const baseGap = isFew ? FEW_CAMERA : MANY_CAMERA;
@@ -204,7 +240,10 @@ export default function PhotographyCylinder({
         raycaster.setFromCamera(pointer, camera);
         const hit = raycaster.intersectObjects(meshes, false)[0];
         const item = hit?.object.userData.item as MediaItem | undefined;
-        if (item) onSelectRef.current(item);
+        if (item) {
+          rememberOrigin(planeOrigin(hit!.object as THREE.Mesh, camera, canvas!));
+          onSelectRef.current(item);
+        }
       }
     }
     function onKeyDown(e: KeyboardEvent) {
@@ -243,18 +282,23 @@ export default function PhotographyCylinder({
     ro.observe(canvas);
 
     let raf: number;
-    function animate() {
+    let lastFrame = performance.now();
+    function animate(now = performance.now()) {
       raf = requestAnimationFrame(animate);
+      // Speeds were tuned per frame at 60 Hz; scale by the real frame time so a
+      // 120 Hz screen (ProMotion) turns at the same speed, not twice as fast.
+      const frames = Math.min((now - lastFrame) / FRAME_MS, 4);
+      lastFrame = now;
       if (!dragging) {
         if (keyDir !== 0) {
-          group.rotation.y = clampFew(group.rotation.y + keyDir * KEY_SPEED);
+          group.rotation.y = clampFew(group.rotation.y + keyDir * KEY_SPEED * frames);
           lastInteract = performance.now();
         } else if (Math.abs(velocity) > 0.0002) {
-          group.rotation.y = clampFew(group.rotation.y + velocity);
-          velocity *= 0.94;
+          group.rotation.y = clampFew(group.rotation.y + velocity * frames);
+          velocity *= Math.pow(0.94, frames);
         } else if (performance.now() - lastInteract > RESUME_MS) {
           if (isFew) {
-            group.rotation.y += swayDir * SWAY_SPEED;
+            group.rotation.y += swayDir * idleStep * frames;
             if (group.rotation.y >= maxRot) {
               group.rotation.y = maxRot;
               swayDir = -1;
@@ -263,7 +307,7 @@ export default function PhotographyCylinder({
               swayDir = 1;
             }
           } else {
-            group.rotation.y -= AUTO_SPEED; // continuous right-to-left full spin
+            group.rotation.y -= idleStep * frames; // continuous right-to-left full spin
           }
         }
       }

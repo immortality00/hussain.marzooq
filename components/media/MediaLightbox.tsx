@@ -6,28 +6,24 @@ import { Button } from "@/components/shared/Button";
 import MediaDetailsSections from "./MediaDetailsSections";
 import type { MediaItem, TagLink } from "./types";
 import { toEmbedUrl } from "@/lib/video-embed";
+import { EmbedPlayer } from "./EmbedPlayer";
+import { POPUP_IMAGE_SIZES } from "@/lib/client/preload-popup-image";
+import { useCardExpand } from "@/components/shared/expand/useCardExpand";
 
 function MediaSurface({ active }: { active: MediaItem }) {
   if (active.type === "embed" && active.embedUrl) {
     const src = toEmbedUrl(active.embedUrl) ?? active.embedUrl;
 
     return (
-      <div className="h-full w-full overflow-hidden rounded-2xl border bg-black">
-        <iframe
-          className="h-full w-full"
-          src={src}
-          title={active.title}
-          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          allowFullScreen
-          loading="lazy"
-        />
+      <div data-expand-target className="h-full w-full overflow-hidden rounded-2xl border bg-black">
+        <EmbedPlayer key={active.id} src={src} title={active.title} posterUrl={active.posterUrl} />
       </div>
     );
   }
 
   if (active.type === "video" && active.secureUrl) {
     return (
-      <div className="h-full w-full overflow-hidden rounded-2xl border bg-black">
+      <div data-expand-target className="h-full w-full overflow-hidden rounded-2xl border bg-black">
         <video
           className="h-full w-full object-contain"
           controls
@@ -41,7 +37,7 @@ function MediaSurface({ active }: { active: MediaItem }) {
 
   if (active.secureUrl) {
     return (
-      <div className="h-full w-full overflow-hidden rounded-2xl border bg-black/5">
+      <div data-expand-target className="h-full w-full overflow-hidden rounded-2xl border bg-black/5">
         <div className="relative h-full min-h-0">
           <div className="relative h-full w-full">
             <SmartImage
@@ -49,7 +45,7 @@ function MediaSurface({ active }: { active: MediaItem }) {
               alt={active.title}
               fill
               className="object-contain"
-              sizes="(min-width: 1024px) 62vw, 100vw"
+              sizes={POPUP_IMAGE_SIZES}
               preload
             />
           </div>
@@ -70,13 +66,16 @@ export default function MediaLightbox({
   onClose: () => void;
   tagLinks?: Record<string, TagLink>;
 }) {
+  const { panelRef, requestClose } = useCardExpand<HTMLDivElement>(onClose);
+
   return (
     <ModalPortal
-      onClose={onClose}
+      onClose={requestClose}
       label={active.title || "Media detail"}
       className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4"
     >
       <div
+        ref={panelRef}
         className="mx-auto w-full max-w-6xl overflow-hidden rounded-[2rem] border bg-background shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
@@ -89,7 +88,7 @@ export default function MediaLightbox({
                 .join(" • ")}
             </div>
           </div>
-          <Button onClick={onClose}>Close</Button>
+          <Button onClick={requestClose}>Close</Button>
         </div>
 
         <div className="grid h-[82vh] min-h-0 grid-rows-[45vh_minmax(0,1fr)] lg:grid-rows-none lg:grid-cols-[1.25fr_0.75fr]">

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  autoplayEmbedSrc,
+  embedOrigin,
   embedUrlPattern,
   parseVideoLink,
   toEmbedUrl,
@@ -121,5 +123,26 @@ describe("stored, watch and matching forms", () => {
     expect(vimeo.test("https://player.vimeo.com/video/123")).toBe(true);
     expect(vimeo.test("https://player.vimeo.com/video/123?h=abcdef12")).toBe(true);
     expect(vimeo.test("https://player.vimeo.com/video/1234")).toBe(false);
+  });
+});
+
+
+describe("autoplayEmbedSrc", () => {
+  it("adds autoplay, and playsinline for YouTube", () => {
+    expect(autoplayEmbedSrc("https://www.youtube-nocookie.com/embed/abcdefghijk")).toBe(
+      "https://www.youtube-nocookie.com/embed/abcdefghijk?autoplay=1&playsinline=1",
+    );
+  });
+
+  it("keeps a Vimeo hash", () => {
+    expect(autoplayEmbedSrc("https://player.vimeo.com/video/123?h=abc")).toBe(
+      "https://player.vimeo.com/video/123?h=abc&autoplay=1",
+    );
+  });
+
+  it("leaves a broken address alone", () => {
+    expect(autoplayEmbedSrc("not a url")).toBe("not a url");
+    expect(embedOrigin("not a url")).toBeNull();
+    expect(embedOrigin("https://player.vimeo.com/video/1")).toBe("https://player.vimeo.com");
   });
 });

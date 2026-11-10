@@ -2,6 +2,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import type { PublicTestimonial } from "@/lib/server/testimonials";
 import { Avatar } from "./Avatar";
 import { ReviewPhotoStrip } from "./ReviewPhotoStrip";
+import { originFromElement, rememberOrigin, uniformRadii } from "@/lib/client/expand-origin";
 
 function renderStars(rating: number) {
   return Array.from({ length: 5 }, (_, index) => (index < rating ? "★" : "☆")).join("");
@@ -50,7 +51,14 @@ export function SingleReviewCard({
         </button>
       </div>
 
-      <button type="button" onClick={() => onOpen(item)} className="block w-full text-left">
+      <button
+        type="button"
+        onClick={(e) => {
+          rememberOrigin(originFromElement(e.currentTarget, uniformRadii(0), { withPhoto: false }));
+          onOpen(item);
+        }}
+        className="block w-full text-left"
+      >
         <div className="flex items-start justify-between gap-5 pr-20">
           <div className="flex min-w-0 items-center gap-3">
             <Avatar name={item.name} profilePhotoUrl={item.profilePhotoUrl} />

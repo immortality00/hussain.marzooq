@@ -46,6 +46,8 @@ function satisfies(value: unknown, cond: unknown): boolean {
     if ("$nin" in ops) return !(ops.$nin as unknown[]).some((option) => satisfies(value, option));
     if ("$ne" in ops) return !satisfies(value, ops.$ne);
     if ("$gt" in ops) return (compare(value, ops.$gt) ?? -1) > 0;
+    if ("$lt" in ops) return (compare(value, ops.$lt) ?? 1) < 0;
+    if ("$type" in ops) return ops.$type === "string" ? typeof value === "string" : false;
     if ("$lte" in ops) return (compare(value, ops.$lte) ?? 1) <= 0;
     if ("$exists" in ops) return (value !== undefined) === Boolean(ops.$exists);
   }
