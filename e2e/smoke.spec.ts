@@ -62,10 +62,10 @@ test.describe("public site", () => {
 
 test.describe("photography", () => {
   test("loads the first page and paginates past 60", async ({ page }) => {
+    // Only the grid view carries Load more, and the other views load every photo by
+    // themselves — so the page must open on the grid, as it does for a visitor who chose it.
+    await page.addInitScript(() => window.localStorage.setItem("hm.photography.view", "grid"));
     await page.goto("/photography");
-
-    // Only the grid view carries Load more; the viewer may have remembered another.
-    await page.getByRole("button", { name: "Grid" }).first().click();
 
     const cards = page.getByRole("button", { name: /^Seed Photo \d+/ });
     await expect(cards.first()).toBeVisible();
@@ -88,6 +88,17 @@ test.describe("photography", () => {
 
     expect(await cards.count()).toBe(E2E.photographyCount);
     await expect(page.getByRole("button", { name: `Seed Photo ${E2E.photographyCount}` })).toBeVisible();
+  });
+
+  test("the cylinder view loads every photo by itself", async ({ page }) => {
+    await page.goto("/photography");
+    await expect(page.getByRole("button", { name: "Cylinder" }).first()).toBeVisible();
+
+    await page.getByRole("button", { name: "Grid" }).first().click();
+
+    const cards = page.getByRole("button", { name: /^Seed Photo \d+/ });
+    await expect(cards).toHaveCount(E2E.photographyCount);
+    await expect(page.getByRole("button", { name: "Load more" })).toHaveCount(0);
   });
 });
 
