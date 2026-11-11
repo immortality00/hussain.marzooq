@@ -6,6 +6,8 @@ import { REDUCED_MOTION_QUERY, prefersReducedMotion } from "@/lib/reduced-motion
 export type MotionPreference = "unknown" | "reduce" | "allow";
 
 function subscribe(listener: () => void) {
+  // Same guard as prefersReducedMotion: no matchMedia means no preference to follow.
+  if (typeof window.matchMedia !== "function") return () => {};
   const query = window.matchMedia(REDUCED_MOTION_QUERY);
   query.addEventListener("change", listener);
 

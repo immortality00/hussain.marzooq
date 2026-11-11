@@ -30,8 +30,8 @@ export default function TagsTable({
   }
 
   return (
-    <div className="mt-8 overflow-hidden rounded-2xl border">
-      <SortableList ids={ordered.map((t) => t.id)} onReorder={onReorder}>
+    <div className="mt-8 rounded-2xl border">
+      <SortableList ids={ordered.map((t) => t.id)} onReorder={onReorder} className="[&>*:last-child]:border-b-0">
         {ordered.map((t) => (
           <TagRow
             key={t.id}

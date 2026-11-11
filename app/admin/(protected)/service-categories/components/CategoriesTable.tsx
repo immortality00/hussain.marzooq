@@ -22,8 +22,8 @@ export default function CategoriesTable({
   onDelete: (cat: Category) => void;
 }) {
   return (
-    <div className="mt-8 overflow-hidden rounded-2xl border">
-      <div className="overflow-x-auto">
+    <div className="mt-8 rounded-2xl border">
+      <div className="overflow-x-auto lg:overflow-x-visible">
       <div className="min-w-[640px]">
       <div className="grid grid-cols-12 gap-2 border-b px-4 py-3 text-xs font-medium text-muted-foreground">
         <div className="col-span-1"> </div>
@@ -35,7 +35,7 @@ export default function CategoriesTable({
         <div className="col-span-1 text-right">Actions</div>
       </div>
 
-      <SortableList ids={ordered.map((c) => c.id)} onReorder={onReorder}>
+      <SortableList ids={ordered.map((c) => c.id)} onReorder={onReorder} className="[&>*:last-child]:border-b-0">
         {ordered.map((c) => (
           <CategoryRow
             key={c.id}
