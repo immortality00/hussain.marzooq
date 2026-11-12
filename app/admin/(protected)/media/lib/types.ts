@@ -1,4 +1,5 @@
 import type { Appearance } from "@/app/api/_lib/media";
+import type { MintRecord } from "@/lib/nft/mint-fields";
 
 export type { Appearance };
 
@@ -49,6 +50,7 @@ export type MediaItem = {
   people: string[];
   appearances: Appearance[];
   nft: NftMeta | null;
+  mint?: MintRecord | null;
   isPublic: boolean;
   publishAt?: string | null;
   privateGalleryTitles?: string[];

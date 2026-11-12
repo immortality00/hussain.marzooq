@@ -10,6 +10,8 @@ const isDev = process.env.NODE_ENV !== "production";
  * - Cloudinary CDN images: res.cloudinary.com (custom image loader).
  * - Cloudinary uploads: signed direct POSTs to api.cloudinary.com (admin and the
  *   public testimonial review form share one uploader).
+ * - Pinata uploads: an NFT's original, display version and thumbnail go from the admin
+ *   browser straight to uploads.pinata.cloud through a short-lived link (connect-src).
  * - OpenStreetMap embed: read-only map iframe (www.openstreetmap.org) on the
  *   testimonials page showing each reviewer's city — needs frame-src.
  * - Cloudinary video: <video> elements stream from res.cloudinary.com (showreel,
@@ -39,7 +41,7 @@ const cspDirectives = [
   "img-src 'self' data: blob: https://res.cloudinary.com https://*.goatcounter.com",
   "media-src 'self' blob: https://res.cloudinary.com",
   "font-src 'self' data:",
-  `connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com https://*.goatcounter.com${isDev ? " ws: http://localhost:*" : ""}`,
+  `connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com https://uploads.pinata.cloud https://*.goatcounter.com${isDev ? " ws: http://localhost:*" : ""}`,
   "frame-src https://www.openstreetmap.org https://www.youtube-nocookie.com https://player.vimeo.com https://www.instagram.com",
   "worker-src 'self' blob:",
   "object-src 'none'",

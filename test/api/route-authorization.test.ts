@@ -423,6 +423,18 @@ const routes: Route[] = [
     load: () => import("@/app/api/sign-cloudinary-params/route"),
   },
   {
+    name: "POST /api/admin/nft/upload-link",
+    method: "POST",
+    path: "/api/admin/nft/upload-link",
+    load: () => import("@/app/api/admin/nft/upload-link/route"),
+  },
+  {
+    name: "POST /api/admin/nft/metadata",
+    method: "POST",
+    path: "/api/admin/nft/metadata",
+    load: () => import("@/app/api/admin/nft/metadata/route"),
+  },
+  {
     name: "POST /api/admin/uploads/cleanup",
     method: "POST",
     path: "/api/admin/uploads/cleanup",

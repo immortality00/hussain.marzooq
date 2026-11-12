@@ -3,6 +3,7 @@ import { asStringArray } from "@/app/api/_lib/common";
 import { ADMIN_MEDIA_MAX, ADMIN_MEDIA_PAGE } from "@/lib/admin-data";
 import { lookupPeople, pickPeople, sanitizeAppearances, uniquePeopleIds } from "@/app/api/_lib/media";
 import { mediaAssetPath } from "@/lib/media-asset-path";
+import { storedMintRecord } from "@/lib/nft/mint-fields";
 import { normalizeDeliveryType } from "./cloudinary-private";
 import { getDb } from "./db";
 import { toAdminMediaListItem } from "./media-serializers";
@@ -209,6 +210,7 @@ function toAdminMediaItem(doc: Document, lookups: MediaLookups) {
     people: resolvedPeople.people.length ? resolvedPeople.people : rawPeople,
     appearances: sanitizeAppearances(doc.appearances),
     nft: doc.nft && typeof doc.nft === "object" ? (JSON.parse(JSON.stringify(doc.nft)) as Record<string, unknown>) : null,
+    mint: storedMintRecord(doc.mint),
     isPublic: typeof doc.isPublic === "boolean" ? doc.isPublic : true,
     publishAt: doc.publishAt ? new Date(doc.publishAt).toISOString() : null,
     privateGalleryTitles: lookups.galleryTitles.get(String(doc._id)) ?? [],

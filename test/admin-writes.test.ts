@@ -5,6 +5,7 @@ const READ_ONLY_POSTS = [
   "app/admin/(protected)/media/batch/components/BatchLinkInput.tsx",
   "lib/client/media-usage-api.ts",
   "lib/client/cloudinary-direct-upload.ts",
+  "lib/client/pinata-upload.ts",
   "lib/client/admin-store/write.ts",
   "hooks/useFormToken.ts",
 ];
