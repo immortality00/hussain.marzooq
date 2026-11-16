@@ -5,10 +5,10 @@ describe("Tezos contract constants", () => {
   test("are the addresses recorded for the tagged deployment", () => {
     expect(TEZOS_CONTRACTS).toEqual({
       network: "shadownet",
-      tag: "tezos-shadownet-v1",
-      payout: "KT1BQMafNM1H67Tf4m7EtrAjsr1d3PvH9v3F",
-      collection: "KT1CuxLwWSWuHysExf2GYJ3272xg7VnhoZdY",
-      sale: "KT1R5nwPWnZivkF9W1qE1eEhfN7tgWrGNsdm",
+      tag: "tezos-shadownet-v2",
+      payout: "KT1MMHoyb2hmQet7FcSJ9UvMqDtXf8PEuyPT",
+      collection: "KT19Dsj3JFbFcAujxgmLSiTuT2TxH7WHqyJx",
+      sale: "KT1FJAwejtFW4z8V81LBCkuMBDuBRdJU3b73",
       creator: "tz1YQYn8X4XbLVwA8rtSXahJrej8Gd6dEsAP",
     });
     expect(TOKEN_SYMBOL).toBe("HART");
@@ -23,8 +23,8 @@ describe("Tezos contract constants", () => {
 
   test("address checks refuse lookalikes", () => {
     expect(isContractAddress("tz1YQYn8X4XbLVwA8rtSXahJrej8Gd6dEsAP")).toBe(false);
-    expect(isContractAddress("KT1BQMafNM1H67Tf4m7EtrAjsr1d3PvH9v3")).toBe(false);
-    expect(isContractAddress("KT1BQMafNM1H67Tf4m7EtrAjsr1d3PvH9v3F ")).toBe(false);
+    expect(isContractAddress("KT1MMHoyb2hmQet7FcSJ9UvMqDtXf8PEuyP")).toBe(false);
+    expect(isContractAddress("KT1MMHoyb2hmQet7FcSJ9UvMqDtXf8PEuyPT ")).toBe(false);
     expect(isWalletAddress("tz5YQYn8X4XbLVwA8rtSXahJrej8Gd6dEsAP")).toBe(false);
     expect(isWalletAddress("tz1YQYn8X4XbLVwA8rtSXahJrej8Gd6dEs0P")).toBe(false);
   });
