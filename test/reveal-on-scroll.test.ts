@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 
-import { REVEAL_AFTER_PX, isRevealed } from "@/hooks/useRevealOnScroll";
+import { REVEAL_AFTER_PX, isRevealed, isScrolledDown } from "@/hooks/useRevealOnScroll";
+
+describe("isScrolledDown (Back to top)", () => {
+  it("shows only once the page has scrolled past the threshold, short page or not", () => {
+    expect(isScrolledDown(0)).toBe(false);
+    expect(isScrolledDown(REVEAL_AFTER_PX)).toBe(false);
+    expect(isScrolledDown(REVEAL_AFTER_PX + 1)).toBe(true);
+  });
+});
 
 describe("isRevealed", () => {
   it("stays hidden at the top of a page that can scroll", () => {

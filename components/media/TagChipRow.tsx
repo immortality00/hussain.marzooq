@@ -1,13 +1,12 @@
 "use client";
 
+import { useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import { ChipScroller } from "@/components/shared/ChipScroller";
+import { scrollLeftToCentre } from "@/lib/chip-scroll";
+import { ALL_TAGS_SLUG, type TagChip } from "./tag-chips";
 
-export type TagChip = {
-  slug: string;
-  label: string;
-  href: string;
-};
+export type { TagChip };
 
 export function TagChipRow({
   chips,
@@ -17,6 +16,7 @@ export function TagChipRow({
   className,
 }: {
   chips: TagChip[];
+  // The tag page being shown; absent on the discipline page itself, where "All" is current.
   activeSlug?: string;
   // Single sideways-scrolling line (used in the viewers' toolbars), versus a
   // plain wrapping block.
@@ -26,13 +26,32 @@ export function TagChipRow({
   boxed?: boolean;
   className?: string;
 }) {
+  const current = activeSlug ?? ALL_TAGS_SLUG;
+  const activeRef = useRef<HTMLAnchorElement>(null);
+
+  // On a narrow screen the current tag can sit past the edge of the row: scroll it to the
+  // middle at once (no animation), before the row is painted when arriving in the site.
+  useLayoutEffect(() => {
+    const chip = activeRef.current;
+    const row = chip?.parentElement;
+    if (!chip || !row || row.scrollWidth <= row.clientWidth) return;
+    const rowBox = row.getBoundingClientRect();
+    const chipBox = chip.getBoundingClientRect();
+    const target = scrollLeftToCentre(
+      { left: rowBox.left, width: rowBox.width, scrollLeft: row.scrollLeft },
+      { left: chipBox.left, width: chipBox.width },
+    );
+    if (target !== null) row.scrollLeft = target;
+  }, [current]);
+
   if (!chips.length) return null;
 
   const chipEls = chips.map((chip) => {
-    const active = chip.slug === activeSlug;
+    const active = chip.slug === current;
     return (
       <Link
-        key={chip.slug}
+        key={chip.href}
+        ref={active ? activeRef : undefined}
         href={chip.href}
         aria-current={active ? "page" : undefined}
         className={`shrink-0 whitespace-nowrap rounded-full border px-2.5 py-0.5 text-xs transition-colors ${

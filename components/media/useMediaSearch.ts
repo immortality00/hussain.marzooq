@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { encodeMediaCursor, PUBLIC_MEDIA_PAGE_SIZE } from "@/lib/media-cursor";
+import { useDebouncedSearch } from "@/hooks/useDebouncedSearch";
+import { useEntryMemory } from "@/hooks/useEntryMemory";
 import type { MediaItem } from "./types";
 
 type PublicMediaSearchMode = "image" | "video";
@@ -12,8 +14,24 @@ type PublicMediaResponse = {
   error?: string;
 };
 
+// What a visit to the page had, put back on a return: the search words, the chip, the
+// results loaded so far (with "Load more" pages) and which search those results answer.
+type MediaSearchMemory = {
+  query: string;
+  activeTag: string;
+  items: MediaItem[];
+  nextCursor: string | null;
+  browseHasMore: boolean;
+  resultsFor: string;
+};
+
 const SEARCH_LIMIT = 60;
-const DEBOUNCE_MS = 250;
+// The results on screen are the page's own list (browsing), not a search's.
+const BROWSE_RESULTS = "";
+
+function searchKey(query: string, tag: string) {
+  return `${query}\u0000${tag}`;
+}
 
 function buildSearchUrl({
   category,
@@ -70,11 +88,15 @@ export function useMediaSearch({
   /** Keep fetching pages in the background until every match is loaded (Cylinder, Scroll). */
   loadAll?: boolean;
 }) {
-  const [q, setQ] = useState("");
-  const [activeTag, setActiveTag] = useState<string>("");
-  const [remoteItems, setRemoteItems] = useState<MediaItem[]>(items);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [browseHasMore, setBrowseHasMore] = useState(items.length >= PUBLIC_MEDIA_PAGE_SIZE);
+  const { restored, remember } = useEntryMemory<MediaSearchMemory>("media-search");
+  const search = useDebouncedSearch(restored?.query);
+  const [activeTag, setActiveTag] = useState<string>(restored?.activeTag ?? "");
+  const [remoteItems, setRemoteItems] = useState<MediaItem[]>(restored?.items ?? items);
+  const [nextCursor, setNextCursor] = useState<string | null>(restored?.nextCursor ?? null);
+  const [browseHasMore, setBrowseHasMore] = useState(
+    restored?.browseHasMore ?? items.length >= PUBLIC_MEDIA_PAGE_SIZE
+  );
+  const [resultsFor, setResultsFor] = useState(restored?.resultsFor ?? BROWSE_RESULTS);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [searchError, setSearchError] = useState("");
@@ -83,6 +105,8 @@ export function useMediaSearch({
   // A page request in flight; state alone can't stop a second call made before it re-renders.
   const loadingMoreRef = useRef(false);
   const hasDbSearch = Boolean(searchCategory);
+  // The words searched are the box's, 500 ms after the last keystroke.
+  const q = search.query;
   const cleanQuery = q.trim();
   const cleanTag = activeTag.trim();
   const cleanLockedTag = (lockedTag ?? "").trim();
@@ -100,6 +124,7 @@ export function useMediaSearch({
       setRemoteItems(items);
       setNextCursor(null);
       setBrowseHasMore(items.length >= PUBLIC_MEDIA_PAGE_SIZE);
+      setResultsFor(BROWSE_RESULTS);
     }
     if (browsing) {
       setIsSearching(false);
@@ -114,6 +139,11 @@ export function useMediaSearch({
       requestIdRef.current += 1;
       return;
     }
+
+    // These results are already on screen: the search just finished, or the page came
+    // back from Back with them.
+    const key = searchKey(cleanQuery, effectiveTag);
+    if (resultsFor === key) return;
 
     const controller = new AbortController();
     const requestId = requestIdRef.current + 1;
@@ -143,6 +173,7 @@ export function useMediaSearch({
 
         setRemoteItems(data.items);
         setNextCursor(data.nextCursor ?? null);
+        setResultsFor(key);
       } catch (error) {
         if (controller.signal.aborted) return;
         if (requestIdRef.current !== requestId) return;
@@ -155,15 +186,39 @@ export function useMediaSearch({
       }
     }
 
+    // The 500 ms wait already happened in useDebouncedSearch; this only leaves the effect.
     const timer = window.setTimeout(() => {
       void runSearch();
-    }, DEBOUNCE_MS);
+    }, 0);
 
     return () => {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [cleanQuery, cleanTag, effectiveTag, hasActiveSearch, hasDbSearch, items, mediaMode, searchCategory]);
+  }, [
+    cleanQuery,
+    cleanTag,
+    effectiveTag,
+    hasActiveSearch,
+    hasDbSearch,
+    items,
+    mediaMode,
+    resultsFor,
+    searchCategory,
+  ]);
+
+  useEffect(
+    () =>
+      remember({
+        query: search.text,
+        activeTag,
+        items: remoteItems,
+        nextCursor,
+        browseHasMore,
+        resultsFor,
+      }),
+    [remember, search.text, activeTag, remoteItems, nextCursor, browseHasMore, resultsFor]
+  );
 
   const allTags = useMemo(() => {
     const set = new Set<string>();
@@ -248,8 +303,9 @@ export function useMediaSearch({
   }, [wantsNextPage, remoteItems.length]);
 
   return {
-    q,
-    setQ,
+    q: search.text,
+    setQ: search.setText,
+    clearQ: search.clear,
     activeTag,
     setActiveTag,
     allTags,

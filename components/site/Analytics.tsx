@@ -1,5 +1,6 @@
 import Script from "next/script";
 import { GOATCOUNTER_SETTINGS_SCRIPT } from "@/lib/analytics-path";
+import { AnalyticsPageviews } from "@/components/site/AnalyticsPageviews";
 
 export function SiteAnalytics() {
   const code = process.env.NEXT_PUBLIC_GOATCOUNTER_CODE?.trim();
@@ -16,6 +17,7 @@ export function SiteAnalytics() {
         data-goatcounter={`https://${code}.goatcounter.com/count`}
         src="https://gc.zgo.at/count.js"
       />
+      <AnalyticsPageviews />
     </>
   );
 }

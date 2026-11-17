@@ -7,6 +7,8 @@ import { StickyCta } from "@/components/site/StickyCta";
 import { getPersonPageBySlug, getPublicPersonBySlug } from "@/lib/server/public-people";
 import PersonPasswordForm from "./PersonPasswordForm";
 import RemovalRequestButton from "@/components/people/RemovalRequestButton";
+import { PersonStateCard } from "@/components/people/PersonStateCard";
+import { DetailPage } from "@/components/shared/DetailPage";
 import { AnimatedText } from "@/components/shared/AnimatedText";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 import { getPageSections } from "@/lib/server/page-sections";
@@ -68,25 +70,9 @@ export default async function PersonDetailPage({
 
   if (state.state === "unavailable") {
     return (
-      <main className="mx-auto max-w-xl px-4 py-16">
-        <section className="rounded-[2rem] border p-6 text-center">
-          <div className="flex justify-center">
-            <div className="relative h-20 w-20 overflow-hidden rounded-full border bg-muted">
-              {state.avatarUrl ? (
-                <SmartImage
-                  src={state.avatarUrl}
-                  alt={state.name}
-                  fill
-                  className="object-cover"
-                  sizes="80px"
-                />
-              ) : null}
-            </div>
-          </div>
-          <h1 className="mt-5 text-3xl font-semibold tracking-tight wrap-anywhere">{state.name}</h1>
-          <p className="mt-3 text-sm leading-6 text-muted-foreground">Content not available.</p>
-        </section>
-      </main>
+      <PersonStateCard name={state.name} avatarUrl={state.avatarUrl}>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">Content not available.</p>
+      </PersonStateCard>
     );
   }
 
@@ -103,7 +89,7 @@ export default async function PersonDetailPage({
           ]),
         ]}
       />
-      <main className="section-shell py-12 sm:py-16">
+      <DetailPage backHref="/people" className="pb-12 sm:pb-16">
         <section className="mx-auto max-w-3xl text-center">
           <div className="flex justify-center">
             <div className="relative h-28 w-28 overflow-hidden rounded-full border bg-muted sm:h-36 sm:w-36">
@@ -163,7 +149,7 @@ export default async function PersonDetailPage({
         )}
 
         <RemovalRequestButton slug={person.slug} />
-      </main>
+      </DetailPage>
 
       <StickyCta
         title={sections.stickyCta.title}

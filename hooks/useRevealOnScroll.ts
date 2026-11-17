@@ -25,3 +25,17 @@ function snapshot() {
 export function useRevealOnScroll() {
   return useSyncExternalStore(subscribe, snapshot, () => false);
 }
+
+// Scrolled past the same 40px, with no "short page" exception: for controls that only make
+// sense once the page has moved (Back to top).
+export function isScrolledDown(scrollY: number) {
+  return scrollY > REVEAL_AFTER_PX;
+}
+
+function scrolledDownSnapshot() {
+  return isScrolledDown(window.scrollY);
+}
+
+export function useScrolledDown() {
+  return useSyncExternalStore(subscribe, scrolledDownSnapshot, () => false);
+}

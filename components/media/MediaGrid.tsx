@@ -29,6 +29,7 @@ export function MediaGrid({
   const {
     q,
     setQ,
+    clearQ,
     activeTag,
     setActiveTag,
     allTags,
@@ -52,6 +53,7 @@ export function MediaGrid({
       <MediaFilterBar
         q={q}
         setQ={setQ}
+        clearQ={clearQ}
         activeTag={activeTag}
         setActiveTag={setActiveTag}
         allTags={allTags}

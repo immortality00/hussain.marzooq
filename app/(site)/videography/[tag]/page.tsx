@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { MediaGrid } from "@/components/media/MediaGrid";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { DetailPage } from "@/components/shared/DetailPage";
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPageSettings } from "@/lib/server/page-settings";
 import { getTagMeta, getTagPage } from "@/lib/server/tag-pages";
@@ -50,18 +50,11 @@ export default async function VideographyTagPage({
           ]),
         ]}
       />
-      <main className="section-shell py-16">
-        <Link
-          href="/videography"
-          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          ← Videography
-        </Link>
-
+      <DetailPage backHref="/videography" className="pb-16">
         <PageHeader
           title={data.header.title}
           description={data.header.description}
-          className="mt-4 max-w-3xl"
+          className="max-w-3xl"
         />
 
         <MediaGrid
@@ -72,7 +65,7 @@ export default async function VideographyTagPage({
           tagLinks={data.tagLinks}
           navChips={data.chips}
         />
-      </main>
+      </DetailPage>
 
       <StickyCta
         title={data.stickyCta.title}

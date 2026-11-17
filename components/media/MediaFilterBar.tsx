@@ -8,6 +8,7 @@ import { TagChipRow, type TagChip } from "./TagChipRow";
 export default function MediaFilterBar({
   q,
   setQ,
+  clearQ,
   activeTag,
   setActiveTag,
   allTags,
@@ -17,6 +18,7 @@ export default function MediaFilterBar({
 }: {
   q: string;
   setQ: (value: string) => void;
+  clearQ: () => void;
   activeTag: string;
   setActiveTag: (value: string) => void;
   allTags: string[];
@@ -38,7 +40,7 @@ export default function MediaFilterBar({
             <SearchInput
               value={q}
               onValueChange={setQ}
-              onClear={() => setQ("")}
+              onClear={clearQ}
               placeholder="Search…"
             />
           </div>
@@ -52,7 +54,10 @@ export default function MediaFilterBar({
       <SearchInput
         value={q}
         onValueChange={setQ}
-        onClear={() => setActiveTag("")}
+        onClear={() => {
+          clearQ();
+          setActiveTag("");
+        }}
         placeholder="Search by title, location, event, people, tag…"
       />
 

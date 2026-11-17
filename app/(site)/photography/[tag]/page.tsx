@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import PhotographyViewer from "@/components/photography/PhotographyViewer";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { DetailPage } from "@/components/shared/DetailPage";
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPageSettings } from "@/lib/server/page-settings";
 import { getTagMeta, getTagPage } from "@/lib/server/tag-pages";
@@ -50,19 +50,11 @@ export default async function PhotographyTagPage({
           ]),
         ]}
       />
-      <main className="section-shell pt-8 pb-32">
-        <Link
-          href="/photography"
-          className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          ← Photography
-        </Link>
-
+      <DetailPage backHref="/photography" className="pb-32">
         <PageHeader
           title={data.header.title}
           description={data.header.description}
-          className="mt-4 max-w-3xl"
-          titleClassName="text-2xl! sm:text-3xl!"
+          className="max-w-3xl"
         />
 
         <PhotographyViewer
@@ -72,7 +64,7 @@ export default async function PhotographyTagPage({
           tagLinks={data.tagLinks}
           navChips={data.chips}
         />
-      </main>
+      </DetailPage>
 
       <StickyCta
         title={data.stickyCta.title}

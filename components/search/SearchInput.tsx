@@ -1,5 +1,9 @@
 "use client";
 
+import { useRef } from "react";
+import { X } from "lucide-react";
+import { cn } from "@/lib/utils";
+
 type SearchInputProps = {
   value: string;
   onValueChange?: (value: string) => void;
@@ -8,45 +12,78 @@ type SearchInputProps = {
   onClear?: () => void;
   wrapperClassName?: string;
   inputClassName?: string;
+  // Admin boxes keep a "Clear" button beside the field, in their own button look.
   clearButtonClassName?: string;
   resultText?: string;
 };
+
+// 16px below 768px: iOS zooms the page into any field smaller than that.
+const PUBLIC_INPUT =
+  "w-full rounded-2xl border bg-background px-4 py-2 pr-11 text-base outline-none focus:ring-2 focus:ring-ring md:text-sm";
 
 export function SearchInput({
   value,
   onValueChange,
   placeholder,
-  showClear = value.trim().length > 0,
+  showClear = value.length > 0,
   onClear,
   wrapperClassName = "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
-  // 16px below 768px: iOS zooms the page into any field smaller than that.
-  inputClassName = "w-full rounded-2xl border bg-background px-4 py-2 text-base outline-none focus:ring-2 focus:ring-ring sm:max-w-md md:text-sm",
-  clearButtonClassName = "rounded-full border px-3 py-1.5 text-sm transition-colors hover:bg-accent",
+  inputClassName,
+  clearButtonClassName,
   resultText,
 }: SearchInputProps) {
-  const updateValue = onValueChange;
+  const inputRef = useRef<HTMLInputElement>(null);
 
   function handleClear() {
-    updateValue?.("");
+    onValueChange?.("");
     onClear?.();
+    inputRef.current?.focus();
   }
 
+  const input = (className?: string) => (
+    <input
+      ref={inputRef}
+      value={value}
+      onChange={(event) => onValueChange?.(event.target.value)}
+      placeholder={placeholder}
+      aria-label={placeholder}
+      className={className}
+    />
+  );
+
+  const results = resultText ? <div className="text-xs text-muted-foreground">{resultText}</div> : null;
+
+  if (clearButtonClassName) {
+    return (
+      <div className={wrapperClassName}>
+        {input(inputClassName)}
+        {results}
+        {showClear ? (
+          <button type="button" onClick={handleClear} className={clearButtonClassName}>
+            Clear
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+
+  // Every public box clears from inside the field: an × that shows once there is text.
   return (
     <div className={wrapperClassName}>
-      <input
-        value={value}
-        onChange={(event) => updateValue?.(event.target.value)}
-        placeholder={placeholder}
-        className={inputClassName}
-      />
-
-      {resultText ? <div className="text-xs text-muted-foreground">{resultText}</div> : null}
-
-      {showClear ? (
-        <button type="button" onClick={handleClear} className={clearButtonClassName}>
-          Clear
-        </button>
-      ) : null}
+      <div className="relative w-full sm:max-w-md">
+        {input(cn(PUBLIC_INPUT, inputClassName))}
+        {showClear ? (
+          <button
+            type="button"
+            aria-label="Clear search"
+            onClick={handleClear}
+            className="hm-press absolute right-1.5 top-1/2 inline-flex size-8 -translate-y-1/2 items-center justify-center rounded-full text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+          >
+            <X className="size-4" aria-hidden />
+          </button>
+        ) : null}
+      </div>
+      {results}
     </div>
   );
 }

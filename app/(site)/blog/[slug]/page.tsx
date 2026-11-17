@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import SmartImage from "@/components/shared/SmartImage";
 import { AnimatedText } from "@/components/shared/AnimatedText";
+import { DetailPage } from "@/components/shared/DetailPage";
+import { chipClasses } from "@/components/shared/chip-classes";
 import { StickyCta } from "@/components/site/StickyCta";
 import { BlogContent } from "@/components/blog/BlogContent";
 import { BlogSubscribeForm } from "@/components/blog/BlogSubscribeForm";
@@ -53,7 +55,7 @@ export default async function BlogPostPage({
 
   if (!post) notFound();
 
-  const meta = [formatBlogDate(post.publishedAt), `${post.readingMinutes} min read`]
+  const byline = [`By ${post.author}`, formatBlogDate(post.publishedAt), `${post.readingMinutes} min read`]
     .filter(Boolean)
     .join(" · ");
 
@@ -68,36 +70,20 @@ export default async function BlogPostPage({
           ]),
         ]}
       />
-      <main className="section-shell py-12 sm:py-16">
+      <DetailPage backHref="/blog" className="pb-12 sm:pb-16">
         <article className="mx-auto max-w-3xl">
-          <Link
-            href="/blog"
-            className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground transition-colors hover:text-foreground"
-          >
-            ← Blog
-          </Link>
-
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            {post.categoryLabel ? (
-              <Link
-                href={`/blog?category=${post.category}`}
-                className="rounded-full border px-3.5 py-1.5 text-xs transition-colors hover:bg-accent"
-              >
-                {post.categoryLabel}
-              </Link>
-            ) : null}
-            {meta ? (
-              <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                {meta}
-              </span>
-            ) : null}
-          </div>
-
-          <h1 className="mt-5 text-4xl font-semibold tracking-tight wrap-anywhere sm:text-5xl">
+          <h1 className="text-4xl font-semibold tracking-tight wrap-anywhere sm:text-5xl">
             <AnimatedText revealOnLoad>{post.title}</AnimatedText>
           </h1>
 
-          <div className="mt-4 text-sm text-muted-foreground">By {post.author}</div>
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
+            {post.categoryLabel ? (
+              <Link href={`/blog?category=${post.category}`} className={chipClasses()}>
+                {post.categoryLabel}
+              </Link>
+            ) : null}
+            <span>{byline}</span>
+          </div>
 
           {post.coverImageUrl ? (
             <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-[2rem] border bg-muted">
@@ -130,7 +116,7 @@ export default async function BlogPostPage({
             <BlogSubscribeForm copy={publishedSubscribeCopy(sections.subscribe)} className="mt-12" />
           ) : null}
         </article>
-      </main>
+      </DetailPage>
 
       <StickyCta
         title={sections.stickyCta.title}

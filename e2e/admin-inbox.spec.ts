@@ -19,7 +19,9 @@ test.describe("admin inbox", () => {
     await page.getByRole("button", { name: "resolved", exact: true }).click();
     await expect(badge).toHaveAccessibleName("2 pending", { timeout: 2_000 });
 
-    await page.unroute(/\/api\/admin\/snapshot/);
+    // The held data check is still sleeping; the reload below aborts it, and a plain
+    // unroute would let its late route.continue() fail the test ("Route is already handled").
+    await page.unrouteAll({ behavior: "ignoreErrors" });
     await freshLoad(page);
     await expect(page.locator("aside").getByLabel(/pending$/)).toHaveAccessibleName("2 pending");
   });

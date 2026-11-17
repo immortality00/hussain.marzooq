@@ -3,6 +3,8 @@
 import { usePathname } from "next/navigation";
 import { TransitionProvider } from "@/components/transitions/TransitionContext";
 import { Navbar } from "@/components/site/Navbar";
+import { ScrollMemory } from "@/components/site/ScrollMemory";
+import { BackToTop } from "@/components/site/BackToTop";
 import type { DisciplineSlug } from "@/lib/disciplines";
 
 export function SiteFrame({
@@ -32,6 +34,8 @@ export function SiteFrame({
         {footer}
       </div>
       {social}
+      <BackToTop />
+      <ScrollMemory />
     </TransitionProvider>
   );
 }

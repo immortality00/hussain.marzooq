@@ -24,7 +24,7 @@ export async function PublicFrame({
   const activeDisciplines = DISCIPLINES.filter((d) => active.has(d.slug)).map((d) => d.slug);
   return (
     <SiteFrame
-      footer={<SiteFooter />}
+      footer={<SiteFooter socialItems={socialItems} />}
       social={<SocialLinks items={socialItems} />}
       transitionImages={transitionImages}
       activeDisciplines={activeDisciplines}

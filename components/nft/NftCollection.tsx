@@ -1,23 +1,32 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { PublicNftItem } from "@/lib/server/public-nfts";
 import { useModalNavbarLock } from "@/components/media/useModalNavbarLock";
 import NftCard from "./NftCard";
-import NftFilters from "./NftFilters";
+import NftFilters, { type StatusFilter } from "./NftFilters";
 import NftModal from "./NftModal";
 import { NoResults } from "@/components/shared/NoResults";
 import { displayStatus } from "./lib";
+import { useDebouncedSearch } from "@/hooks/useDebouncedSearch";
+import { useEntryMemory } from "@/hooks/useEntryMemory";
 
 const EAGER_GRID_IMAGE_COUNT = 3;
 
 export default function NftCollection({ items }: { items: PublicNftItem[] }) {
-  const [query, setQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"" | "available" | "sold" | "coming-soon">("");
+  const { restored, remember } = useEntryMemory<{ query: string; status: StatusFilter }>("nft-collection");
+  const search = useDebouncedSearch(restored?.query);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(restored?.status ?? "");
   const [active, setActive] = useState<PublicNftItem | null>(null);
 
   useModalNavbarLock(Boolean(active));
 
+  useEffect(
+    () => remember({ query: search.text, status: statusFilter }),
+    [remember, search.text, statusFilter],
+  );
+
+  const query = search.query;
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
 
@@ -38,8 +47,9 @@ export default function NftCollection({ items }: { items: PublicNftItem[] }) {
   return (
     <div className="mt-10 space-y-6">
       <NftFilters
-        query={query}
-        setQuery={setQuery}
+        query={search.text}
+        setQuery={search.setText}
+        clearQuery={search.clear}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
       />

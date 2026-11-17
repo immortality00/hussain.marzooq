@@ -52,6 +52,7 @@ export default function PhotographyViewer({
   const {
     q,
     setQ,
+    clearQ,
     displayedItems,
     isSearching,
     searchError,
@@ -78,7 +79,7 @@ export default function PhotographyViewer({
             <SearchInput
               value={q}
               onValueChange={setQ}
-              onClear={() => setQ("")}
+              onClear={clearQ}
               placeholder="Search…"
             />
           </div>

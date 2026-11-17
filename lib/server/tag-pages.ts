@@ -8,7 +8,7 @@ import {
 import { getPageSeo, type PageSeo } from "@/lib/server/page-seo";
 import { getPageSections } from "@/lib/server/page-sections";
 import type { TagDiscipline } from "@/lib/server/media-tags";
-import type { TagChip } from "@/components/media/TagChipRow";
+import { withAllChip, type TagChip } from "@/components/media/tag-chips";
 import type { TagLink } from "@/components/media/types";
 import { buildFallback } from "@/lib/server/public-read";
 
@@ -53,7 +53,7 @@ async function getDisciplineTagNavImpl({
     chips.push({ slug: t.slug, label: t.label, href });
   }
 
-  return { chips, tagLinks };
+  return { chips: withAllChip(basePath, chips), tagLinks };
 }
 
 export async function getDisciplineTagNav(args: {

@@ -1,32 +1,38 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import SmartImage from "@/components/shared/SmartImage";
 import { SearchInput } from "@/components/search/SearchInput";
 import { NoResults } from "@/components/shared/NoResults";
 import { StickyToolbar } from "@/components/shared/StickyToolbar";
 import type { PublicPersonIndexItem } from "@/lib/server/public-people";
 import { Button } from "@/components/shared/Button";
+import { useDebouncedSearch } from "@/hooks/useDebouncedSearch";
+import { useEntryMemory } from "@/hooks/useEntryMemory";
 
 export default function PeopleIndex({ items }: { items: PublicPersonIndexItem[] }) {
-  const [query, setQuery] = useState("");
+  const { restored, remember } = useEntryMemory<{ query: string }>("people-index");
+  const search = useDebouncedSearch(restored?.query);
+
+  useEffect(() => remember({ query: search.text }), [remember, search.text]);
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = search.query.trim().toLowerCase();
     if (!q) return items;
 
     return items.filter((item) => {
       const text = `${item.name} ${item.bio ?? ""}`.toLowerCase();
       return text.includes(q);
     });
-  }, [items, query]);
+  }, [items, search.query]);
 
   return (
     <div className="mt-10 space-y-6">
       <StickyToolbar>
         <SearchInput
-          value={query}
-          onValueChange={setQuery}
+          value={search.text}
+          onValueChange={search.setText}
+          onClear={search.clear}
           placeholder="Search people..."
           resultText={`${filtered.length} result${filtered.length === 1 ? "" : "s"}`}
         />

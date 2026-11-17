@@ -7,7 +7,7 @@ import { ChipScroller } from "@/components/shared/ChipScroller";
 import { StickyToolbar } from "@/components/shared/StickyToolbar";
 import { chipClasses } from "@/components/shared/chip-classes";
 
-type StatusFilter = "" | "available" | "sold" | "coming-soon";
+export type StatusFilter = "" | "available" | "sold" | "coming-soon";
 
 const TABS: { value: StatusFilter; label: string }[] = [
   { value: "", label: "All" },
@@ -19,19 +19,25 @@ const TABS: { value: StatusFilter; label: string }[] = [
 export default function NftFilters({
   query,
   setQuery,
+  clearQuery,
   statusFilter,
   setStatusFilter,
 }: {
   query: string;
   setQuery: (value: string) => void;
+  clearQuery: () => void;
   statusFilter: StatusFilter;
   setStatusFilter: (value: StatusFilter) => void;
 }) {
-  const [searchOpen, setSearchOpen] = useState(false);
+  // A search brought back by Back opens with its words, without taking the focus.
+  const [searchOpen, setSearchOpen] = useState(query !== "");
+  const focusOnOpen = useRef(false);
   const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (searchOpen) searchRef.current?.querySelector("input")?.focus();
+    if (!searchOpen || !focusOnOpen.current) return;
+    focusOnOpen.current = false;
+    searchRef.current?.querySelector("input")?.focus();
   }, [searchOpen]);
 
   return (
@@ -63,12 +69,13 @@ export default function NftFilters({
               placeholder="Search title or tags..."
               showClear={false}
               wrapperClassName="contents"
+              inputClassName="pr-4"
             />
             <button
               type="button"
-              aria-label="Close search"
+              aria-label="Clear and close search"
               onClick={() => {
-                setQuery("");
+                clearQuery();
                 setSearchOpen(false);
               }}
               className={chipClasses()}
@@ -80,7 +87,10 @@ export default function NftFilters({
           <button
             type="button"
             aria-label="Search NFTs"
-            onClick={() => setSearchOpen(true)}
+            onClick={() => {
+              focusOnOpen.current = true;
+              setSearchOpen(true);
+            }}
             className={chipClasses(false, "gap-2")}
           >
             <Search className="h-4 w-4" />

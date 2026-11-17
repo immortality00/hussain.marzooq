@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import SmartImage from "@/components/shared/SmartImage";
+import { DetailPage } from "@/components/shared/DetailPage";
 import { notFound } from "next/navigation";
 import { getDb } from "@/lib/server/db";
 import { buildFallback } from "@/lib/server/public-read";
@@ -97,20 +97,9 @@ export default async function ServiceDetailPage({
           ]),
         ]}
       />
-      <main className="section-shell py-12 sm:py-16">
-        <Link
-          href="/services"
-          className="inline-flex text-sm text-muted-foreground underline underline-offset-4"
-        >
-          ← Back to services
-        </Link>
-
-        <section className="mt-8 grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
+      <DetailPage backHref="/services" className="pb-12 sm:pb-16">
+        <section className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
           <div className="space-y-5">
-            <div className="inline-flex rounded-full border px-3 py-1 text-[11px] tracking-[0.14em] text-muted-foreground">
-              {category.toUpperCase()}
-            </div>
-
             <div className="space-y-3">
               <PageHeader title={name} />
 
@@ -156,7 +145,7 @@ export default async function ServiceDetailPage({
             )}
           </div>
         </section>
-      </main>
+      </DetailPage>
     </>
   );
 }
