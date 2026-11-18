@@ -8,10 +8,13 @@ import {
 import { sendAdminPush } from "@/lib/server/push";
 import type { PushPayload } from "@/lib/push-subscription";
 import { ADMIN_APPROVE_SIGN_IN_PATH } from "@/lib/auth/admin-next-path";
+import { adminInquiryHref, adminReviewHref } from "@/lib/admin-links";
 
 export type AdminAlert =
   | {
       kind: "inquiry";
+      // The saved inquiry: the alert opens it in admin.
+      id: string;
       name: string;
       email: string;
       message: string;
@@ -20,6 +23,8 @@ export type AdminAlert =
     }
   | {
       kind: "testimonial";
+      // The saved review: the alert opens its window in admin.
+      id: string;
       name: string;
       email: string;
       review: string;
@@ -53,7 +58,7 @@ export function adminAlertPush(alert: AdminAlert): PushPayload {
       return {
         title: `New inquiry — ${alert.name}`,
         body: topic ? `${topic} · ${snippet(alert.message)}` : snippet(alert.message),
-        url: "/admin/inquiries",
+        url: adminInquiryHref(alert.id),
       };
     }
     case "testimonial": {
@@ -61,7 +66,7 @@ export function adminAlertPush(alert: AdminAlert): PushPayload {
       return {
         title: `New review — ${alert.name}`,
         body: `${stars}${snippet(alert.review)}`,
-        url: "/admin/testimonials",
+        url: adminReviewHref(alert.id),
       };
     }
     case "removal-request":

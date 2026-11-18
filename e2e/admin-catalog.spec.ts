@@ -62,7 +62,7 @@ test.describe("admin catalog screens", () => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/admin/services");
     await page.getByRole("button", { name: "Edit", exact: true }).first().click();
-    const editor = page.getByRole("dialog", { name: "Edit Service" });
+    const editor = page.getByRole("dialog", { name: "Edit service" });
     await expect(editor).toBeVisible();
 
     const navReachable = await page.evaluate(() => {

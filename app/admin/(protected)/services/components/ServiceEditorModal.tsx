@@ -62,7 +62,7 @@ export default function ServiceEditorModal({
 
   if (!open) return null;
 
-  const heading = initial ? "Edit Service" : "Create Service";
+  const heading = initial ? "Edit service" : "Create service";
   const selectedCategory =
     categoriesClean.find((c) => c.id === draft.categoryId) ?? othersCategory ?? null;
 

@@ -27,13 +27,14 @@ import {
 } from "@/lib/server/email";
 
 const inquiry = {
+  id: "66a1b2c3d4e5f60718293a4b",
   name: "Sara",
   email: "sara@example.com",
   message: "A wedding film in March.",
   serviceName: "Wedding Film",
   category: "videography",
 };
-const review = { name: "Lina", email: "lina@example.com", review: "Beautiful.", rating: 5, about: null };
+const review = { id: "66a1b2c3d4e5f60718293a4c", name: "Lina", email: "lina@example.com", review: "Beautiful.", rating: 5, about: null };
 const removal = { personName: "Omar", slug: "omar", email: "omar@example.com", reason: "Please hide my photos." };
 
 function sent() {

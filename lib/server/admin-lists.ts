@@ -5,6 +5,10 @@ import { getDb } from "./db";
 import { serializePrivateGalleryAdminItem } from "./private-gallery-admin";
 import { toAdminTestimonialItem } from "./testimonial-serializers";
 
+// People and galleries are listed newest first, like Media: saving one never moves it, so the admin list can
+// come back to it where it was (UX2).
+const NEWEST_FIRST = { createdAt: -1, _id: -1 } as const;
+
 async function findInquiries(filter: Filter<Document>, limit: number) {
   const db = await getDb();
   const docs = await db.collection("inquiries").find(filter).sort({ createdAt: -1, _id: -1 }).limit(limit).toArray();
@@ -70,7 +74,7 @@ export async function listAdminPeople() {
   const docs = await db
     .collection("people_profiles")
     .find({})
-    .sort({ updatedAt: -1, createdAt: -1, _id: -1 })
+    .sort(NEWEST_FIRST)
     .toArray();
   return docs.map(toAdminPersonItem);
 }
@@ -85,7 +89,7 @@ export async function listAdminPrivateGalleries() {
   const docs = await db
     .collection("private_galleries")
     .find({})
-    .sort({ updatedAt: -1, createdAt: -1, _id: -1 })
+    .sort(NEWEST_FIRST)
     .toArray();
   return docs.map(serializePrivateGalleryAdminItem);
 }

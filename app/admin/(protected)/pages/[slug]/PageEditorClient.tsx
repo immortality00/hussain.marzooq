@@ -1,7 +1,7 @@
 "use client";
 
-import { AdminLink } from "@/components/admin/AdminLink";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
+import { BackToList } from "@/components/admin/BackToList";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { usePagesAdmin } from "../usePagesAdmin";
 import { PAGE_ROWS } from "../lib/rows";
@@ -24,14 +24,7 @@ export function PageEditorClient({ slug }: { slug: string }) {
 
   return (
     <div>
-      <AdminLink
-        href="/admin/pages"
-        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        ← All pages
-      </AdminLink>
-
-      <AdminPageHeader title={row.label} className="mb-6 mt-3" />
+      <AdminPageHeader title={row.label} className="mb-6" actions={<BackToList href="/admin/pages" />} />
 
       <PageEditorBody
         row={row}

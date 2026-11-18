@@ -187,9 +187,10 @@ async function handlePost(req: Request) {
     );
   }
 
-  queueAdminAlert({ kind: "inquiry", name, email, message, serviceName, category });
+  const id = String(insertResult.insertedId);
+  queueAdminAlert({ kind: "inquiry", id, name, email, message, serviceName, category });
 
-  return noStoreJson({ ok: true, id: String(insertResult.insertedId) });
+  return noStoreJson({ ok: true, id });
 }
 
 export const POST = withRouteErrors(handlePost);

@@ -12,8 +12,6 @@ type SearchInputProps = {
   onClear?: () => void;
   wrapperClassName?: string;
   inputClassName?: string;
-  // Admin boxes keep a "Clear" button beside the field, in their own button look.
-  clearButtonClassName?: string;
   resultText?: string;
 };
 
@@ -29,7 +27,6 @@ export function SearchInput({
   onClear,
   wrapperClassName = "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
   inputClassName,
-  clearButtonClassName,
   resultText,
 }: SearchInputProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,38 +37,21 @@ export function SearchInput({
     inputRef.current?.focus();
   }
 
-  const input = (className?: string) => (
-    <input
-      ref={inputRef}
-      value={value}
-      onChange={(event) => onValueChange?.(event.target.value)}
-      placeholder={placeholder}
-      aria-label={placeholder}
-      className={className}
-    />
-  );
-
   const results = resultText ? <div className="text-xs text-muted-foreground">{resultText}</div> : null;
 
-  if (clearButtonClassName) {
-    return (
-      <div className={wrapperClassName}>
-        {input(inputClassName)}
-        {results}
-        {showClear ? (
-          <button type="button" onClick={handleClear} className={clearButtonClassName}>
-            Clear
-          </button>
-        ) : null}
-      </div>
-    );
-  }
-
-  // Every public box clears from inside the field: an × that shows once there is text.
+  // Every box clears from inside the field: an × that shows once there is text (admin boxes too, through
+  // AdminSearchBox).
   return (
     <div className={wrapperClassName}>
       <div className="relative w-full sm:max-w-md">
-        {input(cn(PUBLIC_INPUT, inputClassName))}
+        <input
+          ref={inputRef}
+          value={value}
+          onChange={(event) => onValueChange?.(event.target.value)}
+          placeholder={placeholder}
+          aria-label={placeholder}
+          className={cn(PUBLIC_INPUT, inputClassName)}
+        />
         {showClear ? (
           <button
             type="button"

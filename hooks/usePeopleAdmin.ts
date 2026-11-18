@@ -1,8 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 import { useAdminSlice } from "@/hooks/useAdminData";
 import { useSearchParams } from "next/navigation";
+import { leaveList, returnToRow, rowElement } from "@/lib/client/list-return";
+import { PEOPLE_LIST, PEOPLE_LIST_PARAMS } from "@/app/admin/(protected)/people/lib/people-list";
+import { useAddressValues } from "./useAddressValues";
+import { useDebouncedText } from "./useDebouncedSearch";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { bulkResultText } from "@/components/admin/bulk/bulk-result";
 import { useRecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
@@ -47,7 +51,9 @@ export function usePeopleAdmin() {
 
   const [mode, setMode] = useState<"list" | "form">(createPrefill ? "form" : "list");
   const [editingId, setEditingId] = useState("");
-  const [query, setQuery] = useState("");
+  const [address, setAddress] = useAddressValues(PEOPLE_LIST_PARAMS);
+  const search = useDebouncedText(address.q, (q) => setAddress({ q }));
+  const query = address.q;
 
   const [name, setName] = useState(createPrefill);
   const [slug, setSlug] = useState("");
@@ -85,10 +91,17 @@ export function usePeopleAdmin() {
     setEditingRemovalApprovedAt(null);
   }
 
+  // Opening a form keeps the list's place (lib/client/list-return.ts) and starts the form at the top.
+  function showForm(rowId: string | null, row: Element | null) {
+    leaveList(PEOPLE_LIST, query, rowId, row);
+    setMode("form");
+    window.scrollTo(0, 0);
+  }
+
   function openCreate() {
     if (actionBusy) return;
     resetForm();
-    setMode("form");
+    showForm(null, null);
   }
 
   function discardCurrentAvatar() {
@@ -116,11 +129,12 @@ export function usePeopleAdmin() {
     setEditingHasPassword(item.hasPassword);
     setEditingRemovalApprovedAt(item.removalApprovedAt);
     setEditingVersion(item.updatedAt);
-    setMode("form");
   }
 
-  function openEdit(item: PersonItem) {
-    if (!actionBusy) fill(item);
+  function openEdit(item: PersonItem, event: MouseEvent<HTMLElement>) {
+    if (actionBusy) return;
+    fill(item);
+    showForm(item.id, rowElement(event.currentTarget));
   }
 
   function backToList() {
@@ -178,7 +192,11 @@ export function usePeopleAdmin() {
       if (!saved) return setBanner(null);
       const { item, deliveryError } = saved;
 
-      setItems((prev) => [item, ...prev.filter((x) => x.id !== item.id)]);
+      // An edited profile keeps its place in the list; a new one goes first, as the list orders them.
+      setItems((prev) =>
+        prev.some((x) => x.id === item.id) ? prev.map((x) => (x.id === item.id ? item : x)) : [item, ...prev]
+      );
+      returnToRow(PEOPLE_LIST, item.id, { newRow: !editingId });
       setBanner(
         deliveryError
           ? { type: "err", text: `Person ${editingId ? "updated" : "created"}. ${deliveryError}` }
@@ -232,6 +250,10 @@ export function usePeopleAdmin() {
 
   return {
     items: filtered,
+    view: query,
+    searchText: search.text,
+    setSearchText: search.setText,
+    clearSearch: search.clear,
     saving,
     deletingId,
     bulkBusy,
@@ -240,7 +262,6 @@ export function usePeopleAdmin() {
     banner,
     mode,
     editingId,
-    query,
     name,
     slug,
     bio,
@@ -249,7 +270,6 @@ export function usePeopleAdmin() {
     password,
     editingHasPassword,
     editingRemovalApprovedAt,
-    setQuery,
     setName,
     setSlug,
     setBio,

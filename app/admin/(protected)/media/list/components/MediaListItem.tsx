@@ -1,8 +1,10 @@
 import Image from "next/image";
+import type { MouseEvent } from "react";
 import type { AdminMediaListItem } from "@/lib/server/media-serializers";
 import { AdminLink } from "@/components/admin/AdminLink";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { formatPublishAt, isScheduled } from "@/lib/media-schedule";
+import { mediaEditHref } from "../../lib/media-list-address";
 import type { MediaListLabels } from "../lib/useMediaListLabels";
 import { NftDetails, NftStatusChip } from "./MediaListNft";
 import { MediaListLabelLines } from "./MediaListLabelLines";
@@ -14,6 +16,7 @@ export function MediaListItem({
   index,
   deleting,
   actionDisabled,
+  onOpen,
   onDelete,
   labels,
 }: {
@@ -21,13 +24,14 @@ export function MediaListItem({
   index: number;
   deleting: boolean;
   actionDisabled: boolean;
+  onOpen: (id: string, event: MouseEvent<HTMLAnchorElement>) => void;
   onDelete: (id: string) => void;
   labels: MediaListLabels;
 }) {
   const stillSrc = item.type === "embed" ? item.posterUrl : item.secureUrl;
 
   return (
-    <div className="rounded-2xl border p-5">
+    <div className="rounded-2xl border p-5" data-list-row={item.id}>
       <div className="grid gap-4 lg:grid-cols-[240px_1fr]">
         <div className="overflow-hidden rounded-2xl border bg-muted">
           {item.type === "video" && item.secureUrl ? (
@@ -77,7 +81,8 @@ export function MediaListItem({
 
             <div className="flex shrink-0 gap-2">
               <AdminLink
-                href={`/admin/media?edit=${encodeURIComponent(item.id)}`}
+                href={mediaEditHref(item.id)}
+                onClick={(event) => onOpen(item.id, event)}
                 aria-disabled={actionDisabled}
                 tabIndex={actionDisabled ? -1 : undefined}
                 className={adminButtonClasses("default", "md", actionDisabled ? "pointer-events-none opacity-60" : undefined)}

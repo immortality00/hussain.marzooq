@@ -8,6 +8,7 @@ import { usePrivateGalleriesAdmin } from "@/components/admin/private-galleries/u
 import { useBulkSelection } from "@/components/admin/bulk/useBulkSelection";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { BackToList } from "@/components/admin/BackToList";
 import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
 
@@ -30,14 +31,7 @@ export default function PrivateGalleriesAdminClient() {
               New gallery
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={admin.backToList}
-              disabled={admin.actionBusy}
-              className={adminButtonClasses("default", "md")}
-            >
-              Back to list
-            </button>
+            <BackToList onClick={admin.backToList} disabled={admin.actionBusy} />
           )
         }
       />
@@ -48,6 +42,7 @@ export default function PrivateGalleriesAdminClient() {
         <>
         <GalleryList
           items={admin.items}
+          view={admin.listView}
           searchValue={admin.gallerySearchValue}
           deletingId={admin.deletingId}
           onSearchChange={admin.setGallerySearchValue}

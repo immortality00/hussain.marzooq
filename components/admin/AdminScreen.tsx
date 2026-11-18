@@ -5,6 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { LoadingScreen } from "@/components/shared/LoadingScreen";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { adminSignInHref, refreshAdminData, screenHeld, type AdminSlice } from "@/lib/client/admin-store";
+import { adminScreenAddress } from "@/lib/admin-screen-address";
 import {
   useAdminData,
   useAdminDataFailure,
@@ -17,6 +18,8 @@ const loader = <LoadingScreen className="min-h-[60dvh]" />;
 const HOLD_LIMIT_MS = 1200;
 
 type ScreenProps = { children: ReactNode; preview?: boolean; reads: readonly AdminSlice[] };
+// `stable`: the address parameters the screen keeps its search and filters in (lib/admin-screen-address.ts).
+type AdminScreenProps = ScreenProps & { stable?: readonly string[] };
 
 function useHeldOnOpen(reads: readonly AdminSlice[]) {
   const hold = screenHeld(useAdminChanges(), reads);
@@ -62,12 +65,12 @@ function Screen({ children, preview = false, reads }: ScreenProps) {
   return <Suspense fallback={loader}>{children}</Suspense>;
 }
 
-function AddressedScreen(props: ScreenProps) {
-  const address = `${usePathname()}?${useSearchParams().toString()}`;
+function AddressedScreen({ stable, ...props }: AdminScreenProps) {
+  const address = adminScreenAddress(usePathname(), useSearchParams(), stable);
   return <Screen key={address} {...props} />;
 }
 
-export function AdminScreen(props: ScreenProps) {
+export function AdminScreen(props: AdminScreenProps) {
   return (
     <Suspense fallback={loader}>
       <AddressedScreen {...props} />

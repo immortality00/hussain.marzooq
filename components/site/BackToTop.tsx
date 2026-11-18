@@ -9,22 +9,26 @@ import { prefersReducedMotion } from "@/lib/reduced-motion";
 // Bottom-right on every public page, shown once the page has scrolled (the booking bar's
 // rule, without its "short page shows at once" part — there is nothing to go back up to).
 // On a page with the booking bar it sits above the bar, and beside it from 1280px. Motion
-// lives in app/styles/to-top.css.
-export function BackToTop() {
+// lives in app/styles/to-top.css. The admin places it with `className` (above its phone
+// bottom nav) and sends focus to its own content with `focusId`.
+const PUBLIC_PLACE =
+  "fixed right-4 bottom-4 z-40 with-sticky-cta:bottom-28 md:right-5 md:with-sticky-cta:bottom-24 xl:with-sticky-cta:bottom-7";
+
+export function BackToTop({ focusId = "main-content", className = PUBLIC_PLACE }: { focusId?: string; className?: string }) {
   const shown = useScrolledDown();
   const hiddenByModal = useHiddenByModal();
   if (hiddenByModal) return null;
 
   function toTop() {
     scrollPageToTop(prefersReducedMotion());
-    document.getElementById("main-content")?.focus({ preventScroll: true });
+    document.getElementById(focusId)?.focus({ preventScroll: true });
   }
 
   return (
     <div
       data-shown={shown || undefined}
       inert={!shown}
-      className="hm-to-top fixed right-4 bottom-4 z-40 with-sticky-cta:bottom-28 md:right-5 md:with-sticky-cta:bottom-24 xl:with-sticky-cta:bottom-7"
+      className={`hm-to-top ${className}`}
     >
       <button
         type="button"

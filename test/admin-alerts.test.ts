@@ -27,6 +27,7 @@ import {
 
 const inquiry: AdminAlert = {
   kind: "inquiry",
+  id: "66a1b2c3d4e5f60718293a4b",
   name: "Sara",
   email: "sara@example.com",
   message: "Hi,\n\nwe'd like a wedding film in March.",
@@ -56,17 +57,18 @@ describe("snippet", () => {
 });
 
 describe("adminAlertPush", () => {
-  test("inquiry links to inquiries and leads with the service", () => {
+  test("inquiry opens that inquiry and leads with the service", () => {
     expect(adminAlertPush(inquiry)).toEqual({
       title: "New inquiry — Sara",
       body: "Wedding Film · Hi, we'd like a wedding film in March.",
-      url: "/admin/inquiries",
+      url: "/admin/inquiries?open=66a1b2c3d4e5f60718293a4b",
     });
   });
 
-  test("testimonial shows the rating", () => {
+  test("testimonial shows the rating and opens that review", () => {
     const payload = adminAlertPush({
       kind: "testimonial",
+      id: "66a1b2c3d4e5f60718293a4c",
       name: "Lina",
       email: "lina@example.com",
       review: "Beautiful work.",
@@ -75,7 +77,7 @@ describe("adminAlertPush", () => {
     });
     expect(payload.title).toBe("New review — Lina");
     expect(payload.body).toBe("★★★★☆ · Beautiful work.");
-    expect(payload.url).toBe("/admin/testimonials");
+    expect(payload.url).toBe("/admin/testimonials?review=66a1b2c3d4e5f60718293a4c");
   });
 
   test("removal request links to removal requests", () => {

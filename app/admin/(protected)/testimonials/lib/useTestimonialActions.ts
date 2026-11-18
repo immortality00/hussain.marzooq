@@ -2,6 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { useAdminSlice } from "@/hooks/useAdminData";
+import { useAddressValues } from "@/hooks/useAddressValues";
+import { useDebouncedText } from "@/hooks/useDebouncedSearch";
+import { TESTIMONIAL_PARAMS } from "@/lib/admin-links";
 import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
 import { useBulkRunner } from "@/components/admin/bulk/useBulkRunner";
 import { adminWrite } from "@/lib/client/admin-store";
@@ -33,15 +36,21 @@ function matches(item: TestimonialItem, status: ReviewFilter, query: string) {
 
 export type ReviewFilter = "all" | "pending" | "approved";
 
+// The status filter lives in the address as `?status=pending|approved` (absent: all).
+function reviewFilterOf(value: string): ReviewFilter {
+  return value === "pending" || value === "approved" ? value : "all";
+}
+
 export function useTestimonialActions() {
   const [items, setItems] = useAdminSlice("testimonials");
   const { feedback: banner, setFeedback: setBanner } = useAdminAction();
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState<ReviewFilter>("all");
+  const [address, setAddress] = useAddressValues(TESTIMONIAL_PARAMS);
+  const search = useDebouncedText(address.q, (q) => setAddress({ q }));
+  const status = reviewFilterOf(address.status);
   const filtered = useMemo(() => {
-    const query = search.trim().toLowerCase();
+    const query = address.q.trim().toLowerCase();
     return items.filter((item) => matches(item, status, query));
-  }, [items, search, status]);
+  }, [items, address.q, status]);
   const stats = useMemo(() => {
     const approved = items.filter((i) => i.isApproved).length;
     return {
@@ -51,7 +60,8 @@ export function useTestimonialActions() {
       locations: new Set(items.map((i) => i.location?.trim()).filter(Boolean)).size,
     };
   }, [items]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  // A review alert opens its review's window (`?review=<id>`); closing it takes that off the address.
+  const [activeId, setActiveId] = useState<string | null>(address.review || null);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const labelOf = (id: string) => items.find((item) => item.id === id)?.name || "Review";
@@ -110,13 +120,17 @@ export function useTestimonialActions() {
   return {
     filtered,
     stats,
-    search,
-    setSearch,
+    searchText: search.text,
+    setSearchText: search.setText,
+    clearSearch: search.clear,
     status,
-    setStatus,
+    setStatus: (next: ReviewFilter) => setAddress({ status: next === "all" ? "" : next }),
     banner,
     active,
-    setActive: (item: TestimonialItem | null) => setActiveId(item?.id ?? null),
+    setActive: (item: TestimonialItem | null) => {
+      setActiveId(item?.id ?? null);
+      if (!item && address.review) setAddress({ review: "" });
+    },
     updatingId,
     deletingId,
     actionBusy,

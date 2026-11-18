@@ -1,12 +1,11 @@
 "use client";
 
-import { SearchInput } from "@/components/search/SearchInput";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { PrivateGalleryMediaCard } from "@/components/admin/private-galleries/PrivateGalleryMediaCard";
 import { usePrivateGalleryMediaPicker } from "@/components/admin/private-galleries/usePrivateGalleryMediaPicker";
 import type { SectionImage } from "@/lib/page-sections-shared";
 import { isMediaAssetPath } from "@/lib/media-asset-path";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-import { adminInputClasses } from "@/components/admin/admin-input";
 import { ModalPortal } from "@/components/shared/ModalPortal";
 
 // Single-select image picker over the existing media library. Reuses the
@@ -55,14 +54,11 @@ export function MediaPickerModal({
         </div>
 
         <div className="border-b px-5 py-3">
-          <SearchInput
+          <AdminSearchBox
             value={picker.searchValue}
             onValueChange={picker.setSearchValue}
             onClear={picker.clearSearch}
             placeholder="Search title, tags, location, people, event..."
-            wrapperClassName="flex w-full flex-wrap gap-2"
-            inputClassName={adminInputClasses("md", "w-auto min-w-0 flex-1")}
-            clearButtonClassName={adminButtonClasses("default", "md")}
           />
         </div>
 

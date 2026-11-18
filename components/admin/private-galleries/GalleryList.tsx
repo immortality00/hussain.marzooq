@@ -1,21 +1,25 @@
 "use client";
 
-import { SearchInput } from "@/components/search/SearchInput";
+import type { MouseEvent } from "react";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-import { adminInputClasses } from "@/components/admin/admin-input";
 import { StickyToolbar } from "@/components/shared/StickyToolbar";
+import { useListReturn } from "@/hooks/useListReturn";
+import { GALLERY_LIST } from "./gallery-list";
 import type { GalleryItem } from "./types";
 import { galleryPath, getGalleryStatus } from "./helpers";
 
 type GalleryListProps = {
   items: GalleryItem[];
+  // The search the list shows (its way back comes back to the same one).
+  view: string;
   searchValue: string;
   deletingId: string | null;
   onSearchChange: (value: string) => void;
   onSearchClear: () => void;
   onCopyLink: (item: GalleryItem) => void;
-  onEdit: (id: string) => void;
+  onEdit: (id: string, event: MouseEvent<HTMLButtonElement>) => void;
   onDelete: (id: string) => void;
   isSelected: (id: string) => boolean;
   onToggleSelect: (id: string) => void;
@@ -24,6 +28,7 @@ type GalleryListProps = {
 
 export function GalleryList({
   items,
+  view,
   searchValue,
   deletingId,
   onSearchChange,
@@ -35,20 +40,20 @@ export function GalleryList({
   onToggleSelect,
   selectAll,
 }: GalleryListProps) {
+  useListReturn(GALLERY_LIST, view, true);
+
   return (
     <section className="mt-8 rounded-[2rem] border p-5">
       <StickyToolbar surface="admin" className="[--sticky-bleed:1.25rem]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="text-sm font-medium">Galleries</div>
 
-          <SearchInput
+          <AdminSearchBox
             value={searchValue}
             onValueChange={onSearchChange}
             onClear={onSearchClear}
             placeholder="Search galleries..."
-            wrapperClassName="flex w-full flex-wrap gap-2 md:w-auto"
-            inputClassName={adminInputClasses("md", "max-w-xs")}
-            clearButtonClassName={adminButtonClasses("default", "md")}
+            className="w-full sm:w-80"
           />
         </div>
       </StickyToolbar>
@@ -77,7 +82,7 @@ export function GalleryList({
             const actionDisabled = Boolean(deletingId);
 
             return (
-              <article key={item.id} className="rounded-[2rem] border p-4">
+              <article key={item.id} className="rounded-[2rem] border p-4" data-list-row={item.id}>
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex min-w-0 items-start gap-3">
                     <BulkCheckbox
@@ -128,7 +133,7 @@ export function GalleryList({
                     <button
                       type="button"
                       disabled={actionDisabled}
-                      onClick={() => onEdit(item.id)}
+                      onClick={(event) => onEdit(item.id, event)}
                       className={adminButtonClasses("default", "md")}
                     >
                       Edit

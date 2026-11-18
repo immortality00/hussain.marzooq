@@ -1,7 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type MouseEvent } from "react";
 import { useAdminSlice } from "@/hooks/useAdminData";
+import { useAddressValues } from "@/hooks/useAddressValues";
+import { useDebouncedText } from "@/hooks/useDebouncedSearch";
+import { leaveList, returnToRow, rowElement } from "@/lib/client/list-return";
+import { GALLERY_LIST, GALLERY_LIST_PARAMS } from "./gallery-list";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import { bulkResultText } from "@/components/admin/bulk/bulk-result";
 import { useMediaUsageDialog } from "@/components/admin/media-usage/useMediaUsageDialog";
@@ -21,7 +25,9 @@ export function usePrivateGalleriesAdmin() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
-  const [gallerySearch, setGallerySearch] = useState("");
+  const [address, setAddress] = useAddressValues(GALLERY_LIST_PARAMS);
+  const search = useDebouncedText(address.q, (q) => setAddress({ q }));
+  const gallerySearch = address.q;
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [description, setDescription] = useState("");
@@ -54,10 +60,17 @@ export function usePrivateGalleriesAdmin() {
     setSelectedMediaIds([]);
   }
 
+  // Opening a form keeps the list's place (lib/client/list-return.ts) and starts the form at the top.
+  function showForm(rowId: string | null, row: Element | null) {
+    leaveList(GALLERY_LIST, gallerySearch, rowId, row);
+    setView("form");
+    window.scrollTo(0, 0);
+  }
+
   function openNew() {
     if (actionBusy) return;
     resetForm();
-    setView("form");
+    showForm(null, null);
   }
 
   function fill(item: GalleryItem) {
@@ -74,15 +87,15 @@ export function usePrivateGalleriesAdmin() {
     setIsActive(item.isActive);
     setExpiresAtLocal(item.expiresAtLocal ?? "");
     setSelectedMediaIds(item.mediaIds ?? []);
-    setView("form");
   }
 
-  function openEdit(id: string) {
+  function openEdit(id: string, event: MouseEvent<HTMLElement>) {
     if (actionBusy) return;
     const item = items.find((gallery) => gallery.id === id);
     if (!item) return;
     setBanner(null);
     fill(item);
+    showForm(id, rowElement(event.currentTarget));
   }
 
   function backToList() {
@@ -162,7 +175,13 @@ export function usePrivateGalleriesAdmin() {
       }
 
       const saved = result.item;
-      setItems((prev) => [saved, ...prev.filter((item) => item.id !== saved.id)]);
+      // An edited gallery keeps its place in the list; a new one goes first, as the list orders them.
+      setItems((prev) =>
+        prev.some((item) => item.id === saved.id)
+          ? prev.map((item) => (item.id === saved.id ? saved : item))
+          : [saved, ...prev]
+      );
+      returnToRow(GALLERY_LIST, saved.id, { newRow: !editingId });
       setBanner({ type: "ok", text: editingId ? "✅ Gallery updated." : "✅ Gallery created." });
       backToList();
     } catch (e: unknown) {
@@ -254,7 +273,8 @@ export function usePrivateGalleriesAdmin() {
     bulkBusy,
     bulkRemove,
     actionBusy,
-    gallerySearchValue: gallerySearch,
+    listView: gallerySearch,
+    gallerySearchValue: search.text,
     title,
     slug,
     description,
@@ -267,8 +287,8 @@ export function usePrivateGalleriesAdmin() {
     isActive,
     expiresAtLocal,
     selectedMediaIds,
-    setGallerySearchValue: setGallerySearch,
-    clearGallerySearch: () => setGallerySearch(""),
+    setGallerySearchValue: search.setText,
+    clearGallerySearch: search.clear,
     setTitle,
     setSlug,
     setDescription,

@@ -24,6 +24,9 @@ import { SecurityCard } from "@/components/admin/security/SecurityCard";
 import { DashboardCopy } from "@/components/admin/DashboardCopy";
 import { useAdminPreview } from "@/hooks/useAdminData";
 import { AttentionRow, LibraryTile } from "./DashboardParts";
+import { adminBlogHref, adminInquiriesHref, adminTestimonialsHref } from "@/lib/admin-links";
+import { mediaListHref } from "../media/lib/media-list-address";
+import { NO_FILTERS } from "../media/lib/media-pages";
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
   photography: Camera,
@@ -39,10 +42,10 @@ export default function DashboardClient() {
   const { stats, missingImage, hidden } = snapshot.dashboard;
 
   const attention = [
-    { icon: Star, label: "Testimonials to review", count: stats.testimonials.pending, href: "/admin/testimonials" },
-    { icon: Inbox, label: "New inquiries", count: stats.inquiries.new, href: "/admin/inquiries" },
+    { icon: Star, label: "Testimonials to review", count: stats.testimonials.pending, href: adminTestimonialsHref("pending") },
+    { icon: Inbox, label: "New inquiries", count: stats.inquiries.new, href: adminInquiriesHref("new") },
     { icon: UserX, label: "Removal requests", count: stats.removalRequests, href: "/admin/removal-requests" },
-    { icon: NotebookPen, label: "Blog drafts waiting", count: stats.blogDrafts ?? 0, href: "/admin/blog" },
+    { icon: NotebookPen, label: "Blog drafts waiting", count: stats.blogDrafts ?? 0, href: adminBlogHref("waiting") },
     { icon: ImageOff, label: "Pages missing an image", count: missingImage, href: "/admin/pages" },
     { icon: EyeOff, label: "Pages hidden from the site", count: hidden, href: "/admin/pages" },
   ];
@@ -118,7 +121,7 @@ export default function DashboardClient() {
                 return (
                   <AdminLink
                     key={c.key}
-                    href="/admin/media/list"
+                    href={mediaListHref({ ...NO_FILTERS, category: c.key })}
                     className="flex items-center gap-2.5 rounded-lg py-1 text-sm transition-colors hover:text-foreground"
                   >
                     <Icon className="size-4 text-muted-foreground" />

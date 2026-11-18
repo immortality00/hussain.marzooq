@@ -1,12 +1,13 @@
 "use client";
 
 import { AdminLink } from "@/components/admin/AdminLink";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
+import { useDebouncedSearch } from "@/hooks/useDebouncedSearch";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import type { PersonProfileOption } from "../lib/types";
 import { linkedPeopleOf, personGate, type LinkedPerson } from "../lib/media-people";
 import { useMediaOptions } from "./MediaOptionsContext";
-import { adminInputClasses } from "@/components/admin/admin-input";
 
 export default function MediaPeoplePicker({
   selectedPeopleIds,
@@ -18,7 +19,8 @@ export default function MediaPeoplePicker({
   setSelectedPeople: (next: { ids: string[]; names: string[] }) => void;
 }) {
   const { people: profiles } = useMediaOptions();
-  const [peopleQuery, setPeopleQuery] = useState("");
+  const search = useDebouncedSearch();
+  const peopleQuery = search.query;
 
   const selectedPeople = useMemo(
     () => linkedPeopleOf(selectedPeopleIds, selectedPeopleNames),
@@ -60,7 +62,7 @@ export default function MediaPeoplePicker({
       ids: next.map((p) => p.id),
       names: next.map((p) => p.name),
     });
-    setPeopleQuery("");
+    search.clear();
   }
 
   function removePerson(target: LinkedPerson) {
@@ -102,10 +104,10 @@ export default function MediaPeoplePicker({
       ) : null}
 
       <div className="rounded-2xl border p-3">
-        <input
-          value={peopleQuery}
-          onChange={(e) => setPeopleQuery(e.target.value)}
-          className={adminInputClasses()}
+        <AdminSearchBox
+          value={search.text}
+          onValueChange={search.setText}
+          onClear={search.clear}
           placeholder="Search existing people profiles..."
         />
 

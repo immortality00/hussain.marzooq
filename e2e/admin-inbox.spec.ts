@@ -32,7 +32,7 @@ test.describe("admin inbox", () => {
     await page.getByRole("button", { name: "Approve", exact: true }).first().click();
     await expect(page.getByText("✅ Review approved.")).toBeVisible();
     await freshLoad(page);
-    await page.getByRole("button", { name: "approved", exact: true }).click();
+    await page.getByRole("button", { name: "Approved", exact: true }).click();
     await expect(page.getByText(E2E.reviewerName).first()).toBeVisible();
   });
 

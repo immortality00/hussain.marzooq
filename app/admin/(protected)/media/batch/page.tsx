@@ -4,6 +4,8 @@ import { adminButtonClasses } from "@/components/admin/AdminButton";
 import BatchMediaClient from "./BatchMediaClient";
 import { MediaOptionsProvider } from "../components/MediaOptionsContext";
 import { AdminScreen } from "@/components/admin/AdminScreen";
+import { BackToList } from "@/components/admin/BackToList";
+import { MEDIA_LIST_PATH } from "../lib/media-list-address";
 
 export default function AdminMediaBatchPage() {
   return (
@@ -11,14 +13,12 @@ export default function AdminMediaBatchPage() {
       <MediaOptionsProvider>
         <main className="mx-auto max-w-5xl px-0 py-3 md:px-6 md:py-10">
           <AdminPageHeader
-            title="Batch Upload"
+            title="Batch upload"
             actions={
               <>
+                <BackToList href={MEDIA_LIST_PATH} />
                 <AdminLink href="/admin/media" className={adminButtonClasses("default", "md")}>
                   Single upload
-                </AdminLink>
-                <AdminLink href="/admin/media/list" className={adminButtonClasses("default", "md")}>
-                  View list
                 </AdminLink>
               </>
             }

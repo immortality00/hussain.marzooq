@@ -1,3 +1,4 @@
+import type { InsertOneResult } from "mongodb";
 import { getDb } from "@/lib/server/db";
 import { consumeFixedWindowRateLimit } from "@/lib/server/request-guards";
 import { queueAdminAlert } from "@/lib/server/admin-alerts";
@@ -233,6 +234,7 @@ async function handlePost(req: Request) {
     verifiedSessionId = session.sessionId;
   }
 
+  let inserted: InsertOneResult;
   try {
     const firstExisting = await db
       .collection("testimonials")
@@ -250,7 +252,7 @@ async function handlePost(req: Request) {
 
     const reviewAssetFolder = verifiedSessionId ? sessionFolder(verifiedSessionId) : null;
 
-    await db.collection("testimonials").insertOne({
+    inserted = await db.collection("testimonials").insertOne({
       name,
       email,
       about: about || null,
@@ -280,7 +282,15 @@ async function handlePost(req: Request) {
     throw error;
   }
 
-  queueAdminAlert({ kind: "testimonial", name, email, review, rating, about: about || null });
+  queueAdminAlert({
+    kind: "testimonial",
+    id: String(inserted.insertedId),
+    name,
+    email,
+    review,
+    rating,
+    about: about || null,
+  });
 
   return noStoreJson({ ok: true });
 }

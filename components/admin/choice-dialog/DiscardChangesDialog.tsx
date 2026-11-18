@@ -10,18 +10,28 @@ const OPTIONS: ChoiceOption<DiscardAnswer>[] = [{ answer: "discard", label: "Dis
 
 export type DiscardChangesState = PendingChoice<void, DiscardAnswer>;
 
+// Before leaving unsaved changes: true at once when nothing changed, otherwise
+// the answer to "Discard your changes?".
+export function useConfirmDiscard(dirty: boolean) {
+  const { pending, ask } = useChoice<void, DiscardAnswer>();
+
+  const confirm = useCallback(async () => !dirty || (await ask()) === "discard", [dirty, ask]);
+
+  return { confirm, asking: pending !== null, dialog: pending };
+}
+
 // Escape or a tap outside an editor window: close at once when nothing changed,
 // otherwise ask first. `asking` lets the window switch off its own Escape while
 // the question is up, so one key press never answers both.
 export function useDiscardChanges(dirty: boolean, onClose: () => void) {
-  const { pending, ask } = useChoice<void, DiscardAnswer>();
+  const { confirm, asking, dialog } = useConfirmDiscard(dirty);
 
   const requestClose = useCallback(async () => {
     if (!dirty) return onClose();
-    if ((await ask()) === "discard") onClose();
-  }, [dirty, onClose, ask]);
+    if (await confirm()) onClose();
+  }, [dirty, confirm, onClose]);
 
-  return { requestClose, asking: pending !== null, dialog: pending };
+  return { requestClose, asking, dialog };
 }
 
 export function DiscardChangesDialog({ dialog }: { dialog: DiscardChangesState | null }) {

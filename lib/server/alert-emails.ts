@@ -1,5 +1,6 @@
 import type { EmailContent } from "@/lib/server/email";
 import { frame, headline, paragraph, pill, plainLink, quote, SIGN_OFF } from "@/lib/server/email-frame";
+import { adminInquiryHref, adminReviewHref } from "@/lib/admin-links";
 
 // The admin alerts, in the same layout as the visitor emails. iCloud sent the old bare alert to Junk every time
 // (score 4.33) while the same alert in this layout, from the same address to the same inbox, reached the Inbox (U1).
@@ -27,7 +28,7 @@ function alertEmail({ subject, heading, lines, quoted, link, action }: Alert): E
 }
 
 export function inquiryAlert(
-  data: { name: string; email: string; message: string; serviceName: string | null; category: string | null },
+  data: { id: string; name: string; email: string; message: string; serviceName: string | null; category: string | null },
   baseUrl: string
 ): EmailContent {
   const about = [data.serviceName && `Service: ${data.serviceName}`, data.category && `Category: ${data.category}`];
@@ -36,12 +37,12 @@ export function inquiryAlert(
     heading: "New inquiry",
     lines: [`${data.name} · ${data.email}`, about.filter(Boolean).join(" · ")].filter(Boolean),
     quoted: data.message,
-    action: { href: `${baseUrl}/admin/inquiries`, label: "View in admin" },
+    action: { href: `${baseUrl}${adminInquiryHref(data.id)}`, label: "View in admin" },
   });
 }
 
 export function reviewAlert(
-  data: { name: string; email: string; review: string; rating: number | null; about: string | null },
+  data: { id: string; name: string; email: string; review: string; rating: number | null; about: string | null },
   baseUrl: string
 ): EmailContent {
   const stars = data.rating ? "★".repeat(data.rating) + "☆".repeat(5 - data.rating) : "No rating";
@@ -50,7 +51,7 @@ export function reviewAlert(
     heading: "New testimonial",
     lines: [`${data.name} · ${data.email}`, data.about ? `About: ${data.about}` : "", stars].filter(Boolean),
     quoted: data.review,
-    action: { href: `${baseUrl}/admin/testimonials`, label: "Review & approve" },
+    action: { href: `${baseUrl}${adminReviewHref(data.id)}`, label: "Review & approve" },
   });
 }
 

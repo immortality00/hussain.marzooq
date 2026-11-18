@@ -10,7 +10,8 @@ import { useRefreshingPages } from "../../lib/useRefreshingPages";
 
 export type { MediaFilters };
 
-const SEARCH_DEBOUNCE_MS = 250;
+// The search is already 500 ms behind the box (useDebouncedText), so a new search or filter loads at once.
+const LOAD_AFTER_MS = 0;
 
 export function useMediaListView(filters: MediaFilters, setBanner: (next: AdminActionFeedbackState) => void) {
   const [, setMedia] = useAdminSlice("media");
@@ -20,7 +21,9 @@ export function useMediaListView(filters: MediaFilters, setBanner: (next: AdminA
 
   const browse = useMediaBrowse(onError);
   const search = useRefreshingPages(
-    defaultView ? null : { key: filtersKey(filters), filters, startCursor: null, autoLoadAfterMs: SEARCH_DEBOUNCE_MS },
+    defaultView
+      ? null
+      : { key: filtersKey(filters), filters, startCursor: null, autoLoadAfterMs: LOAD_AFTER_MS, keep: true },
     onError
   );
   const view = defaultView ? browse : search;
@@ -48,8 +51,8 @@ export function useMediaListView(filters: MediaFilters, setBanner: (next: AdminA
 
   function replaceItem(saved: SavedMedia) {
     setMedia((media) => withSavedMedia(media, saved, false));
-    browse.replace(saved.listItem);
-    search.replace(saved.listItem);
+    browse.replace(saved);
+    search.replace(saved);
   }
 
   return {

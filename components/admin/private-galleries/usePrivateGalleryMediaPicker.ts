@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useOnAdminDataChange } from "@/hooks/useAdminData";
+import { useDebouncedText } from "@/hooks/useDebouncedSearch";
 import { errorMessage } from "@/hooks/useAdminAction";
 import {
   NO_FILTERS,
@@ -16,7 +17,8 @@ import { useRefreshingPages } from "@/app/admin/(protected)/media/lib/useRefresh
 import { mediaIdsQuery, mergeMediaItems } from "./media-picker-utils";
 import { useSelectAllMatches, type BulkSelectHandlers } from "./useSelectAllMatches";
 
-const SEARCH_DEBOUNCE_MS = 250;
+// The search words are already 500 ms behind the box (useDebouncedText), so a search loads at once.
+const LOAD_AFTER_MS = 0;
 
 async function fetchPreviews(ids: string[]) {
   if (ids.length === 0) return [];
@@ -63,7 +65,7 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[], handler
   const browse = useMediaBrowse(onError);
   const search = useRefreshingPages(
     filtered
-      ? { key: filtersKey(filters), filters, startCursor: null, autoLoadAfterMs: SEARCH_DEBOUNCE_MS }
+      ? { key: filtersKey(filters), filters, startCursor: null, autoLoadAfterMs: LOAD_AFTER_MS }
       : null,
     onError
   );
@@ -87,6 +89,8 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[], handler
     selectAll.clearNote();
     setFilters((previous) => ({ ...previous, [name]: value }));
   }
+
+  const searchBox = useDebouncedText(filters.query, (query) => setFilter("query", query));
 
   async function loadMore() {
     if (!view.nextCursor) return;
@@ -112,11 +116,12 @@ export function usePrivateGalleryMediaPicker(selectedMediaIds: string[], handler
     selectAll,
     error,
     setFilter,
-    searchValue: filters.query,
-    setSearchValue: (value: string) => setFilter("query", value),
-    clearSearch: () => setFilter("query", ""),
+    searchValue: searchBox.text,
+    setSearchValue: searchBox.setText,
+    clearSearch: searchBox.clear,
     clearFilters: () => {
       selectAll.clearNote();
+      searchBox.clear();
       setFilters(NO_FILTERS);
     },
     loadMore,

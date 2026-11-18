@@ -27,13 +27,14 @@ export function PrivateGalleryMediaPicker({
       <div className="mt-1 text-xs text-muted-foreground">{selectedMediaIds.length} selected.</div>
 
       <MediaListFilterBar
-        query={filters.query}
+        query={picker.searchValue}
         categoryFilter={filters.category}
         typeFilter={filters.type}
         visibilityFilter={filters.visibility}
         disabled={false}
         className="mt-4 [--sticky-bleed:1.25rem]"
-        onQueryChange={(value) => picker.setFilter("query", value)}
+        onQueryChange={picker.setSearchValue}
+        onQueryClear={picker.clearSearch}
         onCategoryChange={(value) => picker.setFilter("category", value)}
         onTypeChange={(value) => picker.setFilter("type", value)}
         onVisibilityChange={(value) => picker.setFilter("visibility", value)}

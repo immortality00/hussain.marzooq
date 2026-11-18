@@ -8,6 +8,9 @@ export type MediaPage = { items: MediaListItem[]; nextCursor: string | null; ful
 
 export const NO_FILTERS: MediaFilters = { query: "", category: "", type: "", visibility: "" };
 
+// The kept pages past the shared admin data's first 300 items (the default view's continuation).
+export const TAIL_KEY = "tail";
+
 export const isDefaultView = (f: MediaFilters) =>
   !f.query.trim() && !f.category.trim() && !f.type.trim() && !f.visibility.trim();
 

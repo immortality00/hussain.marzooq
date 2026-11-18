@@ -1,46 +1,55 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useMemo, type MouseEvent } from "react";
 import { AdminLink } from "@/components/admin/AdminLink";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { useAdminAction } from "@/hooks/useAdminAction";
+import { useAddressValues } from "@/hooks/useAddressValues";
+import { useDebouncedText } from "@/hooks/useDebouncedSearch";
+import { useListReturn } from "@/hooks/useListReturn";
+import { leaveList, rowElement } from "@/lib/client/list-return";
 import { useBulkSelection } from "@/components/admin/bulk/useBulkSelection";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
 import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
+import { filtersFromAddress, MEDIA_LIST, MEDIA_LIST_PARAMS } from "../lib/media-list-address";
+import { filtersKey } from "../lib/media-pages";
+import { rememberShownView } from "../lib/media-page-sets";
 import { MediaListFilterBar } from "./components/MediaListFilterBar";
 import { MediaListItem } from "./components/MediaListItem";
 import { useMediaListDelete } from "./lib/useMediaListDelete";
 import { useMediaListLabels } from "./lib/useMediaListLabels";
 import { useMediaListView } from "./lib/useMediaListView";
 
-export default function MediaListClient() {
-  const initialCategory = (useSearchParams().get("category") ?? "").trim();
-  const { feedback: banner, setFeedback: setBanner } = useAdminAction();
+const NO_ADDRESS = { q: "", category: "", type: "", visibility: "" };
 
-  const [query, setQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState(initialCategory);
-  const [typeFilter, setTypeFilter] = useState("");
-  const [visibilityFilter, setVisibilityFilter] = useState("");
+export default function MediaListClient() {
+  const { feedback: banner, setFeedback: setBanner } = useAdminAction();
+  const [address, setAddress] = useAddressValues(MEDIA_LIST_PARAMS);
+  const search = useDebouncedText(address.q, (q) => setAddress({ q }));
+  const filters = useMemo(() => filtersFromAddress(address), [address]);
+  const view = filtersKey(filters);
+
+  useEffect(() => rememberShownView(filters), [filters]);
 
   const { items, nextCursor, loading, loadingMore, loadMore, refresh, removeItems, replaceItem } = useMediaListView(
-    { query, category: categoryFilter, type: typeFilter, visibility: visibilityFilter },
+    filters,
     setBanner,
   );
+  useListReturn(MEDIA_LIST, view, !loading);
 
   const activeFilterLabel = useMemo(() => {
     const parts = [
-      query.trim() ? `search "${query.trim()}"` : "",
-      categoryFilter ? `category ${categoryFilter}` : "",
-      typeFilter ? `type ${typeFilter}` : "",
-      visibilityFilter || "",
+      filters.query.trim() ? `search "${filters.query.trim()}"` : "",
+      filters.category ? `category ${filters.category}` : "",
+      filters.type ? `type ${filters.type}` : "",
+      filters.visibility || "",
     ].filter(Boolean);
     return parts.length ? parts.join(" • ") : "all media";
-  }, [categoryFilter, query, typeFilter, visibilityFilter]);
+  }, [filters]);
 
   const selection = useBulkSelection(items.map((m) => m.id));
   const { del, bulkDelete, deletingId, bulkBusy, usageDialog } = useMediaListDelete({
@@ -51,6 +60,15 @@ export default function MediaListClient() {
   });
   const labels = useMediaListLabels({ replaceItem, setBanner });
 
+  function openItem(id: string, event: MouseEvent<HTMLAnchorElement>) {
+    leaveList(MEDIA_LIST, view, id, rowElement(event.currentTarget));
+  }
+
+  function resetFilters() {
+    search.clear();
+    setAddress(NO_ADDRESS);
+  }
+
   return (
     <main className="mx-auto max-w-6xl px-0 py-3 md:px-6 md:py-10">
       <AdminPageHeader
@@ -58,7 +76,7 @@ export default function MediaListClient() {
         actions={
           <>
             <AdminLink href="/admin/media" className={adminButtonClasses("default", "md")}>
-              Upload new
+              New upload
             </AdminLink>
             <AdminLink href="/admin/media/batch" className={adminButtonClasses("default", "md")}>
               Batch upload
@@ -78,18 +96,19 @@ export default function MediaListClient() {
       <AdminActionFeedback feedback={banner} />
 
       <MediaListFilterBar
-        query={query}
-        categoryFilter={categoryFilter}
-        typeFilter={typeFilter}
-        visibilityFilter={visibilityFilter}
+        query={search.text}
+        categoryFilter={address.category}
+        typeFilter={address.type}
+        visibilityFilter={address.visibility}
         itemCount={items.length}
         activeFilterLabel={activeFilterLabel}
         disabled={Boolean(deletingId)}
-        onQueryChange={setQuery}
-        onCategoryChange={setCategoryFilter}
-        onTypeChange={setTypeFilter}
-        onVisibilityChange={setVisibilityFilter}
-        onReset={() => { setQuery(""); setCategoryFilter(""); setTypeFilter(""); setVisibilityFilter(""); }}
+        onQueryChange={search.setText}
+        onQueryClear={search.clear}
+        onCategoryChange={(category) => setAddress({ category })}
+        onTypeChange={(type) => setAddress({ type })}
+        onVisibilityChange={(visibility) => setAddress({ visibility })}
+        onReset={resetFilters}
       />
 
       {items.length > 0 && (
@@ -127,6 +146,7 @@ export default function MediaListClient() {
                   index={idx}
                   deleting={deletingId === m.id}
                   actionDisabled={Boolean(deletingId)}
+                  onOpen={openItem}
                   onDelete={(id) => void del(id)}
                   labels={labels}
                 />

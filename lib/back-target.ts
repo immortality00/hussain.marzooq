@@ -16,3 +16,15 @@ export function previousPageOnSite(
     return false;
   }
 }
+
+// Whether the page before this one is a given page of this site (any search or hash) — the list an admin
+// editor was opened from, so its way back can be the browser's own Back.
+export function previousPageIs(
+  entries: readonly HistoryEntryLike[],
+  currentIndex: number,
+  origin: string,
+  pathname: string,
+): boolean {
+  if (!previousPageOnSite(entries, currentIndex, origin)) return false;
+  return new URL(entries[currentIndex - 1].url as string).pathname === pathname;
+}

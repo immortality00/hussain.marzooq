@@ -84,6 +84,13 @@ describe("blog posts saved on this device", () => {
     expect(next.forms.p2?.title).toBe("Two");
   });
 
+  test("an edited post keeps its place, so the list comes back to it where it was", () => {
+    const two = { ...blog, posts: [item("p2", "Two", null), item("p1", "One", null)] };
+    const next = withSavedPost(two, { item: item("p1", "One edited", null), form: form("One edited") });
+    expect(next.posts.map((p) => p.id)).toEqual(["p2", "p1"]);
+    expect(next.posts[1]?.title).toBe("One edited");
+  });
+
   test("saving an existing post replaces it instead of adding a copy", () => {
     const next = withSavedPost(blog, { item: item("p1", "One edited", "2026-09-01T00:00:00.000Z"), form: form("One edited") });
     expect(next.posts).toHaveLength(1);

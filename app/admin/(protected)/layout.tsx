@@ -8,6 +8,7 @@ import { ADMIN_CONTENT_ID } from "@/components/admin/AdminPageCover";
 import { AdminDataProvider } from "@/components/admin/AdminDataProvider";
 import { AdminLogoutButton } from "@/components/admin/AdminLogoutButton";
 import { AdminSessionNotice } from "@/components/admin/AdminSessionNotice";
+import { BackToTop } from "@/components/site/BackToTop";
 
 export default function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -37,6 +38,7 @@ export default function AdminProtectedLayout({ children }: { children: React.Rea
 
           <section
             id={ADMIN_CONTENT_ID}
+            tabIndex={-1}
             className="relative rounded-2xl border bg-card p-3 shadow-[var(--shadow-soft)] md:p-5"
           >
             {children}
@@ -48,6 +50,8 @@ export default function AdminProtectedLayout({ children }: { children: React.Rea
       <AdminSessionNotice />
       <AdminDataProvider />
       <AdminServiceWorker />
+      {/* Before the bottom nav, so the nav's sheet and its dimmed backdrop cover it. */}
+      <BackToTop focusId={ADMIN_CONTENT_ID} className="fixed right-4 bottom-20 z-40 md:right-6 md:bottom-6" />
       <AdminMobileNav />
     </div>
   );

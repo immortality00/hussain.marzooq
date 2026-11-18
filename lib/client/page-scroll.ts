@@ -1,6 +1,7 @@
 import type Lenis from "lenis";
 
-// Page scrolling that keeps Lenis (the site's smooth scroll) in step.
+// Page scrolling that keeps Lenis (the site's smooth scroll) in step. Admin pages have no Lenis and use the
+// browser's own scrolling.
 const RESTORE_FOR_MS = 2000;
 const STOP_ON = ["wheel", "touchstart", "keydown", "pointerdown"] as const;
 
@@ -22,17 +23,22 @@ export function jumpPageTo(y: number): void {
   window.scrollTo(0, y);
 }
 
-// Puts a remembered position back. A page still drawing its content can be too short at
-// first, so the position is set again as the page grows — until it is reached, the visitor
-// scrolls, or 2 s pass.
-export function restorePageScroll(y: number): void {
+const reached = (y: number) => Math.abs(window.scrollY - y) <= 1;
+
+// Keeps the page at `target()` while the page is still drawing: the position is set again each time the page
+// changes size, until the visitor scrolls or 2 s pass — and, with `untilReached`, as soon as it is there.
+function holdScroll(target: () => number | null, untilReached: boolean): void {
   stopRestoring?.();
-  jumpPageTo(y);
-  if (Math.abs(window.scrollY - y) <= 1) return;
+  const first = target();
+  if (first === null) return;
+  jumpPageTo(first);
+  if (untilReached && reached(first)) return;
 
   const observer = new ResizeObserver(() => {
-    jumpPageTo(y);
-    if (Math.abs(window.scrollY - y) <= 1) stop();
+    const y = target();
+    if (y === null) return stop();
+    if (!reached(y)) jumpPageTo(y);
+    if (untilReached && reached(y)) stop();
   });
   const timer = window.setTimeout(() => stop(), RESTORE_FOR_MS);
   function stop() {
@@ -44,6 +50,20 @@ export function restorePageScroll(y: number): void {
   observer.observe(document.body);
   for (const type of STOP_ON) window.addEventListener(type, stop, { passive: true });
   stopRestoring = stop;
+}
+
+// Puts a remembered position back. A page still drawing its content can be too short at
+// first, so the position is set again as the page grows — until it is reached, the visitor
+// scrolls, or 2 s pass.
+export function restorePageScroll(y: number): void {
+  holdScroll(() => y, true);
+}
+
+// Puts an element back at a height on screen (its top `top` px below the top of the window). Rows above it can
+// still change size as their pictures and videos load, so it is placed again each time the page changes size,
+// for 2 s or until the visitor scrolls.
+export function placeElementAt(element: Element, top: number): void {
+  holdScroll(() => (element.isConnected ? element.getBoundingClientRect().top + window.scrollY - top : null), false);
 }
 
 // Back to top: Lenis's glide, or the browser's smooth scroll; instant under reduced motion.

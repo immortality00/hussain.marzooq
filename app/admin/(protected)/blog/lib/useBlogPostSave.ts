@@ -6,11 +6,19 @@ import { useAdminSlice } from "@/hooks/useAdminData";
 import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
 import { useRecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 import { saveGuarded } from "@/lib/record-changed";
+import { leaveList } from "@/lib/client/list-return";
 import { createPost, deletePost, updatePost, type SavedPost } from "./api";
 import { withSavedPost, withoutPost } from "./blog-store";
+import { BLOG_LIST } from "./post-status";
 import type { BlogPostFormValues } from "./types";
 
-export function useBlogPostSave(id: string | undefined, version: string | null, load: (values: BlogPostFormValues) => void) {
+// `goBack` returns to the blog list (useBackToList): after Delete, to where the list was left.
+export function useBlogPostSave(
+  id: string | undefined,
+  version: string | null,
+  load: (values: BlogPostFormValues) => void,
+  goBack: () => void
+) {
   const { navigate, navigationCover } = useAdminNavigate();
   const [, setBlog] = useAdminSlice("blog");
   const [saving, setSaving] = useState(false);
@@ -48,6 +56,8 @@ export function useBlogPostSave(id: string | undefined, version: string | null, 
       if (id) return await update(id, values);
       const saved = await createPost(values);
       setBlog((blog) => withSavedPost(blog, saved));
+      // The list opens at its top, where a new post goes, and marks it.
+      leaveList(BLOG_LIST, "", saved.item.id, null);
       navigate("/admin/blog");
     } catch (e) {
       notify("err", errorMessage(e, "Save failed."));
@@ -64,7 +74,7 @@ export function useBlogPostSave(id: string | undefined, version: string | null, 
     try {
       await deletePost(id);
       setBlog((blog) => withoutPost(blog, id));
-      navigate("/admin/blog");
+      goBack();
     } catch (e) {
       notify("err", errorMessage(e, "Delete failed."));
       setSaving(false);

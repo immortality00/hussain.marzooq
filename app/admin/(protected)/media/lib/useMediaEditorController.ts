@@ -13,6 +13,8 @@ import { buildMediaPayload } from "./editor-actions";
 import { deleteWithUsageCheck, saveWithUsageCheck } from "./media-usage-flows";
 import { useMediaEditorState } from "./editor-state";
 import { withSavedMedia, withoutMedia, type SavedMedia } from "./media-store";
+import { removeFromPageSets, replaceInPageSets } from "./media-page-sets";
+import { editorValuesKey, editorValuesOf, itemValuesKey } from "./media-fingerprint";
 import type { MediaCategory, MediaItem } from "./types";
 import { findFirstAppearanceError } from "./utils";
 
@@ -29,9 +31,12 @@ type BusyAction = "load" | "save" | "delete" | null;
 export function useMediaEditorController({
   initialItem,
   loadError,
+  onDeleted,
 }: {
   initialItem: MediaItem | null;
   loadError: string | null;
+  // After a delete: the editor goes back to the list (the caller knows which row takes the deleted one's place).
+  onDeleted: (id: string) => void;
 }) {
   const searchParams = useSearchParams();
   const { navigate, navigationCover } = useAdminNavigate();
@@ -48,6 +53,19 @@ export function useMediaEditorController({
   const usage = useMediaUsageDialog(() => setBanner(null));
   const changed = useRecordChangedDialog(() => setBanner(null));
   const [version, setVersion] = useState<string | null>(initialItem?.updatedAt ?? null);
+  const [savedValues, setSavedValues] = useState(() => (initialItem ? itemValuesKey(initialItem) : null));
+  const dirty =
+    Boolean(editor.editingId) && savedValues !== null && editorValuesKey(editorValuesOf(editor)) !== savedValues;
+
+  function load(item: MediaItem) {
+    editor.loadIntoState(item);
+    setSavedValues(itemValuesKey(item));
+  }
+
+  function keepSaved(saved: SavedMedia, created: boolean) {
+    setMedia((media) => withSavedMedia(media, saved, created));
+    replaceInPageSets(saved.listItem, saved.item);
+  }
 
   const busy = busyAction !== null;
   const setPrimaryCategoryRef = useRef(editor.setPrimaryCategory);
@@ -145,8 +163,8 @@ export function useMediaEditorController({
         changed.ask,
         (current: SavedMedia) => current.item.updatedAt,
         (current: SavedMedia) => {
-          setMedia((media) => withSavedMedia(media, current, false));
-          editor.loadIntoState(current.item as MediaItem);
+          keepSaved(current, false);
+          load(current.item as MediaItem);
           setVersion(current.item.updatedAt);
         }
       );
@@ -161,7 +179,7 @@ export function useMediaEditorController({
 
       const { saved } = result;
       if (!saved) throw new Error("The server did not return the saved media.");
-      setMedia((media) => withSavedMedia(media, saved, result.mode === "created"));
+      keepSaved(saved, result.mode === "created");
       setVersion(saved.item.updatedAt);
 
       const posterNote = result.posterMissing ? " — the video thumbnail couldn't be fetched." : "";
@@ -176,7 +194,7 @@ export function useMediaEditorController({
             .join(" "),
         });
         if (result.mode === "created") editor.resetFields(true, () => setBanner(null));
-        else editor.loadIntoState(saved.item as MediaItem);
+        else load(saved.item as MediaItem);
       } else if (result.mode === "created") {
         setBanner({ type: "ok", text: posterNote ? `✅ Media created${posterNote}` : "✅ Media created successfully." });
         editor.resetFields(true, () => setBanner(null));
@@ -185,10 +203,10 @@ export function useMediaEditorController({
           type: "err",
           text: `Media updated, but these places could not be updated: ${result.pagesNotUpdated.join(", ")}.`,
         });
-        editor.loadIntoState(saved.item as MediaItem);
+        load(saved.item as MediaItem);
       } else {
         setBanner({ type: "ok", text: posterNote ? `✅ Media updated${posterNote}` : "✅ Media updated successfully." });
-        editor.loadIntoState(saved.item as MediaItem);
+        load(saved.item as MediaItem);
       }
     } catch (e: unknown) {
       setBanner({
@@ -214,9 +232,9 @@ export function useMediaEditorController({
       }
       const deletedId = editor.editingId;
       setMedia((media) => withoutMedia(media, [deletedId]));
+      removeFromPageSets([deletedId]);
       setBanner({ type: "ok", text: "✅ Media deleted." });
-      editor.resetFields(true, () => setBanner(null));
-      navigate("/admin/media/list");
+      onDeleted(deletedId);
     } catch (e: unknown) {
       setBanner({
         type: "err",
@@ -237,6 +255,7 @@ export function useMediaEditorController({
     editId,
     prefillCategory,
     editor,
+    dirty,
     busy,
     busyAction,
     banner,

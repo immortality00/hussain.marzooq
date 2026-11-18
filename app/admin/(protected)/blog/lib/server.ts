@@ -52,7 +52,8 @@ export async function savedBlogPost(doc: Document) {
 export async function loadAdminBlog() {
   const db = await getDb();
   const [docs, cats] = await Promise.all([
-    db.collection("blog_posts").find({}).sort({ updatedAt: -1, _id: -1 }).toArray(),
+    // Newest first, like Media: saving a post never moves it, so the list comes back to it where it was (UX2).
+    db.collection("blog_posts").find({}).sort({ createdAt: -1, _id: -1 }).toArray(),
     db.collection("blog_categories").find({}).sort({ order: 1, createdAt: -1, _id: -1 }).toArray(),
   ]);
   const labels = categoryLabels(cats);

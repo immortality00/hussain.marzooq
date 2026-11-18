@@ -1,4 +1,4 @@
-import { SearchInput } from "@/components/search/SearchInput";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { ChipScroller } from "@/components/shared/ChipScroller";
 import { StickyToolbar } from "@/components/shared/StickyToolbar";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
@@ -6,6 +6,7 @@ import { MEDIA_CATEGORIES } from "../../lib/utils";
 import { adminInputClasses } from "@/components/admin/admin-input";
 
 type Props = {
+  // The box's words (useDebouncedText); the search follows them 500 ms after the last keystroke.
   query: string;
   categoryFilter: string;
   typeFilter: string;
@@ -16,6 +17,7 @@ type Props = {
   disabled: boolean;
   className?: string;
   onQueryChange: (v: string) => void;
+  onQueryClear: () => void;
   onCategoryChange: (v: string) => void;
   onTypeChange: (v: string) => void;
   onVisibilityChange: (v: string) => void;
@@ -34,6 +36,7 @@ export function MediaListFilterBar({
   disabled,
   className = "mt-6 [--sticky-bleed:0.75rem] md:[--sticky-bleed:2.75rem]",
   onQueryChange,
+  onQueryClear,
   onCategoryChange,
   onTypeChange,
   onVisibilityChange,
@@ -45,13 +48,12 @@ export function MediaListFilterBar({
     <>
       <StickyToolbar surface="admin" className={className}>
         <section className="flex flex-col gap-2 rounded-2xl border p-3 lg:flex-row lg:items-center lg:gap-3">
-          <SearchInput
+          <AdminSearchBox
             value={query}
             onValueChange={onQueryChange}
+            onClear={onQueryClear}
             placeholder="Search title, tags, people..."
-            showClear={false}
-            wrapperClassName="min-w-0 lg:flex-1"
-            inputClassName={adminInputClasses()}
+            className="min-w-0 lg:flex-1"
           />
 
           <ChipScroller className="lg:shrink-0">

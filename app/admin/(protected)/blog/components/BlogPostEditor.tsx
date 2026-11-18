@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminButton } from "@/components/admin/AdminButton";
+import { BackToList } from "@/components/admin/BackToList";
+import { useBackToList } from "@/hooks/useBackToList";
 import { AdminToggle } from "@/components/admin/AdminToggle";
 import { adminInputClasses } from "@/components/admin/admin-input";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
@@ -15,6 +17,8 @@ import { TagsInput } from "./TagsInput";
 import { BlogMarkdownField } from "./BlogMarkdownField";
 import { SendToSubscribers } from "./SendToSubscribers";
 import type { BlogCategoryOption, BlogPostFormValues } from "../lib/types";
+
+const BLOG_LIST_PATH = "/admin/blog";
 
 const EMPTY: BlogPostFormValues = {
   title: "",
@@ -42,10 +46,12 @@ export function BlogPostEditor({
 }) {
   const [values, setValues] = useState<BlogPostFormValues>(initial ?? EMPTY);
   const [slugTouched, setSlugTouched] = useState(Boolean(initial?.slug));
+  const back = useBackToList(BLOG_LIST_PATH);
   const { saving, feedback, save: saveValues, remove, navigationCover, changedDialog } = useBlogPostSave(
     id,
     version,
-    setValues
+    setValues,
+    back.goBack
   );
   const save = () => saveValues(values);
 
@@ -66,14 +72,13 @@ export function BlogPostEditor({
   return (
     <div className="space-y-6">
       {navigationCover}
+      {back.navigationCover}
       <RecordChangedDialog dialog={changedDialog} />
       <AdminPageHeader
         title={isEdit ? "Edit post" : "New post"}
         actions={
           <>
-            <AdminButton href="/admin/blog" variant="ghost">
-              Back
-            </AdminButton>
+            <BackToList href={BLOG_LIST_PATH} />
             {isEdit ? (
               <AdminButton variant="danger" onClick={remove} disabled={saving}>
                 Delete

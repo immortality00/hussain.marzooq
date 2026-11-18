@@ -76,7 +76,7 @@ export default function InquirySection({
         const expanded = expandedId === it.id;
 
         return (
-          <div key={it.id} className="border-b last:border-b-0">
+          <div key={it.id} className="border-b last:border-b-0" data-list-row={it.id}>
             <div className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-accent/20">
               <BulkCheckbox
                 checked={isSelected(it.id)}

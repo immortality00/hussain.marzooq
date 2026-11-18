@@ -1,9 +1,10 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
+import { useDebouncedSearch } from "@/hooks/useDebouncedSearch";
 import { slugifyTag } from "@/lib/server/media-tags";
 import { createTagRequest } from "@/app/admin/(protected)/tags/lib/api";
-import { adminInputClasses } from "@/components/admin/admin-input";
 import { AdminLink } from "@/components/admin/AdminLink";
 import { useAdminSlice } from "@/hooks/useAdminData";
 import { useMediaOptions } from "./MediaOptionsContext";
@@ -19,7 +20,8 @@ export default function TagMultiSelect({
 }) {
   const { tags: options } = useMediaOptions();
   const [, setTags] = useAdminSlice("mediaTags");
-  const [query, setQuery] = useState("");
+  const search = useDebouncedSearch();
+  const query = search.query;
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState("");
 
@@ -55,7 +57,7 @@ export default function TagMultiSelect({
       const created = await createTagRequest({ label, slug: "", description: "" });
       setTags((prev) => [...prev.filter((tag) => tag.id !== created.id), created]);
       addTag(created.slug);
-      setQuery("");
+      search.clear();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Could not create tag.");
     } finally {
@@ -83,10 +85,10 @@ export default function TagMultiSelect({
       ) : null}
 
       <div className="rounded-2xl border p-3">
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className={adminInputClasses()}
+        <AdminSearchBox
+          value={search.text}
+          onValueChange={search.setText}
+          onClear={search.clear}
           placeholder="Search or add a tag…"
         />
 
@@ -98,7 +100,7 @@ export default function TagMultiSelect({
                 type="button"
                 onClick={() => {
                   addTag(o.slug);
-                  setQuery("");
+                  search.clear();
                 }}
                 className="rounded-full border px-3 py-1 text-xs hover:bg-accent"
               >

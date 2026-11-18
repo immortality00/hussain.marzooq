@@ -6,15 +6,23 @@ import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { useTestimonialActions } from "./lib/useTestimonialActions";
 import { ReviewRow } from "./components/TestimonialList";
 import { TestimonialInspectModal } from "./components/TestimonialInspectModal";
-import { adminInputClasses } from "@/components/admin/admin-input";
+import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
+import { FilterPills } from "@/components/admin/FilterPills";
 import { StickyToolbar } from "@/components/shared/StickyToolbar";
+
+const STATUS_PILLS = [
+  { value: "all", label: "All" },
+  { value: "pending", label: "Pending" },
+  { value: "approved", label: "Approved" },
+] as const;
 
 export default function TestimonialsAdminClient() {
   const {
     filtered,
     stats,
-    search,
-    setSearch,
+    searchText,
+    setSearchText,
+    clearSearch,
     status,
     setStatus,
     banner,
@@ -58,29 +66,19 @@ export default function TestimonialsAdminClient() {
       <section className="mt-6 rounded-[2rem] border border-border/50 p-5">
         <StickyToolbar surface="admin" className="[--sticky-bleed:1.25rem]">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex flex-wrap gap-2">
-              {(["all", "pending", "approved"] as const).map((value) => (
-                <button
-                  key={value}
-                  type="button"
-                  disabled={actionBusy}
-                  onClick={() => setStatus(value)}
-                  className={`rounded-full border px-4 py-2 text-sm capitalize disabled:cursor-not-allowed disabled:opacity-60 ${
-                    status === value
-                      ? "border-foreground bg-foreground text-background"
-                      : "border-border/60 hover:bg-accent"
-                  }`}
-                >
-                  {value}
-                </button>
-              ))}
-            </div>
-            <input
-              value={search}
+            <FilterPills
+              label="Review status"
+              options={STATUS_PILLS}
+              value={status}
+              onChange={setStatus}
               disabled={actionBusy}
-              onChange={(e) => setSearch(e.target.value)}
+            />
+            <AdminSearchBox
+              value={searchText}
+              onValueChange={setSearchText}
+              onClear={clearSearch}
               placeholder="Search by name, email, review, location..."
-              className={adminInputClasses("md", "max-w-sm")}
+              className="w-full sm:w-96"
             />
           </div>
         </StickyToolbar>

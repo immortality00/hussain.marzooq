@@ -7,11 +7,13 @@ export type BlogSlice = {
   categoryOptions: BlogCategoryOption[];
 };
 
+// An edited post keeps its place (the list is newest first); a new one goes first.
 export function withSavedPost(blog: BlogSlice, saved: SavedPost): BlogSlice {
   const { item, form } = saved;
+  const listed = blog.posts.some((p) => p.id === item.id);
   return {
     ...blog,
-    posts: [item, ...blog.posts.filter((p) => p.id !== item.id)],
+    posts: listed ? blog.posts.map((p) => (p.id === item.id ? item : p)) : [item, ...blog.posts],
     forms: { ...blog.forms, [item.id]: form },
   };
 }

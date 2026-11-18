@@ -3,7 +3,7 @@
 import { useAdminSlice } from "@/hooks/useAdminData";
 import { errorMessage } from "@/hooks/useAdminAction";
 import { refreshAdminData } from "@/lib/client/admin-store";
-import { appendUnique, loadMoreSharedMedia, NO_FILTERS, sharedMediaIsFull } from "./media-pages";
+import { appendUnique, loadMoreSharedMedia, NO_FILTERS, sharedMediaIsFull, TAIL_KEY } from "./media-pages";
 import { useRefreshingPages } from "./useRefreshingPages";
 
 export function useMediaBrowse(onError: (message: string) => void) {
@@ -11,7 +11,7 @@ export function useMediaBrowse(onError: (message: string) => void) {
   const shared = sharedMediaIsFull(media);
   const tail = useRefreshingPages(
     shared && media.nextCursor
-      ? { key: "tail", filters: NO_FILTERS, startCursor: media.nextCursor, autoLoadAfterMs: null }
+      ? { key: TAIL_KEY, filters: NO_FILTERS, startCursor: media.nextCursor, autoLoadAfterMs: null, keep: true }
       : null,
     onError
   );

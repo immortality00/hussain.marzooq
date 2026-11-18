@@ -1,7 +1,5 @@
 "use client";
 
-import { useState } from "react";
-import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { WizardSummaryRow } from "@/components/admin/wizard/WizardSummaryRow";
 import { WizardTabs } from "@/components/admin/wizard/WizardTabs";
 import { getCloudinaryMediaFolderForCategory } from "@/lib/cloudinary-folders";
@@ -12,6 +10,7 @@ import MediaAssetSection from "./MediaAssetSection";
 import MediaDetailsSection from "./MediaDetailsSection";
 import MediaNftSection from "./MediaNftSection";
 import MediaPlacementSection from "./MediaPlacementSection";
+import { MediaWizardActions } from "./MediaWizardActions";
 import { MediaWizardPreview } from "./MediaWizardPreview";
 import { PublishScheduleField } from "./PublishScheduleField";
 
@@ -20,21 +19,26 @@ type BusyAction = ReturnType<typeof useMediaEditorController>["busyAction"];
 
 const STEPS = ["Category", "Media", "Details", "Appearances", "Review"] as const;
 
+// An item being edited opens on Details; a new upload starts at Category.
+export const DETAILS_STEP = 2;
+
 export default function MediaWizard({
   editor,
   busy,
   busyAction,
   save,
   remove,
+  step,
+  onStep,
 }: {
   editor: Editor;
   busy: boolean;
   busyAction: BusyAction;
   save: () => void | Promise<void>;
   remove: () => void | Promise<void>;
+  step: number;
+  onStep: (step: number) => void;
 }) {
-  const [step, setStep] = useState(0);
-
   const allowEmbed =
     (editor.primaryCategory === "videography" || editor.primaryCategory === "showreel") &&
     !editor.isNft;
@@ -57,7 +61,7 @@ export default function MediaWizard({
 
   return (
     <div className="mt-4">
-      <WizardTabs steps={STEPS} step={step} onStep={setStep} />
+      <WizardTabs steps={STEPS} step={step} onStep={onStep} />
 
       {step >= 2 ? (
         <div className="mt-3 flex justify-end">
@@ -184,59 +188,18 @@ export default function MediaWizard({
         ) : null}
       </div>
 
-      <div className="mt-6 flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          disabled={step === 0}
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
-          className={adminButtonClasses("default", "md")}
-        >
-          Back
-        </button>
-
-        {isLast ? (
-          <>
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => void save()}
-              className={adminButtonClasses("solid", "md")}
-            >
-              {busyAction === "save"
-                ? editor.editingId
-                  ? "Updating…"
-                  : "Creating…"
-                : editor.editingId
-                  ? "Update"
-                  : "Save"}
-            </button>
-
-            {editor.editingId ? (
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => void remove()}
-                className={adminButtonClasses("danger", "md")}
-              >
-                {busyAction === "delete" ? "Deleting…" : "Delete"}
-              </button>
-            ) : null}
-          </>
-        ) : (
-          <button
-            type="button"
-            disabled={Boolean(blockedReason)}
-            onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
-            className={adminButtonClasses("solid", "md")}
-          >
-            Next
-          </button>
-        )}
-
-        {blockedReason ? (
-          <span className="text-xs text-muted-foreground">{blockedReason}</span>
-        ) : null}
-      </div>
+      <MediaWizardActions
+        editing={Boolean(editor.editingId)}
+        isFirst={step === 0}
+        isLast={isLast}
+        busy={busy}
+        busyAction={busyAction}
+        blockedReason={blockedReason}
+        onBack={() => onStep(Math.max(0, step - 1))}
+        onNext={() => onStep(Math.min(STEPS.length - 1, step + 1))}
+        onSave={() => void save()}
+        onDelete={() => void remove()}
+      />
     </div>
   );
 }

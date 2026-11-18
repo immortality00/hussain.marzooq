@@ -164,7 +164,7 @@ describe("service editor window", () => {
     const opener = focusedOpener();
     const { rerender } = render(serviceEditor());
 
-    const dialog = screen.getByRole("dialog", { name: "Edit Service" });
+    const dialog = screen.getByRole("dialog", { name: "Edit service" });
     expect(dialog.contains(document.activeElement)).toBe(true);
     expect(scrollLocked()).toBe(true);
 
@@ -174,9 +174,9 @@ describe("service editor window", () => {
     expect(scrollLocked()).toBe(false);
   });
 
-  test("names a new service's window Create Service", () => {
+  test("names a new service's window Create service", () => {
     render(serviceEditor({ initial: null }));
-    expect(screen.getByRole("dialog", { name: "Create Service" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: "Create service" })).toBeTruthy();
   });
 
   test("with nothing changed, Escape and a tap outside close at once", () => {
@@ -187,7 +187,7 @@ describe("service editor window", () => {
     expect(onClose).not.toHaveBeenCalled();
 
     escape();
-    fireEvent.click(screen.getByRole("dialog", { name: "Edit Service" }));
+    fireEvent.click(screen.getByRole("dialog", { name: "Edit service" }));
     expect(onClose).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole("dialog", { name: "Discard your changes?" })).toBeNull();
   });
@@ -218,7 +218,7 @@ describe("service editor window", () => {
     render(serviceEditor({ onClose }));
     fireEvent.change(screen.getByRole("textbox", { name: "Slug" }), { target: { value: "other" } });
 
-    fireEvent.click(screen.getByRole("dialog", { name: "Edit Service" }));
+    fireEvent.click(screen.getByRole("dialog", { name: "Edit service" }));
     await screen.findByRole("dialog", { name: "Discard your changes?" });
     expect(onClose).not.toHaveBeenCalled();
 
@@ -246,7 +246,7 @@ describe("service editor window", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     escape();
-    fireEvent.click(screen.getByRole("dialog", { name: "Edit Service" }));
+    fireEvent.click(screen.getByRole("dialog", { name: "Edit service" }));
 
     expect(onClose).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog", { name: "Discard your changes?" })).toBeNull();
