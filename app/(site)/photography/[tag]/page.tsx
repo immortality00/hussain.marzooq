@@ -50,7 +50,7 @@ export default async function PhotographyTagPage({
           ]),
         ]}
       />
-      <DetailPage backHref="/photography" className="pb-32">
+      <DetailPage backHref="/photography" className="pb-32" bar={{ title: data.header.title }}>
         <PageHeader
           title={data.header.title}
           description={data.header.description}

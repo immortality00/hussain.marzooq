@@ -20,6 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 import { getPageSettings } from "@/lib/server/page-settings";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { TitleBarFrame } from "@/components/shared/title-bar/TitleBarFrame";
 
 export const revalidate = 300;
 
@@ -36,49 +37,51 @@ export default async function PhotographyPage() {
 
   return (
     <>
-      <main className="section-shell pt-8 pb-32">
-        <PageHeader
-          title={seo.headerTitle}
-          description={seo.headerDescription}
-          className="max-w-3xl"
-        />
+      <TitleBarFrame title={seo.headerTitle}>
+        <main className="section-shell pt-8 pb-32">
+          <PageHeader
+            title={seo.headerTitle}
+            description={seo.headerDescription}
+            className="max-w-3xl"
+          />
 
-        {items.length > 0 ? (
-          <PhotographyViewer
-            items={items}
-            searchCategory="photography"
-            tagLinks={nav.tagLinks}
-            navChips={nav.chips}
-          />
-        ) : (
-          <PortfolioFallbackPanel
-            title="Portraits, fashion, weddings, and atmosphere-led image work."
-            text="A photography direction built around emotion, presence, styling, and cinematic composition."
-            items={[
-              {
-                title: "Portraits",
-                text: "Strong presence, expressive framing, and a clear visual identity for people-focused work.",
-              },
-              {
-                title: "Fashion",
-                text: "Editorial mood, movement, styling, and image construction with a premium finish.",
-              },
-              {
-                title: "Weddings",
-                text: "Emotional coverage shaped with intimacy, elegance, and an artistic point of view.",
-              },
-            ]}
-            links={[
-              { href: "/services", label: "View services" },
-              {
-                href: "/contact?category=photography",
-                label: "Book photography",
-                primary: true,
-              },
-            ]}
-          />
-        )}
-      </main>
+          {items.length > 0 ? (
+            <PhotographyViewer
+              items={items}
+              searchCategory="photography"
+              tagLinks={nav.tagLinks}
+              navChips={nav.chips}
+            />
+          ) : (
+            <PortfolioFallbackPanel
+              title="Portraits, fashion, weddings, and atmosphere-led image work."
+              text="A photography direction built around emotion, presence, styling, and cinematic composition."
+              items={[
+                {
+                  title: "Portraits",
+                  text: "Strong presence, expressive framing, and a clear visual identity for people-focused work.",
+                },
+                {
+                  title: "Fashion",
+                  text: "Editorial mood, movement, styling, and image construction with a premium finish.",
+                },
+                {
+                  title: "Weddings",
+                  text: "Emotional coverage shaped with intimacy, elegance, and an artistic point of view.",
+                },
+              ]}
+              links={[
+                { href: "/services", label: "View services" },
+                {
+                  href: "/contact?category=photography",
+                  label: "Book photography",
+                  primary: true,
+                },
+              ]}
+            />
+          )}
+        </main>
+      </TitleBarFrame>
 
       <StickyCta
         title={sections.stickyCta.title}

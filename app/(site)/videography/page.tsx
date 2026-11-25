@@ -24,6 +24,7 @@ import {
 } from "@/lib/server/public-media";
 import { getPageSettings } from "@/lib/server/page-settings";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { TitleBarFrame } from "@/components/shared/title-bar/TitleBarFrame";
 import { videoObjectNode } from "@/lib/seo/structured-data-content";
 import { JsonLd } from "@/components/seo/JsonLd";
 
@@ -58,83 +59,85 @@ export default async function VideographyPage() {
   return (
     <>
       <JsonLd nodes={[showreelVideo]} />
-      <main className="section-shell py-16">
-        <PageHeader
-          title={seo.headerTitle}
-          description={seo.headerDescription}
-          className="max-w-3xl"
-        />
-
-        {showreel?.type === "video" && showreel.secureUrl ? (
-          <section
-            id="showreel"
-            className="mt-10 overflow-hidden rounded-[2rem] border bg-muted scroll-mt-24"
-          >
-            <div className="aspect-video w-full bg-black">
-              <video
-                className="h-full w-full"
-                controls
-                playsInline
-                preload="metadata"
-                src={showreel.secureUrl}
-              />
-            </div>
-          </section>
-        ) : showreelEmbed ? (
-          <section
-            id="showreel"
-            className="mt-10 overflow-hidden rounded-[2rem] border bg-muted scroll-mt-24"
-          >
-            <div className="aspect-video w-full bg-black">
-              <iframe
-                className="h-full w-full"
-                src={showreelEmbed}
-                title={showreel?.title || "Showreel"}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                loading="lazy"
-              />
-            </div>
-          </section>
-        ) : null}
-
-        {videos.length > 0 ? (
-          <MediaGrid
-            items={videos}
-            mediaMode="video"
-            searchCategory="videography"
-            tagLinks={nav.tagLinks}
-            navChips={nav.chips}
+      <TitleBarFrame title={seo.headerTitle}>
+        <main className="section-shell py-16">
+          <PageHeader
+            title={seo.headerTitle}
+            description={seo.headerDescription}
+            className="max-w-3xl"
           />
-        ) : (
-          <PortfolioFallbackPanel
-            title="Films, events, dance, and moving-image work with rhythm."
-            text="Video direction shaped around atmosphere, pacing, movement, and cinematic clarity."
-            items={[
-              {
-                title: "Dance & movement",
-                text: "Body language, timing, rhythm, and physical energy translated through the camera.",
-              },
-              {
-                title: "Events & festivals",
-                text: "Coverage built around atmosphere, pacing, people, and the emotion of the moment.",
-              },
-              {
-                title: "Fashion & weddings",
-                text: "Moving-image stories with elegance, texture, and strong visual direction.",
-              },
-            ]}
-            links={[
-              { href: "/services", label: "View services" },
-              {
-                href: "/contact?category=videography",
-                label: "Book video",
-                primary: true,
-              },
-            ]}
-          />
-        )}
-      </main>
+
+          {showreel?.type === "video" && showreel.secureUrl ? (
+            <section
+              id="showreel"
+              className="mt-10 overflow-hidden rounded-[2rem] border bg-muted scroll-mt-24"
+            >
+              <div className="aspect-video w-full bg-black">
+                <video
+                  className="h-full w-full"
+                  controls
+                  playsInline
+                  preload="metadata"
+                  src={showreel.secureUrl}
+                />
+              </div>
+            </section>
+          ) : showreelEmbed ? (
+            <section
+              id="showreel"
+              className="mt-10 overflow-hidden rounded-[2rem] border bg-muted scroll-mt-24"
+            >
+              <div className="aspect-video w-full bg-black">
+                <iframe
+                  className="h-full w-full"
+                  src={showreelEmbed}
+                  title={showreel?.title || "Showreel"}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  loading="lazy"
+                />
+              </div>
+            </section>
+          ) : null}
+
+          {videos.length > 0 ? (
+            <MediaGrid
+              items={videos}
+              mediaMode="video"
+              searchCategory="videography"
+              tagLinks={nav.tagLinks}
+              navChips={nav.chips}
+            />
+          ) : (
+            <PortfolioFallbackPanel
+              title="Films, events, dance, and moving-image work with rhythm."
+              text="Video direction shaped around atmosphere, pacing, movement, and cinematic clarity."
+              items={[
+                {
+                  title: "Dance & movement",
+                  text: "Body language, timing, rhythm, and physical energy translated through the camera.",
+                },
+                {
+                  title: "Events & festivals",
+                  text: "Coverage built around atmosphere, pacing, people, and the emotion of the moment.",
+                },
+                {
+                  title: "Fashion & weddings",
+                  text: "Moving-image stories with elegance, texture, and strong visual direction.",
+                },
+              ]}
+              links={[
+                { href: "/services", label: "View services" },
+                {
+                  href: "/contact?category=videography",
+                  label: "Book video",
+                  primary: true,
+                },
+              ]}
+            />
+          )}
+        </main>
+      </TitleBarFrame>
 
       <StickyCta
         title={sections.stickyCta.title}

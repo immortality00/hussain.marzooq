@@ -2,9 +2,10 @@ import { expect, test, type Page } from "@playwright/test";
 import { openScreen, signIn } from "./admin-helpers";
 
 // The public navbar is 57px (h-14 + hairline); every bar keeps a 12px gap under
-// whatever sits above it.
+// whatever sits above it. On Photography the page's title bar (56px, UX1b) sits between.
 const GAP = 12;
 const NAV = 57;
+const TITLE_BAR = 56;
 
 async function scrollPage(page: Page, y: number) {
   await page.evaluate((top) => {
@@ -17,7 +18,7 @@ async function scrollPage(page: Page, y: number) {
 const barTop = (page: Page) =>
   page.locator(".hm-sticky-toolbar").first().evaluate((el) => Math.round(el.getBoundingClientRect().top));
 
-test("the photography filter bar stays under the navbar while the grid scrolls", async ({ page }) => {
+test("the photography filter bar stays under the title bar while the grid scrolls", async ({ page }) => {
   await page.goto("/photography");
   await page.getByRole("button", { name: "Grid" }).first().click();
   await expect(page.getByRole("button", { name: /^Seed Photo \d+/ }).first()).toBeVisible();
@@ -25,10 +26,10 @@ test("the photography filter bar stays under the navbar while the grid scrolls",
   const bar = page.locator(".hm-sticky-toolbar").first();
   await expect(bar).not.toHaveAttribute("data-stuck");
   const resting = await barTop(page);
-  expect(resting).toBeGreaterThan(NAV + GAP);
+  expect(resting).toBeGreaterThan(NAV + TITLE_BAR + GAP);
 
   await scrollPage(page, 1500);
-  await expect.poll(() => barTop(page)).toBe(NAV + GAP);
+  await expect.poll(() => barTop(page)).toBe(NAV + TITLE_BAR + GAP);
   await expect(bar).toHaveAttribute("data-stuck", "");
 
   await scrollPage(page, 0);

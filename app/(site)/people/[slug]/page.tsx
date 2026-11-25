@@ -89,10 +89,17 @@ export default async function PersonDetailPage({
           ]),
         ]}
       />
-      <DetailPage backHref="/people" className="pb-12 sm:pb-16">
+      <DetailPage
+        backHref="/people"
+        className="pb-12 sm:pb-16"
+        bar={{ title: person.name, avatarUrl: person.avatarUrl ?? null }}
+      >
         <section className="mx-auto max-w-3xl text-center">
           <div className="flex justify-center">
-            <div className="relative h-28 w-28 overflow-hidden rounded-full border bg-muted sm:h-36 sm:w-36">
+            <div
+              data-title-avatar=""
+              className="relative h-28 w-28 overflow-hidden rounded-full border bg-muted sm:h-36 sm:w-36"
+            >
               {person.avatarUrl ? (
                 <SmartImage
                   src={person.avatarUrl}
@@ -108,7 +115,7 @@ export default async function PersonDetailPage({
             </div>
           </div>
 
-          <h1 className="mt-6 text-4xl font-semibold tracking-tight wrap-anywhere sm:text-5xl">
+          <h1 data-title-heading="" className="mt-6 text-4xl font-semibold tracking-tight wrap-anywhere sm:text-5xl">
             <AnimatedText revealOnLoad>{person.name}</AnimatedText>
           </h1>
 

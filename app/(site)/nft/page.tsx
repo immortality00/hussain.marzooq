@@ -8,6 +8,7 @@ import NftCollection from "@/components/nft/NftCollection";
 import { getPublicNfts } from "@/lib/server/public-nfts";
 import { getPageSettings } from "@/lib/server/page-settings";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { TitleBarFrame } from "@/components/shared/title-bar/TitleBarFrame";
 
 export const revalidate = 300;
 
@@ -33,15 +34,17 @@ export default async function NftPage() {
 
   return (
     <>
-      <main className="section-shell py-12 sm:py-16">
-        <PageHeader
-          title={seo.headerTitle}
-          description={seo.headerDescription}
-          className="max-w-3xl"
-        />
+      <TitleBarFrame title={seo.headerTitle}>
+        <main className="section-shell py-12 sm:py-16">
+          <PageHeader
+            title={seo.headerTitle}
+            description={seo.headerDescription}
+            className="max-w-3xl"
+          />
 
-        <NftCollection items={items} />
-      </main>
+          <NftCollection items={items} />
+        </main>
+      </TitleBarFrame>
 
       <StickyCta
         title={sections.stickyCta.title}

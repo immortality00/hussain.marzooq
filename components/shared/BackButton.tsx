@@ -10,8 +10,10 @@ import { canGoBackOnSite } from "@/lib/client/history-entry";
 // back in history, so the visitor lands exactly where they were — the page puts its search,
 // results and scroll back. Opened from outside the site, it opens the listing instead. It is
 // a real link to the listing, so it works before the page has loaded, and a Cmd/Ctrl or
-// middle click opens the listing in a new tab.
-export function BackButton({ fallbackHref }: { fallbackHref: string }) {
+// middle click opens the listing in a new tab. `part` marks which one it is on a page with a
+// title bar (the page's own, or the bar's), for the flight between them
+// (components/shared/title-bar/).
+export function BackButton({ fallbackHref, part }: { fallbackHref: string; part?: "page" | "bar" }) {
   const transition = usePageTransition();
   const router = useRouter();
 
@@ -24,7 +26,7 @@ export function BackButton({ fallbackHref }: { fallbackHref: string }) {
   }
 
   return (
-    <Button href={fallbackHref} data-no-transition onClick={onClick}>
+    <Button href={fallbackHref} data-no-transition data-title-back={part} onClick={onClick}>
       Back
     </Button>
   );

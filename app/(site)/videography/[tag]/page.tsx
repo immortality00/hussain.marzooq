@@ -50,7 +50,7 @@ export default async function VideographyTagPage({
           ]),
         ]}
       />
-      <DetailPage backHref="/videography" className="pb-16">
+      <DetailPage backHref="/videography" className="pb-16" bar={{ title: data.header.title }}>
         <PageHeader
           title={data.header.title}
           description={data.header.description}

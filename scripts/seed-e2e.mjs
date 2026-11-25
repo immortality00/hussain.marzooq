@@ -315,6 +315,11 @@ async function seedInbox(db) {
     createdAt: now,
     updatedAt: now,
   });
+  // Three photos of this person, one tagged, so their page has a search and tag chips (UX1b).
+  await db.collection("media").updateMany(
+    { title: { $in: ["Seed Photo 1", "Seed Photo 2", "Seed Photo 3"] } },
+    { $set: { peopleIds: [String(personId)], people: [E2E.personName] } }
+  );
   await db.collection("removal_requests").insertOne({
     personId: String(personId),
     personName: E2E.personName,

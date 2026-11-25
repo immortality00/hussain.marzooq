@@ -12,9 +12,11 @@
   --site-nav-height: calc(3.5rem + 1px);
 }
 
+/* On a page with a title bar (title-bar.css) the bar sits between the navbar and the stuck
+   search row, so the row sticks under the bar. */
 .hm-sticky-toolbar {
   --sticky-gap: 0.75rem;
-  --sticky-offset: var(--site-nav-height);
+  --sticky-offset: calc(var(--site-nav-height) + var(--title-bar-height, 0px));
   --sticky-reach: var(--sticky-gap);
   --sticky-surface: var(--background);
   position: sticky;

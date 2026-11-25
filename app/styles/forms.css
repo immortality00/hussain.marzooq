@@ -5,3 +5,36 @@
     font-size: 16px;
   }
 }
+
+/* The search that shares a line with chips (components/search/ExpandingSearch.tsx). Below
+   768px it is the icon's width until opened, then half its row, and the chips beside it make
+   room as it grows. This one animates its width on purpose: the chips' line really has to get
+   narrower, which no transform can do (the hero strips' flex-grow is the same case). From 768px
+   it is a plain 16rem box. */
+.hm-expanding-search {
+  width: 2.625rem;
+  transition: width 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.hm-expanding-search[data-open] {
+  width: 50%;
+}
+
+.hm-expanding-search[data-fill] {
+  width: 100%;
+}
+
+@media (min-width: 48rem) {
+  .hm-expanding-search,
+  .hm-expanding-search[data-open],
+  .hm-expanding-search[data-fill] {
+    width: 16rem;
+    transition: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hm-expanding-search {
+    transition: none;
+  }
+}

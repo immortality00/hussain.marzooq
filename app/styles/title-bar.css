@@ -1,0 +1,97 @@
+/* The title bar (components/shared/title-bar/, UX1b). Once a page scrolls 40px, its heading
+   — and on a detail page Back and the person's photo — fly into it, and it stays under the
+   navbar with the page's search row stuck right under it (sticky-toolbar.css adds
+   --title-bar-height). The phase is data-title-state on the frame, set by title-bar-flight.ts:
+   absent = the page shows its own; toBar / toPage = copies flying between the two; bar = the bar
+   shows them. */
+.hm-title-frame {
+  --title-bar-height: 3.5rem;
+}
+
+/* Sticky from the top of the frame and taking no room in it (the negative margin): the page
+   below keeps its place, and the bar leaves with the page's content, never over the footer. */
+.hm-title-bar-holder {
+  position: sticky;
+  top: var(--site-nav-height);
+  z-index: 30;
+  height: var(--title-bar-height);
+  margin-bottom: calc(-1 * var(--title-bar-height));
+  pointer-events: none;
+}
+
+.hm-title-bar {
+  position: relative;
+  height: 100%;
+}
+
+/* The surface: the page colour across the window and one hairline, which drops out while the
+   search row below is stuck so the two read as one block. */
+.hm-title-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  opacity: 0;
+  transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.hm-title-frame:is([data-title-state="toBar"], [data-title-state="bar"]) .hm-title-bar::before {
+  opacity: 1;
+}
+
+.hm-title-frame:has(.hm-sticky-toolbar[data-stuck]) .hm-title-bar::before {
+  border-bottom-color: transparent;
+}
+
+.hm-title-bar-row {
+  display: grid;
+  grid-template-columns: 1fr minmax(0, auto) 1fr;
+  align-items: center;
+  column-gap: 0.75rem;
+  height: 100%;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 120ms cubic-bezier(0.23, 1, 0.32, 1),
+    visibility 0s linear 120ms;
+}
+
+/* The copies have landed: the bar's own pieces take over. */
+.hm-title-frame[data-title-state="bar"] .hm-title-bar-row {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition: opacity 150ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* The page's own Back while it is in the bar or flying: out of sight and out of reach, so the
+   keyboard and a screen reader meet one Back. */
+.hm-title-frame[data-title-state] [data-title-back="page"] {
+  visibility: hidden;
+}
+
+/* The page's photo and heading: out of sight only. The heading stays the page's heading for a
+   screen reader; the bar's copy of it is aria-hidden. */
+.hm-title-frame[data-title-state] :is([data-title-avatar], [data-title-heading]) {
+  opacity: 0;
+}
+
+/* Reduced motion: no flight (title-bar-flight.ts), the two places cross-fade. */
+@media (prefers-reduced-motion: reduce) {
+  .hm-title-frame :is([data-title-back="page"], [data-title-avatar], [data-title-heading]) {
+    transition: opacity 150ms ease-out;
+  }
+
+  .hm-title-frame[data-title-state] [data-title-back="page"] {
+    opacity: 0;
+    transition:
+      opacity 150ms ease-out,
+      visibility 0s linear 150ms;
+  }
+
+  .hm-title-bar::before {
+    transition-duration: 150ms;
+  }
+}

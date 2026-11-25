@@ -10,7 +10,9 @@ interface PageHeaderProps {
 export function PageHeader({ title, description, className, titleClassName }: PageHeaderProps) {
   return (
     <div className={className}>
+      {/* data-title-heading: on a page with a title bar, the heading that moves into it. */}
       <h1
+        data-title-heading=""
         className={`text-4xl font-semibold tracking-tight wrap-anywhere sm:text-5xl${titleClassName ? ` ${titleClassName}` : ""}`}
       >
         <AnimatedText revealOnLoad>{title}</AnimatedText>

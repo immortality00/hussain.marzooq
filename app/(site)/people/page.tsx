@@ -4,6 +4,7 @@ import { PortfolioFallbackPanel } from "@/components/site/PortfolioFallbackPanel
 import { StickyCta } from "@/components/site/StickyCta";
 import { getPublicPeople } from "@/lib/server/public-people";
 import { PageHeader } from "@/components/shared/PageHeader";
+import { TitleBarFrame } from "@/components/shared/title-bar/TitleBarFrame";
 import { getPageSeo } from "@/lib/server/page-seo";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { getPageSections } from "@/lib/server/page-sections";
@@ -32,40 +33,42 @@ export default async function PeoplePage() {
 
   return (
     <>
-      <main className="section-shell py-12 sm:py-16">
-        <PageHeader
-          title={seo.headerTitle}
-          description={seo.headerDescription}
-          className="max-w-3xl"
-        />
-
-        {items.length > 0 ? (
-          <PeopleIndex items={items} />
-        ) : (
-          <PortfolioFallbackPanel
-            title="People-focused work built around presence and character."
-            text="Portraits, movement, fashion, and collaborations with a clear visual identity."
-            items={[
-              {
-                title: "Portrait presence",
-                text: "Images built around expression, posture, atmosphere, and strong personal direction.",
-              },
-              {
-                title: "Movement",
-                text: "Dance and performance work shaped through rhythm, timing, and physical language.",
-              },
-              {
-                title: "Creative collaboration",
-                text: "Artists, clients, performers, and brands framed through a cinematic point of view.",
-              },
-            ]}
-            links={[
-              ...(activeSet.has("photography") ? [{ href: "/photography", label: "View photography" }] : []),
-              { href: "/contact?category=photography", label: "Book a shoot", primary: true },
-            ]}
+      <TitleBarFrame title={seo.headerTitle}>
+        <main className="section-shell py-12 sm:py-16">
+          <PageHeader
+            title={seo.headerTitle}
+            description={seo.headerDescription}
+            className="max-w-3xl"
           />
-        )}
-      </main>
+
+          {items.length > 0 ? (
+            <PeopleIndex items={items} />
+          ) : (
+            <PortfolioFallbackPanel
+              title="People-focused work built around presence and character."
+              text="Portraits, movement, fashion, and collaborations with a clear visual identity."
+              items={[
+                {
+                  title: "Portrait presence",
+                  text: "Images built around expression, posture, atmosphere, and strong personal direction.",
+                },
+                {
+                  title: "Movement",
+                  text: "Dance and performance work shaped through rhythm, timing, and physical language.",
+                },
+                {
+                  title: "Creative collaboration",
+                  text: "Artists, clients, performers, and brands framed through a cinematic point of view.",
+                },
+              ]}
+              links={[
+                ...(activeSet.has("photography") ? [{ href: "/photography", label: "View photography" }] : []),
+                { href: "/contact?category=photography", label: "Book a shoot", primary: true },
+              ]}
+            />
+          )}
+        </main>
+      </TitleBarFrame>
 
       <StickyCta
         title={sections.stickyCta.title}

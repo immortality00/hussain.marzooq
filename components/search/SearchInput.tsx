@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, type RefObject } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -13,6 +13,9 @@ type SearchInputProps = {
   wrapperClassName?: string;
   inputClassName?: string;
   resultText?: string;
+  // For a parent that puts the cursor in the box itself (ExpandingSearch).
+  inputRef?: RefObject<HTMLInputElement | null>;
+  inputId?: string;
 };
 
 // 16px below 768px: iOS zooms the page into any field smaller than that.
@@ -28,8 +31,11 @@ export function SearchInput({
   wrapperClassName = "flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between",
   inputClassName,
   resultText,
+  inputRef: givenRef,
+  inputId,
 }: SearchInputProps) {
-  const inputRef = useRef<HTMLInputElement>(null);
+  const ownRef = useRef<HTMLInputElement>(null);
+  const inputRef = givenRef ?? ownRef;
 
   function handleClear() {
     onValueChange?.("");
@@ -46,6 +52,7 @@ export function SearchInput({
       <div className="relative w-full sm:max-w-md">
         <input
           ref={inputRef}
+          id={inputId}
           value={value}
           onChange={(event) => onValueChange?.(event.target.value)}
           placeholder={placeholder}
