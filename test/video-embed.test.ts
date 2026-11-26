@@ -134,6 +134,15 @@ describe("autoplayEmbedSrc", () => {
     );
   });
 
+  it("adds playsinline only for the YouTube player's own host, never a lookalike", () => {
+    expect(autoplayEmbedSrc("https://youtube-nocookie.com/embed/abcdefghijk")).toBe(
+      "https://youtube-nocookie.com/embed/abcdefghijk?autoplay=1&playsinline=1",
+    );
+    expect(autoplayEmbedSrc("https://evilyoutube-nocookie.com/embed/abcdefghijk")).toBe(
+      "https://evilyoutube-nocookie.com/embed/abcdefghijk?autoplay=1",
+    );
+  });
+
   it("keeps a Vimeo hash", () => {
     expect(autoplayEmbedSrc("https://player.vimeo.com/video/123?h=abc")).toBe(
       "https://player.vimeo.com/video/123?h=abc&autoplay=1",

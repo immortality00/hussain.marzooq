@@ -26,6 +26,12 @@ function toUrl(raw: string): URL | null {
   }
 }
 
+// A host without "www.", compared exactly: a substring test would also accept a lookalike such as
+// evilyoutube-nocookie.com (CodeQL js/incomplete-url-substring-sanitization).
+function bareHost(url: URL) {
+  return url.hostname.toLowerCase().replace(/^www\./, "");
+}
+
 function youtubeId(url: URL, host: string): string | null {
   const parts = url.pathname.split("/").filter(Boolean);
   if (host === "youtu.be") return parts[0] ?? null;
@@ -51,7 +57,7 @@ export function parseVideoLink(raw: string): VideoRef | null {
   const url = toUrl(raw);
   if (!url) return null;
 
-  const host = url.hostname.toLowerCase().replace(/^www\./, "");
+  const host = bareHost(url);
 
   const id = youtubeId(url, host);
   if (id !== null) return YOUTUBE_ID.test(id) ? { provider: "youtube", id } : null;
@@ -95,7 +101,7 @@ export function autoplayEmbedSrc(src: string): string {
   try {
     const url = new URL(src);
     url.searchParams.set("autoplay", "1");
-    if (url.hostname.endsWith("youtube-nocookie.com")) url.searchParams.set("playsinline", "1");
+    if (bareHost(url) === "youtube-nocookie.com") url.searchParams.set("playsinline", "1");
     return url.toString();
   } catch {
     return src;
