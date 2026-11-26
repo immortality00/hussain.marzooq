@@ -2,6 +2,8 @@ import { getDb } from "@/lib/server/db";
 import { sanitizeAppearances, type Appearance } from "@/app/api/_lib/media";
 import { buildFallback } from "@/lib/server/public-read";
 import { publicMediaFilter } from "@/lib/media-schedule";
+import { mediaPeopleOf, type MediaPerson } from "@/lib/linked-people";
+import { publicProfileSlugs } from "@/lib/server/public-profile-links";
 
 export type PublicNftItem = {
   id: string;
@@ -11,7 +13,7 @@ export type PublicNftItem = {
   event: string | null;
   year: number | null;
   tags: string[];
-  people: string[];
+  people: MediaPerson[];
   categories: string[];
   appearances: Appearance[];
   mediaUrl: string | null;
@@ -44,6 +46,7 @@ async function getPublicNftsImpl(): Promise<PublicNftItem[]> {
     })
     .sort({ createdAt: -1 })
     .toArray();
+  const profileSlugs = await publicProfileSlugs(db, docs);
 
   return docs
     .map((d) => ({
@@ -54,7 +57,7 @@ async function getPublicNftsImpl(): Promise<PublicNftItem[]> {
       event: typeof d.event === "string" ? d.event : null,
       year: typeof d.year === "number" ? d.year : null,
       tags: normalizeStringArray(d.tags),
-      people: normalizeStringArray(d.people),
+      people: mediaPeopleOf(d, profileSlugs),
       categories: normalizeStringArray(d.categories),
       appearances: sanitizeAppearances(d.appearances),
       mediaUrl: typeof d.secureUrl === "string" ? d.secureUrl : null,

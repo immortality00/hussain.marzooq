@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import dynamic from "next/dynamic";
 import { usePersistedChoice } from "@/hooks/usePersistedChoice";
 import { SearchInput } from "@/components/search/SearchInput";
@@ -9,9 +8,11 @@ import { StickyToolbar } from "@/components/shared/StickyToolbar";
 import { TagChipRow, type TagChip } from "@/components/media/TagChipRow";
 import MediaGridResults from "@/components/media/MediaGridResults";
 import MediaLightbox from "@/components/media/MediaLightbox";
-import type { MediaItem, TagLink } from "@/components/media/types";
+import type { MediaItem, TagLinks } from "@/components/media/types";
 import { useMediaSearch } from "@/components/media/useMediaSearch";
 import { useModalNavbarLock } from "@/components/media/useModalNavbarLock";
+import { usePopupSequence } from "@/components/shared/popup-sequence/usePopupSequence";
+import { preloadMediaPopup } from "@/lib/client/preload-popup-image";
 import { useListGeneration } from "@/hooks/useListGeneration";
 import ModeSwitcher, {
   VIEWER_MODE_STORAGE_KEY,
@@ -39,7 +40,7 @@ export default function PhotographyViewer({
   items: MediaItem[];
   searchCategory?: string;
   lockedTag?: string;
-  tagLinks?: Record<string, TagLink>;
+  tagLinks?: TagLinks;
   navChips?: TagChip[];
 }) {
   const [mode, setMode] = usePersistedChoice<ViewerMode>(
@@ -47,8 +48,6 @@ export default function PhotographyViewer({
     "cylinder",
     isViewerMode
   );
-  const [active, setActive] = useState<MediaItem | null>(null);
-
   const {
     q,
     setQ,
@@ -60,8 +59,12 @@ export default function PhotographyViewer({
     canLoadMore,
     loadMore,
   } = useMediaSearch({ items, mediaMode: "image", searchCategory, lockedTag, loadAll: mode !== "grid" });
+  const popup = usePopupSequence(displayedItems, {
+    more: { canLoadMore, isLoadingMore, failed: Boolean(searchError), loadMore },
+    preload: preloadMediaPopup,
+  });
 
-  useModalNavbarLock(Boolean(active));
+  useModalNavbarLock(Boolean(popup.active));
   // Starts the views over only for a new list, never while more photos arrive.
   const listGeneration = useListGeneration(displayedItems.map((m) => m.id));
 
@@ -93,17 +96,17 @@ export default function PhotographyViewer({
 
       <div className="mt-1">
         {mode === "cylinder" ? (
-          <PhotographyCylinder key={listGeneration} items={displayedItems} onSelect={setActive} />
+          <PhotographyCylinder key={listGeneration} items={displayedItems} onSelect={popup.open} />
         ) : mode === "horizontal" ? (
           <PhotographyHorizontal
             key={listGeneration}
             items={displayedItems}
-            onSelect={setActive}
+            onSelect={popup.open}
           />
         ) : (
           <MediaGridResults
             items={displayedItems}
-            onSelect={setActive}
+            onSelect={popup.open}
             mediaMode="image"
             isSearching={isSearching}
             searchError={searchError}
@@ -114,8 +117,8 @@ export default function PhotographyViewer({
         )}
       </div>
 
-      {active ? (
-        <MediaLightbox active={active} onClose={() => setActive(null)} tagLinks={tagLinks} />
+      {popup.active ? (
+        <MediaLightbox active={popup.active} nav={popup.nav} onClose={popup.close} tagLinks={tagLinks} />
       ) : null}
     </div>
   );

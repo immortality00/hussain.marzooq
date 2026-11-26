@@ -168,6 +168,27 @@ describe("an unlocked private person page", () => {
     if (result.state === "open") expect(result.person.mediaItems).toHaveLength(0);
   });
 
+  test("links the other public people on its media, but never the protected person", async () => {
+    mediaDocs = [
+      { _id: new ObjectId(), peopleIds: [PERSON_ID, OTHER_PUBLIC_ID], people: ["Subject", "Pat"], isPublic: false },
+    ];
+    otherPeople = [
+      { _id: new ObjectId(PERSON_ID), slug: "subject", isPrivate: true },
+      { _id: new ObjectId(OTHER_PUBLIC_ID), slug: "pat", isPrivate: false, isPublic: true },
+    ];
+
+    const { getPersonPageBySlug } = await import("@/lib/server/public-people");
+    const result = await getPersonPageBySlug("subject");
+
+    expect(result.state).toBe("open");
+    if (result.state === "open") {
+      expect(result.person.mediaItems[0]!.people).toEqual([
+        { name: "Subject", slug: null },
+        { name: "Pat", slug: "pat" },
+      ]);
+    }
+  });
+
   test("still shows media co-appearing with an ordinary, non-gated person", async () => {
     mediaDocs = [
       { _id: new ObjectId(), peopleIds: [PERSON_ID, OTHER_PUBLIC_ID], isPublic: false },

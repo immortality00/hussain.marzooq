@@ -65,7 +65,7 @@ function localFilterItems(items: MediaItem[], queryValue: string, tagValue: stri
   const query = queryValue.trim().toLowerCase();
 
   return items.filter((m) => {
-    const text = `${m.title} ${m.description ?? ""} ${m.location ?? ""} ${m.event ?? ""} ${(m.tags ?? []).join(" ")} ${(m.people ?? []).join(" ")}`.toLowerCase();
+    const text = `${m.title} ${m.description ?? ""} ${m.location ?? ""} ${m.event ?? ""} ${(m.tags ?? []).join(" ")} ${(m.people ?? []).map((person) => person.name).join(" ")}`.toLowerCase();
 
     const matchesQuery = query ? text.includes(query) : true;
     const matchesTag = tagValue ? m.tags.includes(tagValue) : true;

@@ -13,6 +13,7 @@ import { AnimatedText } from "@/components/shared/AnimatedText";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 import { getPageSections } from "@/lib/server/page-sections";
 import { getPageSeo } from "@/lib/server/page-seo";
+import { getTagLinks } from "@/lib/server/tag-pages";
 import { buildPublicMetadata } from "@/lib/seo/page-metadata";
 import { breadcrumbNode } from "@/lib/seo/structured-data";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -49,10 +50,11 @@ export default async function PersonDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [state, pageSettings, sections] = await Promise.all([
+  const [state, pageSettings, sections, tagLinks] = await Promise.all([
     getPersonPageBySlug(slug),
     getAllPageSettings(),
     getPageSections("people-detail"),
+    getTagLinks(),
   ]);
 
   if (state.state === "missing") notFound();
@@ -128,7 +130,7 @@ export default async function PersonDetailPage({
 
         {person.mediaItems.length > 0 ? (
           <div className="mt-12">
-            <MediaGrid items={person.mediaItems} />
+            <MediaGrid items={person.mediaItems} tagLinks={tagLinks} />
           </div>
         ) : (
           <PortfolioFallbackPanel

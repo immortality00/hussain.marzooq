@@ -10,16 +10,19 @@ export function ModalPortal({
   label,
   className,
   closeOnEscape = true,
+  returnFocusTo,
   children,
 }: {
   onClose: () => void;
   label: string;
   className?: string;
   closeOnEscape?: boolean;
+  /** Where focus goes when it closes; the element that opened it otherwise. */
+  returnFocusTo?: () => HTMLElement | null;
   children: React.ReactNode;
 }) {
   useScrollLock();
-  const containerRef = useFocusTrap<HTMLDivElement>();
+  const containerRef = useFocusTrap<HTMLDivElement>(returnFocusTo);
 
   useEffect(() => {
     if (!closeOnEscape) return;

@@ -1,36 +1,77 @@
+"use client";
+
+import { useRef } from "react";
 import SmartImage from "@/components/shared/SmartImage";
 import Link from "next/link";
 import { ModalPortal } from "@/components/shared/ModalPortal";
 import type { PublicNftItem } from "@/lib/server/public-nfts";
-import { formatDates } from "@/components/media/utils";
-import {
-  buildInquiryHref,
-  displayStatus,
-  editionLabel,
-  editionSubline,
-  statusClasses,
-  statusLabel,
-} from "./lib";
-import { NftPrice } from "./NftPrice";
-import { buttonClasses } from "@/components/shared/Button";
+import type { TagLinks } from "@/components/media/types";
+import { buildInquiryHref, displayStatus, editionLabel } from "./lib";
+import { NftDetails } from "./NftDetails";
+import { NftStatusBadge } from "./NftStatusBadge";
+import { useArtworkCorner } from "./useArtworkCorner";
+import { Button, buttonClasses } from "@/components/shared/Button";
 import { NFT_POPUP_IMAGE_SIZES } from "@/lib/client/preload-popup-image";
 import { useCardExpand } from "@/components/shared/expand/useCardExpand";
+import { cardTriggerOf } from "@/lib/client/expand-origin";
+import { PopupStepButtons } from "@/components/shared/popup-sequence/PopupStepButtons";
+import { usePopupStepper } from "@/components/shared/popup-sequence/usePopupStepper";
+import type { PopupNav } from "@/components/shared/popup-sequence/usePopupSequence";
+
+function NftMedia({ item }: { item: PublicNftItem }) {
+  if (!item.mediaUrl) {
+    return <div className="flex h-full items-center justify-center text-sm text-white/70">No media</div>;
+  }
+  if (item.mediaType === "video") {
+    return (
+      <video
+        key={item.id}
+        className="h-full w-full object-contain"
+        controls
+        preload="metadata"
+        playsInline
+        src={item.mediaUrl}
+      />
+    );
+  }
+  return (
+    <div className="relative h-full w-full">
+      <SmartImage
+        src={item.mediaUrl}
+        alt={item.title}
+        fill
+        className="object-contain"
+        sizes={NFT_POPUP_IMAGE_SIZES}
+        preload
+      />
+    </div>
+  );
+}
 
 export default function NftModal({
   item,
   onClose,
+  tagLinks,
+  nav = null,
 }: {
   item: PublicNftItem;
   onClose: () => void;
+  tagLinks?: TagLinks;
+  /** Previous / next through the collection as filtered. */
+  nav?: PopupNav | null;
 }) {
   const inquiryHref = buildInquiryHref(item);
   const shownStatus = displayStatus(item);
-  const { panelRef, requestClose } = useCardExpand<HTMLDivElement>(onClose);
+  const { panelRef, requestClose, retarget } = useCardExpand<HTMLDivElement>(onClose);
+  const { areaRef, surfaceRef, step } = usePopupStepper({ itemId: item.id, nav, retarget });
+  const frameRef = useRef<HTMLDivElement>(null);
+  useArtworkCorner(frameRef);
 
   return (
     <ModalPortal
       onClose={requestClose}
       label={item.title || "NFT detail"}
+      returnFocusTo={() => cardTriggerOf(item.id)}
       className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4"
     >
       <div
@@ -39,159 +80,41 @@ export default function NftModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between gap-3 border-b p-4">
-          <div className="min-w-0">
+          <div className="min-w-0" aria-live="polite" aria-atomic="true">
             <div className="text-lg font-semibold wrap-anywhere">{item.title}</div>
             <div className="mt-1 text-xs text-muted-foreground">{editionLabel(item)}</div>
           </div>
 
-          <button
-            className="rounded-xl border px-3 py-2 text-sm hover:bg-accent"
-            onClick={requestClose}
-          >
+          <Button data-autofocus onClick={requestClose}>
             Close
-          </button>
+          </Button>
         </div>
 
         <div className="grid h-[82vh] min-h-0 grid-rows-[45vh_minmax(0,1fr)] lg:grid-rows-none lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="min-h-0 bg-black/5 p-4">
-            <div data-expand-target className="h-full w-full overflow-hidden rounded-[2rem] border bg-black">
-              {item.mediaUrl ? (
-                item.mediaType === "video" ? (
-                  <video
-                    className="h-full w-full object-contain"
-                    controls
-                    preload="metadata"
-                    playsInline
-                    src={item.mediaUrl}
-                  />
-                ) : (
-                  <div className="relative h-full w-full">
-                    <SmartImage
-                      src={item.mediaUrl}
-                      alt={item.title}
-                      fill
-                      className="object-contain"
-                      sizes={NFT_POPUP_IMAGE_SIZES}
-                      preload
-                    />
-                  </div>
-                )
-              ) : (
-                <div className="flex h-full items-center justify-center text-sm text-white/70">
-                  No media
+          <div
+            ref={areaRef}
+            data-popup-swipe
+            className="relative min-h-0 touch-pan-y touch-pinch-zoom overflow-hidden bg-black/5 p-4"
+          >
+            <div ref={surfaceRef} className="h-full w-full">
+              <div
+                ref={frameRef}
+                data-expand-target
+                className="relative h-full w-full overflow-hidden rounded-[2rem] border bg-black"
+              >
+                <NftMedia item={item} />
+                <div className="absolute top-[calc(var(--art-top,0px)_+_1rem)] left-[calc(var(--art-left,0px)_+_1rem)]">
+                  <NftStatusBadge status={shownStatus} withSold />
                 </div>
-              )}
+              </div>
             </div>
+            {nav ? <PopupStepButtons nav={nav} onStep={step} /> : null}
           </div>
 
           <div className="min-h-0 overflow-hidden">
             <div className="flex h-full min-h-0 flex-col">
               <div className="min-h-0 flex-1 overflow-y-auto p-5" data-lenis-prevent>
-                <div className="space-y-5">
-                  <div className="flex flex-wrap gap-2">
-                    <span className={`inline-flex rounded-full px-3 py-1 text-xs ${statusClasses(shownStatus)}`}>
-                      {statusLabel(shownStatus)}
-                    </span>
-                    <span className="inline-flex rounded-full border px-3 py-1 text-xs text-muted-foreground">
-                      {item.nft.currency}
-                    </span>
-                    {item.year ? (
-                      <span className="inline-flex rounded-full border px-3 py-1 text-xs text-muted-foreground">
-                        {item.year}
-                      </span>
-                    ) : null}
-                  </div>
-
-                  {item.description ? (
-                    <div className="rounded-2xl border bg-background/50 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        Description
-                      </div>
-                      <div className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
-                        {item.description}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="rounded-2xl border bg-background/50 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        Price
-                      </div>
-                      <div className="mt-3 text-lg font-semibold"><NftPrice item={item} /></div>
-                    </div>
-
-                    <div className="rounded-2xl border bg-background/50 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        Edition
-                      </div>
-                      <div className="mt-3 text-lg font-semibold">{editionLabel(item)}</div>
-                      <div className="mt-1 text-sm text-muted-foreground">{editionSubline(item)}</div>
-                    </div>
-                  </div>
-
-                  {item.location || item.event || item.year || item.people.length || item.categories.length ? (
-                    <div className="rounded-2xl border bg-background/50 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        Media details
-                      </div>
-                      <div className="mt-3 space-y-2 text-sm text-muted-foreground">
-                        {item.location ? <div>Location: {item.location}</div> : null}
-                        {item.event ? <div>Event: {item.event}</div> : null}
-                        {item.year ? <div>Year: {item.year}</div> : null}
-                        {item.people.length ? <div>People: {item.people.join(", ")}</div> : null}
-                        {item.categories.length ? <div>Categories: {item.categories.join(", ")}</div> : null}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {item.tags.length ? (
-                    <div className="rounded-2xl border bg-background/50 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        Tags
-                      </div>
-                      <div className="mt-3 flex flex-wrap gap-2">
-                        {item.tags.map((tag) => (
-                          <span
-                            key={`${item.id}-${tag}`}
-                            className="rounded-full border px-3 py-1 text-xs text-muted-foreground"
-                          >
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {item.appearances.length ? (
-                    <div className="rounded-2xl border bg-background/50 p-4">
-                      <div className="text-xs font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                        Appearances
-                      </div>
-                      <div className="mt-3 space-y-3">
-                        {item.appearances.map((appearance, index) => (
-                          <div
-                            key={`${item.id}-appearance-${index}`}
-                            className="rounded-xl border px-3 py-3 text-sm text-muted-foreground"
-                          >
-                            <div className="font-medium text-foreground">
-                              {appearance.title || appearance.venue}
-                            </div>
-                            <div className="mt-1">
-                              {[appearance.venue, appearance.city, appearance.country]
-                                .filter(Boolean)
-                                .join(" • ")}
-                            </div>
-                            <div className="mt-1">{formatDates(appearance)}</div>
-                            {appearance.notes ? (
-                              <div className="mt-2 whitespace-pre-wrap">{appearance.notes}</div>
-                            ) : null}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : null}
-                </div>
+                <NftDetails item={item} tagLinks={tagLinks} />
               </div>
 
               <div className="border-t bg-background p-4">
@@ -205,10 +128,7 @@ export default function NftModal({
                     Buy
                   </a>
                 ) : (
-                  <Link
-                    href={inquiryHref}
-                    className={buttonClasses("solid", "w-full justify-center")}
-                  >
+                  <Link href={inquiryHref} className={buttonClasses("solid", "w-full justify-center")}>
                     Inquire
                   </Link>
                 )}

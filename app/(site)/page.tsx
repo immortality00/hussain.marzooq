@@ -16,6 +16,7 @@ import { getPublicServicesData } from "@/lib/server/public-services";
 import { getPublicTestimonials } from "@/lib/server/testimonials";
 import { getAllPageSettings } from "@/lib/server/page-settings";
 import { getExhibitionCities } from "@/lib/server/public-media";
+import { getTagLinks } from "@/lib/server/tag-pages";
 
 export const revalidate = 300;
 
@@ -30,7 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  const [servicesData, testimonials, pageSettings, seo, sections, exhibitionCities, searchProfile] =
+  const [servicesData, testimonials, pageSettings, seo, sections, exhibitionCities, searchProfile, tagLinks] =
     await Promise.all([
       getPublicServicesData(),
       getPublicTestimonials(3),
@@ -39,6 +40,7 @@ export default async function HomePage() {
       getPageSections("home"),
       getExhibitionCities(),
       getSearchProfile(),
+      getTagLinks(),
     ]);
 
   const activeSet = new Set(pageSettings.filter((p) => p.isActive).map((p) => p.slug));
@@ -54,7 +56,7 @@ export default async function HomePage() {
           headerTitle={seo.headerTitle}
           headerDescription={seo.headerDescription}
         />
-        <HomeExhibitionGlobe cities={exhibitionCities} />
+        <HomeExhibitionGlobe cities={exhibitionCities} tagLinks={tagLinks} />
         <HomeFeaturedWork activeSet={activeSet} cards={sections.featuredCards} />
         <section className="section-shell border-t border-border pt-12 sm:pt-16">
           <div className="grid gap-5 lg:grid-cols-2">

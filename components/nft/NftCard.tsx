@@ -10,29 +10,16 @@ import {
   statusLabel,
 } from "./lib";
 import { NftPrice } from "./NftPrice";
-import { originFromElement, rememberOrigin, uniformRadii } from "@/lib/client/expand-origin";
+import { NftStatusBadge } from "./NftStatusBadge";
+import { expandOriginOf, rememberOrigin } from "@/lib/client/expand-origin";
 import { NFT_POPUP_IMAGE_SIZES, preloadPopupImage } from "@/lib/client/preload-popup-image";
 
 /** The front face's corners, `rounded-[2.25rem]`. */
-const CARD_RADIUS = 36;
+const CARD_RADIUS = "36";
 
 function openFromCard(card: HTMLElement, item: PublicNftItem, onOpen: (item: PublicNftItem) => void) {
-  const front = card.querySelector(".hm-nft-face");
-  rememberOrigin(originFromElement(front ?? card, uniformRadii(CARD_RADIUS)));
+  rememberOrigin(expandOriginOf(card.querySelector("[data-expand-card]") ?? card));
   onOpen(item);
-}
-
-function FrontBadge({ status }: { status: ReturnType<typeof displayStatus> }) {
-  if (status === "sold") return null;
-
-  return (
-    <span className="inline-flex items-center gap-2 rounded-full border border-white/25 bg-black/50 px-3 py-1 font-mono text-[11px] uppercase tracking-[0.2em] text-white backdrop-blur-[6px]">
-      {status === "available" ? (
-        <span className="hm-nft-pulse relative inline-block h-1.5 w-1.5 rounded-full bg-white text-white" />
-      ) : null}
-      {statusLabel(status)}
-    </span>
-  );
 }
 
 export default function NftCard({
@@ -64,7 +51,11 @@ export default function NftCard({
         }}
         className="hm-nft-flip h-full w-full cursor-pointer rounded-[2.25rem] outline-none focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
-        <div className="hm-nft-face absolute inset-0 overflow-hidden rounded-[2.25rem] border bg-muted">
+        <div
+          data-expand-card={item.id}
+          data-expand-radii={CARD_RADIUS}
+          className="hm-nft-face absolute inset-0 overflow-hidden rounded-[2.25rem] border bg-muted"
+        >
           <SmartMediaPreview
             mode={item.mediaUrl ? (item.mediaType === "video" ? "video" : "image") : "empty"}
             src={item.mediaUrl}
@@ -79,7 +70,7 @@ export default function NftCard({
           <div className="pointer-events-none absolute inset-0 bg-linear-to-t from-black/80 via-black/15 to-transparent" />
 
           <div className="absolute left-4 top-4">
-            <FrontBadge status={shownStatus} />
+            <NftStatusBadge status={shownStatus} />
           </div>
 
           {shownStatus === "sold" ? (

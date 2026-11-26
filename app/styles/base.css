@@ -8,6 +8,13 @@
     min-height: 100dvh;
   }
 
+  /* A popup's card gets focus back with no ring when it was opened with a pointer (useFocusTrap);
+     the ring returns once focus moves on. */
+  [data-focus-quiet]:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
   ::selection {
     background: color-mix(in oklab, var(--foreground) 14%, transparent);
   }

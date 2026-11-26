@@ -39,10 +39,11 @@
     animation: preloader-spin 900ms linear infinite;
   }
 
+  /* Its size is --hm-spinner-size (1.75rem unless a caller sets it). */
   .hm-spinner {
     display: block;
-    width: 1.75rem;
-    height: 1.75rem;
+    width: var(--hm-spinner-size, 1.75rem);
+    height: var(--hm-spinner-size, 1.75rem);
     border-radius: 9999px;
     border: 1px solid color-mix(in oklch, currentColor 20%, transparent);
     border-top-color: color-mix(in oklch, currentColor 85%, transparent);

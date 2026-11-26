@@ -148,6 +148,24 @@ async function main() {
     })
   );
 
+  // The first two photos were exhibited in one city, so the homepage globe has a city window to open.
+  const exhibition = {
+    kind: "exhibited",
+    title: "Seed Exhibition",
+    venue: "Seed Gallery",
+    city: "Paris",
+    country: "France",
+    locationId: "2988507",
+    lat: 48.85341,
+    lon: 2.3488,
+    dateFrom: "2026-03",
+    dateTo: "2026-05",
+    notes: "",
+    link: "",
+  };
+  photography[0].appearances = [exhibition];
+  photography[1].appearances = [exhibition];
+
   const videography = Array.from({ length: E2E.videographyCount }, (_, offset) =>
     mediaDoc({
       index: offset + 1,
@@ -178,6 +196,13 @@ async function main() {
     },
   };
 
+  // A second collectible, so the NFT popup has a previous / next to move to. Dated among the oldest, so
+  // no admin list row moves.
+  const secondNft = {
+    ...mediaDoc({ index: 899, category: "nft", type: "image", title: "Seed Edition" }),
+    nft: { ...nft.nft, price: 1, editionType: "1/1", editionsTotal: 1, editionsRemaining: 1, marketplaceUrl: null },
+  };
+
   const galleryMedia = mediaDoc({
     index: 900,
     category: "photography",
@@ -188,7 +213,7 @@ async function main() {
   galleryMedia.deliveryType = "authenticated";
   galleryMedia.secureUrl = assetUrl(galleryMedia.publicId, "image", "jpg", "authenticated");
 
-  await db.collection("media").insertMany([...photography, ...videography, nft, galleryMedia]);
+  await db.collection("media").insertMany([...photography, ...videography, nft, secondNft, galleryMedia]);
 
   await db.collection("media_tags").insertOne({
     label: "Exhibitions",
@@ -275,7 +300,7 @@ async function main() {
   console.log(
     [
       `Seeded "${dbName}":`,
-      `  media               ${photography.length + videography.length + 2}`,
+      `  media               ${photography.length + videography.length + 3}`,
       `  photography public  ${photography.length}`,
       `  videography public  ${videography.length}`,
       `  private gallery     /g/${E2E.gallerySlug}`,

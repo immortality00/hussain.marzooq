@@ -4,27 +4,30 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import MediaLightbox from "@/components/media/MediaLightbox";
 import { LoadingScreen } from "@/components/shared/LoadingScreen";
-import type { MediaItem } from "@/components/media/types";
+import type { MediaItem, TagLinks } from "@/components/media/types";
 import { useModalNavbarLock } from "@/components/media/useModalNavbarLock";
+import { usePopupSequence } from "@/components/shared/popup-sequence/usePopupSequence";
+import { preloadMediaPopup } from "@/lib/client/preload-popup-image";
 import type { ExhibitionCity } from "@/lib/server/public-media";
 import { ExhibitionCityIndex } from "./exhibition/ExhibitionCityIndex";
 import { ExhibitionCityModal } from "./exhibition/ExhibitionCityModal";
 
 const GLOBE_HEIGHT = "min-h-[380px] sm:min-h-[560px]";
+const NO_WORKS: MediaItem[] = [];
 
 const ExhibitionGlobe = dynamic(() => import("./exhibition/ExhibitionGlobe"), {
   ssr: false,
   loading: () => <LoadingScreen className={GLOBE_HEIGHT} />,
 });
 
-export function HomeExhibitionGlobe({ cities }: { cities: ExhibitionCity[] }) {
+export function HomeExhibitionGlobe({ cities, tagLinks }: { cities: ExhibitionCity[]; tagLinks?: TagLinks }) {
   const sectionRef = useRef<HTMLElement>(null);
   const [inView, setInView] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [openCity, setOpenCity] = useState<ExhibitionCity | null>(null);
-  const [activeItem, setActiveItem] = useState<MediaItem | null>(null);
+  const popup = usePopupSequence<MediaItem>(openCity?.works ?? NO_WORKS, { preload: preloadMediaPopup });
 
-  useModalNavbarLock(Boolean(openCity || activeItem));
+  useModalNavbarLock(Boolean(openCity || popup.active));
 
   useEffect(() => {
     const node = sectionRef.current;
@@ -75,13 +78,14 @@ export function HomeExhibitionGlobe({ cities }: { cities: ExhibitionCity[] }) {
       {openCity ? (
         <ExhibitionCityModal
           city={openCity}
-          onSelectItem={setActiveItem}
+          onSelectItem={popup.open}
           onClose={() => setOpenCity(null)}
+          closeOnEscape={!popup.active}
         />
       ) : null}
 
-      {activeItem ? (
-        <MediaLightbox active={activeItem} onClose={() => setActiveItem(null)} />
+      {popup.active ? (
+        <MediaLightbox active={popup.active} nav={popup.nav} onClose={popup.close} tagLinks={tagLinks} />
       ) : null}
     </section>
   );

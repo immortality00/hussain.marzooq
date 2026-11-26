@@ -7,6 +7,7 @@ import { PUBLIC_MEDIA_PAGE_SIZE } from "@/lib/media-cursor";
 import {
   buildPublicMediaQuery,
   toPublicMediaItem,
+  toPublicMediaItems,
   type PublicMediaItem,
 } from "@/lib/server/media-serializers";
 import { buildFallback } from "@/lib/server/public-read";
@@ -21,6 +22,7 @@ const PUBLIC_MEDIA_FIELDS = {
   tags: 1,
   categories: 1,
   people: 1,
+  peopleIds: 1,
   appearances: 1,
   secureUrl: 1,
   publicId: 1,
@@ -48,7 +50,7 @@ async function listPublicMedia({
     .limit(limit)
     .toArray();
 
-  return docs.map((doc) => toPublicMediaItem(doc as Record<string, unknown>));
+  return toPublicMediaItems(db, docs as Record<string, unknown>[]);
 }
 
 // A single, consistent gallery pool for the page transition — a random pick of
@@ -112,7 +114,7 @@ export async function getVideographyItems(): Promise<PublicMediaItem[]> {
       .limit(PUBLIC_MEDIA_PAGE_SIZE)
       .toArray();
 
-    return docs.map((doc) => toPublicMediaItem(doc as Record<string, unknown>));
+    return await toPublicMediaItems(db, docs as Record<string, unknown>[]);
   } catch (error) {
     return buildFallback(error, []);
   }
@@ -147,7 +149,7 @@ async function getMediaByTagImpl({
     .limit(limit)
     .toArray();
 
-  return docs.map((doc) => toPublicMediaItem(doc as Record<string, unknown>));
+  return toPublicMediaItems(db, docs as Record<string, unknown>[]);
 }
 
 export async function getMediaByTag(args: {
@@ -190,9 +192,7 @@ async function getExhibitionCitiesImpl(): Promise<ExhibitionCity[]> {
 
   const byLocation = new Map<string, ExhibitionCity>();
 
-  for (const doc of docs) {
-    const item = toPublicMediaItem(doc as Record<string, unknown>);
-
+  for (const item of await toPublicMediaItems(db, docs as Record<string, unknown>[])) {
     for (const appearance of item.appearances) {
       if (
         appearance.kind !== "exhibited" ||

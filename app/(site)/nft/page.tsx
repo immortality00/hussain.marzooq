@@ -6,6 +6,7 @@ import { getPageSections } from "@/lib/server/page-sections";
 import { StickyCta } from "@/components/site/StickyCta";
 import NftCollection from "@/components/nft/NftCollection";
 import { getPublicNfts } from "@/lib/server/public-nfts";
+import { getTagLinks } from "@/lib/server/tag-pages";
 import { getPageSettings } from "@/lib/server/page-settings";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { TitleBarFrame } from "@/components/shared/title-bar/TitleBarFrame";
@@ -26,10 +27,11 @@ export default async function NftPage() {
   const { isActive } = await getPageSettings("nft");
   if (!isActive) redirect("/");
 
-  const [items, seo, sections] = await Promise.all([
+  const [items, seo, sections, tagLinks] = await Promise.all([
     getPublicNfts(),
     getPageSeo("nft"),
     getPageSections("nft"),
+    getTagLinks(),
   ]);
 
   return (
@@ -42,7 +44,7 @@ export default async function NftPage() {
             className="max-w-3xl"
           />
 
-          <NftCollection items={items} />
+          <NftCollection items={items} tagLinks={tagLinks} />
         </main>
       </TitleBarFrame>
 

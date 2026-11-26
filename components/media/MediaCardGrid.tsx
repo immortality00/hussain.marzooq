@@ -3,10 +3,12 @@
 import SmartMediaPreview from "./SmartMediaPreview";
 import { NoResults } from "@/components/shared/NoResults";
 import type { MediaItem } from "./types";
-import { originFromElement, rememberOrigin } from "@/lib/client/expand-origin";
+import { mediaMetaLine, popupImageOf } from "./utils";
+import { expandOriginOf, rememberOrigin } from "@/lib/client/expand-origin";
 import { preloadPopupImage } from "@/lib/client/preload-popup-image";
 
-const CARD_RADII: [number, number, number, number] = [16, 16, 0, 0];
+/** The image area's corners: the card's top two (`rounded-2xl`), square below. */
+const CARD_RADII = "16 16 0 0";
 
 const EAGER_GRID_IMAGE_COUNT = 3;
 
@@ -37,15 +39,15 @@ export default function MediaCardGrid({
           <button
             key={m.id}
             type="button"
-            onPointerDown={() => preloadPopupImage(isImage ? m.secureUrl : isEmbed ? m.posterUrl : null)}
+            onPointerDown={() => preloadPopupImage(popupImageOf(m))}
             onClick={(e) => {
-              const area = e.currentTarget.querySelector("[data-expand-source]");
-              rememberOrigin(area ? originFromElement(area, CARD_RADII) : null);
+              const area = e.currentTarget.querySelector("[data-expand-card]");
+              rememberOrigin(area ? expandOriginOf(area) : null);
               onSelect(m);
             }}
             className="group overflow-hidden rounded-2xl border bg-muted text-left"
           >
-            <div data-expand-source className={`relative ${cardAspect}`}>
+            <div data-expand-card={m.id} data-expand-radii={CARD_RADII} className={`relative ${cardAspect}`}>
               <SmartMediaPreview
                 mode={isImage ? "image" : isVideo ? "video" : isEmbed ? "embed" : "empty"}
                 src={m.secureUrl}
@@ -65,11 +67,7 @@ export default function MediaCardGrid({
 
             <div className="p-4">
               <div className="line-clamp-1 text-sm font-medium">{m.title}</div>
-              <div className="mt-1 line-clamp-1 text-xs text-muted-foreground">
-                {[m.year ? String(m.year) : "", m.location ?? "", m.event ?? ""]
-                  .filter(Boolean)
-                  .join(" • ")}
-              </div>
+              <div className="mt-1 line-clamp-1 text-xs text-muted-foreground">{mediaMetaLine(m)}</div>
             </div>
           </button>
         );

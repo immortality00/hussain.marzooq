@@ -6,7 +6,7 @@ import { getDb } from "@/lib/server/db";
 import { encodeMediaCursor } from "@/lib/media-cursor";
 import {
   buildPublicMediaQuery,
-  toPublicMediaItem,
+  toPublicMediaItems,
 } from "@/lib/server/media-serializers";
 import { withRouteErrors } from "@/app/api/_lib/route-errors";
 
@@ -155,7 +155,7 @@ async function handleGet(req: Request) {
 
   const hasMore = docs.length > limit;
   const pageDocs = hasMore ? docs.slice(0, limit) : docs;
-  const items = pageDocs.map((doc) => toPublicMediaItem(doc as Record<string, unknown>));
+  const items = await toPublicMediaItems(db, pageDocs as Record<string, unknown>[]);
   const nextCursor = hasMore && items.length > 0 ? makeCursor(items[items.length - 1]) : null;
 
   return noStoreJson({ items, nextCursor });

@@ -5,6 +5,8 @@ import { buildFallback } from "@/lib/server/public-read";
 import { publicMediaFilter } from "@/lib/media-schedule";
 import { personMediaAssetPath } from "@/lib/media-asset-path";
 import { findUnlockedPersonMedia, hasPersonGateAccess, personMediaQuery } from "@/lib/server/person-gate-media";
+import { PUBLIC_PROFILE_FILTER, publicProfileSlugs } from "@/lib/server/public-profile-links";
+import { mediaPeopleOf } from "@/lib/linked-people";
 
 export type PublicPersonIndexItem = {
   id: string;
@@ -37,7 +39,11 @@ function mediaUrl(doc: Record<string, unknown>, personSlug: string | null) {
   return typeof doc.secureUrl === "string" ? doc.secureUrl : null;
 }
 
-function toMediaItem(doc: Record<string, unknown>, personSlug: string | null = null): PublicMediaItem {
+function toMediaItem(
+  doc: Record<string, unknown>,
+  profileSlugs: ReadonlyMap<string, string>,
+  personSlug: string | null
+): PublicMediaItem {
   return {
     id: String(doc._id),
     type: typeof doc.type === "string" ? doc.type : "image",
@@ -48,7 +54,7 @@ function toMediaItem(doc: Record<string, unknown>, personSlug: string | null = n
     year: typeof doc.year === "number" ? doc.year : null,
     tags: normalizeStringArray(doc.tags),
     categories: normalizeStringArray(doc.categories),
-    people: normalizeStringArray(doc.people),
+    people: mediaPeopleOf(doc, profileSlugs),
     appearances: sanitizeAppearances(doc.appearances),
     secureUrl: mediaUrl(doc, personSlug),
     embedUrl: typeof doc.embedUrl === "string" ? doc.embedUrl : null,
@@ -88,7 +94,9 @@ async function buildPersonDetail(
     deduped.set(String(mediaDoc._id), mediaDoc as Record<string, unknown>);
   }
 
-  const mediaItems = Array.from(deduped.values()).map((item) => toMediaItem(item, includeHidden ? slug : null));
+  const docs = Array.from(deduped.values());
+  const profileSlugs = await publicProfileSlugs(db, docs);
+  const mediaItems = docs.map((item) => toMediaItem(item, profileSlugs, includeHidden ? slug : null));
 
   return {
     id: personId,
@@ -110,10 +118,7 @@ async function getPublicPeopleImpl(): Promise<PublicPersonIndexItem[]> {
 
   const docs = await db
     .collection("people_profiles")
-    .find({
-      $or: [{ isPublic: true }, { isPublic: { $exists: false } }],
-      isPrivate: { $ne: true },
-    })
+    .find(PUBLIC_PROFILE_FILTER)
     .sort({ updatedAt: -1, createdAt: -1 })
     .toArray();
 
@@ -226,11 +231,7 @@ export async function getPublicPersonBySlug(slug: string): Promise<PublicPersonD
   try {
     const db = await getDb();
 
-    const doc = await db.collection("people_profiles").findOne({
-      slug,
-      $or: [{ isPublic: true }, { isPublic: { $exists: false } }],
-      isPrivate: { $ne: true },
-    });
+    const doc = await db.collection("people_profiles").findOne({ slug, ...PUBLIC_PROFILE_FILTER });
 
     if (!doc) return null;
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import SmartMediaPreview from "@/components/media/SmartMediaPreview";
-import { originFromElement, rememberOrigin, uniformRadii } from "@/lib/client/expand-origin";
+import { expandOriginOf, rememberOrigin } from "@/lib/client/expand-origin";
 import { preloadPopupImage } from "@/lib/client/preload-popup-image";
 import type { MediaItem } from "@/components/media/types";
 import { NoResults } from "@/components/shared/NoResults";
@@ -178,9 +178,11 @@ export default function PhotographyHorizontal({
               onPointerDown={() => preloadPopupImage(isImage ? m.secureUrl : isEmbed ? m.posterUrl : null)}
               onClick={(e) => {
                 if (draggedRef.current) return;
-                rememberOrigin(originFromElement(e.currentTarget, uniformRadii(16)));
+                rememberOrigin(expandOriginOf(e.currentTarget));
                 onSelect(m);
               }}
+              data-expand-card={m.id}
+              data-expand-radii="16"
               style={{ height: `${height}vh` }}
               className="group relative aspect-3/4 shrink-0 overflow-hidden rounded-2xl border bg-muted text-left"
             >

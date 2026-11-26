@@ -65,6 +65,38 @@ export function originFromElement(
   };
 }
 
+/** Corner radii written on a card as `data-expand-radii="16 16 0 0"`; missing or broken = square. */
+export function parseRadii(value: string | null | undefined): Radii {
+  const parts = (value ?? "").trim().split(/\s+/).map(Number);
+  if (parts.length === 1 && Number.isFinite(parts[0])) return uniformRadii(parts[0]);
+  if (parts.length === 4 && parts.every(Number.isFinite)) return parts as Radii;
+  return uniformRadii(0);
+}
+
+/** A card's image area — the element carrying `data-expand-card`, with its own corners. */
+export function expandOriginOf(area: Element): ExpandOrigin {
+  return originFromElement(area, parseRadii(area.getAttribute("data-expand-radii")));
+}
+
+/**
+ * The card on the page that shows this item (`data-expand-card="<id>"`), so a popup that
+ * moved to another item closes back into that item's card. Null when it isn't on the page
+ * (the cylinder draws no cards).
+ */
+export function originOfCard(id: string): ExpandOrigin | null {
+  const area = document.querySelector(`[data-expand-card="${CSS.escape(id)}"]`);
+  return area ? expandOriginOf(area) : null;
+}
+
+/** The control that opens this item's card, where focus goes back when its popup closes. */
+export function cardTriggerOf(id: string): HTMLElement | null {
+  return (
+    document
+      .querySelector(`[data-expand-card="${CSS.escape(id)}"]`)
+      ?.closest<HTMLElement>("button, [role='button']") ?? null
+  );
+}
+
 /** The part of `box` a photo of `ratio` fills under object-fit: contain. */
 export function containBox(box: Box, ratio: number): Box {
   if (!(ratio > 0) || box.width <= 0 || box.height <= 0) return box;

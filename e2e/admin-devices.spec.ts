@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { openScreen, otherDevice, signIn } from "./admin-helpers";
+import { E2E } from "./fixtures";
 
 const LAST_PHOTO = "Seed Photo 65";
 const renamed: { id: string; title: string }[] = [];
@@ -63,7 +64,7 @@ test.describe("admin on two devices", () => {
     await openScreen(page, "Tags");
     await openScreen(page, "Media");
     await expect(page.getByText("Renamed Far Down", { exact: true })).toBeVisible({ timeout: 10_000 });
-    await expect(page.locator('[aria-label="Select media item"]')).toHaveCount(71);
+    await expect(page.locator('[aria-label="Select media item"]')).toHaveCount(E2E.mediaCount);
 
     await expect(await openDetails(page, id)).toHaveValue("Renamed Far Down");
   });

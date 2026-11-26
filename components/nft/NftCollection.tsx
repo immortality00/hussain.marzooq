@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { PublicNftItem } from "@/lib/server/public-nfts";
+import type { TagLinks } from "@/components/media/types";
 import { useModalNavbarLock } from "@/components/media/useModalNavbarLock";
+import { usePopupSequence } from "@/components/shared/popup-sequence/usePopupSequence";
+import { NFT_POPUP_IMAGE_SIZES, preloadPopupImage } from "@/lib/client/preload-popup-image";
 import NftCard from "./NftCard";
 import NftFilters, { type StatusFilter } from "./NftFilters";
 import NftModal from "./NftModal";
@@ -13,13 +16,14 @@ import { useEntryMemory } from "@/hooks/useEntryMemory";
 
 const EAGER_GRID_IMAGE_COUNT = 3;
 
-export default function NftCollection({ items }: { items: PublicNftItem[] }) {
+function preloadNftPopup(item: PublicNftItem) {
+  preloadPopupImage(item.mediaType === "video" ? null : item.mediaUrl, NFT_POPUP_IMAGE_SIZES);
+}
+
+export default function NftCollection({ items, tagLinks }: { items: PublicNftItem[]; tagLinks?: TagLinks }) {
   const { restored, remember } = useEntryMemory<{ query: string; status: StatusFilter }>("nft-collection");
   const search = useDebouncedSearch(restored?.query);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>(restored?.status ?? "");
-  const [active, setActive] = useState<PublicNftItem | null>(null);
-
-  useModalNavbarLock(Boolean(active));
 
   useEffect(
     () => remember({ query: search.text, status: statusFilter }),
@@ -32,7 +36,7 @@ export default function NftCollection({ items }: { items: PublicNftItem[] }) {
 
     return items.filter((item) => {
       const matchesQuery = q
-        ? `${item.title} ${item.description ?? ""} ${item.tags.join(" ")} ${item.people.join(" ")}`
+        ? `${item.title} ${item.description ?? ""} ${item.tags.join(" ")} ${item.people.map((person) => person.name).join(" ")}`
             .toLowerCase()
             .includes(q)
         : true;
@@ -43,6 +47,9 @@ export default function NftCollection({ items }: { items: PublicNftItem[] }) {
       return matchesQuery && matchesStatus;
     });
   }, [items, query, statusFilter]);
+  const popup = usePopupSequence(filtered, { preload: preloadNftPopup });
+
+  useModalNavbarLock(Boolean(popup.active));
 
   return (
     <div className="mt-10 space-y-6">
@@ -62,14 +69,16 @@ export default function NftCollection({ items }: { items: PublicNftItem[] }) {
             <NftCard
               key={item.id}
               item={item}
-              onOpen={setActive}
+              onOpen={popup.open}
               loadImageEagerly={index < EAGER_GRID_IMAGE_COUNT}
             />
           ))}
         </section>
       )}
 
-      {active ? <NftModal item={active} onClose={() => setActive(null)} /> : null}
+      {popup.active ? (
+        <NftModal item={popup.active} nav={popup.nav} onClose={popup.close} tagLinks={tagLinks} />
+      ) : null}
     </div>
   );
 }

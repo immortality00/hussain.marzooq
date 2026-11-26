@@ -1,7 +1,10 @@
+import type { Db } from "mongodb";
 import { asIsoDate, asNullableString, asNumberOrNull, asStringArray, isRecord } from "@/app/api/_lib/common";
 import { sanitizeAppearances, type Appearance, type NftMeta } from "@/app/api/_lib/media";
+import { mediaPeopleOf, NO_PROFILE_LINKS, type MediaPerson } from "@/lib/linked-people";
 import { mediaAssetPath } from "@/lib/media-asset-path";
 import { publicMediaFilter } from "@/lib/media-schedule";
+import { publicProfileSlugs } from "@/lib/server/public-profile-links";
 
 export type PublicMediaItem = {
   id: string;
@@ -13,7 +16,7 @@ export type PublicMediaItem = {
   year: number | null;
   tags: string[];
   categories: string[];
-  people: string[];
+  people: MediaPerson[];
   appearances: Appearance[];
   secureUrl: string | null;
   publicId: string | null;
@@ -105,7 +108,11 @@ function getNftMeta(doc: Record<string, unknown>): NftMeta | null {
   };
 }
 
-export function toPublicMediaItem(doc: Record<string, unknown>): PublicMediaItem {
+/** `profileSlugs` links each person to their public profile; without it every name stays plain. */
+export function toPublicMediaItem(
+  doc: Record<string, unknown>,
+  profileSlugs: ReadonlyMap<string, string> = NO_PROFILE_LINKS
+): PublicMediaItem {
   const asset = getAssetRecord(doc);
 
   const secureUrl =
@@ -126,7 +133,7 @@ export function toPublicMediaItem(doc: Record<string, unknown>): PublicMediaItem
     year: typeof doc.year === "number" ? doc.year : null,
     tags: asStringArray(doc.tags),
     categories: asStringArray(doc.categories),
-    people: asStringArray(doc.people),
+    people: mediaPeopleOf(doc, profileSlugs),
     appearances: sanitizeAppearances(doc.appearances),
     secureUrl: secureUrl ?? null,
     publicId: publicId ?? null,
@@ -134,6 +141,12 @@ export function toPublicMediaItem(doc: Record<string, unknown>): PublicMediaItem
     posterUrl: asNullableString(doc.posterUrl),
     createdAt: serializeDate(doc.createdAt),
   };
+}
+
+/** Items for a page a visitor opens: each person linked to their profile when it is public. */
+export async function toPublicMediaItems(db: Db, docs: Record<string, unknown>[]): Promise<PublicMediaItem[]> {
+  const profileSlugs = await publicProfileSlugs(db, docs);
+  return docs.map((doc) => toPublicMediaItem(doc, profileSlugs));
 }
 
 export function toAdminMediaListItem(doc: Record<string, unknown>): AdminMediaListItem {

@@ -238,7 +238,7 @@ export default function PrivateGalleryBrowser({
                           {active.event ? <div>Event: {active.event}</div> : null}
                           {active.year ? <div>Year: {active.year}</div> : null}
                           {active.people.length ? (
-                            <div>People: {active.people.join(", ")}</div>
+                            <div>People: {active.people.map((person) => person.name).join(", ")}</div>
                           ) : null}
                           {active.categories.length ? (
                             <div>Categories: {active.categories.join(", ")}</div>

@@ -1,5 +1,7 @@
 import { getImageProps } from "next/image";
 import { preload } from "react-dom";
+import type { MediaItem } from "@/components/media/types";
+import { popupImageOf } from "@/components/media/utils";
 
 /** The `sizes` of a media popup's picture; the popup and the early download share it. */
 export const POPUP_IMAGE_SIZES = "(min-width: 1024px) 62vw, 100vw";
@@ -16,4 +18,9 @@ export function preloadPopupImage(src: string | null | undefined, sizes = POPUP_
   const { props } = getImageProps({ src, alt: "", fill: true, sizes });
   if (!props.src) return;
   preload(props.src, { as: "image", imageSrcSet: props.srcSet, imageSizes: sizes, fetchPriority: "high" });
+}
+
+/** A media item's popup picture (a neighbour of the item shown, so moving on finds it here). */
+export function preloadMediaPopup(item: MediaItem) {
+  preloadPopupImage(popupImageOf(item));
 }

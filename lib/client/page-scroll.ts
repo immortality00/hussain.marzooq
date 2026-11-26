@@ -76,3 +76,26 @@ export function scrollPageToTop(reduced: boolean): void {
   }
   window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
 }
+
+function scrollingAncestor(element: Element): HTMLElement | null {
+  for (let node = element.parentElement; node && node !== document.body; node = node.parentElement) {
+    const { overflowY } = getComputedStyle(node);
+    if ((overflowY === "auto" || overflowY === "scroll") && node.scrollHeight > node.clientHeight) return node;
+  }
+  return null;
+}
+
+// An element wholly above or below what its scrolling box (or the page) shows is scrolled to
+// the middle of it, at once — the popup that stepped to it then closes back into it.
+export function bringIntoView(element: Element): void {
+  const scroller = scrollingAncestor(element);
+  const frame = scroller?.getBoundingClientRect();
+  const top = Math.max(0, frame?.top ?? 0);
+  const bottom = Math.min(window.innerHeight, frame?.bottom ?? window.innerHeight);
+  const box = element.getBoundingClientRect();
+  if (box.bottom > top && box.top < bottom) return;
+
+  const shift = box.top + box.height / 2 - (top + bottom) / 2;
+  if (scroller) scroller.scrollTop += shift;
+  else jumpPageTo(window.scrollY + shift);
+}

@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { ObjectId, type Db, type Document } from "mongodb";
 import { sanitizeAppearances } from "@/app/api/_lib/media";
 import type { MediaItem } from "@/components/media/types";
+import { mediaPeopleOf, NO_PROFILE_LINKS } from "@/lib/linked-people";
 import {
   galleryVisibilityOf,
   galleryLinkOpens,
@@ -50,7 +51,7 @@ function toMediaItem(doc: Record<string, unknown>, gallerySlug: string, linkKey:
     year: typeof doc.year === "number" ? doc.year : null,
     tags: normalizeStringArray(doc.tags),
     categories: normalizeStringArray(doc.categories),
-    people: normalizeStringArray(doc.people),
+    people: mediaPeopleOf(doc, NO_PROFILE_LINKS),
     appearances: sanitizeAppearances(doc.appearances),
     secureUrl: fileAddress(doc, gallerySlug, linkKey),
     embedUrl: typeof doc.embedUrl === "string" ? doc.embedUrl : null,

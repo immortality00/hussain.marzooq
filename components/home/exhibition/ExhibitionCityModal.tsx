@@ -10,16 +10,20 @@ export function ExhibitionCityModal({
   city,
   onSelectItem,
   onClose,
+  closeOnEscape = true,
 }: {
   city: ExhibitionCity;
   onSelectItem: (item: MediaItem) => void;
   onClose: () => void;
+  /** Off while a work is open over it, so Escape closes only the work. */
+  closeOnEscape?: boolean;
 }) {
   const place = [city.city, city.country].filter(Boolean).join(", ");
 
   return (
     <ModalPortal
       onClose={onClose}
+      closeOnEscape={closeOnEscape}
       label={`Exhibited works in ${place}`}
       className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 p-4"
     >

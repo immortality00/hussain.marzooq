@@ -16,6 +16,8 @@ export const E2E = {
   serviceName: "Seed Editorial Session",
   photographyCount: 65,
   videographyCount: 4,
+  /** Every seeded media item: the photos, the films, two NFTs and the private gallery's frame. */
+  mediaCount: 72,
   personName: "Seed Person",
   reviewerName: "Seed Reviewer",
   inquiryName: "Seed Client",

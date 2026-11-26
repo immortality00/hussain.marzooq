@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { useLatest } from "@/hooks/useLatest";
+import { bringIntoView } from "@/lib/client/page-scroll";
 import { prefersReducedMotion } from "@/lib/reduced-motion";
 import {
   boxOf,
@@ -55,7 +56,8 @@ function originBox(origin: ExpandOrigin): Box {
  * A popup that grows out of the card that opened it (MO3). The card records
  * itself with `rememberOrigin` on tap; the popup's panel takes `panelRef`, its
  * media area carries `data-expand-target`, and every way of closing calls
- * `requestClose`, which plays the way back before `onClose`.
+ * `requestClose`, which plays the way back before `onClose`. A popup that moves to another
+ * item calls `retarget` with that item's card, so it closes back into the card it ended on.
  */
 export function useCardExpand<T extends HTMLElement>(onClose: () => void) {
   const panelRef = useRef<T>(null);
@@ -147,6 +149,7 @@ export function useCardExpand<T extends HTMLElement>(onClose: () => void) {
     run.anims.forEach((a) => a.cancel());
     run.anims = [];
 
+    if (origin.element?.isConnected) bringIntoView(origin.element);
     const from = originBox(origin);
     const cardInView =
       origin.element?.isConnected === true && isOnScreen(from, { width: window.innerWidth, height: window.innerHeight });
@@ -170,5 +173,21 @@ export function useCardExpand<T extends HTMLElement>(onClose: () => void) {
     void Promise.all(run.anims.map((a) => a.finished)).then(done, done);
   }, [onCloseRef]);
 
-  return { panelRef, requestClose };
+  const retarget = useCallback((next: ExpandOrigin | null) => {
+    const run = runRef.current;
+    if (run && !closingRef.current && !run.cancelled) {
+      // Moved on while the opening still plays: settle it where it ends; the new item takes over.
+      run.cancelled = true;
+      run.anims.forEach((a) => a.finish());
+      run.ghost?.remove();
+      run.ghost = null;
+      const target = panelRef.current?.querySelector<HTMLElement>("[data-expand-target]");
+      if (target) setStyle(target, { opacity: "" });
+    }
+    const current = originRef.current;
+    // No card for the new item (the cylinder): close by fading, from where the popup opened.
+    originRef.current = next ?? (current ? { ...current, element: null } : null);
+  }, []);
+
+  return { panelRef, requestClose, retarget };
 }

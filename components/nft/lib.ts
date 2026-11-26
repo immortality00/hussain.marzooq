@@ -34,13 +34,6 @@ export function displayStatus(item: PublicNftItem) {
   return item.nft.status;
 }
 
-export function statusClasses(status: ReturnType<typeof displayStatus>) {
-  if (status === "sold") {
-    return "border border-border bg-muted text-foreground";
-  }
-  return "border border-border text-muted-foreground";
-}
-
 export function statusLabel(status: ReturnType<typeof displayStatus>) {
   if (status === "sold") return "Sold";
   if (status === "coming-soon") return "Coming soon";
