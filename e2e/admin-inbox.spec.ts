@@ -30,7 +30,7 @@ test.describe("admin inbox", () => {
     await signIn(page);
     await openScreen(page, "Testimonials");
     await page.getByRole("button", { name: "Approve", exact: true }).first().click();
-    await expect(page.getByText("✅ Review approved.")).toBeVisible();
+    await expect(page.getByText("Review approved.")).toBeVisible();
     await freshLoad(page);
     await page.getByRole("button", { name: "Approved", exact: true }).click();
     await expect(page.getByText(E2E.reviewerName).first()).toBeVisible();
@@ -39,9 +39,10 @@ test.describe("admin inbox", () => {
   test("dismissing a removal request moves it to the history, and a fresh load agrees", async ({ page }) => {
     await signIn(page);
     await openScreen(page, "Removal Requests");
-    page.once("dialog", (dialog) => void dialog.accept());
-    await page.getByRole("button", { name: "Dismiss" }).first().click();
-    await expect(page.getByText("✅ Request dismissed.")).toBeVisible();
+    await page.getByRole("button", { name: "Dismiss", exact: true }).first().click();
+    const question = page.getByRole("dialog", { name: `Dismiss the request from “${E2E.personName}”?` });
+    await question.getByRole("button", { name: "Dismiss", exact: true }).click();
+    await expect(page.getByText("Request dismissed.")).toBeVisible();
     await expect(page.getByText("No requests to review.")).toBeVisible();
     await freshLoad(page);
     await expect(page.getByText("No requests to review.")).toBeVisible();

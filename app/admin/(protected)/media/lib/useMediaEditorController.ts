@@ -8,6 +8,7 @@ import { useAdminSlice } from "@/hooks/useAdminData";
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 import { useMediaUsageDialog } from "@/components/admin/media-usage/useMediaUsageDialog";
 import { useRecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
+import { deleteQuestion, useConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 import { saveGuarded } from "@/lib/record-changed";
 import { buildMediaPayload } from "./editor-actions";
 import { deleteWithUsageCheck, saveWithUsageCheck } from "./media-usage-flows";
@@ -52,6 +53,7 @@ export function useMediaEditorController({
   });
   const usage = useMediaUsageDialog(() => setBanner(null));
   const changed = useRecordChangedDialog(() => setBanner(null));
+  const confirmation = useConfirmDialog(() => setBanner(null));
   const [version, setVersion] = useState<string | null>(initialItem?.updatedAt ?? null);
   const [savedValues, setSavedValues] = useState(() => (initialItem ? itemValuesKey(initialItem) : null));
   const dirty =
@@ -196,7 +198,7 @@ export function useMediaEditorController({
         if (result.mode === "created") editor.resetFields(true, () => setBanner(null));
         else load(saved.item as MediaItem);
       } else if (result.mode === "created") {
-        setBanner({ type: "ok", text: posterNote ? `✅ Media created${posterNote}` : "✅ Media created successfully." });
+        setBanner({ type: "ok", text: `Media created${posterNote || "."}` });
         editor.resetFields(true, () => setBanner(null));
       } else if (result.pagesNotUpdated.length) {
         setBanner({
@@ -205,7 +207,7 @@ export function useMediaEditorController({
         });
         load(saved.item as MediaItem);
       } else {
-        setBanner({ type: "ok", text: posterNote ? `✅ Media updated${posterNote}` : "✅ Media updated successfully." });
+        setBanner({ type: "ok", text: `Media updated${posterNote || "."}` });
         load(saved.item as MediaItem);
       }
     } catch (e: unknown) {
@@ -219,8 +221,7 @@ export function useMediaEditorController({
   async function remove() {
     if (!editor.editingId || busyAction === "delete") return;
 
-    const ok = confirm("Delete this media forever? This cannot be undone.");
-    if (!ok) return;
+    if (!(await confirmation.ask(deleteQuestion(`“${editor.title.trim() || "Untitled"}”`)))) return;
 
     setBusyAction("delete");
     setBanner({ type: "info", text: "Deleting media and cleaning Cloudinary asset…" });
@@ -233,7 +234,7 @@ export function useMediaEditorController({
       const deletedId = editor.editingId;
       setMedia((media) => withoutMedia(media, [deletedId]));
       removeFromPageSets([deletedId]);
-      setBanner({ type: "ok", text: "✅ Media deleted." });
+      setBanner({ type: "ok", text: "Media deleted." });
       onDeleted(deletedId);
     } catch (e: unknown) {
       setBanner({
@@ -262,6 +263,7 @@ export function useMediaEditorController({
     setBanner,
     usageDialog: usage.dialog,
     changedDialog: changed.dialog,
+    confirmDialog: confirmation.dialog,
     navigationCover,
     save,
     remove,

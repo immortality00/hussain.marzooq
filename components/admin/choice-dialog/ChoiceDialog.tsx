@@ -31,10 +31,13 @@ export function ChoiceDialog<A extends string>({
         className="w-full max-w-lg rounded-2xl border bg-background p-5 shadow-xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <p className="text-sm font-semibold">{heading}</p>
+        <p className="text-sm font-semibold wrap-anywhere">{heading}</p>
         {children}
         <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:flex-wrap sm:justify-end">
-          <AdminButton onClick={() => onAnswer(cancel)}>{cancelLabel}</AdminButton>
+          {/* A question opens on its safe answer. */}
+          <AdminButton onClick={() => onAnswer(cancel)} data-autofocus>
+            {cancelLabel}
+          </AdminButton>
           {options.map((option) => (
             <AdminButton
               key={option.answer}

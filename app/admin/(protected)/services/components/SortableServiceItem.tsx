@@ -13,7 +13,7 @@ export default function SortableServiceItem({
   onToggleSelect,
   onEdit,
   onToggleActive,
-  onDeleteForever,
+  onArchive,
 }: {
   service: Service;
   index: number;
@@ -21,7 +21,7 @@ export default function SortableServiceItem({
   onToggleSelect: () => void;
   onEdit: (s: Service) => void;
   onToggleActive: (s: Service) => void;
-  onDeleteForever: (s: Service) => void;
+  onArchive: (s: Service) => void;
 }) {
   const { setNodeRef, style, handleProps } = useSortableRow(service.id);
 
@@ -105,11 +105,10 @@ export default function SortableServiceItem({
 
         <button
           type="button"
-          onClick={() => onDeleteForever(service)}
+          onClick={() => onArchive(service)}
           className={adminButtonClasses("danger", "md")}
-          title="Delete forever"
         >
-          Delete
+          Archive
         </button>
       </div>
     </div>

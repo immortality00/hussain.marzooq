@@ -6,6 +6,7 @@ import { useAdminAction } from "@/hooks/useAdminAction";
 import { useAddressValues } from "@/hooks/useAddressValues";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { ConfirmDialog, deleteQuestion, useConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 import { INQUIRY_PARAMS } from "@/lib/admin-links";
 import { revealRow } from "@/lib/client/list-return";
 import InquirySection from "./components/InquirySection";
@@ -23,6 +24,7 @@ export default function InquiriesAdminClient() {
   // list (the alert can arrive before the phone's data has it), then the address lets it go.
   const [expandedId, setExpandedId] = useState<string>(address.open);
   const { feedback: msg, setFeedback: setMsg, notify, run } = useAdminAction();
+  const confirmation = useConfirmDialog(() => setMsg(null));
   const [showArchivedSection, setShowArchivedSection] = useState(false);
   const [notesMap, setNotesMap] = useState<Record<string, string>>({});
   const [actionBusy, setActionBusy] = useState(false);
@@ -49,7 +51,8 @@ export default function InquiriesAdminClient() {
     archived,
     setItems,
     nameOf,
-    notify
+    notify,
+    confirmation.ask
   );
 
   const openId = address.open;
@@ -83,7 +86,8 @@ export default function InquiriesAdminClient() {
   }
 
   async function handleArchive(id: string) {
-    if (actionBusy || !confirm("Archive this inquiry?")) return;
+    if (actionBusy) return;
+    if (!(await confirmation.ask({ heading: `Archive the inquiry from “${nameOf(id)}”?`, action: "Archive" }))) return;
     await act(
       async () => {
         await archiveInquiry(id);
@@ -91,7 +95,7 @@ export default function InquiriesAdminClient() {
         collapse(id);
       },
       "Archiving inquiry…",
-      "✅ Archived.",
+      "Inquiry archived.",
     );
   }
 
@@ -103,12 +107,13 @@ export default function InquiriesAdminClient() {
         setItems((prev) => prev.map((p) => (p.id === id ? { ...p, isArchived: false } : p)));
       },
       "Restoring inquiry…",
-      "✅ Restored.",
+      "Inquiry restored.",
     );
   }
 
   async function handleDeleteForever(id: string) {
-    if (actionBusy || !confirm("Delete forever? This cannot be undone.")) return;
+    if (actionBusy) return;
+    if (!(await confirmation.ask(deleteQuestion(`the inquiry from “${nameOf(id)}”`)))) return;
     await act(
       async () => {
         await deleteInquiryForever(id);
@@ -116,7 +121,7 @@ export default function InquiriesAdminClient() {
         collapse(id);
       },
       "Deleting inquiry forever…",
-      "✅ Deleted forever.",
+      "Inquiry deleted.",
     );
   }
 
@@ -128,7 +133,7 @@ export default function InquiriesAdminClient() {
         setItems((prev) => prev.map((p) => (p.id === id ? { ...p, status } : p)));
       },
       "Updating inquiry status…",
-      "✅ Status updated.",
+      "Status updated.",
     );
   }
 
@@ -146,7 +151,7 @@ export default function InquiriesAdminClient() {
         });
       },
       "Saving inquiry notes…",
-      "✅ Notes saved.",
+      "Notes saved.",
     );
   }
 
@@ -247,6 +252,8 @@ export default function InquiriesAdminClient() {
           />
         </>
       ) : null}
+
+      <ConfirmDialog dialog={confirmation.dialog} />
     </main>
   );
 }

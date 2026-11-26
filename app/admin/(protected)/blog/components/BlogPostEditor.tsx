@@ -9,6 +9,7 @@ import { AdminToggle } from "@/components/admin/AdminToggle";
 import { adminInputClasses } from "@/components/admin/admin-input";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
+import { ConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 import { useBlogPostSave } from "../lib/useBlogPostSave";
 import { ImageField } from "@/components/admin/media-picker/ImageField";
 import { CLOUDINARY_BLOG_FOLDER } from "@/lib/cloudinary-folders";
@@ -47,7 +48,7 @@ export function BlogPostEditor({
   const [values, setValues] = useState<BlogPostFormValues>(initial ?? EMPTY);
   const [slugTouched, setSlugTouched] = useState(Boolean(initial?.slug));
   const back = useBackToList(BLOG_LIST_PATH);
-  const { saving, feedback, save: saveValues, remove, navigationCover, changedDialog } = useBlogPostSave(
+  const { saving, feedback, save: saveValues, remove, navigationCover, changedDialog, confirmDialog } = useBlogPostSave(
     id,
     version,
     setValues,
@@ -74,13 +75,14 @@ export function BlogPostEditor({
       {navigationCover}
       {back.navigationCover}
       <RecordChangedDialog dialog={changedDialog} />
+      <ConfirmDialog dialog={confirmDialog} />
       <AdminPageHeader
         title={isEdit ? "Edit post" : "New post"}
         actions={
           <>
             <BackToList href={BLOG_LIST_PATH} />
             {isEdit ? (
-              <AdminButton variant="danger" onClick={remove} disabled={saving}>
+              <AdminButton variant="danger" onClick={() => void remove(values.title)} disabled={saving}>
                 Delete
               </AdminButton>
             ) : null}

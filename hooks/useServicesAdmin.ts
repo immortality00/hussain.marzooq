@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { useDraftOrder } from "@/hooks/useDraftOrder";
 import { useAdminSlice } from "@/hooks/useAdminData";
 import { useServiceBulk } from "@/hooks/useServiceBulk";
@@ -14,6 +14,7 @@ import {
 } from "@/app/admin/(protected)/services/lib/api";
 import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
 import { useRecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
+import { deleteQuestion, useConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 import { saveGuarded } from "@/lib/record-changed";
 
 const INACTIVE_REASONS: [string, string][] = [
@@ -34,8 +35,8 @@ export function useServicesAdmin() {
   const [busy, setBusy] = useState(false);
 
   const { feedback: banner, setFeedback: setBanner, notify: showBanner } = useAdminAction({ autoDismiss: true });
-  const bannerRef = useRef<HTMLDivElement | null>(null);
   const changed = useRecordChangedDialog(() => setBanner(null));
+  const confirmation = useConfirmDialog(() => setBanner(null));
 
   const replace = (item: Service) => setServices((prev) => prev.map((p) => (p.id === item.id ? item : p)));
 
@@ -63,7 +64,7 @@ export function useServicesAdmin() {
   );
   const archived = useMemo(() => services.filter((s) => s.isArchived).sort((a, b) => a.order - b.order), [services]);
 
-  const bulk = useServiceBulk({ services, setServices, busy, setBusy, showBanner });
+  const bulk = useServiceBulk({ services, setServices, busy, setBusy, showBanner, ask: confirmation.ask });
 
   function onReorder(activeId: string, overId: string) {
     if (!busy) move(activeId, overId);
@@ -72,58 +73,63 @@ export function useServicesAdmin() {
   const handleSaveOrder = () =>
     withBusy("Saving service order…", async () => {
       await save((id, order) => patchService(id, { order }));
-      return "✅ Order saved.";
+      return "Order saved.";
     });
 
   const handleSyncInquiryCounts = () =>
     withBusy("Syncing inquiry counts…", async () => {
       await syncInquiryCounts();
-      return "✅ Inquiry counts synced from actual inquiries.";
+      return "Inquiry counts synced.";
     });
 
   async function handleArchive(svc: Service) {
     if (busy) return;
-    if (!confirm(`Delete "${svc.name}"?\n\nThis will ARCHIVE it (hidden from public).\nYou can restore later.`)) return;
-    await withBusy(`Archiving "${svc.name}"…`, async () => {
+    const question = {
+      heading: `Archive “${svc.name}”?`,
+      detail: "It's hidden from the public pages until you restore it.",
+      action: "Archive",
+    };
+    if (!(await confirmation.ask(question))) return;
+    await withBusy(`Archiving “${svc.name}”…`, async () => {
       await archiveService(svc.id);
       setServices((prev) => prev.map((p) => (p.id === svc.id ? { ...p, isArchived: true, isActive: false } : p)));
-      return `✅ Archived "${svc.name}".`;
+      return `“${svc.name}” archived.`;
     });
   }
 
   const handleRestore = (svc: Service) =>
-    withBusy(`Restoring "${svc.name}"…`, async () => {
+    withBusy(`Restoring “${svc.name}”…`, async () => {
       const item = await patchService(svc.id, { isArchived: false });
       if (item) replace(item);
-      return `✅ Restored "${svc.name}".`;
+      return `“${svc.name}” restored.`;
     });
 
   async function handleDeleteForever(svc: Service) {
     if (busy) return;
     if (svc.inquiriesCount > 0) {
-      showBanner("err", "❌ Cannot delete forever: this service has inquiries. Keep it archived.");
+      showBanner("err", `Can't delete “${svc.name}”: it has inquiries.`);
       return;
     }
-    if (!confirm(`Delete "${svc.name}" FOREVER?\n\nThis cannot be undone.`)) return;
-    await withBusy(`Deleting "${svc.name}" forever…`, async () => {
+    if (!(await confirmation.ask(deleteQuestion(`“${svc.name}”`)))) return;
+    await withBusy(`Deleting “${svc.name}”…`, async () => {
       await deleteServiceForever(svc.id);
       setServices((prev) => prev.filter((p) => p.id !== svc.id));
-      return `✅ Deleted "${svc.name}" forever.`;
+      return `“${svc.name}” deleted.`;
     });
   }
 
   function handleToggleActive(svc: Service) {
     const next = !svc.isActive;
     return withBusy(
-      next ? `Activating "${svc.name}"…` : `Deactivating "${svc.name}"…`,
+      next ? `Activating “${svc.name}”…` : `Deactivating “${svc.name}”…`,
       async () => {
         const item = await patchService(svc.id, { isActive: next });
         if (item) replace(item);
-        return next ? `✅ Activated "${svc.name}".` : `✅ Deactivated "${svc.name}".`;
+        return next ? `“${svc.name}” activated.` : `“${svc.name}” deactivated.`;
       },
       (message) => {
         const reason = INACTIVE_REASONS.find(([code]) => message.includes(code));
-        return reason ? `❌ Can't activate "${svc.name}" ${reason[1]}` : `❌ ${message}`;
+        return reason ? `Can't activate “${svc.name}” ${reason[1]}` : message;
       }
     );
   }
@@ -133,13 +139,13 @@ export function useServicesAdmin() {
       const item = await createService(patch);
       setServices((prev) => [...prev.filter((p) => p.id !== item.id), item]);
       setCreating(false);
-      return "✅ Service created.";
+      return "Service created.";
     });
 
   async function handleEditSave(patch: Partial<Service>) {
     if (!editing) return;
     const current = editing;
-    return withBusy(`Updating "${current.name}"…`, async () => {
+    return withBusy(`Updating “${current.name}”…`, async () => {
       const item = await saveGuarded(
         current.updatedAt,
         (expected) => patchService(current.id, patch, expected),
@@ -153,14 +159,15 @@ export function useServicesAdmin() {
       if (!item) return null;
       replace(item);
       setEditing(null);
-      return "✅ Service updated.";
+      return "Service updated.";
     });
   }
 
   return {
-    services, categories, editing, setEditing, creating, setCreating, busy, banner, setBanner, bannerRef,
+    services, categories, editing, setEditing, creating, setCreating, busy, banner,
     active, inactive, archived, onReorder, handleSaveOrder, handleSyncInquiryCounts, handleArchive, handleRestore,
     handleDeleteForever, handleToggleActive, handleCreateSave, handleEditSave, changedDialog: changed.dialog,
+    confirmDialog: confirmation.dialog,
     ...bulk,
   };
 }

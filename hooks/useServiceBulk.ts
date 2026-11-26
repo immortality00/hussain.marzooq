@@ -4,6 +4,8 @@ import type { Service } from "@/app/admin/(protected)/services/lib/types";
 import { archiveService, deleteServiceForever, patchService } from "@/app/admin/(protected)/services/lib/api";
 import { runBulkAction } from "@/components/admin/bulk/useBulkSelection";
 import type { AdminActionFeedbackType } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { CANNOT_UNDO, deleteQuestion, type AskConfirm } from "@/components/admin/choice-dialog/ConfirmDialog";
+import { countOf } from "@/lib/plural";
 
 type BulkDeps = {
   services: Service[];
@@ -11,9 +13,14 @@ type BulkDeps = {
   busy: boolean;
   setBusy: (busy: boolean) => void;
   showBanner: (type: AdminActionFeedbackType, text: string) => void;
+  ask: AskConfirm;
 };
 
-export function useServiceBulk({ services, setServices, busy, setBusy, showBanner }: BulkDeps) {
+const serviceCount = (count: number) => countOf(count, "service");
+
+// Each action resolves true once it has run, so the screen clears the selection then — and keeps it when the
+// question was cancelled.
+export function useServiceBulk({ services, setServices, busy, setBusy, showBanner, ask }: BulkDeps) {
   async function run(
     ids: string[],
     busyText: string,
@@ -22,7 +29,7 @@ export function useServiceBulk({ services, setServices, busy, setBusy, showBanne
     summary: (ok: number, failed: number) => string,
     skipped = 0
   ) {
-    if (busy || ids.length === 0) return;
+    if (busy || ids.length === 0) return false;
     setBusy(true);
     showBanner("info", busyText);
     const { ok, failed, okIds } = await runBulkAction(ids, async (id) => {
@@ -31,6 +38,7 @@ export function useServiceBulk({ services, setServices, busy, setBusy, showBanne
     setServices(apply(okIds));
     showBanner(failed || skipped ? "err" : "ok", summary(ok, failed));
     setBusy(false);
+    return true;
   }
 
   const failedText = (failed: number) => (failed ? `, ${failed} failed` : "");
@@ -44,9 +52,17 @@ export function useServiceBulk({ services, setServices, busy, setBusy, showBanne
       (ok, failed) => `${ok} ${value ? "activated" : "deactivated"}${failedText(failed)}.`
     );
 
-  function bulkArchive(ids: string[]) {
-    if (busy || ids.length === 0) return;
-    if (!confirm(`Archive ${ids.length} service(s)? They will be hidden from public pages.`)) return;
+  async function bulkArchive(ids: string[]) {
+    if (busy || ids.length === 0) return false;
+    const question = {
+      heading: `Archive ${serviceCount(ids.length)}?`,
+      detail:
+        ids.length === 1
+          ? "It's hidden from the public pages until you restore it."
+          : "They're hidden from the public pages until you restore them.",
+      action: "Archive",
+    };
+    if (!(await ask(question))) return false;
     return run(
       ids,
       "Archiving selected…",
@@ -65,19 +81,19 @@ export function useServiceBulk({ services, setServices, busy, setBusy, showBanne
       (ok, failed) => `${ok} restored${failedText(failed)}.`
     );
 
-  function bulkDeleteForever(ids: string[]) {
-    if (busy || ids.length === 0) return;
+  async function bulkDeleteForever(ids: string[]) {
+    if (busy || ids.length === 0) return false;
     const deletable = ids.filter((id) => (services.find((s) => s.id === id)?.inquiriesCount ?? 0) === 0);
     const blocked = ids.length - deletable.length;
     if (deletable.length === 0) {
-      showBanner("err", "❌ None can be deleted — all selected have inquiries. Keep them archived.");
-      return;
+      showBanner("err", "None of them can be deleted: each has inquiries.");
+      return false;
     }
-    const skipped = blocked ? ` (${blocked} with inquiries skipped)` : "";
-    if (!confirm(`Delete ${deletable.length} service(s) FOREVER?${skipped}\n\nThis cannot be undone.`)) return;
+    const kept = blocked ? `${blocked} with inquiries ${blocked === 1 ? "stays" : "stay"} archived. ` : "";
+    if (!(await ask(deleteQuestion(serviceCount(deletable.length), `${kept}${CANNOT_UNDO}`)))) return false;
     return run(
       deletable,
-      "Deleting selected forever…",
+      "Deleting selected…",
       deleteServiceForever,
       (okIds) => (prev) => prev.filter((p) => !okIds.includes(p.id)),
       (ok, failed) => `${ok} deleted${failedText(failed)}${blocked ? `, ${blocked} skipped (has inquiries)` : ""}.`,

@@ -5,6 +5,8 @@ import { useDraftOrder } from "@/hooks/useDraftOrder";
 import { useAdminSlice } from "@/hooks/useAdminData";
 import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
 import { useBulkRunner } from "@/components/admin/bulk/useBulkRunner";
+import { CANNOT_UNDO, deleteQuestion, useConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
+import { countOf } from "@/lib/plural";
 import { createTagRequest, deleteTagRequest, patchTag } from "./api";
 import type { NewTag, Tag, TagPatch } from "./types";
 
@@ -16,6 +18,7 @@ export function useTagActions() {
   const [creating, setCreating] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
   const { feedback, setFeedback } = useAdminAction();
+  const confirmation = useConfirmDialog(() => setFeedback(null));
   const { ordered, move, save } = useDraftOrder(items, setItems);
 
   const actionBusy = creating || savingOrder;
@@ -31,8 +34,11 @@ export function useTagActions() {
       (okIds) => setItems((prev) => prev.map((t) => (okIds.includes(t.id) ? { ...t, isActive: value } : t)))
     );
 
-  function bulkDelete() {
-    if (!confirm(`Delete ${selection.count} tag(s) forever?\n\nAny still on media will be detached (the media stays).`)) return;
+  async function bulkDelete() {
+    const one = selection.count === 1;
+    const detail = `${one ? "It comes off any media it's" : "They come off any media they're"} on. The media stays.`;
+    const question = deleteQuestion(countOf(selection.count, "tag"), detail);
+    if (!(await confirmation.ask(question))) return;
     return runBulk("Deleting selected tags…", "deleted", (id) => deleteTagRequest(id, true), (okIds) =>
       setItems((prev) => prev.filter((t) => !okIds.includes(t.id)))
     );
@@ -49,7 +55,7 @@ export function useTagActions() {
       const created = await createTagRequest({ ...draft, label });
       setItems((prev) => [...prev.filter((t) => t.id !== created.id), created]);
       setDraft(EMPTY_DRAFT);
-      setFeedback({ type: "ok", text: "✅ Tag created." });
+      setFeedback({ type: "ok", text: "Tag created." });
     } catch (e: unknown) {
       fail(e);
     } finally {
@@ -71,24 +77,22 @@ export function useTagActions() {
     }
   }
 
-  const editTag = (id: string, patch: TagPatch) => updateTag(id, patch, "Updating tag…", "✅ Tag updated.");
+  const editTag = (id: string, patch: TagPatch) => updateTag(id, patch, "Updating tag…", "Tag updated.");
   const toggleTag = (id: string, value: boolean) =>
-    updateTag(id, { isActive: value }, value ? "Activating tag…" : "Hiding tag…", value ? "✅ Tag activated." : "✅ Tag hidden.");
+    updateTag(id, { isActive: value }, value ? "Activating tag…" : "Hiding tag…", value ? "Tag activated." : "Tag hidden.");
 
   async function deleteTag(tag: Tag) {
     if (actionBusy) return;
     setFeedback(null);
     const detach = tag.mediaCount > 0;
-    const question = detach
-      ? `"${tag.label}" is on ${tag.mediaCount} media item(s).\n\nDeleting will detach it from all of them (the media stays; only the tag is removed).\n\nContinue?`
-      : `Delete tag "${tag.label}" forever?\n\nThis cannot be undone.`;
-    if (!confirm(question)) return;
+    const detail = detach ? `It comes off ${countOf(tag.mediaCount, "media item")}. The media stays.` : CANNOT_UNDO;
+    if (!(await confirmation.ask(deleteQuestion(`“${tag.label}”`, detail)))) return;
 
-    setFeedback({ type: "info", text: `Deleting tag "${tag.label}"…` });
+    setFeedback({ type: "info", text: `Deleting tag “${tag.label}”…` });
     try {
       await deleteTagRequest(tag.id, detach);
       setItems((prev) => prev.filter((t) => t.id !== tag.id));
-      setFeedback({ type: "ok", text: "✅ Tag deleted." });
+      setFeedback({ type: "ok", text: "Tag deleted." });
     } catch (e: unknown) {
       fail(e);
     }
@@ -100,7 +104,7 @@ export function useTagActions() {
     setFeedback({ type: "info", text: "Saving tag order…" });
     try {
       await save((id, order) => patchTag(id, { order }));
-      setFeedback({ type: "ok", text: "✅ Order saved." });
+      setFeedback({ type: "ok", text: "Order saved." });
     } catch (e: unknown) {
       fail(e);
     } finally {
@@ -115,5 +119,6 @@ export function useTagActions() {
   return {
     ordered, draft, setDraft, creating, savingOrder, actionBusy, feedback, selection, bulkBusy,
     bulkSetActive, bulkDelete, createTag, editTag, toggleTag, deleteTag, saveOrder, onReorder,
+    confirmDialog: confirmation.dialog,
   };
 }

@@ -7,6 +7,7 @@ import { usePagesAdmin } from "../usePagesAdmin";
 import { PAGE_ROWS } from "../lib/rows";
 import { PageEditorBody } from "../components/PageEditorBody";
 import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
+import { ConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 
 const EMPTY_SEO_DRAFT = {
   title: "",
@@ -18,7 +19,7 @@ const EMPTY_SEO_DRAFT = {
 
 export function PageEditorClient({ slug }: { slug: string }) {
   const admin = usePagesAdmin();
-  useUnsavedChangesGuard(admin.hasUnsavedChanges);
+  const leaveDialog = useUnsavedChangesGuard(admin.hasUnsavedChanges);
 
   const row = PAGE_ROWS.find((r) => r.key === slug)!;
 
@@ -41,6 +42,7 @@ export function PageEditorClient({ slug }: { slug: string }) {
         onDiscard={() => admin.discard(row)}
       />
       <RecordChangedDialog dialog={admin.changedDialog} />
+      <ConfirmDialog dialog={leaveDialog} />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { adminWrite } from "@/lib/client/admin-store";
 import type { AdminSnapshot } from "@/lib/server/admin-snapshot";
+import { countOf } from "@/lib/plural";
 
 export type BlogCategory = AdminSnapshot["blogCategories"][number];
 
@@ -8,7 +9,7 @@ const JSON_HEADERS = { "Content-Type": "application/json" };
 
 async function readError(res: Response): Promise<string> {
   const data = (await res.json().catch(() => null)) as { error?: string; postsCount?: number } | null;
-  if (data?.error === "CATEGORY_IN_USE") return `In use by ${data.postsCount ?? 0} post(s).`;
+  if (data?.error === "CATEGORY_IN_USE") return `In use by ${countOf(data.postsCount ?? 0, "post")}.`;
   if (data?.error === "Slug already exists") return "That slug is already used.";
   return data?.error ?? `Request failed (${res.status})`;
 }

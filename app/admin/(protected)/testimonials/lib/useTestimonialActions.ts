@@ -7,7 +7,9 @@ import { useDebouncedText } from "@/hooks/useDebouncedSearch";
 import { TESTIMONIAL_PARAMS } from "@/lib/admin-links";
 import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
 import { useBulkRunner } from "@/components/admin/bulk/useBulkRunner";
+import { deleteQuestion, useConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 import { adminWrite } from "@/lib/client/admin-store";
+import { countOf } from "@/lib/plural";
 import type { TestimonialItem } from "../components/TestimonialShared";
 
 async function send(id: string, init: RequestInit, fallback: string) {
@@ -44,6 +46,7 @@ function reviewFilterOf(value: string): ReviewFilter {
 export function useTestimonialActions() {
   const [items, setItems] = useAdminSlice("testimonials");
   const { feedback: banner, setFeedback: setBanner } = useAdminAction();
+  const confirmation = useConfirmDialog(() => setBanner(null));
   const [address, setAddress] = useAddressValues(TESTIMONIAL_PARAMS);
   const search = useDebouncedText(address.q, (q) => setAddress({ q }));
   const status = reviewFilterOf(address.status);
@@ -90,17 +93,18 @@ export function useTestimonialActions() {
     return track(setUpdatingId, id, value ? "Approving review…" : "Moving review back to pending…", async () => {
       await approve(id, value);
       markApproved([id], value);
-      return value ? "✅ Review approved." : "✅ Review moved back to pending.";
+      return value ? "Review approved." : "Review moved back to pending.";
     });
   }
 
-  function remove(id: string) {
-    if (actionBusy || !confirm("Delete this submitted review permanently?")) return;
+  async function remove(id: string) {
+    if (actionBusy) return;
+    if (!(await confirmation.ask(deleteQuestion(`the review from “${labelOf(id)}”`)))) return;
     return track(setDeletingId, id, "Deleting review and cleaning Cloudinary assets…", async () => {
       await removeReview(id);
       drop([id]);
       if (activeId === id) setActiveId(null);
-      return "✅ Review deleted and Cloudinary cleanup finished.";
+      return "Review deleted.";
     });
   }
 
@@ -112,8 +116,8 @@ export function useTestimonialActions() {
       (okIds) => markApproved(okIds, value)
     );
 
-  function bulkDelete() {
-    if (!confirm(`Delete ${bulk.selection.count} review(s) permanently?`)) return;
+  async function bulkDelete() {
+    if (!(await confirmation.ask(deleteQuestion(countOf(bulk.selection.count, "review"))))) return;
     return bulk.run("Deleting selected reviews…", "deleted", removeReview, drop);
   }
 
@@ -140,5 +144,7 @@ export function useTestimonialActions() {
     remove,
     bulkSetApproval,
     bulkDelete,
+    confirmDialog: confirmation.dialog,
+    asking: confirmation.asking,
   };
 }

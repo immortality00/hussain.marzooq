@@ -4,6 +4,7 @@ import { StickyToolbar } from "@/components/shared/StickyToolbar";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { MEDIA_CATEGORIES } from "../../lib/utils";
 import { adminInputClasses } from "@/components/admin/admin-input";
+import { countOf } from "@/lib/plural";
 
 type Props = {
   // The box's words (useDebouncedText); the search follows them 500 ms after the last keystroke.
@@ -93,7 +94,7 @@ export function MediaListFilterBar({
 
       {itemCount !== undefined && activeFilterLabel ? (
         <div className="mt-4 text-xs text-muted-foreground">
-          Showing {itemCount} result{itemCount === 1 ? "" : "s"} for {activeFilterLabel}.
+          Showing {countOf(itemCount, "result")} for {activeFilterLabel}.
         </div>
       ) : null}
     </>

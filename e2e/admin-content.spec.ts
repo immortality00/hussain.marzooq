@@ -13,6 +13,24 @@ test.describe("admin content screens", () => {
     await expect(fieldAfter(page, "Page title")).toHaveValue("About — e2e title");
   });
 
+  test("pages: leaving with unsaved changes asks first; Keep editing stays, Discard follows the link", async ({ page }) => {
+    await signIn(page);
+    await page.goto("/admin/pages/about");
+    const title = fieldAfter(page, "Page title");
+    await title.fill("Not saved");
+    const question = page.getByRole("dialog", { name: "Discard your changes?" });
+
+    await page.getByRole("link", { name: "Back to list" }).click();
+    await question.getByRole("button", { name: "Keep editing" }).click();
+    await expect(question).toBeHidden();
+    await expect(page).toHaveURL(/\/admin\/pages\/about$/);
+    await expect(title).toHaveValue("Not saved");
+
+    await page.getByRole("link", { name: "Back to list" }).click();
+    await question.getByRole("button", { name: "Discard", exact: true }).click();
+    await expect(page).toHaveURL(/\/admin\/pages$/);
+  });
+
   test("blog: a post edited here shows in the list at once and after a fresh load", async ({ page }) => {
     await signIn(page);
     await openScreen(page, "Blog");
@@ -32,7 +50,7 @@ test.describe("admin content screens", () => {
     await page.getByRole("button", { name: "Edit", exact: true }).first().click();
     await fieldAfter(page, "Bio").fill("Bio written by the end-to-end suite.");
     await page.getByRole("button", { name: "Update", exact: true }).click();
-    await expect(page.getByText("✅ Person updated.")).toBeVisible();
+    await expect(page.getByText("Person updated.")).toBeVisible();
     await freshLoad(page);
     await page.getByRole("button", { name: "Edit", exact: true }).first().click();
     await expect(fieldAfter(page, "Bio")).toHaveValue("Bio written by the end-to-end suite.");
@@ -46,7 +64,7 @@ test.describe("admin content screens", () => {
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await page.getByRole("button", { name: "Update gallery" }).click();
-    await expect(page.getByText("✅ Gallery updated.")).toBeVisible();
+    await expect(page.getByText("Gallery updated.")).toBeVisible();
     await expect(page.getByText("E2E Gallery Renamed").first()).toBeVisible();
     await freshLoad(page);
     await expect(page.getByText("E2E Gallery Renamed").first()).toBeVisible();

@@ -1,5 +1,6 @@
 import { AdminProcessingPill } from "@/components/admin/action-feedback/AdminActionFeedback";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { countOf } from "@/lib/plural";
 import {
   type TestimonialItem,
   identityLine,
@@ -55,7 +56,7 @@ export function ReviewRow({
               </div>
               <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
                 <span>
-                  {item.photoUrls.length} photo{item.photoUrls.length === 1 ? "" : "s"}
+                  {countOf(item.photoUrls.length, "photo")}
                 </span>
                 <span>·</span>
                 <span>Submitted {formatDate(item.createdAt)}</span>

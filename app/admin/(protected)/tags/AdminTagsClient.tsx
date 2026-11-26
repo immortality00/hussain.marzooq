@@ -4,6 +4,7 @@ import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminAct
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
+import { ConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 import { refreshAdminData } from "@/lib/client/admin-store";
 import TagFormCard from "./components/TagFormCard";
 import TagsTable from "./components/TagsTable";
@@ -65,6 +66,8 @@ export default function AdminTagsClient() {
           Refresh
         </button>
       </div>
+
+      <ConfirmDialog dialog={tags.confirmDialog} />
     </div>
   );
 }

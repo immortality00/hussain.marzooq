@@ -44,7 +44,8 @@ export function PeopleList({
   selection: ReturnType<typeof useBulkSelection>;
   onEdit: (item: PersonItem, event: MouseEvent<HTMLButtonElement>) => void;
   onDelete: (id: string) => void;
-  onBulkDelete: (ids: string[]) => Promise<void>;
+  // Resolves true once it ran; a cancelled question keeps the selection.
+  onBulkDelete: (ids: string[]) => Promise<boolean>;
 }) {
   useListReturn(PEOPLE_LIST, view, true);
 
@@ -141,8 +142,7 @@ export function PeopleList({
             label: "Delete",
             tone: "danger",
             onRun: async () => {
-              await onBulkDelete(selection.selectedIds);
-              selection.clear();
+              if (await onBulkDelete(selection.selectedIds)) selection.clear();
             },
           },
         ]}

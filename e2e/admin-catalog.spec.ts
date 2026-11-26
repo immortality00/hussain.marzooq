@@ -8,20 +8,21 @@ test.describe("admin catalog screens", () => {
     await openScreen(page, "Tags");
     await page.getByPlaceholder("Label (e.g. Fashion)").fill("Night Light");
     await page.getByRole("button", { name: "Add", exact: true }).click();
-    await expect(page.getByText("✅ Tag created.")).toBeVisible();
+    await expect(page.getByText("Tag created.")).toBeVisible();
     await freshLoad(page);
     expect(await hasInputValue(page, "Night Light")).toBe(true);
 
     const label = page.locator('input[value="Night Light"]');
     await label.fill("Night Glow");
     await label.blur();
-    await expect(page.getByText("✅ Tag updated.")).toBeVisible();
+    await expect(page.getByText("Tag updated.")).toBeVisible();
     await freshLoad(page);
     expect(await hasInputValue(page, "Night Glow")).toBe(true);
 
-    page.once("dialog", (dialog) => void dialog.accept());
     await page.getByRole("button", { name: "Delete", exact: true }).last().click();
-    await expect(page.getByText("✅ Tag deleted.")).toBeVisible();
+    const question = page.getByRole("dialog", { name: "Delete “Night Glow”?" });
+    await question.getByRole("button", { name: "Delete", exact: true }).click();
+    await expect(page.getByText("Tag deleted.")).toBeVisible();
     await freshLoad(page);
     expect(await hasInputValue(page, "Night Glow")).toBe(false);
   });
@@ -41,7 +42,7 @@ test.describe("admin catalog screens", () => {
     await openScreen(page, "Service Categories");
     await page.getByPlaceholder("Name", { exact: true }).fill("Weddings");
     await page.getByRole("button", { name: "Add", exact: true }).click();
-    await expect(page.getByText("✅ Category created.")).toBeVisible();
+    await expect(page.getByText("Category created.")).toBeVisible();
     await freshLoad(page);
     expect(await hasInputValue(page, "Weddings")).toBe(true);
   });
@@ -52,7 +53,7 @@ test.describe("admin catalog screens", () => {
     await page.getByRole("button", { name: "Edit", exact: true }).first().click();
     await page.getByRole("textbox", { name: "Name", exact: true }).fill(`${E2E.serviceName} Updated`);
     await page.getByRole("button", { name: "Save", exact: true }).click();
-    await expect(page.getByText("✅ Service updated.")).toBeVisible();
+    await expect(page.getByText("Service updated.")).toBeVisible();
     await freshLoad(page);
     await expect(page.getByText(`${E2E.serviceName} Updated`).first()).toBeVisible();
   });

@@ -7,6 +7,12 @@ import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { adminInputClasses } from "@/components/admin/admin-input";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
+import {
+  CANNOT_UNDO,
+  ConfirmDialog,
+  deleteQuestion,
+  useConfirmDialog,
+} from "@/components/admin/choice-dialog/ConfirmDialog";
 import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
 import { SortableList } from "@/components/admin/sortable/SortableList";
 import { slugifyTag } from "@/lib/server/media-tags";
@@ -18,6 +24,7 @@ export default function BlogCategoriesAdminClient() {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const { feedback, notify, setFeedback } = useAdminAction();
+  const confirmation = useConfirmDialog(() => setFeedback(null));
   const { ordered, move, save } = useDraftOrder(items, setItems);
 
   async function attempt(busyText: string, work: () => Promise<void>, okText: string) {
@@ -59,12 +66,15 @@ export default function BlogCategoriesAdminClient() {
     }
   }
 
-  function remove(cat: BlogCategory) {
-    const detach = cat.postsCount > 0;
-    const question = detach
-      ? `Delete "${cat.name}"? Its ${cat.postsCount} post(s) become Uncategorized.`
-      : `Delete "${cat.name}" forever?`;
-    if (!confirm(question)) return;
+  async function remove(cat: BlogCategory) {
+    const posts = cat.postsCount;
+    const detach = posts > 0;
+    const detail = !detach
+      ? CANNOT_UNDO
+      : posts === 1
+        ? "Its post becomes Uncategorized."
+        : `Its ${posts} posts become Uncategorized.`;
+    if (!(await confirmation.ask(deleteQuestion(`“${cat.name}”`, detail)))) return;
     return attempt("Deleting…", async () => {
       await deleteBlogCategory(cat.id, detach);
       setItems((prev) => prev.filter((c) => c.id !== cat.id));
@@ -123,6 +133,8 @@ export default function BlogCategoriesAdminClient() {
       ) : (
         <div className="rounded-2xl border p-8 text-sm text-muted-foreground">No categories yet.</div>
       )}
+
+      <ConfirmDialog dialog={confirmation.dialog} />
     </div>
   );
 }

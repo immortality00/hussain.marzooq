@@ -37,7 +37,7 @@ export function useMediaListLabels({
   const usage = useMediaUsageDialog(() => setBanner(null));
   const changed = useRecordChangedDialog(() => setBanner(null));
   const dirty = isDirty(draft);
-  useUnsavedChangesGuard(dirty);
+  const leaveDialog = useUnsavedChangesGuard(dirty);
 
   function open(item: MediaItem, line: LabelLine) {
     const labels = { tags: item.tags, peopleIds: item.peopleIds, people: item.people };
@@ -97,6 +97,7 @@ export function useMediaListLabels({
     save,
     usageDialog: usage.dialog,
     changedDialog: changed.dialog,
+    leaveDialog,
   };
 }
 

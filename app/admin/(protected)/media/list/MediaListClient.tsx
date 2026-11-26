@@ -15,6 +15,7 @@ import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
 import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
+import { ConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 import { filtersFromAddress, MEDIA_LIST, MEDIA_LIST_PARAMS } from "../lib/media-list-address";
 import { filtersKey } from "../lib/media-pages";
 import { rememberShownView } from "../lib/media-page-sets";
@@ -52,7 +53,7 @@ export default function MediaListClient() {
   }, [filters]);
 
   const selection = useBulkSelection(items.map((m) => m.id));
-  const { del, bulkDelete, deletingId, bulkBusy, usageDialog } = useMediaListDelete({
+  const { del, bulkDelete, deletingId, bulkBusy, usageDialog, confirmDialog } = useMediaListDelete({
     items,
     removeItems,
     selection,
@@ -179,6 +180,8 @@ export default function MediaListClient() {
       <MediaUsageDialog dialog={usageDialog} />
       <MediaUsageDialog dialog={labels.usageDialog} />
       <RecordChangedDialog dialog={labels.changedDialog} />
+      <ConfirmDialog dialog={confirmDialog} />
+      <ConfirmDialog dialog={labels.leaveDialog} />
     </main>
   );
 }

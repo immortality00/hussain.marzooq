@@ -13,6 +13,8 @@ import { leaveList, rowElement } from "@/lib/client/list-return";
 import { useBulkRunner } from "@/components/admin/bulk/useBulkRunner";
 import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
+import { ConfirmDialog, deleteQuestion, useConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
+import { countOf } from "@/lib/plural";
 import { BlogPostRow } from "./components/BlogPostRow";
 import { deletePost, updatePost } from "./lib/api";
 import { withSavedPost, withoutPost } from "./lib/blog-store";
@@ -26,6 +28,7 @@ export default function BlogAdminClient() {
   const items = blog.posts;
   const shown = status ? items.filter((post) => statusOf(post) === status) : items;
   const { feedback, setFeedback, run: runAction } = useAdminAction();
+  const confirmation = useConfirmDialog(() => setFeedback(null));
   const labelOf = (id: string) => items.find((p) => p.id === id)?.title || "Untitled";
   const { selection, busy: bulkBusy, run } = useBulkRunner(shown.map((p) => p.id), labelOf, setFeedback);
   useListReturn(BLOG_LIST, status, true);
@@ -46,7 +49,8 @@ export default function BlogAdminClient() {
     );
 
   async function dismiss(post: BlogListItem) {
-    if (!confirm(`Dismiss “${post.title || "Untitled"}”? The draft is deleted.`)) return;
+    const question = { heading: `Dismiss “${post.title || "Untitled"}”?`, detail: "The draft is deleted.", action: "Dismiss" };
+    if (!(await confirmation.ask(question))) return;
     await runAction(
       async () => {
         await deletePost(post.id);
@@ -56,8 +60,8 @@ export default function BlogAdminClient() {
     );
   }
 
-  function bulkDelete() {
-    if (!confirm(`Delete ${selection.count} post(s)? This cannot be undone.`)) return;
+  async function bulkDelete() {
+    if (!(await confirmation.ask(deleteQuestion(countOf(selection.count, "post"))))) return;
     return run("Deleting…", "deleted", deletePost, (okIds) =>
       setBlog((current) => okIds.reduce(withoutPost, current))
     );
@@ -67,7 +71,7 @@ export default function BlogAdminClient() {
     <div className="space-y-5">
       <AdminPageHeader
         title="Blog"
-        description={`${items.length} post${items.length === 1 ? "" : "s"}`}
+        description={countOf(items.length, "post")}
         actions={
           <AdminButton href="/admin/blog/new" variant="solid">
             New post
@@ -127,6 +131,8 @@ export default function BlogAdminClient() {
           { label: "Delete", tone: "danger", onRun: bulkDelete },
         ]}
       />
+
+      <ConfirmDialog dialog={confirmation.dialog} />
     </div>
   );
 }

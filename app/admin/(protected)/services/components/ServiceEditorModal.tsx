@@ -4,7 +4,8 @@ import Image from "next/image";
 import { useMemo, useState } from "react";
 import { CLOUDINARY_SERVICES_FOLDER } from "@/lib/cloudinary-folders";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
-import { DiscardChangesDialog, useDiscardChanges } from "@/components/admin/choice-dialog/DiscardChangesDialog";
+import { ConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
+import { useDiscardChanges } from "@/components/admin/choice-dialog/useDiscardChanges";
 import { ModalPortal } from "@/components/shared/ModalPortal";
 import { CloudinaryUploadButton } from "@/components/shared/upload/CloudinaryUploadButton";
 import { useLatest } from "@/hooks/useLatest";
@@ -247,7 +248,7 @@ export default function ServiceEditorModal({
           </div>
         </div>
       </ModalPortal>
-      <DiscardChangesDialog dialog={discard.dialog} />
+      <ConfirmDialog dialog={discard.dialog} />
     </>
   );
 }

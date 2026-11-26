@@ -5,6 +5,7 @@ import { useAdminNavigate } from "@/hooks/useAdminNavigate";
 import { useAdminSlice } from "@/hooks/useAdminData";
 import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
 import { useRecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
+import { deleteQuestion, useConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 import { saveGuarded } from "@/lib/record-changed";
 import { leaveList } from "@/lib/client/list-return";
 import { createPost, deletePost, updatePost, type SavedPost } from "./api";
@@ -25,6 +26,7 @@ export function useBlogPostSave(
   const [openedVersion, setOpenedVersion] = useState(version);
   const { feedback, notify, setFeedback } = useAdminAction();
   const changed = useRecordChangedDialog(() => setFeedback(null));
+  const confirmation = useConfirmDialog(() => setFeedback(null));
 
   function keep(saved: SavedPost) {
     setBlog((blog) => withSavedPost(blog, saved));
@@ -66,9 +68,9 @@ export function useBlogPostSave(
     }
   }
 
-  async function remove() {
+  async function remove(title: string) {
     if (!id || saving) return;
-    if (!confirm("Delete this post forever? This cannot be undone.")) return;
+    if (!(await confirmation.ask(deleteQuestion(`“${title.trim() || "Untitled"}”`)))) return;
     setSaving(true);
     setFeedback({ type: "info", text: "Deleting…" });
     try {
@@ -81,5 +83,13 @@ export function useBlogPostSave(
     }
   }
 
-  return { saving, feedback, save, remove, navigationCover, changedDialog: changed.dialog };
+  return {
+    saving,
+    feedback,
+    save,
+    remove,
+    navigationCover,
+    changedDialog: changed.dialog,
+    confirmDialog: confirmation.dialog,
+  };
 }

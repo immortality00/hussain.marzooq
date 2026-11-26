@@ -8,10 +8,11 @@ import { BulkActionBar } from "@/components/admin/bulk/BulkActionBar";
 import SortableServiceItem from "./components/SortableServiceItem";
 import ServiceEditorModal from "./components/ServiceEditorModal";
 import ServiceSimpleSection from "./components/ServiceSimpleSection";
-import ServicesBanner from "./components/ServicesBanner";
+import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
 import ServicesToolbar from "./components/ServicesToolbar";
 import { useServicesAdmin } from "@/hooks/useServicesAdmin";
 import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
+import { ConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 
 export default function AdminServicesClient() {
   const {
@@ -21,8 +22,6 @@ export default function AdminServicesClient() {
     setCreating,
     busy,
     banner,
-    setBanner,
-    bannerRef,
     active,
     inactive,
     archived,
@@ -41,20 +40,21 @@ export default function AdminServicesClient() {
     bulkRestore,
     bulkDeleteForever,
     changedDialog,
+    confirmDialog,
   } = useServicesAdmin();
 
   const activeSel = useBulkSelection(active.map((s) => s.id));
   const inactiveSel = useBulkSelection(inactive.map((s) => s.id));
   const archivedSel = useBulkSelection(archived.map((s) => s.id));
 
-  async function runAndClear(fn: () => Promise<void> | undefined, clear: () => void) {
-    await fn();
-    clear();
+  // Clears the selection once the action ran; a cancelled question keeps it.
+  async function runAndClear(fn: () => Promise<boolean>, clear: () => void) {
+    if (await fn()) clear();
   }
 
   return (
     <main className="mx-auto max-w-6xl px-0 py-3 md:px-6 md:py-10">
-      <ServicesBanner banner={banner} onClose={() => setBanner(null)} containerRef={bannerRef} />
+      <AdminActionFeedback feedback={banner} />
 
       <ServicesToolbar
         busy={busy}
@@ -91,7 +91,7 @@ export default function AdminServicesClient() {
               if (!busy) setEditing(x);
             }}
             onToggleActive={(x) => void handleToggleActive(x)}
-            onDeleteForever={(x) => void handleArchive(x)}
+            onArchive={(x) => void handleArchive(x)}
           />
         ))}
       </SortableList>
@@ -115,7 +115,7 @@ export default function AdminServicesClient() {
           if (!busy) setEditing(service);
         }}
         onSecondaryAction={handleArchive}
-        secondaryActionLabel="Delete"
+        secondaryActionLabel="Archive"
         secondaryDanger={true}
         isSelected={inactiveSel.isSelected}
         onToggleSelect={inactiveSel.toggle}
@@ -188,6 +188,7 @@ export default function AdminServicesClient() {
       />
 
       <RecordChangedDialog dialog={changedDialog} />
+      <ConfirmDialog dialog={confirmDialog} />
     </main>
   );
 }

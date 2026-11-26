@@ -9,6 +9,7 @@ import { TestimonialInspectModal } from "./components/TestimonialInspectModal";
 import { AdminSearchBox } from "@/components/admin/AdminSearchBox";
 import { FilterPills } from "@/components/admin/FilterPills";
 import { StickyToolbar } from "@/components/shared/StickyToolbar";
+import { ConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 
 const STATUS_PILLS = [
   { value: "all", label: "All" },
@@ -37,6 +38,8 @@ export default function TestimonialsAdminClient() {
     remove,
     bulkSetApproval,
     bulkDelete,
+    confirmDialog,
+    asking,
   } = useTestimonialActions();
 
   return (
@@ -144,8 +147,11 @@ export default function TestimonialsAdminClient() {
           onSetApproval={(id, value) => void setApproval(id, value)}
           onDelete={(id) => void remove(id)}
           onClose={() => { if (!actionBusy) setActive(null); }}
+          closeOnEscape={!asking}
         />
       ) : null}
+
+      <ConfirmDialog dialog={confirmDialog} />
     </main>
   );
 }

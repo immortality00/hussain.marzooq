@@ -24,6 +24,7 @@ import { batchItemLabel, useBatchMediaState } from "./lib/useBatchMediaState";
 import { adminInputClasses } from "@/components/admin/admin-input";
 import { ADMIN_REQUEST_LIMIT, settleLimited } from "@/lib/settle-limited";
 import { publishScheduleError } from "@/lib/media-schedule";
+import { countOf } from "@/lib/plural";
 
 const STEPS = ["Category", "Media", "Details", "Appearances", "Review"] as const;
 
@@ -151,7 +152,7 @@ export default function BatchMediaClient() {
     const draftNote = draftError ? ` Blog draft not made: ${draftError}` : "";
 
     if (failed.length === 0 && !privateNote && !draftNote) {
-      notify("ok", `✅ Created ${created} media.${posterNote}`);
+      notify("ok", `Created ${created} media.${posterNote}`);
       s.resetAll();
       setUploadRun(null);
       setBatchKey(crypto.randomUUID());
@@ -288,11 +289,11 @@ export default function BatchMediaClient() {
           <section className="space-y-4 rounded-3xl border p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="text-sm font-medium">
-                Review {s.items.length} item{s.items.length === 1 ? "" : "s"}
+                Review {countOf(s.items.length, "item")}
               </div>
               <div className="text-xs text-muted-foreground">
-                {s.primaryCategory ?? "—"} · {s.isPublic ? "Public" : "Hidden"} · {s.tags.length} tag
-                {s.tags.length === 1 ? "" : "s"} · {s.people.length} people
+                {s.primaryCategory ?? "—"} · {s.isPublic ? "Public" : "Hidden"} · {countOf(s.tags.length, "tag")} ·{" "}
+                {countOf(s.people.length, "person", "people")}
               </div>
             </div>
 

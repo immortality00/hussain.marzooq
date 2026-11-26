@@ -5,6 +5,8 @@ import { useDraftOrder } from "@/hooks/useDraftOrder";
 import { useAdminSlice } from "@/hooks/useAdminData";
 import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
 import { useBulkRunner } from "@/components/admin/bulk/useBulkRunner";
+import { CANNOT_UNDO, deleteQuestion, useConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
+import { countOf } from "@/lib/plural";
 import { createCategoryRequest, deleteCategoryRequest, patchCategory } from "./api";
 import type { Category, CategoryPatch } from "./types";
 import { slugify } from "./utils";
@@ -16,6 +18,7 @@ export function useCategoryActions() {
   const [creating, setCreating] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
   const { feedback, setFeedback } = useAdminAction();
+  const confirmation = useConfirmDialog(() => setFeedback(null));
   const { ordered, move, save } = useDraftOrder(items, setItems);
 
   const actionBusy = creating || savingOrder;
@@ -35,8 +38,10 @@ export function useCategoryActions() {
       (okIds) => applyActive(okIds, value)
     );
 
-  function bulkDelete() {
-    if (!confirm(`Delete ${selection.count} categor(ies)? System or non-empty ones will be skipped.`)) return;
+  async function bulkDelete() {
+    const what = countOf(selection.count, "category", "categories");
+    const question = deleteQuestion(what, `Others and any with services are kept. ${CANNOT_UNDO}`);
+    if (!(await confirmation.ask(question))) return;
     return runBulk("Deleting selected categories…", "deleted", deleteCategoryRequest, (okIds) =>
       setItems((prev) => prev.filter((c) => !okIds.includes(c.id)))
     );
@@ -56,7 +61,7 @@ export function useCategoryActions() {
       setItems((prev) => [...prev.filter((c) => c.id !== created.id), created]);
       setName("");
       setSlug("");
-      setFeedback({ type: "ok", text: "✅ Category created." });
+      setFeedback({ type: "ok", text: "Category created." });
     } catch (e: unknown) {
       fail(e);
     } finally {
@@ -70,7 +75,7 @@ export function useCategoryActions() {
     try {
       await patchCategory(id, patch);
       setItems((prev) => prev.map((c) => (c.id === id ? { ...c, ...patch } : c)));
-      setFeedback({ type: "ok", text: "✅ Category updated." });
+      setFeedback({ type: "ok", text: "Category updated." });
       return true;
     } catch (e: unknown) {
       fail(e);
@@ -84,7 +89,7 @@ export function useCategoryActions() {
     try {
       await patchCategory(id, { isActive: value });
       applyActive([id], value);
-      setFeedback({ type: "ok", text: value ? "✅ Category activated." : "✅ Category deactivated." });
+      setFeedback({ type: "ok", text: value ? "Category activated." : "Category deactivated." });
     } catch (e: unknown) {
       fail(e);
     }
@@ -94,16 +99,16 @@ export function useCategoryActions() {
     if (actionBusy) return;
     if (cat.isSystem) return setFeedback({ type: "err", text: "This is a system category and cannot be deleted." });
     if (cat.servicesCount > 0) {
-      return setFeedback({ type: "err", text: `Cannot delete: ${cat.servicesCount} services exist under it.` });
+      return setFeedback({ type: "err", text: `Can't delete “${cat.name}”: it has ${countOf(cat.servicesCount, "service")}.` });
     }
     setFeedback(null);
-    if (!confirm(`Delete category "${cat.name}" forever?\n\nThis cannot be undone.`)) return;
+    if (!(await confirmation.ask(deleteQuestion(`“${cat.name}”`)))) return;
 
-    setFeedback({ type: "info", text: `Deleting category "${cat.name}"…` });
+    setFeedback({ type: "info", text: `Deleting category “${cat.name}”…` });
     try {
       await deleteCategoryRequest(cat.id);
       setItems((prev) => prev.filter((c) => c.id !== cat.id));
-      setFeedback({ type: "ok", text: "✅ Category deleted." });
+      setFeedback({ type: "ok", text: "Category deleted." });
     } catch (e: unknown) {
       fail(e);
     }
@@ -115,7 +120,7 @@ export function useCategoryActions() {
     setFeedback({ type: "info", text: "Saving category order…" });
     try {
       await save((id, order) => patchCategory(id, { order }));
-      setFeedback({ type: "ok", text: "✅ Order saved." });
+      setFeedback({ type: "ok", text: "Order saved." });
     } catch (e: unknown) {
       fail(e);
     } finally {
@@ -130,5 +135,6 @@ export function useCategoryActions() {
   return {
     ordered, name, setName, slug, setSlug, creating, savingOrder, actionBusy, feedback, selection, bulkBusy,
     bulkSetActive, bulkDelete, createCategory, editCategory, toggleCategory, deleteCategory, saveOrder, onReorder,
+    confirmDialog: confirmation.dialog,
   };
 }

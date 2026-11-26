@@ -47,6 +47,7 @@ export function TestimonialInspectModal({
   onSetApproval,
   onDelete,
   onClose,
+  closeOnEscape = true,
 }: {
   item: TestimonialItem;
   updating: boolean;
@@ -54,6 +55,8 @@ export function TestimonialInspectModal({
   onSetApproval: (id: string, value: boolean) => void;
   onDelete: (id: string) => void;
   onClose: () => void;
+  // Off while a question opened from this window is up, so Escape answers only the question.
+  closeOnEscape?: boolean;
 }) {
   const metaLine = identityLine(item);
   const actionBusy = updating || deleting;
@@ -61,6 +64,7 @@ export function TestimonialInspectModal({
   return (
     <ModalPortal
       onClose={onClose}
+      closeOnEscape={closeOnEscape}
       label={`Review by ${item.name}`}
       className="fixed inset-0 z-[60] bg-black/72 p-4 backdrop-blur-sm"
     >

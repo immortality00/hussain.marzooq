@@ -11,6 +11,7 @@ import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { BackToList } from "@/components/admin/BackToList";
 import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
+import { ConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 
 export default function PrivateGalleriesAdminClient() {
   const admin = usePrivateGalleriesAdmin();
@@ -67,8 +68,7 @@ export default function PrivateGalleriesAdminClient() {
               label: "Delete",
               tone: "danger",
               onRun: async () => {
-                await admin.bulkRemove(selection.selectedIds);
-                selection.clear();
+                if (await admin.bulkRemove(selection.selectedIds)) selection.clear();
               },
             },
           ]}
@@ -80,6 +80,7 @@ export default function PrivateGalleriesAdminClient() {
 
       <MediaUsageDialog dialog={admin.usageDialog} />
       <RecordChangedDialog dialog={admin.changedDialog} />
+      <ConfirmDialog dialog={admin.confirmDialog} />
     </main>
   );
 }

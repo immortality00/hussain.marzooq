@@ -11,6 +11,7 @@ import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
 import { adminInputClasses } from "@/components/admin/admin-input";
 import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
 import { useMediaUsageDialog } from "@/components/admin/media-usage/useMediaUsageDialog";
+import { ConfirmDialog, useConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 import { decideWithUsageCheck } from "./decide";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -25,6 +26,7 @@ export default function RemovalRequestsClient() {
   const [approvePassword, setApprovePassword] = useState("");
   const { feedback, setFeedback } = useAdminAction();
   const usage = useMediaUsageDialog(() => setFeedback(null));
+  const confirmation = useConfirmDialog(() => setFeedback(null));
 
   function startApprove(id: string) {
     if (busyId) return;
@@ -66,13 +68,20 @@ export default function RemovalRequestsClient() {
       id,
       "Approving…",
       { action: "approve", password: approvePassword.trim() },
-      "✅ Removal approved. Linked media hidden and the profile is password-only."
+      "Removal approved. Linked media hidden and the profile is password-only."
     );
   }
 
-  function dismiss(id: string) {
-    if (busyId || !confirm("Dismiss this request?")) return;
-    return run(id, "Dismissing…", { action: "dismiss" }, "✅ Request dismissed.");
+  async function dismiss(id: string) {
+    if (busyId) return;
+    const name = rows.find((row) => row.id === id)?.name || "Unnamed";
+    const question = {
+      heading: `Dismiss the request from “${name}”?`,
+      detail: "The profile stays as it is.",
+      action: "Dismiss",
+    };
+    if (!(await confirmation.ask(question))) return;
+    return run(id, "Dismissing…", { action: "dismiss" }, "Request dismissed.");
   }
 
   return (
@@ -84,6 +93,7 @@ export default function RemovalRequestsClient() {
 
       <AdminActionFeedback feedback={feedback} />
       <MediaUsageDialog dialog={usage.dialog} />
+      <ConfirmDialog dialog={confirmation.dialog} />
 
       <section className="mt-8 space-y-3">
         {rows.length === 0 ? (

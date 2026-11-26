@@ -5,8 +5,7 @@ import { KeyRound, LogOut, ShieldAlert } from "lucide-react";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { AdminLink } from "@/components/admin/AdminLink";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
-import { ChoiceDialog } from "@/components/admin/choice-dialog/ChoiceDialog";
-import { useChoice } from "@/components/admin/choice-dialog/useChoice";
+import { ConfirmDialog, useConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 import { useAdminData } from "@/hooks/useAdminData";
 import { ADMIN_APPROVE_SIGN_IN_PATH } from "@/lib/auth/admin-next-path";
 import type { AdminPasskey } from "@/lib/server/passkeys";
@@ -14,24 +13,21 @@ import { AddPasskeyDialog } from "./AddPasskeyDialog";
 import { PasskeyList } from "./PasskeyList";
 import { useAdminSecurity } from "./useAdminSecurity";
 
-type Question = { heading: string; confirm: string };
-type Answer = "confirm" | "cancel";
-
 export function SecurityCard() {
   const security = useAdminData()?.security;
   const actions = useAdminSecurity();
   const [adding, setAdding] = useState(false);
-  const { pending, ask } = useChoice<Question, Answer>();
+  const confirmation = useConfirmDialog();
 
   if (!security) return null;
 
   async function remove(passkey: AdminPasskey) {
-    if ((await ask({ heading: `Remove the passkey "${passkey.name}"?`, confirm: "Remove" })) !== "confirm") return;
+    if (!(await confirmation.ask({ heading: `Remove the passkey “${passkey.name}”?`, action: "Remove" }))) return;
     await actions.remove(passkey.id);
   }
 
   async function signOutOthers() {
-    if ((await ask({ heading: "Sign out every other device?", confirm: "Sign out everywhere" })) !== "confirm") return;
+    if (!(await confirmation.ask({ heading: "Sign out every other device?", action: "Sign out everywhere" }))) return;
     await actions.signOutOthers();
   }
 
@@ -69,14 +65,7 @@ export function SecurityCard() {
       <AdminActionFeedback feedback={actions.feedback} />
 
       {adding ? <AddPasskeyDialog busy={actions.busy} onAdd={actions.add} onClose={() => setAdding(false)} /> : null}
-      {pending ? (
-        <ChoiceDialog
-          heading={pending.question.heading}
-          options={[{ answer: "confirm", label: pending.question.confirm, variant: "danger" }]}
-          onAnswer={pending.answer}
-          cancel="cancel"
-        />
-      ) : null}
+      <ConfirmDialog dialog={confirmation.dialog} />
     </section>
   );
 }

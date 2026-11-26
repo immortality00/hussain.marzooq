@@ -6,6 +6,7 @@ import { BulkCheckbox } from "@/components/admin/bulk/BulkCheckbox";
 import IconButton from "./IconButton";
 import { ArchiveIcon, DeleteIcon, RestoreIcon } from "./InquiryIcons";
 import InquiryExpandedCard from "./InquiryExpandedCard";
+import { countOf } from "@/lib/plural";
 
 export default function InquirySection({
   title,
@@ -48,7 +49,7 @@ export default function InquirySection({
     <div className="mt-6 overflow-hidden rounded-2xl border bg-background/70">
       <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
         <div className="text-sm font-medium">{title}</div>
-        <div className="text-xs text-muted-foreground">{list.length} item(s)</div>
+        <div className="text-xs text-muted-foreground">{countOf(list.length, "item")}</div>
       </div>
 
       <div className="overflow-x-auto">

@@ -1,12 +1,18 @@
 "use client";
 
 import { useEffect } from "react";
+import { useConfirmDiscard } from "@/components/admin/choice-dialog/useDiscardChanges";
 
-const MESSAGE = "You have unsaved changes. Leave this page and discard them?";
-
+// While there are unsaved changes: a tap on a link to another page of the site asks "Discard your changes?"
+// first, and Discard follows that same link — its own click handler included. A reload or a closed tab gets the
+// browser's own prompt, the only one browsers allow there. Render the returned dialog with ConfirmDialog.
 export function useUnsavedChangesGuard(hasUnsavedChanges: boolean) {
+  const { confirm: confirmLeave, dialog } = useConfirmDiscard(hasUnsavedChanges);
+
   useEffect(() => {
     if (!hasUnsavedChanges) return;
+    // The link being followed after Discard: its click is let through.
+    let following: HTMLAnchorElement | null = null;
 
     const onBeforeUnload = (e: BeforeUnloadEvent) => {
       e.preventDefault();
@@ -18,7 +24,7 @@ export function useUnsavedChangesGuard(hasUnsavedChanges: boolean) {
       if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
 
       const anchor = (e.target as Element | null)?.closest("a");
-      if (!anchor) return;
+      if (!anchor || anchor === following) return;
       if (anchor.target && anchor.target !== "_self") return;
 
       const href = anchor.getAttribute("href");
@@ -28,10 +34,14 @@ export function useUnsavedChangesGuard(hasUnsavedChanges: boolean) {
       if (url.origin !== window.location.origin) return;
       if (url.pathname === window.location.pathname) return;
 
-      if (!window.confirm(MESSAGE)) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
+      e.preventDefault();
+      e.stopPropagation();
+      void confirmLeave().then((leave) => {
+        if (!leave || !anchor.isConnected) return;
+        following = anchor;
+        anchor.click();
+        following = null;
+      });
     };
 
     window.addEventListener("beforeunload", onBeforeUnload);
@@ -40,5 +50,7 @@ export function useUnsavedChangesGuard(hasUnsavedChanges: boolean) {
       window.removeEventListener("beforeunload", onBeforeUnload);
       document.removeEventListener("click", onClickCapture, true);
     };
-  }, [hasUnsavedChanges]);
+  }, [hasUnsavedChanges, confirmLeave]);
+
+  return dialog;
 }

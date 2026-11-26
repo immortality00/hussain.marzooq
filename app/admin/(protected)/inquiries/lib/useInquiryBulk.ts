@@ -4,11 +4,15 @@ import { useState } from "react";
 import { runBulkAction, useBulkSelection } from "@/components/admin/bulk/useBulkSelection";
 import { bulkResultText } from "@/components/admin/bulk/bulk-result";
 import type { AdminActionFeedbackType } from "@/components/admin/action-feedback/AdminActionFeedback";
+import { deleteQuestion, type AskConfirm } from "@/components/admin/choice-dialog/ConfirmDialog";
 import type { SliceUpdate } from "@/lib/client/admin-store";
+import { countOf } from "@/lib/plural";
 import { archiveInquiry, deleteInquiryForever, restoreInquiry } from "./api";
 import type { Inquiry } from "./types";
 
 type Notify = (type: AdminActionFeedbackType, text: string) => void;
+
+const inquiries = (count: number) => countOf(count, "inquiry", "inquiries");
 
 // Inquiries' bulk actions: archive or delete the selected active ones, restore or delete the selected archived ones.
 export function useInquiryBulk<T extends Inquiry>(
@@ -16,7 +20,8 @@ export function useInquiryBulk<T extends Inquiry>(
   archived: T[],
   setItems: (next: SliceUpdate<T[]>) => void,
   nameOf: (id: string) => string,
-  notify: Notify
+  notify: Notify,
+  ask: AskConfirm
 ) {
   const activeSel = useBulkSelection(active.map((x) => x.id));
   const archivedSel = useBulkSelection(archived.map((x) => x.id));
@@ -24,7 +29,7 @@ export function useInquiryBulk<T extends Inquiry>(
 
   async function bulkArchive() {
     if (bulkBusy || activeSel.count === 0) return;
-    if (!confirm(`Archive ${activeSel.count} inquiry(ies)?`)) return;
+    if (!(await ask({ heading: `Archive ${inquiries(activeSel.count)}?`, action: "Archive" }))) return;
     const ids = activeSel.selectedIds;
     setBulkBusy(true);
     notify("info", "Archiving selected…");
@@ -50,7 +55,7 @@ export function useInquiryBulk<T extends Inquiry>(
   async function bulkDeleteForever(which: "active" | "archived") {
     const sel = which === "active" ? activeSel : archivedSel;
     if (bulkBusy || sel.count === 0) return;
-    if (!confirm(`Delete ${sel.count} inquiry(ies) forever? This cannot be undone.`)) return;
+    if (!(await ask(deleteQuestion(inquiries(sel.count))))) return;
     const ids = sel.selectedIds;
     setBulkBusy(true);
     notify("info", "Deleting selected forever…");

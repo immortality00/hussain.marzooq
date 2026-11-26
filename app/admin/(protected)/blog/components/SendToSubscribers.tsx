@@ -3,17 +3,12 @@
 import { useState } from "react";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminActionFeedback";
-import { ChoiceDialog } from "@/components/admin/choice-dialog/ChoiceDialog";
-import { useChoice } from "@/components/admin/choice-dialog/useChoice";
+import { ConfirmDialog, useConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 import { useAdminSlice } from "@/hooks/useAdminData";
 import { errorMessage, useAdminAction } from "@/hooks/useAdminAction";
 import { sendToSubscribers } from "../lib/api";
 import { withSavedPost } from "../lib/blog-store";
 import type { BlogPostFormValues } from "../lib/types";
-
-type Answer = "send" | "cancel";
-
-const SEND_OPTIONS = [{ answer: "send" as const, label: "Send", variant: "solid" as const }];
 
 function sentOn(iso: string) {
   const date = new Date(iso);
@@ -26,7 +21,7 @@ function sentOn(iso: string) {
 export function SendToSubscribers({ id, values }: { id: string; values: BlogPostFormValues }) {
   const [blog, setBlog] = useAdminSlice("blog");
   const { feedback, notify, setFeedback } = useAdminAction();
-  const { pending, ask } = useChoice<void, Answer>(() => setFeedback(null));
+  const confirmation = useConfirmDialog(() => setFeedback(null));
   const [sending, setSending] = useState(false);
 
   const post = blog.posts.find((p) => p.id === id);
@@ -42,9 +37,17 @@ export function SendToSubscribers({ id, values }: { id: string; values: BlogPost
   }
 
   const unsaved = JSON.stringify(values) !== JSON.stringify(blog.forms[id]);
+  const title = post.title || "Untitled";
 
   async function send() {
-    if (sending || (await ask()) !== "send") return;
+    if (sending) return;
+    const question = {
+      heading: `Send “${title}” to subscribers?`,
+      detail: unsaved ? "Unsaved changes are not in the email." : undefined,
+      action: "Send",
+      variant: "solid" as const,
+    };
+    if (!(await confirmation.ask(question))) return;
     setSending(true);
     setFeedback({ type: "info", text: "Sending…" });
     try {
@@ -64,16 +67,7 @@ export function SendToSubscribers({ id, values }: { id: string; values: BlogPost
         Send to subscribers
       </AdminButton>
       <AdminActionFeedback feedback={feedback} className="" />
-      {pending ? (
-        <ChoiceDialog<Answer>
-          heading={`Send “${post.title || "Untitled"}” to subscribers?`}
-          options={SEND_OPTIONS}
-          onAnswer={pending.answer}
-          cancel="cancel"
-        >
-          {unsaved ? <p className="mt-2 text-sm text-muted-foreground">Unsaved changes are not in the email.</p> : null}
-        </ChoiceDialog>
-      ) : null}
+      <ConfirmDialog dialog={confirmation.dialog} />
     </>
   );
 }

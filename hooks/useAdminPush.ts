@@ -13,6 +13,7 @@ import {
 } from "@/lib/client/admin-push-api";
 import { runAfterAdminData } from "@/lib/client/admin-store";
 import { endpointHash, pushDeviceState, type PushDevice } from "@/lib/push-subscription";
+import { countOf } from "@/lib/plural";
 
 const noopSubscribe = () => () => {};
 
@@ -120,7 +121,7 @@ export function useAdminPush(publicKey: string | null, devices: PushDevice[]) {
       const json = await sendTestPush();
       const sent = json?.sent ?? 0;
       const failed = json?.failed ?? 0;
-      const count = `${sent} device${sent === 1 ? "" : "s"}`;
+      const count = countOf(sent, "device");
       notify(failed ? "err" : "ok", `Sent to ${count}${failed ? `, ${failed} failed` : ""}.`);
     });
 

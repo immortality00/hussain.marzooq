@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { createElement } from "react";
+import { createElement, Fragment } from "react";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
@@ -27,6 +27,7 @@ import { TestimonialInspectModal } from "@/app/admin/(protected)/testimonials/co
 import ServiceEditorModal from "@/app/admin/(protected)/services/components/ServiceEditorModal";
 import type { Service, ServiceCategory } from "@/app/admin/(protected)/services/lib/types";
 import type { TestimonialItem } from "@/app/admin/(protected)/testimonials/components/TestimonialShared";
+import { ConfirmDialog, deleteQuestion, useConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 
 const REVIEW: TestimonialItem = {
   id: "r1",
@@ -156,6 +157,46 @@ describe("testimonial window", () => {
     escape();
     fireEvent.click(screen.getByRole("dialog", { name: "Review by Sara" }));
     expect(onClose).toHaveBeenCalledTimes(2);
+  });
+
+  // As the testimonials screen wires it: the question renders beside the window, which skips Escape meanwhile.
+  function ReviewWithQuestion({ onClose }: { onClose: () => void }) {
+    const confirmation = useConfirmDialog();
+    return createElement(
+      Fragment,
+      null,
+      createElement(TestimonialInspectModal, {
+        item: REVIEW,
+        updating: false,
+        deleting: false,
+        onSetApproval: vi.fn(),
+        onDelete: () => void confirmation.ask(deleteQuestion("the review from “Sara”")),
+        onClose,
+        closeOnEscape: !confirmation.asking,
+      }),
+      createElement(ConfirmDialog, { dialog: confirmation.dialog })
+    );
+  }
+
+  test("a Delete question over it: Escape and a tap outside answer only the question", async () => {
+    const onClose = vi.fn();
+    render(createElement(ReviewWithQuestion, { onClose }));
+    const question = { name: "Delete the review from “Sara”?" };
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await screen.findByRole("dialog", question);
+    await act(async () => escape());
+    expect(screen.queryByRole("dialog", question)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    const asked = await screen.findByRole("dialog", question);
+    await act(async () => {
+      fireEvent.click(asked);
+    });
+    expect(screen.queryByRole("dialog", question)).toBeNull();
+
+    expect(onClose).not.toHaveBeenCalled();
+    expect(screen.getByRole("dialog", { name: "Review by Sara" })).toBeTruthy();
   });
 });
 

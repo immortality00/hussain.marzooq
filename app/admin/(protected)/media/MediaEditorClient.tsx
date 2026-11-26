@@ -5,7 +5,8 @@ import { AdminActionFeedback } from "@/components/admin/action-feedback/AdminAct
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { adminButtonClasses } from "@/components/admin/AdminButton";
 import { BackToList } from "@/components/admin/BackToList";
-import { DiscardChangesDialog, useConfirmDiscard } from "@/components/admin/choice-dialog/DiscardChangesDialog";
+import { ConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
+import { useConfirmDiscard } from "@/components/admin/choice-dialog/useDiscardChanges";
 import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
 import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 import { useBackToList } from "@/hooks/useBackToList";
@@ -45,8 +46,8 @@ export default function MediaEditorClient({
       back.goBack();
     },
   });
-  const { editor, dirty, busy, busyAction, banner, setBanner, usageDialog, changedDialog, navigationCover } =
-    controller;
+  const { editor, dirty, busy, busyAction, banner, setBanner, navigationCover } = controller;
+  const { usageDialog, changedDialog, confirmDialog } = controller;
 
   const nav = useMediaItemNav(initialItem?.id ?? "", view, openItem, (text) => setBanner({ type: "err", text }));
   useEffect(() => {
@@ -81,7 +82,7 @@ export default function MediaEditorClient({
             {editor.editingId ? (
               <button
                 type="button"
-                onClick={controller.startNewUpload}
+                onClick={() => void leaveFor(controller.startNewUpload)}
                 disabled={busy}
                 className={adminButtonClasses("default", "md")}
               >
@@ -106,7 +107,8 @@ export default function MediaEditorClient({
 
       <MediaUsageDialog dialog={usageDialog} />
       <RecordChangedDialog dialog={changedDialog} />
-      <DiscardChangesDialog dialog={discard.dialog} />
+      <ConfirmDialog dialog={confirmDialog} />
+      <ConfirmDialog dialog={discard.dialog} />
       {navigationCover}
       {back.navigationCover}
     </main>

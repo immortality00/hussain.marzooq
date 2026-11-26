@@ -8,6 +8,7 @@ import { BackToList } from "@/components/admin/BackToList";
 import { usePeopleAdmin } from "@/hooks/usePeopleAdmin";
 import { RecordChangedDialog } from "@/components/admin/record-changed/RecordChangedDialog";
 import { MediaUsageDialog } from "@/components/admin/media-usage/MediaUsageDialog";
+import { ConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
 import { PeopleList } from "./components/PeopleList";
 import { PersonForm } from "./components/PersonForm";
 
@@ -57,6 +58,7 @@ export default function PeopleAdminClient() {
       )}
       <RecordChangedDialog dialog={admin.changedDialog} />
       <MediaUsageDialog dialog={admin.usageDialog} />
+      <ConfirmDialog dialog={admin.confirmDialog} />
     </main>
   );
 }

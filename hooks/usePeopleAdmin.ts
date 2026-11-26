@@ -13,6 +13,8 @@ import { useRecordChangedDialog } from "@/components/admin/record-changed/Record
 import { saveGuarded } from "@/lib/record-changed";
 import { deletePerson, savePerson, savePersonWithUsageCheck } from "@/app/admin/(protected)/people/lib/api";
 import { useMediaUsageDialog } from "@/components/admin/media-usage/useMediaUsageDialog";
+import { deleteQuestion, useConfirmDialog } from "@/components/admin/choice-dialog/ConfirmDialog";
+import { countOf } from "@/lib/plural";
 import { errorMessage, useAdminAction } from "./useAdminAction";
 import { cleanupUploadedAsset } from "@/lib/client/cleanup-uploaded-asset";
 import { useLatest } from "./useLatest";
@@ -66,6 +68,7 @@ export function usePeopleAdmin() {
   const [editingVersion, setEditingVersion] = useState<string | null>(null);
   const changed = useRecordChangedDialog(() => setBanner(null));
   const usage = useMediaUsageDialog(() => setBanner(null));
+  const confirmation = useConfirmDialog(() => setBanner(null));
 
   const latestAvatarUrl = useLatest(avatarUrl);
 
@@ -200,7 +203,7 @@ export function usePeopleAdmin() {
       setBanner(
         deliveryError
           ? { type: "err", text: `Person ${editingId ? "updated" : "created"}. ${deliveryError}` }
-          : { type: "ok", text: editingId ? "✅ Person updated." : "✅ Person created." }
+          : { type: "ok", text: editingId ? "Person updated." : "Person created." }
       );
       resetForm();
       setMode("list");
@@ -214,8 +217,8 @@ export function usePeopleAdmin() {
   async function remove(id: string) {
     if (deletingId) return;
 
-    const ok = confirm("Delete this person profile?");
-    if (!ok) return;
+    const name = items.find((x) => x.id === id)?.name || "Unnamed";
+    if (!(await confirmation.ask(deleteQuestion(`“${name}”`)))) return;
 
     setDeletingId(id);
     setBanner({ type: "info", text: "Deleting person profile…" });
@@ -223,7 +226,7 @@ export function usePeopleAdmin() {
     try {
       await deletePerson(id);
       setItems((prev) => prev.filter((x) => x.id !== id));
-      setBanner({ type: "ok", text: "✅ Person deleted." });
+      setBanner({ type: "ok", text: "Person deleted." });
 
       if (editingId === id) {
         resetForm();
@@ -236,9 +239,10 @@ export function usePeopleAdmin() {
     }
   }
 
+  // Resolves true once it has run, so the list clears its selection then — and keeps it when cancelled.
   async function bulkRemove(ids: string[]) {
-    if (bulkBusy || ids.length === 0) return;
-    if (!confirm(`Delete ${ids.length} person profile(s)?`)) return;
+    if (bulkBusy || ids.length === 0) return false;
+    if (!(await confirmation.ask(deleteQuestion(countOf(ids.length, "profile"))))) return false;
     setBulkBusy(true);
     setBanner({ type: "info", text: "Deleting selected profiles…" });
     const result = await runBulkAction(ids, deletePerson);
@@ -246,6 +250,7 @@ export function usePeopleAdmin() {
     const labelOf = (id: string) => items.find((x) => x.id === id)?.name || "Person";
     setBanner({ type: result.failed ? "err" : "ok", text: bulkResultText(result, "deleted", labelOf) });
     setBulkBusy(false);
+    return true;
   }
 
   return {
@@ -285,5 +290,6 @@ export function usePeopleAdmin() {
     remove,
     changedDialog: changed.dialog,
     usageDialog: usage.dialog,
+    confirmDialog: confirmation.dialog,
   };
 }
