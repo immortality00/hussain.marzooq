@@ -47,7 +47,7 @@ export default function MediaCardGrid({
             }}
             className="group overflow-hidden rounded-2xl border bg-muted text-left"
           >
-            <div data-expand-card={m.id} data-expand-radii={CARD_RADII} className={`relative ${cardAspect}`}>
+            <div data-expand-card={m.id} data-expand-radii={CARD_RADII} className={`relative overflow-hidden ${cardAspect}`}>
               <SmartMediaPreview
                 mode={isImage ? "image" : isVideo ? "video" : isEmbed ? "embed" : "empty"}
                 src={m.secureUrl}
