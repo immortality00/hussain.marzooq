@@ -30,6 +30,29 @@ export async function freshLoad(page: Page) {
   await expect(page.getByText("Loading", { exact: true })).toHaveCount(0);
 }
 
+export async function mediaIdByTitle(page: Page, title: string) {
+  return page.evaluate(async (title) => {
+    const res = await fetch(`/api/media/admin-list?q=${encodeURIComponent(title)}`, { cache: "no-store" });
+    const items = (await res.json()).items as { id: string; title: string }[];
+    return items.find((item) => item.title === title)!.id;
+  }, title);
+}
+
+export async function renameMedia(page: Page, id: string, title: string) {
+  return page.evaluate(
+    async ({ id, title }) => {
+      const item = (await (await fetch(`/api/media/${id}`)).json()).item;
+      const res = await fetch(`/api/media/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...item, title }),
+      });
+      return res.status;
+    },
+    { id, title }
+  );
+}
+
 export const snapshot = (page: Page) =>
   page.evaluate(async () => (await (await fetch("/api/admin/snapshot", { cache: "no-store" })).json()).data);
 

@@ -46,7 +46,7 @@ function useSelectedPreviews(selectedMediaIds: string[], shown: MediaListItem[])
     };
   }, [missingKey]);
 
-  useOnAdminDataChange(() => void fetchPreviews(fetched.map((item) => item.id)).then(keep));
+  useOnAdminDataChange(() => fetchPreviews(fetched.map((item) => item.id)).then(keep));
 
   return fetched;
 }

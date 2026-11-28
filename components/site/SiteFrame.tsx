@@ -5,6 +5,7 @@ import { TransitionProvider } from "@/components/transitions/TransitionContext";
 import { Navbar } from "@/components/site/Navbar";
 import { ScrollMemory } from "@/components/site/ScrollMemory";
 import { BackToTop } from "@/components/site/BackToTop";
+import { SitePullToRefresh } from "@/components/site/SitePullToRefresh";
 import type { DisciplineSlug } from "@/lib/disciplines";
 
 export function SiteFrame({
@@ -26,8 +27,9 @@ export function SiteFrame({
 
   return (
     <TransitionProvider images={transitionImages} fullPageLoads={fullPageLoads}>
+      <SitePullToRefresh fullPageLoads={fullPageLoads} />
       <Navbar activeDisciplines={activeDisciplines} />
-      <div className="relative z-10">
+      <div data-pull-moves className="relative z-10">
         <div id="main-content" tabIndex={-1} className="relative">
           {children}
         </div>

@@ -8,12 +8,15 @@ import { ADMIN_CONTENT_ID } from "@/components/admin/AdminPageCover";
 import { AdminDataProvider } from "@/components/admin/AdminDataProvider";
 import { AdminLogoutButton } from "@/components/admin/AdminLogoutButton";
 import { AdminSessionNotice } from "@/components/admin/AdminSessionNotice";
+import { AdminPullToRefresh } from "@/components/admin/AdminPullToRefresh";
 import { BackToTop } from "@/components/site/BackToTop";
 
 export default function AdminProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-dvh overflow-x-clip bg-background">
-      <div className="mx-auto max-w-6xl px-2 pt-4 pb-24 md:px-4 md:py-8">
+      <AdminPullToRefresh />
+      {/* The page, which comes down with a pull to refresh. */}
+      <div data-pull-moves className="mx-auto max-w-6xl px-2 pt-4 pb-24 md:px-4 md:py-8">
         <div className="mb-6 flex items-center justify-between gap-4 md:mb-8">
           <div>
             <span role="img" aria-label="Hussain.Art" className="hm-wordmark h-9" />

@@ -1,51 +1,13 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ADMIN_BUILD, KNOWN_VERSION_HEADER, MEDIA_COUNT_HEADER } from "@/lib/admin-data";
+import { deferred, json, mediaItems, reply, snapshot, tick } from "./support/admin-snapshot";
 
 type Store = typeof import("@/lib/client/admin-store");
 let store: Store;
 
 const fetchMock = vi.fn();
 
-type MediaItems = import("@/lib/server/admin-snapshot").AdminSnapshot["media"]["items"];
-
-function mediaItems(count: number) {
-  return Array.from({ length: count }, (_, i) => ({ id: `m${i}`, title: `M${i}`, createdAt: null })) as unknown as MediaItems;
-}
-
-function snapshot(inquiryNames: string[], media = 2, build = ADMIN_BUILD) {
-  return {
-    build,
-    dashboard: { stats: { media: { total: 0 }, inquiries: { new: 0, active: 0 } }, missingImage: 0, hidden: 0 },
-    notificationCount: inquiryNames.length,
-    push: { publicKey: null, devices: [] },
-    inquiries: inquiryNames.map((name, i) => ({ id: String(i), name, status: "new", isArchived: false })),
-    testimonials: [] as { id: string; isApproved: boolean }[],
-    people: [],
-    services: [],
-    galleries: [],
-    blog: { posts: [] as { waiting: boolean }[], forms: {}, categoryOptions: [] },
-    removal: { items: [], history: [] },
-    pages: { settings: {}, seo: {}, sections: {}, sectionsUpdatedAt: {} },
-    media: { items: mediaItems(media), nextCursor: "next", full: {} },
-  };
-}
-
-function json(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json" } });
-}
-
-const reply = (body: unknown, status = 200) => Promise.resolve(json(body, status));
-
-function deferred() {
-  let resolve: (value: Response) => void = () => {};
-  const promise = new Promise<Response>((r) => {
-    resolve = r;
-  });
-  return { promise, resolve };
-}
-
-const tick = (ms = 2) => new Promise((r) => setTimeout(r, ms));
 const snapshotCalls = () => fetchMock.mock.calls.filter(([url]) => url === "/api/admin/snapshot");
 const headersOf = (call: number) => snapshotCalls()[call]![1].headers as Record<string, string>;
 

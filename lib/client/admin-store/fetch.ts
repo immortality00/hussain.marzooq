@@ -20,8 +20,12 @@ let inFlight: Promise<void> | null = null;
 let again = false;
 let retriedSignIn = false;
 let queue: Promise<void> = Promise.resolve();
+let checkFailure: string | null = null;
 
 const shownMedia = () => adminMediaCount(state.data?.media.items.length ?? 0);
+
+/** Why the last check failed, even with data on screen (which then keeps showing): a pull says it. */
+export const lastCheckFailure = () => checkFailure;
 
 function stopWith(update: () => void) {
   settleChanges();
@@ -49,6 +53,7 @@ function handleUnauthorized(reason: string | null) {
 }
 
 function fail(message: string) {
+  checkFailure = message;
   stopWith(() => {
     if (!state.data) state.failure = message;
   });
@@ -68,6 +73,7 @@ async function request(requestedMedia: number) {
 async function fetchSnapshot() {
   const startedAt = Date.now();
   const requestedMedia = shownMedia();
+  checkFailure = null;
   let res: Response;
   try {
     res = await request(requestedMedia);

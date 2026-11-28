@@ -52,6 +52,7 @@ export function Navbar({ activeDisciplines }: { activeDisciplines: DisciplineSlu
   return (
     <>
       <header
+        data-pull-moves
         className={[
           "sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl transition-[background-color,border-color,box-shadow] duration-300",
           isVisible

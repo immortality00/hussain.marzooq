@@ -1,32 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
-import { openScreen, otherDevice, signIn } from "./admin-helpers";
+import { mediaIdByTitle, openScreen, otherDevice, renameMedia, signIn } from "./admin-helpers";
 import { E2E } from "./fixtures";
 
 const LAST_PHOTO = "Seed Photo 65";
 const renamed: { id: string; title: string }[] = [];
-
-async function mediaIdByTitle(page: Page, title: string) {
-  return page.evaluate(async (title) => {
-    const res = await fetch(`/api/media/admin-list?q=${encodeURIComponent(title)}`, { cache: "no-store" });
-    const items = (await res.json()).items as { id: string; title: string }[];
-    return items.find((item) => item.title === title)!.id;
-  }, title);
-}
-
-async function renameMedia(page: Page, id: string, title: string) {
-  return page.evaluate(
-    async ({ id, title }) => {
-      const item = (await (await fetch(`/api/media/${id}`)).json()).item;
-      const res = await fetch(`/api/media/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...item, title }),
-      });
-      return res.status;
-    },
-    { id, title }
-  );
-}
 
 async function renameElsewhere(browser: import("@playwright/test").Browser, id: string, from: string, to: string) {
   const other = await otherDevice(browser);

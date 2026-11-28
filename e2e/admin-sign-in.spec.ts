@@ -29,6 +29,11 @@ test.describe("admin sign-in and logout", () => {
     await expect(page.getByRole("button", { name: "Login" })).toBeVisible();
   });
 
+  // In Playwright's WebKit (local runs; CI runs Chrome) this fails at the offline page.goto with "WebKit
+  // encountered an internal error". Not a site bug and not a security issue — proven 2026-11-28: Playwright's
+  // offline switch in WebKit stops every request before the service worker can answer (an offline fetch of a
+  // file the worker holds fails in WebKit and works in Chrome), and with the server really stopped WebKit opens
+  // the saved sign-in page. See CLAUDE.md "Testing & CI". Do not investigate it again.
   test("signed out and offline, the sign-in page still opens from the phone", async ({ page, context }) => {
     await signIn(page);
     await signInPageSaved(page);

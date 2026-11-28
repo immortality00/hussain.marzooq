@@ -11,6 +11,7 @@ import {
   getAdminSignedOut,
   setAdminSlice,
   subscribeAdminData,
+  trackAdminReload,
   type AdminChanges,
   type AdminSlice,
   type SliceUpdate,
@@ -38,7 +39,9 @@ export function useAdminDataFailure() {
   return useSyncExternalStore(subscribeAdminData, getAdminDataFailure, () => null);
 }
 
-export function useOnAdminDataChange(callback: () => void) {
+// Runs `callback` when a check brought changed data, and on every pull to refresh: re-fetch there anything
+// held outside the shared data. A pull waits for the promise it returns.
+export function useOnAdminDataChange(callback: () => unknown) {
   const generation = useSyncExternalStore(subscribeAdminData, getAdminDataGeneration, () => 0);
   const seen = useRef(generation);
   const latest = useRef(callback);
@@ -48,7 +51,7 @@ export function useOnAdminDataChange(callback: () => void) {
   useEffect(() => {
     if (generation === seen.current) return;
     seen.current = generation;
-    latest.current();
+    trackAdminReload(latest.current());
   }, [generation]);
 }
 

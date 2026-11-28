@@ -91,9 +91,7 @@ export function useRefreshingPages(source: PagesSource | null, onError: (message
     return () => window.clearTimeout(timer);
   }, [key, autoLoadAfterMs, latestLoad, latest]);
 
-  useOnAdminDataChange(() => {
-    if (current) void load(startCursor(), refetchLimit(current.items.length), false);
-  });
+  useOnAdminDataChange(() => (current ? load(startCursor(), refetchLimit(current.items.length), false) : undefined));
 
   return {
     items: current?.items ?? [],

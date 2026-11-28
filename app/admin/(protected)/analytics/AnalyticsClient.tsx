@@ -9,6 +9,7 @@ import { ANALYTICS_DAYS as DAYS } from "@/lib/admin-data";
 import { AdminPageHeader } from "@/components/admin/AdminPageHeader";
 import { AdminButton } from "@/components/admin/AdminButton";
 import { AdminStatus } from "@/components/admin/AdminScreen";
+import { useOnAdminDataChange } from "@/hooks/useAdminData";
 
 export default function AnalyticsClient() {
   const { stats, failure, signedOut } = useSyncExternalStore(subscribeAdminData, getAdminAnalytics, getAdminAnalytics);
@@ -16,6 +17,7 @@ export default function AnalyticsClient() {
   useEffect(() => {
     void loadAdminAnalytics(true);
   }, []);
+  useOnAdminDataChange(() => loadAdminAnalytics(true));
 
   if (!stats) {
     if (!failure && !signedOut) return <LoadingScreen className="min-h-[60dvh]" />;

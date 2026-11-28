@@ -1,0 +1,64 @@
+/* Pull to refresh in the Home Screen apps (components/shared/pull-refresh/, MO5). Hussain's signature
+   sits in the gap above a pulled page. usePullGesture writes it in from left to right (an inline
+   clip-path) as the page comes down and sets data-pull-state on .hm-pull-logo: absent = at rest,
+   pulling, armed (far enough), refreshing. Its ink sits at 40% so a band of light can pass over it —
+   the site's one gradient, Hussain's call (2026-11-27), for this logo only. */
+.hm-pull-logo {
+  opacity: 0;
+}
+
+.hm-pull-signature {
+  position: relative;
+  background-color: color-mix(in oklch, currentColor 40%, transparent);
+  clip-path: inset(0 100% 0 0);
+}
+
+/* The light: one sweep the moment the pull is far enough, and again every 1.2 s while it
+   refreshes. Same animation in both states, so letting go mid-sweep carries it on. */
+.hm-pull-signature::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 20%, currentColor 45%, currentColor 55%, transparent 80%);
+  translate: -80% 0;
+}
+
+[data-pull-state="armed"] .hm-pull-signature::after {
+  animation: hm-pull-shine 1200ms linear 1 both;
+}
+
+[data-pull-state="refreshing"] .hm-pull-signature::after {
+  animation: hm-pull-shine 1200ms linear infinite both;
+}
+
+/* 700 ms across, from just off one edge to just off the other, on the gentle sine curve of the floating
+   social icons (a strong ease-in-out rushed it across the logo), then 500 ms of rest before the next. */
+@keyframes hm-pull-shine {
+  0% {
+    translate: -80% 0;
+    animation-timing-function: cubic-bezier(0.37, 0, 0.63, 1);
+  }
+  58.333% {
+    translate: 80% 0;
+  }
+  100% {
+    translate: 80% 0;
+  }
+}
+
+/* The booking bar is parked at the top of any page that scrolls; on one too short to scroll it
+   shows, and it would jump with the moving page, so it steps away while the page is pulled. */
+:root[data-pull-active] [data-sticky-cta] {
+  visibility: hidden;
+}
+
+/* Reduced motion: no light passes, so the ink is at full strength. */
+@media (prefers-reduced-motion: reduce) {
+  .hm-pull-signature {
+    background-color: currentColor;
+  }
+
+  [data-pull-state] .hm-pull-signature::after {
+    animation: none;
+  }
+}
